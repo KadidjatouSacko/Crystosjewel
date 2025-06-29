@@ -7,7 +7,7 @@ import{ Jewel}from '../models/jewelModel.js';
 // mainControlleur.js
 import { Category} from '../models/categoryModel.js';
 
-import{ JewelImage}from '../models/JewelImage.js';
+import{ JewelImage}from '../models/jewelImage.js';
 import{ HomeImage}from '../models/HomeImage.js';
 import{ SiteSetting}from '../models/SiteSetting.js';
 
