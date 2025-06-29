@@ -23,11 +23,47 @@ import { HomeImage } from "./HomeImage.js";
 import { SiteSetting } from "./SiteSetting.js"
 
 // ===== NOUVEAUX MODÈLES POUR LES INVITÉS =====
-import { PromoCode } from "./PromoCode.js";
+import { PromoCode } from "./Promocode.js";
 import { PromoCodeUse } from "./PromoCodeUse.js";
 import { GuestSession } from "./GuestSession.js";
 
 // ===== ASSOCIATIONS PRINCIPALES EXISTANTES =====
+
+
+PromoCode.hasMany(Order, {
+  foreignKey: 'promoCodeId',
+  as: 'orders'
+});
+
+// Une commande peut avoir un seul code promo
+Order.belongsTo(PromoCode, {
+  foreignKey: 'promoCodeId',
+  as: 'promoCode'
+});
+
+
+
+PromoCode.hasMany(PromoCodeUse, {
+  foreignKey: 'promoCodeId',
+  as: 'usages'
+});
+
+PromoCodeUse.belongsTo(PromoCode, {
+  foreignKey: 'promoCodeId',
+  as: 'promoCode'
+});
+
+
+GuestSession.hasMany(PromoCodeUse, {
+  foreignKey: 'guestSessionId',
+  as: 'promoCodeUsages'
+});
+
+PromoCodeUse.belongsTo(GuestSession, {
+  foreignKey: 'guestSessionId',
+  as: 'guestSession'
+});
+
 
 // 1. Category <-> Jewel
 Category.hasMany(Jewel, {
