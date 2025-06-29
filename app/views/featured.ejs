@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - crystosjewel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/featured.css">
+</head>
+<body>
+    <%- include('partials/navbarre.ejs') %>
+
+    <div class="admin-header">
+        <div class="container">
+            <h1><i class="fas fa-star"></i> <%= title %></h1>
+            <p>Sélectionnez jusqu'à 4 bijoux à mettre en avant sur la page d'accueil</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <a href="/" class="back-link">
+            <i class="fas fa-arrow-left"></i>
+            Retour à l'accueil
+        </a>
+
+        <!-- Section des coups de cœur actuels -->
+        <div class="section">
+            <h2 class="section-title">
+                <i class="fas fa-heart"></i>
+                Coups de Cœur Actuels (<span id="featured-count"><%= featuredJewels.length %></span>/4)
+            </h2>
+            
+            <div class="featured-grid" id="featured-grid">
+                <% for (let i = 0; i < 4; i++) { %>
+                    <div class="featured-slot <%= featuredJewels[i] ? 'occupied' : 'empty' %>" data-slot="<%= i + 1 %>">
+                        <% if (featuredJewels[i]) { %>
+                            <div class="featured-jewel" data-jewel-id="<%= featuredJewels[i].id %>">
+                                <% if (featuredJewels[i].image) { %>
+                                    <img src="/uploads/jewels/<%= featuredJewels[i].image %>" alt="<%= featuredJewels[i].name %>" class="featured-jewel-img">
+                                <% } else { %>
+                                    <div class="jewel-placeholder featured-jewel-img">
+                                        <i class="fas fa-gem"></i>
+                                    </div>
+                                <% } %>
+                                <h4><%= featuredJewels[i].name %></h4>
+                                <div class="price"><%= Number(featuredJewels[i].price_ttc).toFixed(2) %> €</div>
+                                <button class="remove-featured" onclick="removeFromFeatured(<%= featuredJewels[i].id %>)">
+                                    <i class="fas fa-times"></i> Retirer
+                                </button>
+                            </div>
+                        <% } else { %>
+                            <div class="empty-slot">
+                                <i class="fas fa-plus-circle fa-3x" style="color: var(--rose-gold-light); margin-bottom: 10px;"></i>
+                                <p style="color: #666;">Slot <%= i + 1 %> libre</p>
+                            </div>
+                        <% } %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Section de sélection des bijoux -->
+        <div class="section">
+            <h2 class="section-title">
+                <i class="fas fa-gems"></i>
+                Tous les Bijoux
+            </h2>
+            
+            <div class="search-box">
+                <input type="text" class="search-input" id="search-input" placeholder="Rechercher un bijou par nom...">
+                <i class="fas fa-search search-icon"></i>
+            </div>
+
+            <div class="jewels-grid" id="jewels-grid">
+                <% allJewels.forEach(jewel => { %>
+                    <div class="jewel-card <%= jewel.is_featured ? 'featured' : '' %>" data-jewel-id="<%= jewel.id %>" data-name="<%= jewel.name.toLowerCase() %>">
+                        <% if (jewel.image) { %>
+                            <img src="/uploads/jewels/<%= jewel.image %>" alt="<%= jewel.name %>" class="jewel-img">
+                        <% } else { %>
+                            <div class="jewel-placeholder">
+                                <i class="fas fa-gem"></i>
+                            </div>
+                        <% } %>
+                        
+                        <div class="jewel-name"><%= jewel.name %></div>
+                        <div class="jewel-category"><%= jewel.category?.name || 'Sans catégorie' %></div>
+                        <div class="jewel-price"><%= Number(jewel.price_ttc).toFixed(2) %> €</div>
+                        
+                        <% if (jewel.is_featured) { %>
+                            <button class="remove-featured" onclick="removeFromFeatured(<%= jewel.id %>)">
+                                <i class="fas fa-heart-broken"></i> Retirer des coups de cœur
+                            </button>
+                        <% } else { %>
+                            <button class="add-featured" onclick="addToFeatured(<%= jewel.id %>, '<%= jewel.name %>')" <%= featuredJewels.length >= 4 ? 'disabled' : '' %>>
+                                <i class="fas fa-heart"></i> Ajouter aux coups de cœur
+                            </button>
+                        <% } %>
+                    </div>
+                <% }); %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification -->
+    <div id="notification" class="notification">
+        <div class="notification-content">
+            <i class="fas fa-check-circle"></i>
+            <span id="notification-message"></span>
+        </div>
+    </div>
+
+    <script>
+        // Recherche en temps réel
+        document.getElementById('search-input').addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            const jewelCards = document.querySelectorAll('.jewel-card');
+            
+            jewelCards.forEach(card => {
+                const jewelName = card.dataset.name;
+                if (jewelName.includes(searchTerm)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        // Ajouter aux coups de cœur
+        async function addToFeatured(jewelId, jewelName) {
+            try {
+                const response = await fetch('/admin/featured/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jewelId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification(`${jewelName} ajouté aux coups de cœur !`);
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification(data.message, true);
+                }
+            } catch (error) {
+                showNotification('Erreur lors de l\'ajout', true);
+            }
+        }
+
+        // Retirer des coups de cœur
+        async function removeFromFeatured(jewelId) {
+            try {
+                const response = await fetch('/admin/featured/remove', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ jewelId })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showNotification('Bijou retiré des coups de cœur');
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification(data.message, true);
+                }
+            } catch (error) {
+                showNotification('Erreur lors de la suppression', true);
+            }
+        }
+
+        // Afficher notification
+        function showNotification(message, isError = false) {
+            const notification = document.getElementById('notification');
+            const messageEl = document.getElementById('notification-message');
+            const icon = notification.querySelector('i');
+            
+            notification.className = `notification ${isError ? 'error' : ''} show`;
+            messageEl.textContent = message;
+            icon.className = isError ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

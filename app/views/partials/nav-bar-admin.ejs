@@ -1,0 +1,263 @@
+ <!-- Barre de navigation Admin -->
+  <head>
+  <link rel="stylesheet" href="/css/nav-bar-admin.css">
+</head>
+ <nav id="adminNav" class="navbar admin-navbar">
+    <div class="nav-container">
+        <!-- Logo et bouton hamburger pour mobile -->
+        <div class="nav-header">
+            <a href="/admin" class="logo">
+                <h1>Eclat Doré</h1> <span class="admin-badge">ADMIN</span>
+            </a>
+            <button class="menu-toggle" id="adminMenuToggle">
+                <i class="fas fa-bars"></i>
+            </button>
+        </div>
+        
+        <!-- Menu de navigation admin -->
+        <div class="nav-menu" id="adminNavMenu">
+            <ul class="nav-links">
+                <% if (user && user.role === 'administrateur') { %>
+                    <li><a href="/admin/dashboard"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a></li>
+                    <li><a href="/admin/commandes"><i class="fas fa-clipboard-list"></i> Commandes</a></li>
+                    <li><a href="/admin/produits"><i class="fas fa-gem"></i> Produits</a></li>
+                    <li><a href="/admin/stats"><i class="fas fa-chart-pie"></i> Statistiques</a></li>
+                    <li><a href="/deconnexion"><i class="fas fa-sign-out-alt"></i> Déconnexion</a></li>
+            <% } else { %>
+                <!-- Si l'utilisateur n'est pas connecté -->
+                <li><a href="/connexion-inscription"><i class="fas fa-sign-in-alt"></i> Connexion</a></li>
+                <li><a href="/inscription"><i class="fas fa-user-plus"></i> Inscription</a></li>
+            <% } %>
+            </ul>
+            
+            <!-- Icônes pour les notifications et le profil admin -->
+
+            <div class="nav-icons">
+                <% if (user && user.role === 'admin') { %>
+                    <div class="notification-badge">
+                        <a href="/admin/notifications">
+                            <i class="fas fa-bell"></i>
+                            <span class="notification-count"><%= notifications.length %></span>
+                        </a>
+                    </div>
+               
+            
+               
+                
+                <div class="user-dropdown">
+                    <button class="dropdown-toggle" id="adminDropdownToggle">
+                        <i class="fas fa-user-shield"></i>
+                    </button>
+                    <div class="dropdown-menu" id="adminDropdownMenu">
+                        <a href="/admin/profil"><i class="fas fa-user-circle"></i> Profil Admin</a>
+                        <a href="/admin/parametres"><i class="fas fa-cogs"></i> Paramètres du site</a>
+                        <a href="/admin/stock/alerte" class="notification-badge"><i class="fas fa-exclamation-triangle"></i> Alertes stock</a>
+                        <a href="/admin/sauvegardes"><i class="fas fa-database"></i> Sauvegardes</a>
+                        <div class="dropdown-divider"></div>
+                        <a href="/admin/logs"><i class="fas fa-history"></i> Journal d'activité</a>
+                        <a href="/deconnexion"><i class="fas fa-sign-out-alt"></i> Déconnexion</a>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+        </div>
+    </div>
+</nav>
+
+<!-- Exemple de dashboard admin -->
+<div class="admin-dashboard" style="display:none;" id="adminDashboardPreview">
+    <div class="admin-stat">
+        <div class="stat-value">24</div>
+        <div class="stat-label">Commandes en attente</div>
+    </div>
+    <div class="admin-stat">
+        <div class="stat-value">6</div>
+        <div class="stat-label">Produits en rupture</div>
+    </div>
+    <div class="admin-stat">
+        <div class="stat-value">€3,542</div>
+        <div class="stat-label">Ventes (7 jours)</div>
+    </div>
+    <div class="admin-stat">
+        <div class="stat-value">129</div>
+        <div class="stat-label">Nouveaux clients</div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Menu hamburger pour mobile (client)
+        const menuToggle = document.getElementById('menuToggle');
+        const navMenu = document.getElementById('navMenu');
+        
+        if (menuToggle && navMenu) {
+            menuToggle.addEventListener('click', function() {
+                navMenu.classList.toggle('active');
+            });
+        }
+        
+        // Menu hamburger pour mobile (admin)
+        const adminMenuToggle = document.getElementById('adminMenuToggle');
+        const adminNavMenu = document.getElementById('adminNavMenu');
+        
+        if (adminMenuToggle && adminNavMenu) {
+            adminMenuToggle.addEventListener('click', function() {
+                adminNavMenu.classList.toggle('active');
+            });
+        }
+        
+        // Menu utilisateur avec contrôle du clic (client)
+        const userDropdownToggle = document.getElementById('userDropdownToggle');
+        const userDropdownMenu = document.getElementById('userDropdownMenu');
+        let isDropdownOpen = false;
+        
+        if (userDropdownToggle && userDropdownMenu) {
+            // Ouvrir/fermer au clic
+            userDropdownToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                isDropdownOpen = !isDropdownOpen;
+                
+                if (isDropdownOpen) {
+                    userDropdownMenu.classList.add('active');
+                } else {
+                    userDropdownMenu.classList.remove('active');
+                }
+            });
+            
+            // Gérer le survol de la souris (pour desktop)
+            if (window.innerWidth > 768) {
+                const userDropdown = document.querySelector('.user-dropdown');
+                
+                if (userDropdown) {
+                    userDropdown.addEventListener('mouseenter', function() {
+                        userDropdownMenu.classList.add('active');
+                        isDropdownOpen = true;
+                    });
+                    
+                    // Délai avant de fermer pour éviter les fermetures accidentelles
+                    let dropdownTimeout;
+                    
+                    userDropdown.addEventListener('mouseleave', function() {
+                        // Attendre avant de fermer pour permettre à l'utilisateur de déplacer la souris vers le menu
+                        dropdownTimeout = setTimeout(function() {
+                            userDropdownMenu.classList.remove('active');
+                            isDropdownOpen = false;
+                        }, 200);
+                    });
+                    
+                    userDropdownMenu.addEventListener('mouseenter', function() {
+                        // Annuler la fermeture si la souris entre dans le menu
+                        clearTimeout(dropdownTimeout);
+                    });
+                    
+                    userDropdownMenu.addEventListener('mouseleave', function() {
+                        // Fermer le menu quand la souris quitte le menu déroulant
+                        userDropdownMenu.classList.remove('active');
+                        isDropdownOpen = false;
+                    });
+                }
+            }
+        }
+        
+        // Menu administrateur avec contrôle du clic
+        const adminDropdownToggle = document.getElementById('adminDropdownToggle');
+        const adminDropdownMenu = document.getElementById('adminDropdownMenu');
+        let isAdminDropdownOpen = false;
+        
+        if (adminDropdownToggle && adminDropdownMenu) {
+            // Ouvrir/fermer au clic
+            adminDropdownToggle.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                isAdminDropdownOpen = !isAdminDropdownOpen;
+                
+                if (isAdminDropdownOpen) {
+                    adminDropdownMenu.classList.add('active');
+                } else {
+                    adminDropdownMenu.classList.remove('active');
+                }
+            });
+            
+            // Gérer le survol de la souris (pour desktop)
+            if (window.innerWidth > 768) {
+                const adminDropdown = adminDropdownToggle.closest('.user-dropdown');
+                
+                if (adminDropdown) {
+                    adminDropdown.addEventListener('mouseenter', function() {
+                        adminDropdownMenu.classList.add('active');
+                        isAdminDropdownOpen = true;
+                    });
+                    
+                    let adminDropdownTimeout;
+                    
+                    adminDropdown.addEventListener('mouseleave', function() {
+                        adminDropdownTimeout = setTimeout(function() {
+                            adminDropdownMenu.classList.remove('active');
+                            isAdminDropdownOpen = false;
+                        }, 200);
+                    });
+                    
+                    adminDropdownMenu.addEventListener('mouseenter', function() {
+                        clearTimeout(adminDropdownTimeout);
+                    });
+                    
+                    adminDropdownMenu.addEventListener('mouseleave', function() {
+                        adminDropdownMenu.classList.remove('active');
+                        isAdminDropdownOpen = false;
+                    });
+                }
+            }
+        }
+        
+        // Fermer les menus déroulants si on clique ailleurs sur la page
+        document.addEventListener('click', function(e) {
+            if (isDropdownOpen && userDropdownMenu && !userDropdownToggle.contains(e.target) && !userDropdownMenu.contains(e.target)) {
+                userDropdownMenu.classList.remove('active');
+                isDropdownOpen = false;
+            }
+            
+            if (isAdminDropdownOpen && adminDropdownMenu && !adminDropdownToggle.contains(e.target) && !adminDropdownMenu.contains(e.target)) {
+                adminDropdownMenu.classList.remove('active');
+                isAdminDropdownOpen = false;
+            }
+        });
+        
+        // Mettre à jour le compteur du panier
+        function updateCartCount() {
+            const cartBadge = document.getElementById('cartCount');
+            if (cartBadge) {
+                // Simuler un nombre d'articles dans le panier (à remplacer par votre logique)
+                const count = 3;
+                
+                cartBadge.textContent = count;
+                
+                // Effet de pulse lorsque le compteur change
+                cartBadge.classList.add('pulse');
+                setTimeout(() => {
+                    cartBadge.classList.remove('pulse');
+                }, 600);
+            }
+        }
+        
+        // Appeler cette fonction au chargement
+        updateCartCount();
+        
+        // Afficher/masquer le tableau de bord admin (pour démonstration)
+        const adminLink = document.querySelector('a[href="/admin/dashboard"]');
+        const adminDashboard = document.getElementById('adminDashboardPreview');
+        
+        if (adminLink && adminDashboard) {
+            adminLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (adminDashboard.style.display === 'none') {
+                    adminDashboard.style.display = 'flex';
+                } else {
+                    adminDashboard.style.display = 'none';
+                }
+            });
+        }
+    });
+</script>

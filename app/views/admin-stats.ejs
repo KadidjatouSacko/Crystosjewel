@@ -1,0 +1,3095 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title || 'Dashboard Bijoux' %></title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #b76e79;
+            --primary-light: #e8c2c8;
+            --primary-dark: #7d4b53;
+            --cream: #fff8f0;
+            --dark-text: #3a3a3a;
+            --light-gray: #f5f5f5;
+            --white: #ffffff;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --info: #2196f3;
+            --shadow: rgba(183, 110, 121, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--cream) 0%, var(--light-gray) 100%);
+            color: var(--dark-text);
+            line-height: 1.6;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+
+        /* ===== HEADER RESPONSIVE ===== */
+        .dashboard-header {
+            background: white;
+            padding: 1rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px var(--shadow);
+            margin-bottom: 1.5rem;
+        }
+
+        .dashboard-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .header-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .stock-threshold-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--light-gray);
+            padding: 0.5rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            width: 100%;
+            justify-content: space-between;
+        }
+
+        .stock-threshold-input {
+            width: 60px;
+            padding: 0.25rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stock-threshold-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(183, 110, 121, 0.2);
+        }
+
+        .stock-threshold-input.error {
+            border-color: var(--danger);
+            background-color: #fff5f5;
+        }
+
+        .stock-threshold-input.valid {
+            border-color: var(--success);
+            background-color: #f0fff4;
+        }
+
+        .stock-threshold-group button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* ===== STATISTIQUES RESPONSIVE ===== */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 1rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px var(--shadow);
+            border-left: 4px solid var(--primary-color);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .stat-content {
+            flex: 1;
+        }
+
+        .stat-title {
+            font-size: 0.75rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--dark-text);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-change {
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .stat-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .stat-icon.jewels { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); }
+        .stat-icon.stock { background: linear-gradient(135deg, var(--warning), #ffa726); }
+        .stat-icon.views { background: linear-gradient(135deg, var(--info), #42a5f5); }
+        .stat-icon.orders { background: linear-gradient(135deg, var(--success), #66bb6a); }
+
+        /* ===== CONTENU PRINCIPAL MOBILE ===== */
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .jewels-section {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px var(--shadow);
+            overflow: hidden;
+        }
+
+        .section-header {
+            padding: 1rem;
+            background: linear-gradient(135deg, var(--cream), var(--light-gray));
+            border-bottom: 1px solid #eee;
+        }
+
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark-text);
+        }
+
+        /* ===== FILTRES DESKTOP ET MOBILE ===== */
+        .filters-section {
+            padding: 1rem;
+            border-bottom: 1px solid #eee;
+            background: #fafafa;
+        }
+
+        .filters-toggle {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            width: 100%;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .filters-content {
+            display: none;
+        }
+
+        .filters-content.show {
+            display: block;
+            animation: slideDown 0.3s ease;
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .filter-label {
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--dark-text);
+        }
+
+        .filter-select, .filter-input {
+            padding: 0.75rem;
+            border: 2px solid var(--light-gray);
+            border-radius: 8px;
+            background: white;
+            font-size: 0.9rem;
+        }
+
+        .filter-select:focus, .filter-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        /* Bouton d'action pour les filtres */
+        .filters-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-filter {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            flex: 1;
+            justify-content: center;
+        }
+
+        .btn-filter:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+        }
+
+        .btn-reset {
+            background: var(--light-gray);
+            color: var(--dark-text);
+            border: 2px solid #ddd;
+        }
+
+        .btn-reset:hover {
+            background: #e0e0e0;
+            border-color: var(--primary-color);
+        }
+
+        /* ===== GRILLE BIJOUX MOBILE AMÉLIORÉE ===== */
+        .jewels-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1rem;
+            padding: 1rem;
+        }
+
+        .jewel-card {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border: 2px solid transparent;
+        }
+
+        .jewel-card:hover {
+            border-color: var(--primary-light);
+        }
+
+        .jewel-layout {
+            display: flex;
+            flex-direction: column;
+            padding: 0;
+        }
+
+        /* ===== SYSTÈME D'IMAGES AMÉLIORÉ ===== */
+        .jewel-image {
+            width: 100%;
+            height: 200px;
+            background: var(--light-gray);
+            position: relative;
+            flex-shrink: 0;
+            overflow: hidden;
+        }
+
+        .jewel-image-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .jewel-image-slider {
+            display: flex;
+            transition: transform 0.3s ease;
+            height: 100%;
+            width: 100%;
+        }
+
+        .jewel-image-slide {
+            flex: 0 0 100%;
+            height: 100%;
+            position: relative;
+        }
+
+        .jewel-image-slide img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        /* IMAGE PLACEHOLDER POUR BIJOUX SANS IMAGE */
+        .jewel-no-image {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, var(--light-gray), #e0e0e0);
+            color: #999;
+            font-size: 2rem;
+        }
+
+        /* NAVIGATION D'IMAGES AMÉLIORÉE */
+        .image-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0,0,0,0.7);
+            color: white;
+            border: none;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 20;
+            pointer-events: auto;
+        }
+
+        .jewel-image-container:hover .image-nav {
+            opacity: 1;
+        }
+
+        .image-nav.prev {
+            left: 8px;
+        }
+
+        .image-nav.next {
+            right: 8px;
+        }
+
+        .image-nav:hover {
+            background: rgba(0,0,0,0.9);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .image-indicators {
+            position: absolute;
+            bottom: 8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 4px;
+            z-index: 20;
+        }
+
+        .image-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.6);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(0,0,0,0.3);
+        }
+
+        .image-dot.active {
+            background: white;
+            box-shadow: 0 0 5px rgba(0,0,0,0.5);
+            transform: scale(1.2);
+        }
+
+        .jewel-badges {
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            z-index: 25;
+        }
+
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            text-transform: uppercase;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .badge.sale { background: var(--danger); color: white; }
+        .badge.new { background: var(--success); color: white; }
+        .badge.low-stock { background: var(--warning); color: white; }
+        .badge.out-stock { background: #666; color: white; }
+
+        .jewel-content {
+            flex: 1;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .jewel-category {
+            font-size: 0.75rem;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .jewel-name {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--dark-text);
+            line-height: 1.3;
+            min-height: 2.6rem;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .jewel-price {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 0;
+        }
+
+        .current-price {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: var(--primary-dark);
+        }
+
+        .original-price {
+            font-size: 0.9rem;
+            color: #999;
+            text-decoration: line-through;
+        }
+
+        .jewel-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.8rem;
+            color: #666;
+            margin: 0;
+            padding: 0.5rem 0;
+            border-top: 1px solid #eee;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stock-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+
+        .stock-indicator.high { background: var(--success); }
+        .stock-indicator.medium { background: var(--warning); }
+        .stock-indicator.low { background: var(--danger); }
+        .stock-indicator.out { background: #666; }
+
+        .jewel-actions {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            margin: 0;
+        }
+
+        .btn {
+            padding: 0.5rem 0.75rem;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            transition: all 0.3s ease;
+            flex: 1;
+            justify-content: center;
+            min-height: 36px;
+        }
+
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-success { background: var(--success); color: white; }
+        .btn-warning { background: var(--warning); color: white; }
+        .btn-info { background: var(--info); color: white; }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        /* MÉTRIQUES SUR UNE LIGNE POUR MOBILE */
+        .metrics-row {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            margin: 0;
+            padding: 0.75rem 0 0 0;
+            border-top: 1px solid #eee;
+            gap: 0.5rem;
+        }
+
+        .metric-item {
+            text-align: center;
+            font-size: 0.7rem;
+            flex: 1;
+        }
+
+        .metric-value {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+            font-size: 0.8rem;
+        }
+
+        .metric-label {
+            font-size: 0.65rem;
+            color: #666;
+        }
+
+        /* ===== RESPONSIVE AMÉLIORÉ ===== */
+
+        /* Très petits écrans (320px - 480px) */
+        @media (max-width: 480px) {
+            .dashboard-container {
+                padding: 0.5rem;
+            }
+
+            .dashboard-header {
+                padding: 0.75rem;
+                margin-bottom: 1rem;
+            }
+
+            .dashboard-title {
+                font-size: 1.25rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+
+            .stat-card {
+                padding: 0.75rem;
+            }
+
+            .stat-value {
+                font-size: 1.1rem;
+            }
+
+            .stat-change {
+                font-size: 0.65rem;
+            }
+
+            .stat-icon {
+                width: 25px;
+                height: 25px;
+                font-size: 0.8rem;
+            }
+
+            .jewels-grid {
+                grid-template-columns: 1fr;
+                gap: 0.75rem;
+                padding: 0.5rem;
+            }
+
+            .jewel-image {
+                height: 160px;
+            }
+
+            .jewel-content {
+                padding: 0.75rem;
+                gap: 0.4rem;
+            }
+
+            .jewel-name {
+                font-size: 0.9rem;
+                min-height: 2.4rem;
+            }
+
+            .current-price {
+                font-size: 1rem;
+            }
+
+            .original-price {
+                font-size: 0.8rem;
+            }
+
+            .jewel-meta {
+                font-size: 0.75rem;
+                padding: 0.4rem 0;
+            }
+
+            .btn {
+                padding: 0.4rem 0.6rem;
+                font-size: 0.7rem;
+                min-height: 32px;
+            }
+
+            .metrics-row {
+                padding: 0.5rem 0 0 0;
+                gap: 0.25rem;
+            }
+
+            .metric-item {
+                font-size: 0.65rem;
+            }
+
+            .metric-value {
+                font-size: 0.75rem;
+                margin-bottom: 0.15rem;
+            }
+
+            .metric-label {
+                font-size: 0.6rem;
+            }
+
+            .header-actions {
+                flex-direction: column;
+                gap: 0.75rem;
+            }
+
+            .stock-threshold-group {
+                margin-bottom: 0;
+                font-size: 0.8rem;
+            }
+
+            .jewel-badges {
+                top: 6px;
+                left: 6px;
+            }
+
+            .badge {
+                padding: 0.2rem 0.4rem;
+                font-size: 0.65rem;
+            }
+
+            /* Navigation d'images plus petite sur mobile */
+            .image-nav {
+                width: 24px;
+                height: 24px;
+                font-size: 10px;
+            }
+
+            .image-nav.prev {
+                left: 6px;
+            }
+
+            .image-nav.next {
+                right: 6px;
+            }
+
+            .image-indicators {
+                bottom: 6px;
+            }
+
+            .image-dot {
+                width: 6px;
+                height: 6px;
+            }
+        }
+
+        /* Tablettes portrait (481px - 768px) */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .dashboard-container {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .jewels-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .jewel-image {
+                height: 180px;
+            }
+
+            .metrics-row {
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+        }
+
+        /* Tablettes paysage (769px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .main-content {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 1.5rem;
+            }
+
+            .jewels-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .jewel-image {
+                height: 200px;
+            }
+
+            .jewel-layout {
+                flex-direction: column;
+            }
+
+            .filters-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .metrics-row {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.5rem;
+            }
+        }
+
+        /* Desktop (1025px+) */
+        @media (min-width: 1025px) {
+            .dashboard-container {
+                padding: 2rem;
+            }
+
+            .dashboard-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1.5rem;
+            }
+
+            .dashboard-title {
+                font-size: 2rem;
+                margin-bottom: 0;
+            }
+
+            .header-actions {
+                flex-direction: row;
+                flex-wrap: nowrap;
+            }
+
+            .stock-threshold-group {
+                width: auto;
+                background: none;
+                padding: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 1.5rem;
+            }
+
+            .main-content {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 2rem;
+            }
+
+            .jewels-grid {
+                grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+                padding: 1.5rem;
+            }
+
+            .jewel-layout {
+                flex-direction: column;
+            }
+
+            .jewel-image {
+                height: 220px;
+            }
+
+            .jewel-content {
+                padding: 1.25rem;
+            }
+
+            .filters-toggle {
+                display: none;
+            }
+
+            .filters-content {
+                display: block !important;
+            }
+
+            .filters-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+
+            .metrics-row {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.75rem;
+            }
+        }
+
+        /* ===== SIDEBAR MOBILE ===== */
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .sidebar-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px var(--shadow);
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 0.75rem 1rem;
+            background: var(--primary-light);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .sidebar-content {
+            padding: 0.75rem;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-name {
+            font-weight: 500;
+            font-size: 0.8rem;
+            margin-bottom: 0.125rem;
+        }
+
+        .summary-details {
+            font-size: 0.7rem;
+            color: #666;
+        }
+
+        .summary-value {
+            font-weight: 600;
+            color: var(--primary-dark);
+            font-size: 0.8rem;
+            text-align: right;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem 1rem;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            opacity: 0.3;
+        }
+
+        /* ===== RESPONSIVE BREAKPOINTS ===== */
+
+        /* Très petits écrans (320px - 480px) */
+        @media (max-width: 480px) {
+            .dashboard-container {
+                padding: 0.5rem;
+            }
+
+            .dashboard-header {
+                padding: 0.75rem;
+                margin-bottom: 1rem;
+            }
+
+            .dashboard-title {
+                font-size: 1.25rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+            }
+
+            .stat-card {
+                padding: 0.75rem;
+            }
+
+            .stat-value {
+                font-size: 1.1rem;
+            }
+
+            .stat-change {
+                font-size: 0.65rem;
+            }
+
+            .stat-icon {
+                width: 25px;
+                height: 25px;
+                font-size: 0.8rem;
+            }
+
+            .jewels-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.5rem;
+                padding: 0.5rem;
+            }
+
+            .jewel-layout {
+                flex-direction: column;
+                gap: 0.5rem;
+                padding: 0.5rem;
+            }
+
+            .jewel-image {
+                width: 100%;
+                height: 80px;
+                align-self: center;
+            }
+
+            .jewel-content {
+                padding: 0;
+            }
+
+            .jewel-name {
+                font-size: 0.8rem;
+                line-height: 1.2;
+                white-space: normal;
+                overflow: hidden;
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+            }
+
+            .jewel-category {
+                font-size: 0.65rem;
+                margin-bottom: 0.1rem;
+            }
+
+            .current-price {
+                font-size: 0.85rem;
+            }
+
+            .original-price {
+                font-size: 0.7rem;
+            }
+
+            .jewel-meta {
+                font-size: 0.65rem;
+                margin-bottom: 0.25rem;
+            }
+
+            .jewel-actions {
+                justify-content: center;
+                flex-wrap: wrap;
+                gap: 0.2rem;
+            }
+
+            .btn {
+                padding: 0.3rem 0.5rem;
+                font-size: 0.65rem;
+                min-width: auto;
+                white-space: nowrap;
+            }
+
+            .btn i {
+                margin-right: 0.2rem;
+            }
+
+            .metrics-row {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 0.2rem;
+                margin-top: 0.25rem;
+                padding-top: 0.25rem;
+            }
+
+            .metric-item {
+                font-size: 0.6rem;
+            }
+
+            .metric-value {
+                margin-bottom: 0.1rem;
+            }
+
+            .header-actions {
+                flex-direction: column;
+            }
+
+            .stock-threshold-group {
+                margin-bottom: 0.5rem;
+                font-size: 0.8rem;
+            }
+
+            .sidebar-card {
+                margin-bottom: 1rem;
+            }
+
+            .summary-name {
+                font-size: 0.75rem;
+            }
+
+            .summary-details {
+                font-size: 0.65rem;
+            }
+
+            .summary-value {
+                font-size: 0.75rem;
+            }
+
+            .jewel-badges {
+                top: 2px;
+                left: 2px;
+            }
+
+            .badge {
+                padding: 0.1rem 0.2rem;
+                font-size: 0.55rem;
+            }
+        }
+
+        /* Tablettes portrait (481px - 768px) */
+        @media (min-width: 481px) and (max-width: 768px) {
+            .dashboard-container {
+                padding: 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .jewels-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .jewel-layout {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .jewel-image {
+                width: 100%;
+                height: 100px;
+                margin: 0 auto;
+            }
+        }
+
+        /* Tablettes paysage (769px - 1024px) */
+        @media (min-width: 769px) and (max-width: 1024px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+
+            .main-content {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 1.5rem;
+            }
+
+            .jewels-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .jewel-layout {
+                flex-direction: row;
+            }
+
+            .jewel-image {
+                width: 100px;
+                height: 100px;
+            }
+
+            .filters-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Desktop (1025px+) */
+        @media (min-width: 1025px) {
+            .dashboard-container {
+                padding: 2rem;
+            }
+
+            .dashboard-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 1.5rem;
+            }
+
+            .dashboard-title {
+                font-size: 2rem;
+                margin-bottom: 0;
+            }
+
+            .header-actions {
+                flex-direction: row;
+                flex-wrap: nowrap;
+            }
+
+            .stock-threshold-group {
+                width: auto;
+                background: none;
+                padding: 0;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 1.5rem;
+            }
+
+            .main-content {
+                display: grid;
+                grid-template-columns: 2fr 1fr;
+                gap: 2rem;
+            }
+
+            .jewels-grid {
+                grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+                padding: 1.5rem;
+            }
+
+            .jewel-layout {
+                flex-direction: column;
+                padding: 0;
+            }
+
+            .jewel-content {
+                padding: 1rem;
+            }
+
+            .jewel-image {
+                width: 100%;
+                height: 180px;
+                border-radius: 0;
+            }
+
+            .filters-toggle {
+                display: none;
+            }
+
+            .filters-content {
+                display: block !important;
+            }
+
+            .filters-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                gap: 1rem;
+            }
+        }
+
+        /* ===== UTILITAIRES MOBILE ===== */
+        .mobile-only {
+            display: block;
+        }
+
+        .desktop-only {
+            display: none;
+        }
+
+        @media (min-width: 769px) {
+            .mobile-only {
+                display: none;
+            }
+
+            .desktop-only {
+                display: block;
+            }
+        }
+
+        /* ===== ANIMATIONS MOBILES ===== */
+        @media (prefers-reduced-motion: no-preference) {
+            .jewel-card {
+                transition: all 0.2s ease;
+            }
+
+            .btn:active {
+                transform: scale(0.95);
+            }
+
+            .stat-card:active {
+                transform: translateY(0);
+            }
+        }
+
+        /* ===== NOTIFICATION RESPONSIVE ===== */
+        .dashboard-notification {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            left: 10px;
+            z-index: 10000;
+            padding: 0.75rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            font-size: 0.9rem;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        @media (min-width: 481px) {
+            .dashboard-notification {
+                left: auto;
+                max-width: 350px;
+                transform: translateX(100%);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <%- include('partials/navbarre.ejs') %>
+
+    <div class="dashboard-container">
+        <!-- En-tête du dashboard -->
+        <div class="dashboard-header">
+            <h1 class="dashboard-title">
+                <i class="fas fa-gem"></i>
+                Dashboard Bijoux
+            </h1>
+            <div class="header-actions">
+                <div class="stock-threshold-group">
+                    <label for="stockThreshold">Seuil stock critique:</label>
+                    <input type="number" id="stockThreshold" value="<%= lowStockThreshold %>" 
+                           min="1" max="50" class="stock-threshold-input" 
+                           onchange="updateStockThreshold()"
+                           onkeypress="handleThresholdKeypress(event)">
+                    <button type="button" onclick="updateStockThreshold()" class="btn btn-info" title="Appliquer le nouveau seuil">
+                        <i class="fas fa-check"></i>
+                        <span class="desktop-only">Appliquer</span>
+                    </button>
+                </div>
+                <a href="/ajouter-bijou" class="btn btn-success">
+                    <i class="fas fa-plus"></i> 
+                    <span class="desktop-only">Nouveau Bijou</span>
+                    <span class="mobile-only">Nouveau</span>
+                </a>
+                <a href="/admin/gestionnaire-bijoux" class="btn btn-warning">
+                    <i class="fas fa-magic"></i> 
+                    <span class="desktop-only">Gestionnaire</span>
+                    <span class="mobile-only">Gestion</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistiques -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-content">
+                        <div class="stat-title">Total Bijoux</div>
+                        <div class="stat-value"><%= stats?.totalJewels || 0 %></div>
+                        <div class="stat-change">
+                            Stock total: <%= stats?.totalStock || 0 %>
+                        </div>
+                    </div>
+                    <div class="stat-icon jewels">
+                        <i class="fas fa-gem"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-content">
+                        <div class="stat-title">Stock Critique</div>
+                        <div class="stat-value"><%= stats?.criticalStock || stats?.lowStock || 0 %></div>
+                        <div class="stat-change">
+                            Rupture: <%= stats?.outOfStock || 0 %>
+                        </div>
+                    </div>
+                    <div class="stat-icon stock">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-content">
+                        <div class="stat-title">Vues Totales</div>
+                        <div class="stat-value"><%= stats?.totalViews || stats?.dailyViews || 0 %></div>
+                        <div class="stat-change">
+                            Favoris: <%= stats?.totalFavorites || stats?.todayFavorites || 0 %>
+                        </div>
+                    </div>
+                    <div class="stat-icon views">
+                        <i class="fas fa-eye"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-content">
+                        <div class="stat-title">Commandes</div>
+                        <div class="stat-value"><%= stats?.totalOrders || 0 %></div>
+                        <div class="stat-change">
+                            <% 
+                            const avgValue = stats?.avgOrderValue || stats?.averageOrderValue || 0;
+                            %>
+                            Panier moyen: <%= parseFloat(avgValue).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) %>
+                        </div>
+                    </div>
+                    <div class="stat-icon orders">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="main-content">
+            <!-- Section bijoux -->
+            <div class="jewels-section">
+                <div class="section-header">
+                    <h2 class="section-title">
+                        Gestion des Bijoux (<%= jewels?.length || 0 %> bijoux)
+                    </h2>
+                </div>
+
+                <!-- Filtres -->
+                <div class="filters-section">
+                    <button class="filters-toggle mobile-only" onclick="toggleFilters()">
+                        <i class="fas fa-filter"></i>
+                        Filtres & Recherche
+                        <i class="fas fa-chevron-down" id="filter-arrow"></i>
+                    </button>
+                    
+                    <div class="filters-content" id="filters-content">
+                        <form method="GET" id="filtersForm">
+                            <div class="filters-grid">
+                                <div class="filter-group">
+                                    <label class="filter-label">Catégorie</label>
+                                    <select name="category" class="filter-select">
+                                        <option value="all">Toutes les catégories</option>
+                                        <% if (categories) { %>
+                                            <% categories.forEach(category => { %>
+                                                <% 
+                                                const categoryCount = category.jewels_count || 
+                                                    (jewels ? jewels.filter(j => j.category_id == category.id).length : 0);
+                                                %>
+                                                <option value="<%= category.id %>" <%= (filters?.category == category.id) ? 'selected' : '' %>>
+                                                    <%= category.name %> (<%= categoryCount %>)
+                                                </option>
+                                            <% }); %>
+                                        <% } %>
+                                    </select>
+                                </div>
+
+                                <div class="filter-group">
+                                    <label class="filter-label">Matériau</label>
+                                    <select name="material" class="filter-select">
+                                        <option value="all">Tous les matériaux</option>
+                                        <% if (materials) { %>
+                                            <% materials.forEach(material => { %>
+                                                <% 
+                                                const materialCount = material.count || 
+                                                    (jewels ? jewels.filter(j => j.matiere && j.matiere.toLowerCase().includes(material.name.toLowerCase())).length : 0);
+                                                %>
+                                                <option value="<%= material.name %>" <%= (filters?.material == material.name) ? 'selected' : '' %>>
+                                                    <%= material.name %> (<%= materialCount %>)
+                                                </option>
+                                            <% }); %>
+                                        <% } %>
+                                    </select>
+                                </div>
+
+                                <div class="filter-group">
+                                    <label class="filter-label">État du stock</label>
+                                    <select name="stock" class="filter-select">
+                                        <option value="all">Tous les stocks</option>
+                                        <option value="available" <%= (filters?.stock == 'available') ? 'selected' : '' %>>Disponible (> 0)</option>
+                                        <option value="low" <%= (filters?.stock == 'low') ? 'selected' : '' %>>Stock faible (≤ <%= lowStockThreshold || 3 %>)</option>
+                                        <option value="out" <%= (filters?.stock == 'out') ? 'selected' : '' %>>En rupture (0)</option>
+                                    </select>
+                                </div>
+
+                                <div class="filter-group">
+                                    <label class="filter-label">Trier par</label>
+                                    <select name="sort" class="filter-select">
+                                        <option value="newest" <%= (filters?.sort == 'newest') ? 'selected' : '' %>>Plus récents</option>
+                                        <option value="oldest" <%= (filters?.sort == 'oldest') ? 'selected' : '' %>>Plus anciens</option>
+                                        <option value="most_viewed" <%= (filters?.sort == 'most_viewed') ? 'selected' : '' %>>Plus vus</option>
+                                        <option value="most_sold" <%= (filters?.sort == 'most_sold') ? 'selected' : '' %>>Plus vendus</option>
+                                        <option value="price_desc" <%= (filters?.sort == 'price_desc') ? 'selected' : '' %>>Prix décroissant</option>
+                                        <option value="price_asc" <%= (filters?.sort == 'price_asc') ? 'selected' : '' %>>Prix croissant</option>
+                                        <option value="stock_asc" <%= (filters?.sort == 'stock_asc') ? 'selected' : '' %>>Stock faible en premier</option>
+                                        <option value="name_asc" <%= (filters?.sort == 'name_asc') ? 'selected' : '' %>>Nom A-Z</option>
+                                    </select>
+                                </div>
+
+                                <div class="filter-group">
+                                    <label class="filter-label">Recherche</label>
+                                    <input type="text" name="search" class="filter-input" 
+                                           placeholder="Nom du bijou..." 
+                                           value="<%= filters?.search || '' %>">
+                                </div>
+                            </div>
+
+                            <!-- Boutons d'action -->
+                            <div class="filters-actions">
+                                <button type="submit" class="btn-filter">
+                                    <i class="fas fa-search"></i>
+                                    Appliquer les filtres
+                                </button>
+                                <button type="button" class="btn-filter btn-reset" onclick="resetFilters()">
+                                    <i class="fas fa-times"></i>
+                                    Réinitialiser
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Grille des bijoux -->
+                <div class="jewels-grid">
+                    <% if (jewels && jewels.length > 0) { %>
+                        <% 
+                        const stockThreshold = (typeof lowStockThreshold !== 'undefined') ? lowStockThreshold : 3;
+                        %>
+                        <% jewels.forEach(jewel => { %>
+                            <div class="jewel-card">
+                                <div class="jewel-layout">
+                                    <div class="jewel-image">
+                                        <% if (jewel.image) { %>
+                                            <div class="jewel-image-container">
+                                                <%
+                                                // Simuler plusieurs images pour certains bijoux (à adapter selon votre logique)
+                                                let images = [jewel.image];
+                                                
+                                                // Si vous avez plusieurs images, adaptez cette logique
+                                                // Par exemple, si vous stockez plusieurs images séparées par des virgules
+                                                if (jewel.additional_images) {
+                                                    images = jewel.image.split(',').concat(jewel.additional_images.split(','));
+                                                }
+                                                %>
+                                                
+                                                <div class="jewel-image-slider" data-slider>
+                                                    <% images.forEach((img, index) => { %>
+                                                        <div class="jewel-image-slide">
+                                                            <img src="/uploads/jewels/<%= img.trim() %>" 
+                                                                 alt="<%= jewel.name %> - Vue <%= index + 1 %>" 
+                                                                 loading="lazy"
+                                                                 onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2Y1ZjVmNSIvPjx0ZXh0IHg9IjUwIiB5PSI1NSIgZm9udC1mYW1pbHk9IkZvbnRBd2Vzb21lIiBmb250LXNpemU9IjI0IiBmaWxsPSIjY2NjIiB0ZXh0LWFuY2hvcj0ibWlkZGxlIj7wn5OTPC90ZXh0Pjwvc3ZnPg==';">
+                                                        </div>
+                                                    <% }); %>
+                                                </div>
+                                                
+                                                <!-- Navigation seulement si plusieurs images -->
+                                                <% if (images.length > 1) { %>
+                                                    <button class="image-nav prev" onclick="changeSlide(this, -1)">
+                                                        <i class="fas fa-chevron-left"></i>
+                                                    </button>
+                                                    <button class="image-nav next" onclick="changeSlide(this, 1)">
+                                                        <i class="fas fa-chevron-right"></i>
+                                                    </button>
+                                                    
+                                                    <div class="image-indicators">
+                                                        <% images.forEach((img, index) => { %>
+                                                            <span class="image-dot <%= index === 0 ? 'active' : '' %>" onclick="goToSlide(this, <%= index %>)"></span>
+                                                        <% }); %>
+                                                    </div>
+                                                <% } %>
+                                            </div>
+                                        <% } else { %>
+                                            <div class="jewel-no-image">
+                                                <i class="fas fa-gem"></i>
+                                            </div>
+                                        <% } %>
+                                        
+                                        <div class="jewel-badges">
+                                            <% if (jewel.is_on_sale || (jewel.discount_percentage && jewel.discount_percentage > 0)) { %>
+                                                <span class="badge sale">-<%= jewel.discount_percentage || 0 %>%</span>
+                                            <% } %>
+                                            <% 
+                                            if (jewel.created_at) {
+                                                const daysDiff = (new Date() - new Date(jewel.created_at)) / (1000 * 60 * 60 * 24);
+                                                if (daysDiff <= 7) { 
+                                            %>
+                                                <span class="badge new">Nouveau</span>
+                                            <% 
+                                                }
+                                            }
+                                            %>
+                                            <% 
+                                            const jewelStock = jewel.stock || 0;
+                                            if (jewelStock === 0) { 
+                                            %>
+                                                <span class="badge out-stock">Rupture</span>
+                                            <% } else if (jewelStock <= stockThreshold) { %>
+                                                <span class="badge low-stock">Stock faible</span>
+                                            <% } %>
+                                        </div>
+                                    </div>
+
+                                    <div class="jewel-content">
+                                        <div class="jewel-category"><%= jewel.category_name || 'Non catégorisé' %></div>
+                                        <h3 class="jewel-name"><%= jewel.name %></h3>
+                                        
+                                        <div class="jewel-price">
+                                            <% 
+                                            const finalPrice = jewel.final_price || jewel.price_ttc || 0;
+                                            const originalPrice = jewel.price_ttc || 0;
+                                            %>
+                                            <span class="current-price">
+                                                <%= parseFloat(finalPrice).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) %>
+                                            </span>
+                                            <% 
+                                            if (jewel.discount_percentage && jewel.discount_percentage > 0 && finalPrice !== originalPrice) { 
+                                            %>
+                                                <span class="original-price">
+                                                    <%= parseFloat(originalPrice).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) %>
+                                                </span>
+                                            <% } %>
+                                        </div>
+
+                                        <div class="jewel-meta">
+                                            <div>
+                                                <% 
+                                                const currentStock = jewel.stock || 0;
+                                                let stockLevel = 'high';
+                                                if (currentStock === 0) stockLevel = 'out';
+                                                else if (currentStock <= 3) stockLevel = 'low';
+                                                else if (currentStock <= 10) stockLevel = 'medium';
+                                                %>
+                                                <span class="stock-indicator <%= stockLevel %>"></span>
+                                                <%= currentStock %> en stock
+                                            </div>
+                                            <div>
+                                                <% if (jewel.matiere) { %>
+                                                    <%= jewel.matiere %>
+                                                <% } %>
+                                            </div>
+                                        </div>
+
+                                        <div class="jewel-actions">
+                                            <% 
+                                            const jewelSlug = jewel.slug || jewel.name?.toLowerCase().replace(/[^a-z0-9]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '') || jewel.id;
+                                            %>
+                                            <a href="/admin/bijoux/<%= jewelSlug %>/edit" class="btn btn-primary">
+                                                <i class="fas fa-edit"></i> 
+                                                <span class="desktop-only">Modifier</span>
+                                            </a>
+                                            <a href="/bijoux/<%= jewelSlug %>" target="_blank" class="btn btn-info">
+                                                <i class="fas fa-eye"></i> 
+                                                <span class="desktop-only">Voir</span>
+                                            </a>
+                                            <button class="btn btn-warning" onclick="updateStock(<%= jewel.id %>, <%= jewel.stock || 0 %>)">
+                                                <i class="fas fa-boxes"></i> 
+                                                <span class="desktop-only">Stock</span>
+                                            </button>
+                                        </div>
+
+                                        <div class="metrics-row">
+                                            <div class="metric-item">
+                                                <div class="metric-value" style="color: var(--info);">
+                                                    <%= jewel.views_count || 0 %>
+                                                </div>
+                                                <div class="metric-label">Vues</div>
+                                            </div>
+                                            <div class="metric-item">
+                                                <div class="metric-value" style="color: var(--danger);">
+                                                    <%= jewel.favorites_count || 0 %>
+                                                </div>
+                                                <div class="metric-label">❤️</div>
+                                            </div>
+                                            <div class="metric-item">
+                                                <div class="metric-value" style="color: var(--warning);">
+                                                    <%= jewel.cart_additions || 0 %>
+                                                </div>
+                                                <div class="metric-label">🛒</div>
+                                            </div>
+                                            <div class="metric-item">
+                                                <div class="metric-value" style="color: var(--success);">
+                                                    <%= jewel.sales_count || 0 %>
+                                                </div>
+                                                <div class="metric-label">💰</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="empty-state">
+                            <i class="fas fa-search"></i>
+                            <h3>Aucun bijou trouvé</h3>
+                            <p>Essayez de modifier vos critères de recherche</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="sidebar">
+                <!-- Stock critique -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-exclamation-triangle"></i> Stock Critique
+                    </div>
+                    <div class="sidebar-content">
+                        <% 
+                        // Filtrer les bijoux avec stock faible depuis la liste principale si lowStockJewels n'existe pas
+                        let criticalStockItems = [];
+                        if (typeof lowStockJewels !== 'undefined' && lowStockJewels && lowStockJewels.length > 0) {
+                            criticalStockItems = lowStockJewels;
+                        } else if (typeof jewels !== 'undefined' && jewels && jewels.length > 0) {
+                            const threshold = lowStockThreshold || 3;
+                            criticalStockItems = jewels.filter(jewel => 
+                                (jewel.stock || 0) <= threshold && (jewel.stock || 0) > 0
+                            );
+                        }
+                        %>
+                        
+                        <% if (criticalStockItems.length > 0) { %>
+                            <% criticalStockItems.slice(0, 5).forEach(jewel => { %>
+                                <div class="summary-item">
+                                    <div>
+                                        <div class="summary-name">
+                                            <%= (jewel.name || 'Bijou sans nom').substring(0, 30) %><%= (jewel.name || '').length > 30 ? '...' : '' %>
+                                        </div>
+                                        <div class="summary-details">
+                                            <%= jewel.category_name || jewel.category?.name || 'Non catégorisé' %> • 
+                                            Stock: <span style="color: var(--danger); font-weight: bold;"><%= jewel.stock || 0 %></span>
+                                        </div>
+                                    </div>
+                                    <div class="summary-value">
+                                        <% 
+                                        const criticalPrice = jewel.final_price || jewel.price_ttc || 0;
+                                        %>
+                                        <%= parseFloat(criticalPrice).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) %>
+                                    </div>
+                                </div>
+                            <% }); %>
+                            <% if (criticalStockItems.length > 5) { %>
+                                <div style="text-align: center; margin-top: 1rem;">
+                                    <a href="?stock=low" class="btn btn-warning">
+                                        Voir tous (<%= criticalStockItems.length %>)
+                                    </a>
+                                </div>
+                            <% } %>
+                        <% } else { %>
+                            <p style="text-align: center; color: #666; padding: 1rem;">
+                                <i class="fas fa-check-circle" style="color: var(--success); font-size: 1.5rem;"></i><br>
+                                <strong>Tous les stocks sont corrects</strong><br>
+                                <small>Aucun bijou en dessous du seuil de <%= lowStockThreshold || 3 %></small>
+                            </p>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Plus vus -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-eye"></i> Plus Vus
+                    </div>
+                    <div class="sidebar-content">
+                        <% 
+                        // Créer la liste des plus vus depuis la liste principale si mostViewedJewels n'existe pas
+                        let topViewedItems = [];
+                        if (typeof mostViewedJewels !== 'undefined' && mostViewedJewels && mostViewedJewels.length > 0) {
+                            topViewedItems = mostViewedJewels;
+                        } else if (typeof jewels !== 'undefined' && jewels && jewels.length > 0) {
+                            topViewedItems = jewels
+                                .filter(jewel => (jewel.views_count || 0) > 0)
+                                .sort((a, b) => (b.views_count || 0) - (a.views_count || 0));
+                        }
+                        %>
+                        
+                        <% if (topViewedItems.length > 0) { %>
+                            <% topViewedItems.slice(0, 5).forEach(jewel => { %>
+                                <div class="summary-item">
+                                    <div>
+                                        <div class="summary-name">
+                                            <%= (jewel.name || 'Bijou sans nom').substring(0, 30) %><%= (jewel.name || '').length > 30 ? '...' : '' %>
+                                        </div>
+                                        <div class="summary-details">
+                                            <i class="fas fa-eye" style="color: var(--info);"></i>
+                                            <%= jewel.total_views || jewel.views_count || 0 %> vues
+                                        </div>
+                                    </div>
+                                    <div class="summary-value">
+                                        <% 
+                                        const viewedPrice = jewel.final_price || jewel.price_ttc || 0;
+                                        %>
+                                        <%= parseFloat(viewedPrice).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) %>
+                                    </div>
+                                </div>
+                            <% }); %>
+                            <div style="text-align: center; margin-top: 1rem;">
+                                <a href="?sort=most_viewed" class="btn btn-info">
+                                    <i class="fas fa-eye"></i> Voir tous
+                                </a>
+                            </div>
+                        <% } else { %>
+                            <p style="text-align: center; color: #666; padding: 1rem;">
+                                <i class="fas fa-eye-slash" style="color: #ccc; font-size: 1.5rem;"></i><br>
+                                <strong>Aucune donnée de vues</strong><br>
+                                <small>Les statistiques de vues ne sont pas encore disponibles</small>
+                            </p>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Best sellers -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-trophy"></i> Best Sellers
+                    </div>
+                    <div class="sidebar-content">
+                        <% 
+                        // Créer la liste des best sellers depuis la liste principale si mostSoldJewels n'existe pas
+                        let bestSellerItems = [];
+                        if (typeof mostSoldJewels !== 'undefined' && mostSoldJewels && mostSoldJewels.length > 0) {
+                            bestSellerItems = mostSoldJewels;
+                        } else if (typeof jewels !== 'undefined' && jewels && jewels.length > 0) {
+                            bestSellerItems = jewels
+                                .filter(jewel => (jewel.sales_count || 0) > 0)
+                                .sort((a, b) => (b.sales_count || 0) - (a.sales_count || 0));
+                        }
+                        %>
+                        
+                        <% if (bestSellerItems.length > 0) { %>
+                            <% bestSellerItems.slice(0, 5).forEach(jewel => { %>
+                                <div class="summary-item">
+                                    <div>
+                                        <div class="summary-name">
+                                            <%= (jewel.name || 'Bijou sans nom').substring(0, 30) %><%= (jewel.name || '').length > 30 ? '...' : '' %>
+                                        </div>
+                                        <div class="summary-details">
+                                            <i class="fas fa-shopping-cart" style="color: var(--success);"></i>
+                                            <%= jewel.total_sold || jewel.sales_count || 0 %> vendus
+                                            <% if (jewel.total_revenue && jewel.total_revenue > 0) { %>
+                                                • CA: <%= parseFloat(jewel.total_revenue).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) %>
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                    <div class="summary-value">
+                                        <% 
+                                        const sellerPrice = jewel.final_price || jewel.price_ttc || 0;
+                                        %>
+                                        <%= parseFloat(sellerPrice).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) %>
+                                    </div>
+                                </div>
+                            <% }); %>
+                            <div style="text-align: center; margin-top: 1rem;">
+                                <a href="?sort=most_sold" class="btn btn-success">
+                                    <i class="fas fa-trophy"></i> Voir tous
+                                </a>
+                            </div>
+                        <% } else { %>
+                            <p style="text-align: center; color: #666; padding: 1rem;">
+                                <i class="fas fa-chart-line" style="color: #ccc; font-size: 1.5rem;"></i><br>
+                                <strong>Aucune vente enregistrée</strong><br>
+                                <small>Les données de ventes ne sont pas encore disponibles</small>
+                            </p>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Ajouts récents -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-plus-circle"></i> Ajouts Récents
+                    </div>
+                    <div class="sidebar-content">
+                        <% 
+                        // Afficher les bijoux récemment ajoutés
+                        let recentItems = [];
+                        if (typeof jewels !== 'undefined' && jewels && jewels.length > 0) {
+                            recentItems = jewels
+                                .filter(jewel => jewel.created_at)
+                                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                                .slice(0, 3);
+                        }
+                        %>
+                        
+                        <% if (recentItems.length > 0) { %>
+                            <% recentItems.forEach(jewel => { %>
+                                <div class="summary-item">
+                                    <div>
+                                        <div class="summary-name">
+                                            <%= (jewel.name || 'Bijou sans nom').substring(0, 30) %><%= (jewel.name || '').length > 30 ? '...' : '' %>
+                                        </div>
+                                        <div class="summary-details">
+                                            <% 
+                                            const createdDate = new Date(jewel.created_at);
+                                            const daysDiff = Math.floor((new Date() - createdDate) / (1000 * 60 * 60 * 24));
+                                            %>
+                                            <i class="fas fa-calendar-plus" style="color: var(--primary-color);"></i>
+                                            <% if (daysDiff === 0) { %>
+                                                Aujourd'hui
+                                            <% } else if (daysDiff === 1) { %>
+                                                Hier
+                                            <% } else { %>
+                                                Il y a <%= daysDiff %> jours
+                                            <% } %>
+                                        </div>
+                                    </div>
+                                    <div class="summary-value">
+                                        <% 
+                                        const recentPrice = jewel.final_price || jewel.price_ttc || 0;
+                                        %>
+                                        <%= parseFloat(recentPrice).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) %>
+                                    </div>
+                                </div>
+                            <% }); %>
+                            <div style="text-align: center; margin-top: 1rem;">
+                                <a href="?sort=newest" class="btn btn-primary">
+                                    <i class="fas fa-clock"></i> Voir tous
+                                </a>
+                            </div>
+                        <% } else { %>
+                            <p style="text-align: center; color: #666; padding: 1rem;">
+                                <i class="fas fa-plus" style="color: #ccc; font-size: 1.5rem;"></i><br>
+                                <strong>Aucun bijou récent</strong><br>
+                                <small>Ajoutez de nouveaux bijoux pour les voir ici</small>
+                            </p>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Résumé rapide -->
+                <div class="sidebar-card">
+                    <div class="sidebar-header">
+                        <i class="fas fa-chart-pie"></i> Résumé Rapide
+                    </div>
+                    <div class="sidebar-content">
+                        <% 
+                        // Calculer des statistiques rapides
+                        let quickStats = {
+                            total: 0,
+                            enStock: 0,
+                            enRupture: 0,
+                            enPromo: 0,
+                            valeurTotale: 0
+                        };
+                        
+                        if (typeof jewels !== 'undefined' && jewels && jewels.length > 0) {
+                            quickStats.total = jewels.length;
+                            quickStats.enStock = jewels.filter(j => (j.stock || 0) > 0).length;
+                            quickStats.enRupture = jewels.filter(j => (j.stock || 0) === 0).length;
+                            quickStats.enPromo = jewels.filter(j => (j.discount_percentage || 0) > 0).length;
+                            quickStats.valeurTotale = jewels.reduce((sum, j) => sum + ((j.final_price || j.price_ttc || 0) * (j.stock || 0)), 0);
+                        }
+                        %>
+                        
+                        <div class="summary-item">
+                            <div>
+                                <div class="summary-name">Total bijoux</div>
+                                <div class="summary-details">Dans le catalogue</div>
+                            </div>
+                            <div class="summary-value" style="color: var(--primary-color);">
+                                <%= quickStats.total %>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-item">
+                            <div>
+                                <div class="summary-name">En stock</div>
+                                <div class="summary-details">Disponibles à la vente</div>
+                            </div>
+                            <div class="summary-value" style="color: var(--success);">
+                                <%= quickStats.enStock %>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-item">
+                            <div>
+                                <div class="summary-name">En rupture</div>
+                                <div class="summary-details">À réapprovisionner</div>
+                            </div>
+                            <div class="summary-value" style="color: var(--danger);">
+                                <%= quickStats.enRupture %>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-item">
+                            <div>
+                                <div class="summary-name">En promotion</div>
+                                <div class="summary-details">Remises actives</div>
+                            </div>
+                            <div class="summary-value" style="color: var(--warning);">
+                                <%= quickStats.enPromo %>
+                            </div>
+                        </div>
+                        
+                        <div class="summary-item" style="border-top: 2px solid var(--primary-light); padding-top: 0.75rem; margin-top: 0.5rem;">
+                            <div>
+                                <div class="summary-name" style="font-weight: bold;">Valeur stock</div>
+                                <div class="summary-details">Valeur totale estimée</div>
+                            </div>
+                            <div class="summary-value" style="color: var(--primary-dark); font-weight: bold;">
+                                <%= parseFloat(quickStats.valeurTotale).toLocaleString('fr-FR', { style: 'currency', currency: 'EUR' }) %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== FONCTION POUR TOGGLE DES FILTRES MOBILE =====
+        function toggleFilters() {
+            const filtersContent = document.getElementById('filters-content');
+            const filterArrow = document.getElementById('filter-arrow');
+            
+            if (filtersContent.classList.contains('show')) {
+                filtersContent.classList.remove('show');
+                filterArrow.style.transform = 'rotate(0deg)';
+            } else {
+                filtersContent.classList.add('show');
+                filterArrow.style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // ===== FONCTIONS POUR LE DÉFILEMENT D'IMAGES CORRIGÉES =====
+        function changeSlide(button, direction) {
+            const container = button.closest('.jewel-image-container');
+            const slider = container.querySelector('.jewel-image-slider');
+            const slides = slider.querySelectorAll('.jewel-image-slide');
+            const indicators = container.querySelectorAll('.image-dot');
+            
+            if (slides.length <= 1) return; // Pas de défilement si une seule image
+            
+            // Initialiser currentSlide si pas défini
+            if (typeof slider.currentSlide === 'undefined') {
+                slider.currentSlide = 0;
+            }
+            
+            slider.currentSlide += direction;
+            
+            // Gérer la boucle
+            if (slider.currentSlide >= slides.length) {
+                slider.currentSlide = 0;
+            } else if (slider.currentSlide < 0) {
+                slider.currentSlide = slides.length - 1;
+            }
+            
+            updateSlider(slider, indicators, slider.currentSlide);
+        }
+
+        function goToSlide(dot, index) {
+            const container = dot.closest('.jewel-image-container');
+            const slider = container.querySelector('.jewel-image-slider');
+            const indicators = container.querySelectorAll('.image-dot');
+            
+            slider.currentSlide = index;
+            updateSlider(slider, indicators, index);
+        }
+
+        function updateSlider(slider, indicators, currentIndex) {
+            // Appliquer la transformation
+            slider.style.transform = `translateX(-${currentIndex * 100}%)`;
+            
+            // Mettre à jour les indicateurs
+            indicators.forEach((dot, index) => {
+                dot.classList.toggle('active', index === currentIndex);
+            });
+        }
+
+        // ===== GESTION DU SWIPE POUR LES IMAGES AMÉLIORÉE =====
+        function initImageSwipe() {
+            const imageContainers = document.querySelectorAll('.jewel-image-container');
+            
+            imageContainers.forEach(container => {
+                const slider = container.querySelector('.jewel-image-slider');
+                const slides = slider.querySelectorAll('.jewel-image-slide');
+                
+                // Ne pas initialiser le swipe s'il n'y a qu'une image
+                if (slides.length <= 1) return;
+                
+                let startX = 0;
+                let startY = 0;
+                let startTime = 0;
+                let isImageSwiping = false;
+                let hasMoved = false;
+                
+                // Événement de début de toucher
+                container.addEventListener('touchstart', function(e) {
+                    if (e.touches.length === 1) {
+                        startX = e.touches[0].clientX;
+                        startY = e.touches[0].clientY;
+                        startTime = Date.now();
+                        isImageSwiping = true;
+                        hasMoved = false;
+                        
+                        // Arrêter la propagation pour éviter les conflits
+                        e.stopPropagation();
+                    }
+                }, { passive: true });
+                
+                // Événement de mouvement
+                container.addEventListener('touchmove', function(e) {
+                    if (isImageSwiping && e.touches.length === 1) {
+                        const currentX = e.touches[0].clientX;
+                        const currentY = e.touches[0].clientY;
+                        
+                        const diffX = Math.abs(currentX - startX);
+                        const diffY = Math.abs(currentY - startY);
+                        
+                        // Vérifier si c'est un mouvement horizontal
+                        if (diffX > diffY && diffX > 10) {
+                            hasMoved = true;
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    }
+                }, { passive: false });
+                
+                // Événement de fin de toucher
+                container.addEventListener('touchend', function(e) {
+                    if (isImageSwiping && e.changedTouches.length === 1 && hasMoved) {
+                        const endX = e.changedTouches[0].clientX;
+                        const endTime = Date.now();
+                        const diffX = startX - endX;
+                        const diffTime = endTime - startTime;
+                        
+                        // Vérifier si c'est un vrai swipe (distance et vitesse)
+                        if (Math.abs(diffX) > 40 && diffTime < 400) {
+                            const nextBtn = container.querySelector('.image-nav.next');
+                            const prevBtn = container.querySelector('.image-nav.prev');
+                            
+                            if (diffX > 0 && nextBtn) {
+                                // Swipe vers la gauche = image suivante
+                                changeSlide(nextBtn, 1);
+                            } else if (diffX < 0 && prevBtn) {
+                                // Swipe vers la droite = image précédente
+                                changeSlide(prevBtn, -1);
+                            }
+                        }
+                        
+                        e.stopPropagation();
+                        e.preventDefault();
+                    }
+                    
+                    isImageSwiping = false;
+                    hasMoved = false;
+                }, { passive: false });
+                
+                // Événement de clic pour éviter les conflits
+                container.addEventListener('click', function(e) {
+                    if (hasMoved) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                }, { passive: false });
+            });
+        }length <= 1) return;
+                
+                let startX = 0;
+                let startTime = 0;
+                let isImageSwiping = false;
+                
+                container.addEventListener('touchstart', function(e) {
+                    if (e.touches.length === 1) {
+                        startX = e.touches[0].clientX;
+                        startTime = Date.now();
+                        isImageSwiping = true;
+        // ===== GESTION DU SWIPE POUR LES IMAGES AMÉLIORÉE =====
+        function initImageSwipe() {
+            const imageContainers = document.querySelectorAll('.jewel-image-container');
+            
+            imageContainers.forEach(container => {
+                const slider = container.querySelector('.jewel-image-slider');
+                const slides = slider.querySelectorAll('.jewel-image-slide');
+                
+                // Ne pas initialiser le swipe s'il n'y a qu'une image
+                if (slides.length <= 1) return;
+                
+                let startX = 0;
+                let startY = 0;
+                let startTime = 0;
+                let isImageSwiping = false;
+                let hasMoved = false;
+                
+                // Événement de début de toucher
+                container.addEventListener('touchstart', function(e) {
+                    if (e.touches.length === 1) {
+                        startX = e.touches[0].clientX;
+                        startY = e.touches[0].clientY;
+                        startTime = Date.now();
+                        isImageSwiping = true;
+                        hasMoved = false;
+                        
+                        // Arrêter la propagation pour éviter les conflits
+                        e.stopPropagation();
+                    }
+                }, { passive: true });
+                
+                // Événement de mouvement
+                container.addEventListener('touchmove', function(e) {
+                    if (isImageSwiping && e.touches.length === 1) {
+                        const currentX = e.touches[0].clientX;
+                        const currentY = e.touches[0].clientY;
+                        
+                        const diffX = Math.abs(currentX - startX);
+                        const diffY = Math.abs(currentY - startY);
+                        
+                        // Vérifier si c'est un mouvement horizontal
+                        if (diffX > diffY && diffX > 10) {
+                            hasMoved = true;
+                            e.preventDefault();
+                            e.stopPropagation();
+                        }
+                    }
+                }, { passive: false });
+                
+                // Événement de fin de toucher
+                container.addEventListener('touchend', function(e) {
+                    if (isImageSwiping && e.changedTouches.length === 1 && hasMoved) {
+                        const endX = e.changedTouches[0].clientX;
+                        const endTime = Date.now();
+                        const diffX = startX - endX;
+                        const diffTime = endTime - startTime;
+                        
+                        // Vérifier si c'est un vrai swipe (distance et vitesse)
+                        if (Math.abs(diffX) > 40 && diffTime < 400) {
+                            const nextBtn = container.querySelector('.image-nav.next');
+                            const prevBtn = container.querySelector('.image-nav.prev');
+                            
+                            if (diffX > 0 && nextBtn) {
+                                // Swipe vers la gauche = image suivante
+                                changeSlide(nextBtn, 1);
+                            } else if (diffX < 0 && prevBtn) {
+                                // Swipe vers la droite = image précédente
+                                changeSlide(prevBtn, -1);
+                            }
+                        }
+                        
+                        e.stopPropagation();
+                        e.preventDefault();
+                    }
+                    
+                    isImageSwiping = false;
+                    hasMoved = false;
+                }, { passive: false });
+                
+                // Événement de clic pour éviter les conflits
+                container.addEventListener('click', function(e) {
+                    if (hasMoved) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                    }
+                }, { passive: false });
+            });
+        }
+
+        // ===== INITIALISATION AU CHARGEMENT =====
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 Dashboard bijoux mobile initialisé');
+            
+            // Configuration
+            const config = {
+                updateInterval: 30000,
+                apiBase: '/api'
+            };
+
+            // Initialiser le swipe pour les images
+            initImageSwipe();
+
+            // ===== EMPÊCHER L'OUVERTURE AUTOMATIQUE DU MENU SUR MOBILE =====
+            function preventAutoMenuOpen() {
+                const navbar = document.querySelector('.navbar');
+                const navbarToggler = document.querySelector('.navbar-toggler');
+                const navbarCollapse = document.querySelector('.navbar-collapse');
+                
+                if (navbar && navbarCollapse) {
+                    // Forcer la fermeture du menu sur mobile
+                    if (window.innerWidth <= 768) {
+                        navbarCollapse.classList.remove('show');
+                        navbarCollapse.style.display = 'none';
+                        
+                        // Réinitialiser le bouton toggler
+                        if (navbarToggler) {
+                            navbarToggler.setAttribute('aria-expanded', 'false');
+                            navbarToggler.classList.add('collapsed');
+                        }
+                    }
+                }
+            }
+
+            // Appliquer la prévention à l'initialisation
+            preventAutoMenuOpen();
+
+            // Appliquer lors du redimensionnement
+            window.addEventListener('resize', function() {
+                setTimeout(preventAutoMenuOpen, 100);
+            });
+
+            // Appliquer lors du changement d'orientation
+            window.addEventListener('orientationchange', function() {
+                setTimeout(preventAutoMenuOpen, 200);
+            });
+
+            // ===== FONCTION DE NOTIFICATION RESPONSIVE =====
+            function showNotification(message, type = 'info') {
+                document.querySelectorAll('.dashboard-notification').forEach(notif => {
+                    notif.remove();
+                });
+                
+                const notification = document.createElement('div');
+                notification.className = 'dashboard-notification';
+                notification.style.cssText = `
+                    background: ${type === 'success' ? '#4caf50' : 
+                                 type === 'error' ? '#f44336' : 
+                                 type === 'warning' ? '#ff9800' : '#2196f3'};
+                `;
+                
+                notification.innerHTML = `
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 
+                                   type === 'error' ? 'fa-exclamation-triangle' : 
+                                   type === 'warning' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                    <span style="margin-left: 0.5rem;">${message}</span>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    if (window.innerWidth <= 480) {
+                        notification.style.transform = 'translateY(0)';
+                    } else {
+                        notification.style.transform = 'translateX(0)';
+                    }
+                }, 100);
+                
+                setTimeout(() => {
+                    if (window.innerWidth <= 480) {
+                        notification.style.transform = 'translateY(-100%)';
+                    } else {
+                        notification.style.transform = 'translateX(100%)';
+                    }
+                    setTimeout(() => notification.remove(), 300);
+                }, 4000);
+            }
+
+            // ===== MISE À JOUR DU SEUIL DE STOCK CORRIGÉE =====
+            window.updateStockThreshold = function() {
+                const input = document.getElementById('stockThreshold');
+                const newThreshold = parseInt(input.value);
+                
+                console.log('Tentative de mise à jour du seuil:', newThreshold);
+                
+                // Validation
+                if (!newThreshold || isNaN(newThreshold)) {
+                    showNotification('Veuillez entrer un nombre valide', 'error');
+                    input.focus();
+                    return;
+                }
+                
+                if (newThreshold < 1 || newThreshold > 50) {
+                    showNotification('Le seuil doit être entre 1 et 50', 'error');
+                    input.focus();
+                    return;
+                }
+                
+                // Vérifier si la valeur a changé
+                const currentThreshold = parseInt('<%= lowStockThreshold || 3 %>');
+                if (newThreshold === currentThreshold) {
+                    showNotification('Le seuil est déjà à cette valeur', 'info');
+                    return;
+                }
+                
+                // Désactiver le bouton pendant la mise à jour
+                const button = input.nextElementSibling;
+                const originalText = button.innerHTML;
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> <span class="desktop-only">Mise à jour...</span>';
+                
+                // Créer l'URL avec le nouveau paramètre
+                const url = new URL(window.location.href);
+                url.searchParams.set('stockThreshold', newThreshold);
+                
+                showNotification(`Mise à jour du seuil de ${currentThreshold} à ${newThreshold}...`, 'info');
+                
+                // Redirection avec délai pour voir le message
+                setTimeout(() => {
+                    window.location.href = url.toString();
+                }, 800);
+            };
+
+            // ===== GESTION DE LA TOUCHE ENTRÉE POUR LE SEUIL =====
+            window.handleThresholdKeypress = function(event) {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    updateStockThreshold();
+                }
+            };
+
+            // ===== VALIDATION EN TEMPS RÉEL DU SEUIL =====
+            function setupThresholdValidation() {
+                const input = document.getElementById('stockThreshold');
+                if (!input) return;
+                
+                input.addEventListener('input', function() {
+                    const value = parseInt(this.value);
+                    const button = this.nextElementSibling;
+                    
+                    // Validation visuelle
+                    this.classList.remove('error', 'valid');
+                    
+                    if (!value || isNaN(value)) {
+                        this.classList.add('error');
+                        button.disabled = true;
+                        button.title = 'Veuillez entrer un nombre valide';
+                    } else if (value < 1 || value > 50) {
+                        this.classList.add('error');
+                        button.disabled = true;
+                        button.title = 'Le seuil doit être entre 1 et 50';
+                    } else {
+                        this.classList.add('valid');
+                        button.disabled = false;
+                        button.title = 'Appliquer le nouveau seuil';
+                    }
+                });
+                
+                // Validation initiale
+                input.dispatchEvent(new Event('input'));
+            }
+
+            // ===== FONCTION DE RÉINITIALISATION DES FILTRES =====
+            window.resetFilters = function() {
+                // Réinitialiser le formulaire
+                const form = document.getElementById('filtersForm');
+                if (form) {
+                    // Reset tous les champs
+                    form.reset();
+                    
+                    // Remettre les valeurs par défaut
+                    const selects = form.querySelectorAll('select');
+                    selects.forEach(select => {
+                        if (select.name === 'category' || select.name === 'material' || select.name === 'stock') {
+                            select.value = 'all';
+                        } else if (select.name === 'sort') {
+                            select.value = 'newest';
+                        }
+                    });
+                    
+                    // Vider le champ de recherche
+                    const searchInput = form.querySelector('input[name="search"]');
+                    if (searchInput) {
+                        searchInput.value = '';
+                    }
+                    
+                    // Rediriger vers la page sans paramètres (sauf stockThreshold)
+                    const url = new URL(window.location.href);
+                    const stockThreshold = url.searchParams.get('stockThreshold');
+                    
+                    // Nouvelle URL avec seulement le stockThreshold si présent
+                    const newUrl = new URL(window.location.origin + window.location.pathname);
+                    if (stockThreshold) {
+                        newUrl.searchParams.set('stockThreshold', stockThreshold);
+                    }
+                    
+                    showNotification('Filtres réinitialisés', 'success');
+                    setTimeout(() => {
+                        window.location.href = newUrl.toString();
+                    }, 500);
+                }
+            };
+
+            // ===== GESTION DES FILTRES AMÉLIORÉE =====
+            function setupFilters() {
+                const form = document.getElementById('filtersForm');
+                if (!form) return;
+
+                // Supprimer les onchange automatiques et utiliser le bouton
+                const selects = form.querySelectorAll('select');
+                selects.forEach(select => {
+                    select.removeAttribute('onchange');
+                });
+
+                // Gestion de la recherche avec délai
+                const searchInput = form.querySelector('input[name="search"]');
+                if (searchInput) {
+                    let searchTimeout;
+                    searchInput.addEventListener('input', function() {
+                        clearTimeout(searchTimeout);
+                        const value = this.value.trim();
+                        
+                        // Auto-submit si recherche vide ou > 2 caractères après délai
+                        if (value.length === 0) {
+                            form.submit();
+                        } else if (value.length >= 2) {
+                            searchTimeout = setTimeout(() => {
+                                form.submit();
+                            }, 800); // Délai plus long pour éviter trop de requêtes
+                        }
+                    });
+                }
+
+                // Validation du formulaire
+                form.addEventListener('submit', function(e) {
+                    const formData = new FormData(form);
+                    const params = new URLSearchParams();
+                    
+                    // Ajouter seulement les paramètres non-vides et différents de "all"
+                    for (const [key, value] of formData) {
+                        if (value && value !== 'all' && value.trim() !== '') {
+                            params.set(key, value.trim());
+                        }
+                    }
+                    
+                    // Conserver le stockThreshold s'il existe
+                    const currentUrl = new URL(window.location.href);
+                    const stockThreshold = currentUrl.searchParams.get('stockThreshold');
+                    if (stockThreshold) {
+                        params.set('stockThreshold', stockThreshold);
+                    }
+                    
+                    // Construire la nouvelle URL
+                    const newUrl = new URL(window.location.origin + window.location.pathname);
+                    for (const [key, value] of params) {
+                        newUrl.searchParams.set(key, value);
+                    }
+                    
+                    // Redirection
+                    window.location.href = newUrl.toString();
+                    e.preventDefault();
+                });
+            }
+
+            // ===== CALCUL DYNAMIQUE DES COMPTEURS =====
+            function updateFilterCounts() {
+                const allJewels = window.jewelData || [];
+                
+                // Mettre à jour les compteurs de catégories
+                const categorySelect = document.querySelector('select[name="category"]');
+                if (categorySelect && allJewels.length > 0) {
+                    const options = categorySelect.querySelectorAll('option');
+                    options.forEach(option => {
+                        if (option.value !== 'all') {
+                            const categoryId = option.value;
+                            const count = allJewels.filter(jewel => 
+                                jewel.category_id == categoryId
+                            ).length;
+                            
+                            const text = option.textContent.replace(/\(\d+\)/, `(${count})`);
+                            option.textContent = text;
+                        }
+                    });
+                }
+                
+                // Mettre à jour les compteurs de matériaux
+                const materialSelect = document.querySelector('select[name="material"]');
+                if (materialSelect && allJewels.length > 0) {
+                    const options = materialSelect.querySelectorAll('option');
+                    options.forEach(option => {
+                        if (option.value !== 'all') {
+                            const materialName = option.value;
+                            const count = allJewels.filter(jewel => 
+                                jewel.matiere && jewel.matiere.toLowerCase().includes(materialName.toLowerCase())
+                            ).length;
+                            
+                            const text = option.textContent.replace(/\(\d+\)/, `(${count})`);
+                            option.textContent = text;
+                        }
+                    });
+                }
+            }
+
+            // ===== GESTION DE LA MISE À JOUR DU STOCK =====
+            window.updateStock = function(jewelId, currentStock) {
+                const newStock = prompt(`Stock actuel: ${currentStock}\nNouveau stock:`, currentStock);
+                if (newStock !== null && !isNaN(newStock) && newStock >= 0) {
+                    fetch(`${config.apiBase}/admin/bijoux/${jewelId}/stock`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            stock: parseInt(newStock)
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification(`Stock mis à jour: ${newStock}`, 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showNotification(data.message || 'Erreur lors de la mise à jour', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        showNotification('Erreur de connexion', 'error');
+                    });
+                }
+            };
+
+            // ===== RECHERCHE AVEC DÉLAI SUPPRIMÉE (GÉRÉE DANS setupFilters) =====
+            // Fonction supprimée car intégrée dans setupFilters
+
+            // ===== INITIALISATION =====
+            setupFilters();
+            setupThresholdValidation();
+            updateFilterCounts();
+            initMobileAnimations();
+            initLazyLoading();
+            initImageSliders();
+            handleImageErrors();
+            optimizeMobilePerformance();
+            }
+
+            // ===== INITIALISATION =====
+            initMobileAnimations();
+            initLazyLoading();
+            initImageSliders();
+            handleImageErrors();
+            optimizeMobilePerformance();
+            
+            // Message de bienvenue adapté au mobile
+            setTimeout(() => {
+                const isMobile = window.innerWidth <= 768;
+                showNotification(
+                    isMobile ? 'Dashboard mobile prêt! 📱' : 'Dashboard chargé avec succès! 💎', 
+                    'success'
+                );
+            }, 1000);
+            
+            console.log('✅ Dashboard mobile optimisé - Prêt à l\'utilisation');
+        });
+
+            // ===== FONCTION DE NOTIFICATION RESPONSIVE =====
+            function showNotification(message, type = 'info') {
+                document.querySelectorAll('.dashboard-notification').forEach(notif => {
+                    notif.remove();
+                });
+                
+                const notification = document.createElement('div');
+                notification.className = 'dashboard-notification';
+                notification.style.cssText = `
+                    background: ${type === 'success' ? '#4caf50' : 
+                                 type === 'error' ? '#f44336' : 
+                                 type === 'warning' ? '#ff9800' : '#2196f3'};
+                `;
+                
+                notification.innerHTML = `
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : 
+                                   type === 'error' ? 'fa-exclamation-triangle' : 
+                                   type === 'warning' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                    <span style="margin-left: 0.5rem;">${message}</span>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    if (window.innerWidth <= 480) {
+                        notification.style.transform = 'translateY(0)';
+                    } else {
+                        notification.style.transform = 'translateX(0)';
+                    }
+                }, 100);
+                
+                setTimeout(() => {
+                    if (window.innerWidth <= 480) {
+                        notification.style.transform = 'translateY(-100%)';
+                    } else {
+                        notification.style.transform = 'translateX(100%)';
+                    }
+                    setTimeout(() => notification.remove(), 300);
+                }, 4000);
+            }
+
+            // ===== MISE À JOUR DU SEUIL DE STOCK =====
+            window.updateStockThreshold = function() {
+                const newThreshold = document.getElementById('stockThreshold').value;
+                if (newThreshold && newThreshold > 0) {
+                    const url = new URL(window.location);
+                    url.searchParams.set('stockThreshold', newThreshold);
+                    window.location.href = url.toString();
+                }
+            };
+
+            // ===== GESTION DE LA MISE À JOUR DU STOCK =====
+            window.updateStock = function(jewelId, currentStock) {
+                const newStock = prompt(`Stock actuel: ${currentStock}\nNouveau stock:`, currentStock);
+                if (newStock !== null && !isNaN(newStock) && newStock >= 0) {
+                    fetch(`${config.apiBase}/admin/bijoux/${jewelId}/stock`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            stock: parseInt(newStock)
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification(`Stock mis à jour: ${newStock}`, 'success');
+                            setTimeout(() => location.reload(), 1500);
+                        } else {
+                            showNotification(data.message || 'Erreur lors de la mise à jour', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        showNotification('Erreur de connexion', 'error');
+                    });
+                }
+            };
+
+            // ===== RECHERCHE AVEC DÉLAI =====
+            let searchTimeout;
+            window.debounceSearch = function(value) {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    if (value.length >= 2 || value.length === 0) {
+                        const form = document.querySelector('form');
+                        if (form) {
+                            form.submit();
+                        }
+                    }
+                }, 500);
+            };
+
+            // ===== LAZY LOADING DES IMAGES =====
+            function initLazyLoading() {
+                const images = document.querySelectorAll('img[loading="lazy"]');
+                
+                if ('IntersectionObserver' in window) {
+                    const imageObserver = new IntersectionObserver((entries, observer) => {
+                        entries.forEach(entry => {
+                            if (entry.isIntersecting) {
+                                const img = entry.target;
+                                img.classList.add('fade-in');
+                                observer.unobserve(img);
+                            }
+                        });
+                    });
+
+                    images.forEach(img => {
+                        imageObserver.observe(img);
+                    });
+                } else {
+                    // Fallback pour les navigateurs plus anciens
+                    images.forEach(img => {
+                        img.classList.add('fade-in');
+                    });
+                }
+            }
+
+            // ===== GESTION DU SWIPE GÉNÉRAL (POUR LES FILTRES) =====
+            let globalStartX = 0;
+            let globalCurrentX = 0;
+            let isGlobalScrolling = false;
+
+            document.addEventListener('touchstart', function(e) {
+                // Ne pas gérer si on est sur une image
+                if (e.target.closest('.jewel-image-container')) return;
+                
+                globalStartX = e.touches[0].clientX;
+                isGlobalScrolling = false;
+            }, { passive: true });
+
+            document.addEventListener('touchmove', function(e) {
+                // Ne pas gérer si on est sur une image
+                if (e.target.closest('.jewel-image-container')) return;
+                
+                if (!globalStartX) return;
+                globalCurrentX = e.touches[0].clientX;
+                
+                if (Math.abs(globalCurrentX - globalStartX) > 10) {
+                    isGlobalScrolling = true;
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', function(e) {
+                // Ne pas gérer si on est sur une image
+                if (e.target.closest('.jewel-image-container')) return;
+                
+                if (!isGlobalScrolling || !globalStartX) return;
+                
+                const diffX = globalStartX - globalCurrentX;
+                
+                // Swipe pour ouvrir/fermer les filtres
+                if (Math.abs(diffX) > 50 && window.innerWidth <= 768) {
+                    const filtersContent = document.getElementById('filters-content');
+                    if (diffX > 0 && !filtersContent.classList.contains('show')) {
+                        toggleFilters();
+                    } else if (diffX < 0 && filtersContent.classList.contains('show')) {
+                        toggleFilters();
+                    }
+                }
+                
+                globalStartX = 0;
+                globalCurrentX = 0;
+                isGlobalScrolling = false;
+            }, { passive: true });
+
+            // ===== ANIMATIONS D'ENTRÉE OPTIMISÉES POUR MOBILE =====
+            function initMobileAnimations() {
+                if (window.innerWidth <= 768) {
+                    const cards = document.querySelectorAll('.jewel-card');
+                    cards.forEach((card, index) => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateY(20px)';
+                        setTimeout(() => {
+                            card.style.transition = 'all 0.3s ease';
+                            card.style.opacity = '1';
+                            card.style.transform = 'translateY(0)';
+                        }, index * 100);
+                    });
+                }
+            }
+
+            // ===== GESTION DES ORIENTATIONS =====
+            window.addEventListener('orientationchange', function() {
+                setTimeout(() => {
+                    const filtersContent = document.getElementById('filters-content');
+                    if (window.innerWidth > 768 && filtersContent) {
+                        filtersContent.classList.remove('show');
+                        filtersContent.style.display = 'block';
+                    }
+                }, 100);
+            });
+
+            // ===== INITIALISATION DES SLIDERS D'IMAGES =====
+            function initImageSliders() {
+                const sliders = document.querySelectorAll('.jewel-image-slider');
+                sliders.forEach(slider => {
+                    // Initialiser la position
+                    if (typeof slider.currentSlide === 'undefined') {
+                        slider.currentSlide = 0;
+                    }
+                    
+                    // S'assurer que le premier slide est affiché
+                    slider.style.transform = `translateX(-${slider.currentSlide * 100}%)`;
+                });
+            }
+
+            // ===== GESTION DES ERREURS D'IMAGES =====
+            function handleImageErrors() {
+                const images = document.querySelectorAll('.jewel-image-slide img');
+                images.forEach(img => {
+                    img.addEventListener('error', function() {
+                        // Créer une image de remplacement
+                        const placeholder = document.createElement('div');
+                        placeholder.className = 'jewel-no-image';
+                        placeholder.innerHTML = '<i class="fas fa-gem"></i>';
+                        
+                        // Remplacer l'image défectueuse
+                        this.parentNode.appendChild(placeholder);
+                        this.style.display = 'none';
+                    });
+                });
+            }
+
+            // ===== INITIALISATION =====
+            initMobileAnimations();
+            initLazyLoading();
+            initImageSliders();
+            handleImageErrors();
+            
+            // Message de bienvenue adapté au mobile
+            setTimeout(() => {
+                const isMobile = window.innerWidth <= 768;
+                showNotification(
+                    isMobile ? 'Dashboard mobile prêt!' : 'Dashboard chargé avec succès!', 
+                    'success'
+                );
+            }, 1000);
+            
+            console.log('✅ Dashboard mobile optimisé - Prêt à l\'utilisation');
+        });
+
+        // ===== CSS POUR LES ANIMATIONS ET OPTIMISATIONS =====
+        const style = document.createElement('style');
+        style.textContent = `
+            .fade-in {
+                animation: fadeIn 0.5s ease-in;
+            }
+            
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+            
+            .jewel-image img {
+                transition: transform 0.3s ease;
+            }
+            
+            .jewel-image:hover img {
+                transform: scale(1.02);
+            }
+            
+            @media (max-width: 768px) {
+                .jewel-image:hover img {
+                    transform: none;
+                }
+            }
+            
+            /* Optimisations pour les appareils peu performants */
+            .reduce-animations * {
+                animation-duration: 0.1s !important;
+                transition-duration: 0.1s !important;
+            }
+            
+            /* Améliorations pour la navbar mobile */
+            @media (max-width: 768px) {
+                .navbar-collapse {
+                    display: none !important;
+                }
+                
+                .navbar-collapse.show {
+                    display: block !important;
+                }
+                
+                .navbar-toggler {
+                    border: 2px solid var(--primary-color);
+                    border-radius: 6px;
+                }
+                
+                .navbar-toggler:focus {
+                    box-shadow: 0 0 0 0.2rem rgba(183, 110, 121, 0.25);
+                }
+            }
+            
+            /* Amélioration de la visibilité des éléments */
+            .jewel-card.visible {
+                opacity: 1;
+                transform: translateY(0);
+            }
+            
+            /* Amélioration du touch feedback */
+            .btn:active,
+            .image-nav:active,
+            .image-dot:active {
+                transform: scale(0.95);
+            }
+            
+            /* Optimisation du swipe */
+            .jewel-image-container {
+                touch-action: pan-x;
+                user-select: none;
+                -webkit-user-select: none;
+            }
+            
+            /* Amélioration des indicateurs d'images */
+            .image-indicators {
+                background: rgba(0,0,0,0.3);
+                padding: 2px 6px;
+                border-radius: 10px;
+                backdrop-filter: blur(2px);
+            }
+            
+            /* Style pour les métriques compactes */
+            .metrics-row .metric-item {
+                padding: 0.25rem;
+                border-radius: 4px;
+                transition: background-color 0.2s ease;
+            }
+            
+            .metrics-row .metric-item:hover {
+                background-color: rgba(183, 110, 121, 0.1);
+            }
+        `;
+        document.head.appendChild(style);
+
+        // ===== RACCOURCIS CLAVIER ADAPTÉS MOBILE =====
+        document.addEventListener('keydown', function(e) {
+            // Désactiver certains raccourcis sur mobile
+            if (window.innerWidth <= 768) return;
+            
+            if (e.ctrlKey && e.key === 'f') {
+                e.preventDefault();
+                const searchInput = document.querySelector('input[name="search"]');
+                if (searchInput) {
+                    searchInput.focus();
+                    searchInput.select();
+                }
+            }
+            
+            if (e.ctrlKey && e.key === 'n') {
+                e.preventDefault();
+                window.location.href = '/ajouter-bijou';
+            }
+        });
+
+        // ===== GESTION GLOBALE DES ERREURS =====
+        window.addEventListener('error', function(e) {
+            console.warn('Erreur détectée:', e.error);
+            // Ne pas afficher d'erreur pour les images manquantes
+            if (e.target && e.target.tagName === 'IMG') {
+                e.preventDefault();
+            }
+        });
+
+        // ===== DÉTECTION ET OPTIMISATION POUR LES APPAREILS TACTILES =====
+        function detectTouchDevice() {
+            return 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+        }
+
+        if (detectTouchDevice()) {
+            document.body.classList.add('touch-device');
+            
+            // Améliorer l'expérience tactile
+            const style = document.createElement('style');
+            style.textContent = `
+                .touch-device .btn {
+                    min-height: 44px;
+                    min-width: 44px;
+                }
+                
+                .touch-device .image-nav {
+                    min-width: 40px;
+                    min-height: 40px;
+                }
+                
+                .touch-device .image-dot {
+                    min-width: 12px;
+                    min-height: 12px;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        // ===== FONCTIONS UTILITAIRES EXPOSÉES GLOBALEMENT =====
+        window.jewelDashboard = {
+            updateStock: function(jewelId, currentStock) {
+                return window.updateStock(jewelId, currentStock);
+            },
+            
+            updateStockThreshold: function() {
+                return window.updateStockThreshold();
+            },
+            
+            toggleFilters: function() {
+                return toggleFilters();
+            },
+            
+            refreshData: function() {
+                window.location.reload();
+            },
+            
+            goToJewel: function(jewelId) {
+                window.location.href = `/admin/bijoux/${jewelId}/edit`;
+            },
+            
+            // Nouvelle fonction pour naviguer dans les images
+            navigateImage: function(containerId, direction) {
+                const container = document.getElementById(containerId);
+                if (container) {
+                    const btn = container.querySelector(direction > 0 ? '.image-nav.next' : '.image-nav.prev');
+                    if (btn) {
+                        changeSlide(btn, direction);
+                    }
+                }
+            },
+            
+            // Fonction pour aller à une image specific
+            goToImage: function(containerId, index) {
+                const container = document.getElementById(containerId);
+                if (container) {
+                    const dot = container.querySelectorAll('.image-dot')[index];
+                    if (dot) {
+                        goToSlide(dot, index);
+                    }
+                }
+            }
+        };
+
+        // ===== DEBUG ET MONITORING =====
+        if (window.location.search.includes('debug=true')) {
+            console.log('🔧 Mode debug activé');
+            
+            // Afficher les informations de performance
+            window.addEventListener('load', function() {
+                setTimeout(() => {
+                    if (performance && performance.getEntriesByType) {
+                        const navigation = performance.getEntriesByType('navigation')[0];
+                        console.log('📊 Temps de chargement:', {
+                            'DOM Content Loaded': Math.round(navigation.domContentLoadedEventEnd - navigation.navigationStart) + 'ms',
+                            'Load Complete': Math.round(navigation.loadEventEnd - navigation.navigationStart) + 'ms'
+                        });
+                    }
+                }, 1000);
+            });
+            
+            // Monitoring des erreurs d'images
+            let imageErrors = 0;
+            document.addEventListener('error', function(e) {
+                if (e.target && e.target.tagName === 'IMG') {
+                    imageErrors++;
+                    console.warn(`📷 Erreur image #${imageErrors}:`, e.target.src);
+                }
+            }, true);
+        }
+
+    </script>
+
+</body>
+</html>

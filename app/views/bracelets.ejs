@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bracelets - Éclat Doré</title>
+   
+    <link rel="stylesheet" href="/css/bijoux.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Variables utilisateur depuis EJS -->
+    <script>
+        window.currentUser = <%- JSON.stringify(user || null) %>;
+        window.isAdmin = <%= (user && user.role && (user.role.name === 'administrateur' || user.role_id === 2)) ? 'true' : 'false' %>;
+        window.isAuthenticated = <%= user ? 'true' : 'false' %>;
+    </script>
+
+    <style>
+        html {
+            width: 100%;
+            overflow-x: hidden;
+        }
+
+        /* Styles pour les prix avec réduction */
+        .product-price-container {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            margin: 10px 0;
+        }
+        
+        .price-current {
+            font-size: 18px;
+            font-weight: 700;
+            color: #e74c3c;
+        }
+        
+        .price-original {
+            font-size: 14px;
+            color: #7f8c8d;
+            text-decoration: line-through;
+        }
+        
+        .price-single {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        /* Badges produits */
+        .product-badge {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 700;
+            z-index: 5;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .product-badge.promo {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+        
+        .product-badge.nouveau {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+        }
+        
+        .product-badge.populaire {
+            background: linear-gradient(135deg, #f39c12, #e67e22);
+            color: white;
+        }
+
+        /* Effet survol cartes */
+        .product-card {
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.15);
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 10000;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            transform: translateX(100%);
+            transition: transform 0.3s ease;
+            min-width: 300px;
+        }
+        
+        .notification.success {
+            background: linear-gradient(135deg, #4caf50, #45a049);
+        }
+        
+        .notification.error {
+            background: linear-gradient(135deg, #f44336, #da190b);
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <%- include('partials/navbarre.ejs') %>
+        <div class="overlay" id="overlay"></div>
+    </header>
+
+    <section class="page-banner">
+        <div class="banner-content">
+            <h2>Nos Bracelets</h2>
+            <p>Des créations raffinées pour sublimer votre poignet</p>
+        </div>
+    </section>
+
+    <section class="category-intro">
+        <div class="container">
+            <div class="intro-content">
+                <h3>Élégance et Finesse</h3>
+                <p>Notre collection de bracelets allie délicatesse et caractère. Chaque bracelet est conçu pour vous accompagner au quotidien et apporter une touche d'éclat à toutes vos tenues.</p>
+            </div>
+            <div class="filter-controls">
+                <div class="filter-dropdown">
+                    <button class="filter-btn">Filtrer <i class="fas fa-chevron-down"></i></button>
+                    <div class="filter-options">
+                        <form method="GET">
+                            <!-- Matériau -->
+                            <div class="filter-group">
+                                <h4>Matériau</h4>
+                                <% if (materials && materials.length > 0) { %>
+                                    <% materials.forEach(material => { %>
+                                        <label>
+                                            <input type="checkbox" name="matiere" value="<%= material.name %>"
+                                                <%= (filters.matiere && filters.matiere.includes && filters.matiere.includes(material.name)) ? 'checked' : '' %>>
+                                            <%= material.name %> (<%= material.count || 0 %>)
+                                        </label>
+                                    <% }); %>
+                                <% } %>
+                            </div>
+                            
+                            <!-- Style/Type -->
+                            <div class="filter-group">
+                                <h4>Style</h4>
+                                <% if (types && types.length > 0) { %>
+                                    <% types.forEach(type => { %>
+                                        <label>
+                                            <input type="checkbox" name="type" value="<%= type.id %>"
+                                                <%= (filters.type && filters.type.includes && filters.type.includes(type.id.toString())) ? 'checked' : '' %>>
+                                            <%= type.name %>
+                                        </label>
+                                    <% }); %>
+                                <% } %>
+                            </div>
+
+                            <!-- Prix -->
+                            <div class="filter-group">
+                                <h4>Prix</h4>
+                                <% ['0-100', '100-200', '200-500', '500+'].forEach(range => { %>
+                                    <label>
+                                        <input type="checkbox" name="prix" value="<%= range %>"
+                                            <%= (filters.prix && filters.prix.includes && filters.prix.includes(range)) ? 'checked' : '' %>>
+                                        <% if (range === '500+') { %>Plus de 500€<% } else { %><%= range %> €<% } %>
+                                    </label>
+                                <% }); %>
+                            </div>
+
+                            <button type="submit" class="apply-filters-btn">Appliquer les filtres</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="sort-dropdown">
+                    <button class="sort-btn">Trier par <i class="fas fa-chevron-down"></i></button>
+                    <div class="sort-options">
+                        <a href="?sort=popularity" class="sort-option <%= filters.sort === 'popularity' ? 'active' : '' %>">Popularité</a>
+                        <a href="?sort=price_asc" class="sort-option <%= filters.sort === 'price_asc' ? 'active' : '' %>">Prix croissant</a>
+                        <a href="?sort=price_desc" class="sort-option <%= filters.sort === 'price_desc' ? 'active' : '' %>">Prix décroissant</a>
+                        <a href="?sort=newest" class="sort-option <%= filters.sort === 'newest' || !filters.sort ? 'active' : '' %>">Nouveautés</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+        
+    <section class="products">
+        <div class="container">
+            <div class="products-grid">
+                <% if (bracelets && bracelets.length > 0) { %>
+                    <% bracelets.forEach(bracelet => { %>
+                        <div class="product-card">
+                            <!-- Badge du produit -->
+                            <% if (bracelet.badge) { %>  
+                                <div class="product-badge <%= bracelet.badgeClass %>"><%= bracelet.badge %></div>
+                            <% } %>
+                            
+                            <div class="product-img">
+                                <% if (bracelet.image && bracelet.image !== 'no-image.jpg') { %>
+                                    <img src="/uploads/jewels/<%= bracelet.image %>" alt="<%= bracelet.name %>" 
+                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                    <div class="placeholder-image" style="display: none;">
+                                        <i class="fas fa-gem"></i>
+                                    </div>
+                                <% } else { %>
+                                    <div class="placeholder-image">
+                                        <i class="fas fa-gem"></i>
+                                    </div>
+                                <% } %>
+                            </div>
+                            
+                            <div class="product-info">
+                                <h4 class="product-name"><%= bracelet.name %></h4>
+                                <% if (bracelet.description) { %>
+                                    <p class="product-desc"><%= bracelet.description %></p>
+                                <% } %>
+                                
+                                <!-- Prix avec gestion des réductions -->
+                                <div class="product-price-container">
+                                    <% if (bracelet.hasDiscount) { %>
+                                        <div class="price-current"><%= bracelet.formattedCurrentPrice %></div>
+                                        <% if (bracelet.formattedOriginalPrice) { %>
+                                            <div class="price-original"><%= bracelet.formattedOriginalPrice %></div>
+                                        <% } %>
+                                    <% } else { %>
+                                        <div class="price-single"><%= bracelet.formattedCurrentPrice %></div>
+                                    <% } %>
+                                </div>
+                                
+                                <div class="product-actions">
+                                    <button class="product-btn add-to-cart-btn" 
+                                            data-jewel-id="<%= bracelet.id %>" 
+                                            data-jewel-name="<%= bracelet.name %>">
+                                        <i class="fas fa-shopping-cart"></i> Ajouter au panier
+                                    </button>
+                                    <a href="/bijoux/<%= bracelet.slug %>" class="product-btn view-jewel-btn">
+                                        <i class="fas fa-eye"></i> Voir le bijou
+                                    </a>
+                                    <% if (isAuthenticated) { %>
+                                        <button class="wishlist-btn" data-jewel-id="<%= bracelet.id %>">
+                                            <i class="far fa-heart"></i>
+                                        </button>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="empty-state">
+                        <h3>Aucun bracelet trouvé</h3>
+                        <p>Essayez de modifier vos critères de recherche.</p>
+                    </div>
+                <% } %>
+            </div>
+            
+            <!-- Pagination -->
+            <% if (totalPages > 1) { %>
+                <div class="pagination">
+                    <% if (currentPage > 1) { %>
+                        <a href="?page=<%= currentPage - 1 %>&sort=<%= filters.sort %>" class="page-link prev">
+                            <i class="fas fa-chevron-left"></i>
+                        </a>
+                    <% } %>
+                    
+                    <% for (let i = 1; i <= totalPages; i++) { %>
+                        <% if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) { %>
+                            <a href="?page=<%= i %>&sort=<%= filters.sort %>" 
+                               class="page-link <%= i === currentPage ? 'active' : '' %>"><%= i %></a>
+                        <% } else if (i === currentPage - 2 || i === currentPage + 2) { %>
+                            <span class="page-dots">...</span>
+                        <% } %>
+                    <% } %>
+                    
+                    <% if (currentPage < totalPages) { %>
+                        <a href="?page=<%= currentPage + 1 %>&sort=<%= filters.sort %>" class="page-link next">
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    <% } %>
+                </div>
+            <% } %>
+        </div>
+    </section>
+
+    <section class="newsletter">
+        <div class="container">
+            <div class="newsletter-content">
+                <div class="section-title">
+                    <h3>Restez informée</h3>
+                </div>
+                <p>Inscrivez-vous à notre newsletter pour recevoir en avant-première nos nouvelles collections et offres exclusives.</p>
+                <form class="newsletter-form">
+                    <input type="email" class="newsletter-input" placeholder="Votre adresse email" required>
+                    <button type="submit" class="newsletter-btn">S'inscrire</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        
+    </footer>
+
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-chevron-up"></i>
+    </a>
+
+    <!-- Notification -->
+    <div class="notification" id="notification">
+        <span id="notification-message"></span>
+    </div>
+
+    <script>
+        // Menu mobile et dropdowns
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const overlay = document.getElementById('overlay');
+        const backToTop = document.getElementById('backToTop');
+
+        if (menuToggle) {
+            menuToggle.addEventListener('click', function() {
+                mobileNav.classList.toggle('active');
+                overlay.classList.toggle('active');
+                this.innerHTML = mobileNav.classList.contains('active') ? 
+                    '<i class="fas fa-times"></i>' : '<i class="fas fa-bars"></i>';
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', function() {
+                if (mobileNav) mobileNav.classList.remove('active');
+                overlay.classList.remove('active');
+                if (menuToggle) menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+            });
+        }
+
+        // Back to top
+        window.addEventListener('scroll', function() {
+            if (backToTop) {
+                backToTop.classList.toggle('visible', window.pageYOffset > 300);
+            }
+        });
+
+        // Filter et sort dropdowns
+        const filterBtn = document.querySelector('.filter-btn');
+        const filterOptions = document.querySelector('.filter-options');
+        const sortBtn = document.querySelector('.sort-btn');
+        const sortOptions = document.querySelector('.sort-options');
+
+        if (filterBtn && filterOptions) {
+            filterBtn.addEventListener('click', function() {
+                filterOptions.classList.toggle('active');
+                if (sortOptions) sortOptions.classList.remove('active');
+            });
+        }
+
+        if (sortBtn && sortOptions) {
+            sortBtn.addEventListener('click', function() {
+                sortOptions.classList.toggle('active');
+                if (filterOptions) filterOptions.classList.remove('active');
+            });
+        }
+
+        // Fermer menus en cliquant dehors
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.filter-dropdown') && filterOptions && filterOptions.classList.contains('active')) {
+                filterOptions.classList.remove('active');
+            }
+            if (!e.target.closest('.sort-dropdown') && sortOptions && sortOptions.classList.contains('active')) {
+                sortOptions.classList.remove('active');
+            }
+        });
+
+        // Fonction notification
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            const messageEl = document.getElementById('notification-message');
+            
+            messageEl.textContent = message;
+            notification.className = `notification ${type} show`;
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 4000);
+        }
+
+        // Gestion ajout au panier
+        document.addEventListener('DOMContentLoaded', function() {
+            const addToCartButtons = document.querySelectorAll('.add-to-cart-btn');
+            
+            addToCartButtons.forEach(button => {
+                button.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    
+                    const jewelId = this.getAttribute('data-jewel-id');
+                    const jewelName = this.getAttribute('data-jewel-name');
+                    
+                    if (!jewelId) {
+                        showNotification('ID du bijou manquant !', 'error');
+                        return;
+                    }
+                    
+                    try {
+                        const response = await fetch('/panier/ajouter', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({ jewelId, quantity: 1 })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            this.classList.add('added');
+                            setTimeout(() => this.classList.remove('added'), 1000);
+                            showNotification(`${jewelName} ajouté au panier !`, 'success');
+                        } else {
+                            showNotification(data.message || 'Erreur lors de l\'ajout', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Erreur:', error);
+                        showNotification('Erreur de connexion', 'error');
+                    }
+                });
+            });
+
+            // Tracking des vues (si bijou détail)
+            const jewelId = window.currentJewelId; // À définir dans les pages de détail
+            if (jewelId) {
+                setTimeout(() => {
+                    fetch(`/api/bijoux/${jewelId}/track-view`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    }).catch(err => console.log('Erreur tracking:', err));
+                }, 3000);
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+    console.log('🎯 Page bijoux initialisée');
+    
+    // ===== SUIVI DES VUES BIJOUX - CORRIGÉ =====
+    const viewJewelButtons = document.querySelectorAll('.view-jewel-btn, .product-btn');
+    console.log('👁️ Boutons voir bijou trouvés:', viewJewelButtons.length);
+    
+    viewJewelButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const jewelCard = this.closest('.product-card, .jewel-card');
+            const jewelId = jewelCard?.querySelector('[data-jewel-id]')?.getAttribute('data-jewel-id') ||
+                           this.getAttribute('data-jewel-id');
+            const jewelName = jewelCard?.querySelector('.product-name, .jewel-name')?.textContent ||
+                             this.getAttribute('data-jewel-name');
+            
+            console.log('👁️ Clic détecté sur bijou:', { jewelId, jewelName });
+            
+            if (jewelId && jewelName) {
+                trackView(jewelId, jewelName);
+            } else {
+                console.warn('⚠️ Impossible de tracker la vue - données manquantes');
+            }
+        });
+    });
+
+    // Fonction de suivi des vues CORRIGÉE
+    function trackView(jewelId, jewelName) {
+        if (!jewelId) {
+            console.warn('⚠️ ID bijou manquant pour tracking');
+            return;
+        }
+        
+        console.log('📊 Envoi tracking vue:', { jewelId, jewelName });
+        
+        fetch('/api/track-view', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                jewelId: jewelId,
+                jewelName: jewelName 
+            })
+        })
+        .then(response => {
+            console.log('📡 Réponse tracking:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                console.log(`✅ Vue trackée pour bijou ${jewelName}: ${data.views} vues`);
+            } else {
+                console.warn('⚠️ Erreur tracking:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('❌ Erreur lors du suivi de vue:', error);
+        });
+    }
+
+    console.log('✅ Tracking des vues initialisé');
+});
+
+    </script>
+</body>
+</html>

@@ -1,0 +1,88 @@
+<!-- customer-profile.ejs -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+
+</head>
+<body>
+  
+    <%- include('partials/navbarre.ejs') %>
+
+    <div class="main-content">
+        <div class="container">
+            <div class="profile-container">
+                <h1>Mon Profil</h1>
+                
+                <% if (success) { %>
+                    <div class="success-message">
+                        Votre profil a été mis à jour avec succès.
+                    </div>
+                <% } %>
+                
+                <div class="profile-section">
+                    <div class="profile-info">
+                        <h2>Informations personnelles</h2>
+                        <div class="info-group">
+                            <span class="info-label">Nom complet:</span>
+                            <span class="info-value"><%= customer.first_name %> <%= customer.last_name %></span>
+                        </div>
+                        <div class="info-group">
+                            <span class="info-label">Email:</span>
+                            <span class="info-value"><%= customer.email %></span>
+                        </div>
+                        <% if (customer.address) { %>
+                        <div class="info-group">
+                            <span class="info-label">Adresse:</span>
+                            <span class="info-value"><%= customer.address %></span>
+                        </div>
+                        <% } %>
+                        <% if (customer.phone) { %>
+                        <div class="info-group">
+                            <span class="info-label">Téléphone:</span>
+                            <span class="info-value"><%= customer.phone %></span>
+                        </div>
+                        <% } %>
+                    </div>
+                    
+                    <div class="profile-actions">
+                        <a href="/profil/modifier" class="button btn-edit">Modifier mon profil</a>
+                        <a href="/profil/supprimer" class="button btn-delete">Supprimer mon compte</a>
+                    </div>
+                </div>
+                
+                <div class="order-history">
+                    <h2>Historique des commandes</h2>
+                    <% if (locals.orders && orders.length > 0) { %>
+                        <div class="orders-list">
+                            <% orders.forEach(order => { %>
+                                <div class="order-item">
+                                    <div class="order-header">
+                                        <span class="order-number">Commande #<%= order.id %></span>
+                                        <span class="order-date"><%= new Date(order.createdAt).toLocaleDateString('fr-FR') %></span>
+                                        <span class="order-status <%= order.status.toLowerCase() %>"><%= order.status %></span>
+                                    </div>
+                                    <div class="order-details">
+                                        <span class="order-total">Total: <%= order.total.toFixed(2) %> €</span>
+                                        <a href="/commandes/<%= order.id %>" class="button btn-view">Voir détails</a>
+                                    </div>
+                                </div>
+                            <% }); %>
+                        </div>
+                    <% } else { %>
+                        <p class="no-orders">Vous n'avez pas encore passé de commande.</p>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+  
+    
+    <!-- <script src="/js/main.js"></script> -->
+</body>
+</html>

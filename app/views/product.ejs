@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi Client - Administration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <link rel="stylesheet" href="/css/follow-customer.css">
+</head>
+<body>
+
+       <%- include('partials/navbarre.ejs') %>
+       
+    <div class="dashboard">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <h2>Bijoux Admin</h2>
+            </div>
+            <div class="sidebar-menu">
+                <a href="#"><i class="fas fa-tachometer-alt"></i> Tableau de bord</a>
+                <a href="/admin/suivi-client"><i class="fas fa-users"></i> Clients</a>
+                <a href="/admin/produits" class="active"><i class="fas fa-gem"></i> Produits</a>
+                <a href="/admin/suivi-commandes"><i class="fas fa-shopping-cart"></i> Commandes</a>
+                <a href="/admin/mon-suivi"><i class="fas fa-chart-bar"></i> Rapports</a>
+                <a href="/admin/parametres"><i class="fas fa-cog"></i> Paramètres</a>
+            </div>
+        </div>
+    
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Header -->
+            <div class="header">
+                <div class="page-title">
+                    <h1>Gestion des Produits</h1>
+                </div>
+                <div class="user-actions">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" id="product-search" placeholder="Rechercher un produit...">
+                    </div>
+                    <div class="user-profile">
+                        <img src="/api/placeholder/40/40" alt="Admin">
+                        <span>Admin</span>
+                    </div>
+                </div>
+            </div>
+    
+            <!-- Statistics Tiles -->
+            <div class="tile-container">
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-gem"></i></div>
+                    <div class="stat-value"><%= totalProducts %></div>
+                    <div class="stat-label">Total des produits</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-boxes"></i></div>
+                    <div class="stat-value"><%= totalStock %></div>
+                    <div class="stat-label">Articles en stock</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-exclamation-triangle"></i></div>
+                    <div class="stat-value"><%= products %></div>
+                    <div class="stat-label">Stock faible</div>
+                </div>
+                <div class="stat-tile">
+                    <div class="stat-icon"><i class="fas fa-star"></i></div>
+                    <div class="stat-value"><%= popularProducts %></div>
+                    <div class="stat-label">Produits populaires</div>
+                </div>
+            </div>
+    
+            <!-- Filters Card -->
+            <div class="card">
+                <h3>Filtres</h3>
+                <div class="filter-container">
+                    <div class="filter-group">
+                        <label class="filter-label" for="category-filter">Catégorie</label>
+                        <select id="category-filter" class="filter-input">
+                            <option value="">Toutes les catégories</option>
+                            <% categories.forEach(category => { %>
+                                <option value="<%= category.id %>"><%= category.name %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="material-filter">Matière</label>
+                        <select id="material-filter" class="filter-input">
+                            <option value="">Toutes les matières</option>
+                            <% materials.forEach(material => { %>
+                                <option value="<%= material.id %>"><%= material.name %></option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label" for="stock-filter">État du stock</label>
+                        <select id="stock-filter" class="filter-input">
+                            <option value="">Tous les états</option>
+                            <option value="low">Stock faible (≤ 5)</option>
+                            <option value="medium">Stock moyen (6-20)</option>
+                            <option value="high">Stock élevé (> 20)</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label class="filter-label">Prix (€)</label>
+                        <div class="price-range-container">
+                            <input type="number" id="min-price" placeholder="Min" class="filter-input price-range-input">
+                            <span>-</span>
+                            <input type="number" id="max-price" placeholder="Max" class="filter-input price-range-input">
+                        </div>
+                    </div>
+                </div>
+                <div class="filter-actions">
+                    <button id="reset-filters" class="btn btn-outline">Réinitialiser</button>
+                    <button id="apply-filters" class="btn btn-primary">Appliquer les filtres</button>
+                    <a href="/ajouter-bijou" class="btn btn-success">
+                        <i class="fas fa-plus"></i> Ajouter un produit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+
+            <!-- Products Table -->
+            <div class="card">
+                <div class="table-container">
+                    <table id="products-table">
+                        <thead>
+                            <tr>
+                                <th>Image</th>
+                                <th>Produit</th>
+                                <th>Catégorie</th>
+                                <th>Prix (€)</th>
+                                <th>Stock</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-body">
+                            <% jewels.forEach(jewel => { %>
+                                <tr>
+                                    <td><img src="/uploads/jewels/<%= jewel.image %>" width="50" /></td>
+                                    <td><%= jewel.name %></td>
+                                    <td><%= jewel.category?.name || "N/A" %></td>
+                                    <td><%= typeof jewel.price_ttc === 'number' ? jewel.price_ttc.toFixed(2) : "N/A" %> €</td>
+                                    <td><%= jewel.stock %></td>
+                                    <td><%= jewel.stock <= 5 ? "Faible" : "OK" %></td>
+                                    <td>
+                                        <!-- Boutons modifier / supprimer -->
+                                        <button class="btn btn-edit">✏️</button>
+                                        <button class="btn btn-delete">🗑️</button>
+                                    </td>
+                                </tr>
+                                <% }) %>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="pagination" id="products-pagination">
+                    <!-- Pagination buttons will be generated dynamically -->
+                </div>
+            </div>
+
+            <!-- Chart for stock analysis -->
+            <div class="card">
+                <h3>Analyse du stock par catégorie</h3>
+                <div class="stock-chart-container">
+                    <canvas id="stockChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Product Details -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Détails du produit</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="product-form">
+                    <div class="form-group">
+                        <label for="product-name" class="form-label">Nom du produit</label>
+                        <input type="text" id="product-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-category" class="form-label">Catégorie</label>
+                        <select id="product-category" class="form-control" required>
+                            <!-- Les catégories seront chargées dynamiquement -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-description" class="form-label">Description</label>
+                        <textarea id="product-description" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-price" class="form-label">Prix TTC (€)</label>
+                        <input type="number" id="product-price" class="form-control" step="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-tva" class="form-label">TVA (%)</label>
+                        <input type="number" id="product-tva" class="form-control" value="20" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-material" class="form-label">Matière</label>
+                        <select id="product-material" class="form-control">
+                            <!-- Les matières seront chargées dynamiquement -->
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-size" class="form-label">Taille</label>
+                        <input type="text" id="product-size" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-weight" class="form-label">Poids (g)</label>
+                        <input type="number" id="product-weight" class="form-control" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-carat" class="form-label">Carat</label>
+                        <input type="number" id="product-carat" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label for="product-stock" class="form-label">Stock</label>
+                        <input type="number" id="product-stock" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-image" class="form-label">URL de l'image</label>
+                        <input type="text" id="product-image" class="form-control" placeholder="Lien vers l'image">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline modal-close-btn">Annuler</button>
+                <button type="button" class="btn btn-primary" id="save-product">Enregistrer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-notification" class="toast"></div>
+
+    <script>
+        /**
+         * Bijoux Admin - Gestion des Produits
+         * 
+         * Ce script gère l'interface de gestion des produits avec les fonctionnalités suivantes:
+         * - Affichage des produits dans un tableau
+         * - Filtrage et tri des produits
+         * - Ajout, modification et suppression de produits
+         * - Analyse du stock par catégorie avec graphiques
+         */
+
+        // Objet principal pour la gestion des produits
+        const ProductManager = {
+            // État et données
+            data: {
+                products: [],
+                filteredProducts: [],
+                categories: [],
+                materials: [],
+                currentPage: 1,
+                itemsPerPage: 10,
+                totalPages: 1,
+                filters: {
+                    search: '',
+                    category: '',
+                    material: '',
+                    stock: '',
+                    minPrice: '',
+                    maxPrice: ''
+                },
+                editingProductId: null,
+                charts: {}
+            },
+
+            // Initialisation
+            init: function() {
+                this.loadCategories();
+                this.loadMaterials();
+                this.loadProducts();
+                this.setupEventListeners();
+                this.initCharts();
+            },
+
+            // Charger les catégories depuis l'API
+            loadCategories: function() {
+                fetch('/api/categories')
+                    .then(response => response.json())
+                    .then(data => {
+                        this.data.categories = data;
+                        
+                        // Remplir les sélecteurs de catégories
+                        const categoryFilter = document.getElementById('category-filter');
+                        const productCategory = document.getElementById('product-category');
+                        
+                        // Vider les options existantes
+                        categoryFilter.innerHTML = '<option value="">Toutes les catégories</option>';
+                        productCategory.innerHTML = '';
+                        
+                        // Ajouter les nouvelles options
+                        data.forEach(category => {
+                            categoryFilter.innerHTML += `<option value="${category.id}">${category.name}</option>`;
+                            productCategory.innerHTML += `<option value="${category.id}">${category.name}</option>`;
+                        });
+            },
+
+            // Modifier un produit
+            editProduct: function(productId) {
+                // Rechercher le produit dans la liste
+                const product = this.data.products.find(p => p.id == productId);
+                
+                if (product) {
+                    // Ouvrir le modal en mode édition
+                    this.openProductModal(product);
+                } else {
+                    // Récupérer les détails du produit depuis l'API
+                    fetch(`/api/jewels/${productId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            this.openProductModal(data);
+                        })
+                        .catch(error => {
+                            console.error('Erreur lors de la récupération des détails du produit:', error);
+                            this.showToast('Erreur lors de la récupération des détails du produit', 'error');
+                        });
+                }
+            },
+
+            // Confirmer la suppression d'un produit
+            confirmDeleteProduct: function(productId) {
+                if (confirm('Êtes-vous sûr de vouloir supprimer ce produit ?')) {
+                    this.deleteProduct(productId);
+                }
+            },
+
+            // Supprimer un produit
+            deleteProduct: function(productId) {
+                fetch(`/api/jewels/${productId}`, {
+                    method: 'DELETE'
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Erreur lors de la suppression du produit');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Afficher un message de succès
+                        this.showToast('Produit supprimé avec succès', 'success');
+                        
+                        // Recharger les produits
+                        this.loadProducts();
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        this.showToast('Erreur lors de la suppression du produit', 'error');
+                    });
+            },
+
+            // Afficher une notification toast
+            showToast: function(message, type = 'info') {
+                const toast = document.getElementById('toast-notification');
+                
+                // Définir le contenu et la classe
+                toast.textContent = message;
+                toast.className = `toast ${type}`;
+                
+                // Afficher le toast
+                toast.classList.add('show');
+                
+                // Masquer le toast après 3 secondes
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+        };
+
+        // Initialiser le gestionnaire de produits lorsque le DOM est chargé
+        document.addEventListener('DOMContentLoaded', function() {
+            ProductManager.init();
+        });
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des catégories:', error);
+                        this.showToast('Erreur lors du chargement des catégories', 'error');
+                    });
+            }
+
+            // Charger les matières depuis l'API
+            loadMaterials: function() {
+                fetch('/api/materials')
+                    .then(response => response.json())
+                    .then(data => {
+                        this.data.materials = data;
+                        
+                        // Remplir les sélecteurs de matières
+                        const materialFilter = document.getElementById('material-filter');
+                        const productMaterial = document.getElementById('product-material');
+                        
+                        // Vider les options existantes
+                        materialFilter.innerHTML = '<option value="">Toutes les matières</option>';
+                        productMaterial.innerHTML = '';
+                        
+                        // Ajouter les nouvelles options
+                        data.forEach(material => {
+                            materialFilter.innerHTML += `<option value="${material.id}">${material.name}</option>`;
+                            productMaterial.innerHTML += `<option value="${material.id}">${material.name}</option>`;
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des matières:', error);
+                        this.showToast('Erreur lors du chargement des matières', 'error');
+                    });
+            },
+
+            // Charger les produits depuis l'API
+            loadProducts: function() {
+                // Construire l'URL avec les filtres
+                let url = '/api/jewels?';
+                const filters = this.data.filters;
+                
+                if (filters.search) url += `search=${encodeURIComponent(filters.search)}&`;
+                if (filters.category) url += `category=${filters.category}&`;
+                if (filters.material) url += `material=${filters.material}&`;
+                if (filters.stock) url += `stock=${filters.stock}&`;
+                if (filters.minPrice) url += `minPrice=${filters.minPrice}&`;
+                if (filters.maxPrice) url += `maxPrice=${filters.maxPrice}&`;
+                url += `page=${this.data.currentPage}&limit=${this.data.itemsPerPage}`;
+                
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        this.data.products = data.jewels;
+                        this.data.totalPages = Math.ceil(data.total / this.data.itemsPerPage);
+                        this.renderProducts();
+                        this.renderPagination();
+                        this.updateStatistics();
+                        this.updateCharts();
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des produits:', error);
+                        this.showToast('Erreur lors du chargement des produits', 'error');
+                    });
+            },
+
+            // Configurer les écouteurs d'événements
+            setupEventListeners: function() {
+                // Recherche
+                document.getElementById('product-search').addEventListener('input', e => {
+                    this.data.filters.search = e.target.value;
+                });
+                
+                // Filtres
+                document.getElementById('category-filter').addEventListener('change', e => {
+                    this.data.filters.category = e.target.value;
+                });
+                
+                document.getElementById('material-filter').addEventListener('change', e => {
+                    this.data.filters.material = e.target.value;
+                });
+                
+                document.getElementById('stock-filter').addEventListener('change', e => {
+                    this.data.filters.stock = e.target.value;
+                });
+                
+                document.getElementById('min-price').addEventListener('input', e => {
+                    this.data.filters.minPrice = e.target.value;
+                });
+                
+                document.getElementById('max-price').addEventListener('input', e => {
+                    this.data.filters.maxPrice = e.target.value;
+                });
+                
+                // Boutons de filtre
+                document.getElementById('apply-filters').addEventListener('click', () => {
+                    this.data.currentPage = 1;
+                    this.loadProducts();
+                });
+                
+                document.getElementById('reset-filters').addEventListener('click', () => {
+                    // Réinitialiser les filtres
+                    this.data.filters = {
+                        search: '',
+                        category: '',
+                        material: '',
+                        stock: '',
+                        minPrice: '',
+                        maxPrice: ''
+                    };
+                    
+                    // Réinitialiser les champs du formulaire
+                    document.getElementById('product-search').value = '';
+                    document.getElementById('category-filter').value = '';
+                    document.getElementById('material-filter').value = '';
+                    document.getElementById('stock-filter').value = '';
+                    document.getElementById('min-price').value = '';
+                    document.getElementById('max-price').value = '';
+                    
+                    // Recharger les produits
+                    this.data.currentPage = 1;
+                    this.loadProducts();
+                });
+                
+                // Modal d'ajout de produit
+                document.getElementById('add-product').addEventListener('click', () => {
+                    this.openProductModal();
+                });
+                
+                // Fermeture du modal
+                document.querySelectorAll('.modal-close, .modal-close-btn').forEach(button => {
+                    button.addEventListener('click', () => {
+                        this.closeProductModal();
+                    });
+                });
+                
+                // Enregistrement du produit
+                document.getElementById('save-product').addEventListener('click', () => {
+                    this.saveProduct();
+                });
+                
+                // Événements pour le tableau (délégation)
+                document.getElementById('products-body').addEventListener('click', e => {
+                    const target = e.target;
+                    
+                    // Bouton d'édition
+                    if (target.classList.contains('edit-btn') || target.closest('.edit-btn')) {
+                        const row = target.closest('tr');
+                        const productId = row.dataset.id;
+                        this.editProduct(productId);
+                    }
+                    
+                    // Bouton de suppression
+                    if (target.classList.contains('delete-btn') || target.closest('.delete-btn')) {
+                        const row = target.closest('tr');
+                        const productId = row.dataset.id;
+                        this.confirmDeleteProduct(productId);
+                    }
+                });
+            }
+
+            // Initialiser les graphiques
+            function initCharts () {
+                const ctx = document.getElementById('stockChart').getContext('2d');
+                this.data.charts.stockChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: [],
+                        datasets: [{
+                            label: 'Stock par catégorie',
+                            data: [],
+                            backgroundColor: [
+                                'rgba(255, 99, 132, 0.7)',
+                                'rgba(54, 162, 235, 0.7)',
+                                'rgba(255, 206, 86, 0.7)',
+                                'rgba(75, 192, 192, 0.7)',
+                                'rgba(153, 102, 255, 0.7)',
+                                'rgba(255, 159, 64, 0.7)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 99, 132, 1)',
+                                'rgba(54, 162, 235, 1)',
+                                'rgba(255, 206, 86, 1)',
+                                'rgba(75, 192, 192, 1)',
+                                'rgba(153, 102, 255, 1)',
+                                'rgba(255, 159, 64, 1)'
+                            ],
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Afficher les produits dans le tableau
+            function renderProducts () {
+                const productsBody = document.getElementById('products-body');
+                productsBody.innerHTML = '';
+                
+                if (this.data.products.length === 0) {
+                    productsBody.innerHTML = `
+                        <tr>
+                            <td colspan="7" class="no-products">Aucun produit trouvé</td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                this.data.products.forEach(product => {
+                    // Déterminer le statut du stock
+                    let stockStatus = 'En stock';
+                    let stockClass = 'in-stock';
+                    
+                    if (product.stock <= 0) {
+                        stockStatus = 'Rupture';
+                        stockClass = 'out-of-stock';
+                    } else if (product.stock <= 5) {
+                        stockStatus = 'Stock faible';
+                        stockClass = 'low-stock';
+                    }
+                    
+                    // Trouver le nom de la catégorie
+                    const category = this.data.categories.find(c => c.id === product.category_id);
+                    const categoryName = category ? category.name : 'Non catégorisé';
+                    
+                    productsBody.innerHTML += `
+                        <tr data-id="${product.id}">
+                            <td class="product-image">
+                                <img src="${product.image || '/api/placeholder/80/80'}" alt="${product.name}">
+                            </td>
+                            <td class="product-name">
+                                <div class="product-name-text">${product.name}</div>
+                                <div class="product-sku">ID: ${product.id}</div>
+                            </td>
+                            <td>${categoryName}</td>
+                            <td class="product-price">${product.price_ttc.toFixed(2)} €</td>
+                            <td class="product-stock">${product.stock}</td>
+                            <td>
+                                <span class="stock-badge ${stockClass}">${stockStatus}</span>
+                            </td>
+                            <td class="product-actions">
+                                <button class="btn-icon edit-btn" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn-icon delete-btn" title="Supprimer">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+
+            // Afficher la pagination
+            function renderPagination () {
+                const pagination = document.getElementById('products-pagination');
+                pagination.innerHTML = '';
+                
+                // Bouton précédent
+                if (this.data.currentPage > 1) {
+                    pagination.innerHTML += `
+                        <button data-page="${this.data.currentPage - 1}">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                    `;
+                }
+                
+                // Pages
+                for (let i = 1; i <= this.data.totalPages; i++) {
+                    if (
+                        i === 1 || 
+                        i === this.data.totalPages || 
+                        (i >= this.data.currentPage - 1 && i <= this.data.currentPage + 1)
+                    ) {
+                        pagination.innerHTML += `
+                            <button data-page="${i}" ${i === this.data.currentPage ? 'class="active"' : ''}>
+                                ${i}
+                            </button>
+                        `;
+                    } else if (
+                        i === this.data.currentPage - 2 || 
+                        i === this.data.currentPage + 2
+                    ) {
+                        pagination.innerHTML += `<span class="pagination-ellipsis">...</span>`;
+                    }
+                }
+                
+                // Bouton suivant
+                if (this.data.currentPage < this.data.totalPages) {
+                    pagination.innerHTML += `
+                        <button data-page="${this.data.currentPage + 1}">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    `;
+                }
+                
+                // Ajouter les écouteurs d'événements
+                document.querySelectorAll('#products-pagination button').forEach(button => {
+                    button.addEventListener('click', () => {
+                        this.data.currentPage = parseInt(button.dataset.page);
+                        this.loadProducts();
+                    });
+                });
+            }
+
+            // Mettre à jour les statistiques
+            updateStatistics: function() {
+                // Récupérer les données statistiques
+                fetch('/api/jewels/statistics')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('total-products').textContent = data.totalProducts;
+                        document.getElementById('total-stock').textContent = data.totalStock;
+                        document.getElementById('low-stock').textContent = data.lowStock;
+                        document.getElementById('popular-products').textContent = data.popularProducts;
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des statistiques:', error);
+                    });
+            }
+
+            // Mettre à jour les graphiques
+            updateCharts: function () {
+                fetch('/api/jewels/stock-by-category')
+                    .then(response => response.json())
+                    .then(data => {
+                        const stockChart = this.data.charts.stockChart;
+                        stockChart.data.labels = data.map(item => item.category);
+                        stockChart.data.datasets[0].data = data.map(item => item.stock);
+                        stockChart.update();
+                    })
+                    .catch(error => {
+                        console.error('Erreur lors du chargement des données du graphique:', error);
+                    });
+            }
+
+            // Ouvrir le modal d'ajout/édition de produit
+            openProductModal: function(product = null) {
+                const modal = document.getElementById('productModal');
+                const form = document.getElementById('product-form');
+                const title = document.querySelector('.modal-title');
+                
+                // Réinitialiser le formulaire
+                form.reset();
+                
+                if (product) {
+                    // Mode édition
+                    title.textContent = 'Modifier le produit';
+                    this.data.editingProductId = product.id;
+                    
+                    // Remplir le formulaire avec les données du produit
+                    document.getElementById('product-name').value = product.name;
+                    document.getElementById('product-category').value = product.category_id;
+                    document.getElementById('product-description').value = product.description || '';
+                    document.getElementById('product-price').value = product.price_ttc;
+                    document.getElementById('product-tva').value = product.tva;
+                    document.getElementById('product-material').value = product.matiere;
+                    document.getElementById('product-size').value = product.taille || '';
+                    document.getElementById('product-weight').value = product.poids || '';
+                    document.getElementById('product-carat').value = product.carat || '';
+                    document.getElementById('product-stock').value = product.stock;
+                    document.getElementById('product-image').value = product.image || '';
+                } else {
+                    // Mode ajout
+                    title.textContent = 'Ajouter un produit';
+                    this.data.editingProductId = null;
+                }
+                
+                // Afficher le modal
+                modal.classList.add('show');
+            }
+
+            // Fermer le modal
+            closeProductModal: function () {
+                const modal = document.getElementById('productModal');
+                modal.classList.remove('show');
+            }
+
+            // Enregistrer un produit (ajout ou modification)
+            saveProduct: function() {
+                const form = document.getElementById('product-form');
+                
+                // Vérifier la validité du formulaire
+                if (!form.checkValidity()) {
+                    form.reportValidity();
+                    return;
+                }
+                
+                // Récupérer les données du formulaire
+                const productData = {
+                    name: document.getElementById('product-name').value,
+                    category_id: parseInt(document.getElementById('product-category').value),
+                    description: document.getElementById('product-description').value,
+                    price_ttc: parseFloat(document.getElementById('product-price').value),
+                    tva: parseFloat(document.getElementById('product-tva').value),
+                    matiere: document.getElementById('product-material').value,
+                    taille: document.getElementById('product-size').value,
+                    poids: document.getElementById('product-weight').value ? parseFloat(document.getElementById('product-weight').value) : null,
+                    carat: document.getElementById('product-carat').value ? parseInt(document.getElementById('product-carat').value) : null,
+                    stock: parseInt(document.getElementById('product-stock').value),
+                    image: document.getElementById('product-image').value
+                };
+                
+                // Déterminer si c'est un ajout ou une modification
+                const isEdit = this.data.editingProductId !== null;
+                const url = isEdit ? `/api/jewels/${this.data.editingProductId}` : '/api/jewels';
+                const method = isEdit ? 'PUT' : 'POST';
+                
+                // Envoyer la requête
+                fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(productData)
+                })
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Erreur lors de l\'enregistrement du produit');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        // Fermer le modal
+                        this.closeProductModal();
+                        
+                        // Afficher un message de succès
+                        const message = isEdit ? 'Produit modifié avec succès' : 'Produit ajouté avec succès';
+                        this.showToast(message, 'success');
+                        
+                        // Recharger les produits
+                        this.loadProducts();
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        this.showToast('Erreur lors de l\'enregistrement du produit', 'error');
+                    });
+                }

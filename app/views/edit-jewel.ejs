@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Modifier <%= jewel.name %> | Administration</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  
+  <style>
+    .image-preview {
+      position: relative;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .image-preview img {
+      width: 100%;
+      height: 200px;
+      object-fit: cover;
+    }
+    
+    .image-actions {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      display: flex;
+      gap: 5px;
+    }
+    
+    .image-actions .btn {
+      padding: 4px 8px;
+      font-size: 12px;
+    }
+    
+    .main-image-badge {
+      position: absolute;
+      top: 5px;
+      left: 5px;
+      background: #28a745;
+      color: white;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+    }
+    
+    .marked-for-deletion {
+      opacity: 0.5;
+      border: 2px solid #dc3545 !important;
+    }
+    
+    .discount-preview {
+      background: linear-gradient(135deg, #28a745, #20c997);
+      color: white;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+    }
+    
+    .price-comparison {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    .price-original {
+      text-decoration: line-through;
+      color: #6c757d;
+      font-size: 18px;
+    }
+    
+    .price-final {
+      color: #28a745;
+      font-size: 22px;
+      font-weight: bold;
+    }
+    
+    .savings {
+      background: #dc3545;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 15px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+<body class="bg-light">
+  <%- include('partials/navbarre.ejs') %>
+
+  <div class="container mt-4">
+    <div class="row">
+      <div class="col-md-12">
+        
+        <!-- En-tête -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <h2><i class="fas fa-edit"></i> Modifier le bijou : <%= jewel.name %></h2>
+          <div>
+            <a href="/gestionnaire-bijoux" class="btn btn-secondary">
+              <i class="fas fa-arrow-left"></i> Retour
+            </a>
+            <a href="/bijoux/<%= jewel.slug %>" class="btn btn-info" target="_blank">
+              <i class="fas fa-eye"></i> Voir
+            </a>
+          </div>
+        </div>
+
+        <!-- Messages -->
+        <% if (typeof error !== 'undefined' && error) { %>
+          <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle"></i> <%= error %>
+          </div>
+        <% } %>
+        
+        <% if (typeof success !== 'undefined' && success) { %>
+          <div class="alert alert-success" role="alert">
+            <i class="fas fa-check-circle"></i> <%= success %>
+          </div>
+        <% } %>
+
+        <!-- Formulaire principal -->
+        <form id="jewelForm" action="/admin/bijoux/<%= jewel.slug %>/update" method="POST" enctype="multipart/form-data">
+
+          <!-- Informations générales -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5><i class="fas fa-info-circle"></i> Informations générales</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="name" class="form-label">Nom du bijou <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="name" name="name" 
+                           value="<%= jewel.name %>" required>
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="category_id" class="form-label">Catégorie <span class="text-danger">*</span></label>
+                    <select class="form-select" id="category_id" name="category_id" required>
+                      <option value="">-- Sélectionner --</option>
+                      <% categories.forEach(category => { %>
+                        <option value="<%= category.id %>" <%= jewel.category_id == category.id ? 'selected' : '' %>>
+                          <%= category.name %>
+                        </option>
+                      <% }); %>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="mb-3">
+                <label for="description" class="form-label">Description</label>
+                <textarea class="form-control" id="description" name="description" rows="3"><%= jewel.description || '' %></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Caractéristiques -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5><i class="fas fa-gem"></i> Caractéristiques</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="poids" class="form-label">Poids (g)</label>
+                    <input type="number" class="form-control" id="poids" name="poids" 
+                           step="0.01" value="<%= jewel.poids || '' %>">
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="matiere" class="form-label">Matière <span class="text-danger">*</span></label>
+                    <select class="form-select" id="matiere" name="matiere" required>
+                      <option value="">-- Sélectionner --</option>
+                      <% materials.forEach(material => { %>
+                        <option value="<%= material.name %>" <%= jewel.matiere === material.name ? 'selected' : '' %>>
+                          <%= material.name %>
+                        </option>
+                      <% }); %>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="type_id" class="form-label">Type</label>
+                    <select class="form-select" id="type_id" name="type_id">
+                      <option value="">-- Sélectionner --</option>
+                      <% types.forEach(type => { %>
+                        <option value="<%= type.id %>" <%= jewel.type_id == type.id ? 'selected' : '' %>>
+                          <%= type.name %>
+                        </option>
+                      <% }); %>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="carat" class="form-label">Carat</label>
+                    <select class="form-select" id="carat" name="carat">
+                      <option value="">-- Sélectionner --</option>
+                      <option value="9" <%= jewel.carat == 9 ? 'selected' : '' %>>9 carats</option>
+                      <option value="14" <%= jewel.carat == 14 ? 'selected' : '' %>>14 carats</option>
+                      <option value="18" <%= jewel.carat == 18 ? 'selected' : '' %>>18 carats</option>
+                      <option value="22" <%= jewel.carat == 22 ? 'selected' : '' %>>22 carats</option>
+                      <option value="24" <%= jewel.carat == 24 ? 'selected' : '' %>>24 carats</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tarification et Réductions -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5><i class="fas fa-euro-sign"></i> Tarification et Réductions</h5>
+            </div>
+            <div class="card-body">
+              <!-- Prix de base -->
+              <div class="row mb-4">
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="price_ttc" class="form-label">Prix TTC (€) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="price_ttc" name="price_ttc" 
+                           step="0.01" value="<%= jewel.price_ttc || '' %>" required>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="tva" class="form-label">TVA (%) <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control" id="tva" name="tva" 
+                           step="0.1" value="<%= jewel.tva || 20 %>" required>
+                  </div>
+                </div>
+                <div class="col-md-4">
+                  <div class="mb-3">
+                    <label for="price_ht" class="form-label">Prix HT (€)</label>
+                    <input type="number" class="form-control" id="price_ht" name="price_ht" 
+                           step="0.01" value="<%= jewel.price_ht || '' %>" readonly>
+                    <div class="form-text">Calculé automatiquement</div>
+                  </div>
+                </div>
+              </div>
+
+              <hr>
+
+              <!-- Section Réductions -->
+              <h6 class="mb-3"><i class="fas fa-percent text-danger"></i> Gestion des réductions</h6>
+              
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="discount_percentage" class="form-label">Réduction (%)</label>
+                    <input type="number" class="form-control" id="discount_percentage" name="discount_percentage" 
+                           min="0" max="90" step="1" value="<%= jewel.discount_percentage || 0 %>"
+                           placeholder="Ex: 20 pour -20%">
+                    <div class="form-text">0 = aucune réduction</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="discount_start_date" class="form-label">Date de début</label>
+                    <input type="datetime-local" class="form-control" id="discount_start_date" name="discount_start_date"
+                           value="<%= jewel.discount_start_date ? new Date(jewel.discount_start_date).toISOString().slice(0,16) : '' %>">
+                    <div class="form-text">Optionnel</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label for="discount_end_date" class="form-label">Date de fin</label>
+                    <input type="datetime-local" class="form-control" id="discount_end_date" name="discount_end_date"
+                           value="<%= jewel.discount_end_date ? new Date(jewel.discount_end_date).toISOString().slice(0,16) : '' %>">
+                    <div class="form-text">Optionnel</div>
+                  </div>
+                </div>
+                <div class="col-md-3">
+                  <div class="mb-3">
+                    <label class="form-label">Prix final (€)</label>
+                    <div class="form-control-plaintext" id="final_price_display">
+                      <strong id="final_price_value">-</strong>
+                    </div>
+                    <div class="form-text">Avec réduction appliquée</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Aperçu de la réduction -->
+              <div id="discount_preview" class="discount-preview d-none">
+                <div class="d-flex align-items-center gap-3">
+                  <i class="fas fa-percentage"></i>
+                  <div>
+                    <div id="discount_preview_text"></div>
+                    <div class="price-comparison">
+                      <span class="price-original" id="original_price_display">-</span>
+                      <i class="fas fa-arrow-right"></i>
+                      <span class="price-final" id="discounted_price_display">-</span>
+                      <span class="savings" id="savings_display">-</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tailles et Stock -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5><i class="fas fa-boxes"></i> Tailles et Stock</h5>
+            </div>
+            <div class="card-body">
+              <div id="sizesContainer">
+                <% 
+                let tailles = [];
+                if (jewel.tailles) {
+                  if (Array.isArray(jewel.tailles)) {
+                    tailles = jewel.tailles;
+                  } else if (typeof jewel.tailles === 'string') {
+                    try {
+                      tailles = JSON.parse(jewel.tailles);
+                    } catch (e) {
+                      tailles = [];
+                    }
+                  }
+                }
+                
+                if (tailles.length === 0) {
+                  tailles = [{ taille: '', stock: jewel.stock || 0 }];
+                }
+                %>
+                
+                <% tailles.forEach((taille, index) => { %>
+                  <div class="row mb-2 size-entry" data-index="<%= index %>">
+                    <div class="col-md-5">
+                      <input type="text" class="form-control" name="sizes[<%= index %>][taille]" 
+                             value="<%= taille.taille || '' %>" placeholder="Taille">
+                    </div>
+                    <div class="col-md-5">
+                      <input type="number" class="form-control" name="sizes[<%= index %>][stock]" 
+                             value="<%= taille.stock || 0 %>" min="0" placeholder="Stock">
+                    </div>
+                    <div class="col-md-2">
+                      <button type="button" class="btn btn-danger btn-sm" onclick="removeSizeEntry(<%= index %>)">
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </div>
+                  </div>
+                <% }); %>
+              </div>
+              <button type="button" class="btn btn-outline-secondary btn-sm" onclick="addSizeEntry()">
+                <i class="fas fa-plus"></i> Ajouter une taille
+              </button>
+            </div>
+          </div>
+
+          <!-- Images actuelles -->
+          <% if (jewel.image || (jewel.additionalImages && jewel.additionalImages.length > 0)) { %>
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5><i class="fas fa-images"></i> Images actuelles</h5>
+            </div>
+            <div class="card-body">
+              <div class="row" id="current-images-container">
+                <!-- Image principale -->
+                <% if (jewel.image) { %>
+                  <div class="col-md-3 mb-3">
+                    <div class="image-preview" data-image="<%= jewel.image %>" data-is-main="true">
+                      <img src="/uploads/jewels/<%= jewel.image %>" alt="Image principale">
+                      <div class="main-image-badge">Image principale</div>
+                      <div class="image-actions">
+                        <button type="button" class="btn btn-danger btn-sm" onclick="markImageForDeletion(this, null, '<%= jewel.image %>')">
+                          <i class="fas fa-trash"></i>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                <% } %>
+                
+                <!-- Images additionnelles -->
+                <% if (jewel.additionalImages && jewel.additionalImages.length > 0) { %>
+                  <% jewel.additionalImages.forEach(image => { %>
+                    <% if (image.image_url !== jewel.image) { %>
+                      <div class="col-md-3 mb-3">
+                        <div class="image-preview" data-image="<%= image.image_url %>" data-image-id="<%= image.id %>">
+                          <img src="/uploads/jewels/<%= image.image_url %>" alt="Image additionnelle">
+                          <div class="image-actions">
+                            <button type="button" class="btn btn-primary btn-sm" onclick="setAsMainImage(this, '<%= image.image_url %>')">
+                              <i class="fas fa-star"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger btn-sm" onclick="markImageForDeletion(this, '<%= image.id %>', '<%= image.image_url %>')">
+                              <i class="fas fa-trash"></i>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    <% } %>
+                  <% }); %>
+                <% } %>
+              </div>
+            </div>
+          </div>
+          <% } %>
+
+          <!-- Nouvelles images -->
+          <div class="card mb-4">
+            <div class="card-header">
+              <h5><i class="fas fa-upload"></i> Ajouter de nouvelles images</h5>
+            </div>
+            <div class="card-body">
+              <div class="row">
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="newMainImage" class="form-label">Nouvelle image principale</label>
+                    <input type="file" class="form-control" id="newMainImage" name="newMainImage" accept="image/*">
+                    <div class="form-text">Remplace l'image principale actuelle</div>
+                  </div>
+                  <div id="newMainImagePreview"></div>
+                </div>
+                <div class="col-md-6">
+                  <div class="mb-3">
+                    <label for="newImages" class="form-label">Images additionnelles</label>
+                    <input type="file" class="form-control" id="newImages" name="newImages" accept="image/*" multiple>
+                    <div class="form-text">Sélectionnez plusieurs images</div>
+                  </div>
+                  <div id="newImagesPreview" class="row"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Champs cachés -->
+          <input type="hidden" id="imagesToDelete" name="imagesToDelete" value="">
+          <input type="hidden" id="mainImage" name="mainImage" value="<%= jewel.image || '' %>">
+          <input type="hidden" id="taillesToSave" name="taillesToSave" value="">
+
+          <!-- Boutons -->
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex justify-content-between">
+                <a href="/gestionnaire-bijoux" class="btn btn-secondary">
+                  <i class="fas fa-times"></i> Annuler
+                </a>
+                <div>
+                  <button type="button" class="btn btn-info" onclick="previewChanges()">
+                    <i class="fas fa-eye"></i> Aperçu
+                  </button>
+                  <button type="submit" class="btn btn-success">
+                    <i class="fas fa-save"></i> Mettre à jour
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+        </form>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script>
+    // Variables globales
+    let imagesToDelete = [];
+    let sizeCounter = <%= tailles.length %>;
+
+    // Calcul automatique des prix
+    document.getElementById('price_ttc').addEventListener('input', calculatePrices);
+    document.getElementById('tva').addEventListener('input', calculatePrices);
+    document.getElementById('discount_percentage').addEventListener('input', calculatePrices);
+
+    function calculatePrices() {
+      const priceTTC = parseFloat(document.getElementById('price_ttc').value) || 0;
+      const tva = parseFloat(document.getElementById('tva').value) || 20;
+      const discount = parseFloat(document.getElementById('discount_percentage').value) || 0;
+      
+      // Prix HT
+      if (priceTTC > 0) {
+        const priceHT = priceTTC / (1 + (tva / 100));
+        document.getElementById('price_ht').value = priceHT.toFixed(2);
+      } else {
+        document.getElementById('price_ht').value = '';
+      }
+
+      // Prix final avec réduction
+      let finalPrice = priceTTC;
+      const preview = document.getElementById('discount_preview');
+      
+      if (discount > 0 && priceTTC > 0) {
+        finalPrice = priceTTC * (1 - discount / 100);
+        const saving = priceTTC - finalPrice;
+        
+        // Afficher l'aperçu
+        document.getElementById('discount_preview_text').textContent = `Réduction de ${discount}% appliquée`;
+        document.getElementById('original_price_display').textContent = `${priceTTC.toFixed(2)}€`;
+        document.getElementById('discounted_price_display').textContent = `${finalPrice.toFixed(2)}€`;
+        document.getElementById('savings_display').textContent = `-${saving.toFixed(2)}€`;
+        
+        preview.classList.remove('d-none');
+      } else {
+        preview.classList.add('d-none');
+      }
+
+      document.getElementById('final_price_value').textContent = 
+        finalPrice > 0 ? finalPrice.toFixed(2) + '€' : '-';
+    }
+
+    // Gestion des tailles
+    function addSizeEntry() {
+      const container = document.getElementById('sizesContainer');
+      const newRow = document.createElement('div');
+      newRow.className = 'row mb-2 size-entry';
+      newRow.setAttribute('data-index', sizeCounter);
+      
+      newRow.innerHTML = `
+        <div class="col-md-5">
+          <input type="text" class="form-control" name="sizes[${sizeCounter}][taille]" placeholder="Taille">
+        </div>
+        <div class="col-md-5">
+          <input type="number" class="form-control" name="sizes[${sizeCounter}][stock]" value="0" min="0" placeholder="Stock">
+        </div>
+        <div class="col-md-2">
+          <button type="button" class="btn btn-danger btn-sm" onclick="removeSizeEntry(${sizeCounter})">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      `;
+      
+      container.appendChild(newRow);
+      sizeCounter++;
+    }
+
+    function removeSizeEntry(index) {
+      const entry = document.querySelector(`[data-index="${index}"]`);
+      if (entry && document.querySelectorAll('.size-entry').length > 1) {
+        entry.remove();
+      } else {
+        alert('Au moins une taille est requise');
+      }
+    }
+
+    // Gestion des images
+    function markImageForDeletion(button, imageId, imageUrl) {
+      const preview = button.closest('.image-preview');
+      const isMain = preview.dataset.isMain === 'true';
+      
+      if (preview.classList.contains('marked-for-deletion')) {
+        // Annuler suppression
+        preview.classList.remove('marked-for-deletion');
+        button.innerHTML = '<i class="fas fa-trash"></i>';
+        button.className = 'btn btn-danger btn-sm';
+        
+        // Retirer de la liste
+        if (imageId) {
+          imagesToDelete = imagesToDelete.filter(id => id !== imageId);
+        }
+      } else {
+        // Marquer pour suppression
+        if (isMain && !confirm('Supprimer l\'image principale ? Assurez-vous d\'ajouter une nouvelle image.')) {
+          return;
+        }
+        
+        preview.classList.add('marked-for-deletion');
+        button.innerHTML = '<i class="fas fa-undo"></i>';
+        button.className = 'btn btn-success btn-sm';
+        
+        if (imageId) {
+          imagesToDelete.push(imageId);
+        } else if (isMain) {
+          document.getElementById('mainImage').value = '';
+        }
+      }
+      
+      document.getElementById('imagesToDelete').value = JSON.stringify(imagesToDelete);
+    }
+
+    function setAsMainImage(button, imageUrl) {
+      // Retirer l'ancienne image principale
+      const oldMain = document.querySelector('[data-is-main="true"]');
+      if (oldMain) {
+        oldMain.dataset.isMain = 'false';
+        oldMain.querySelector('.main-image-badge').textContent = 'Image additionnelle';
+        
+        const actions = oldMain.querySelector('.image-actions');
+        actions.innerHTML = `
+          <button type="button" class="btn btn-primary btn-sm" onclick="setAsMainImage(this, '${document.getElementById('mainImage').value}')">
+            <i class="fas fa-star"></i>
+          </button>
+          <button type="button" class="btn btn-danger btn-sm" onclick="markImageForDeletion(this, null, '${document.getElementById('mainImage').value}')">
+            <i class="fas fa-trash"></i>
+          </button>
+        `;
+      }
+      
+      // Marquer la nouvelle comme principale
+      const newMain = button.closest('.image-preview');
+      newMain.dataset.isMain = 'true';
+      newMain.querySelector('.main-image-badge').textContent = 'Image principale';
+      
+      const actions = newMain.querySelector('.image-actions');
+      actions.innerHTML = `
+        <button type="button" class="btn btn-danger btn-sm" onclick="markImageForDeletion(this, null, '${imageUrl}')">
+          <i class="fas fa-trash"></i>
+        </button>
+      `;
+      
+      document.getElementById('mainImage').value = imageUrl;
+      
+      showAlert('Image principale mise à jour', 'success');
+    }
+
+    // Gestion des nouvelles images
+    document.getElementById('newImages').addEventListener('change', function(e) {
+      previewNewImages(e.target.files, 'newImagesPreview');
+    });
+
+    document.getElementById('newMainImage').addEventListener('change', function(e) {
+      previewNewImages(e.target.files, 'newMainImagePreview', true);
+    });
+
+    function previewNewImages(files, containerId, isMain = false) {
+      const container = document.getElementById(containerId);
+      
+      if (isMain) {
+        container.innerHTML = '';
+      }
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (!file.type.startsWith('image/')) continue;
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const col = document.createElement('div');
+          col.className = isMain ? 'col-12' : 'col-md-6 mb-2';
+          col.innerHTML = `
+            <div class="image-preview ${isMain ? 'border border-primary' : ''}">
+              <img src="${e.target.result}" style="height: 100px; object-fit: cover;">
+              <div class="image-actions">
+                <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.col-12, .col-md-6').remove()">
+                  <i class="fas fa-times"></i>
+                </button>
+              </div>
+              ${isMain ? '<div class="main-image-badge">Nouvelle image principale</div>' : ''}
+            </div>
+          `;
+          container.appendChild(col);
+        };
+        
+        reader.readAsDataURL(file);
+      }
+    }
+
+    function previewChanges() {
+      const changes = [];
+      
+      const currentPrice = parseFloat(document.getElementById('price_ttc').value);
+      const currentDiscount = parseFloat(document.getElementById('discount_percentage').value) || 0;
+      
+      if (currentDiscount > 0) {
+        const finalPrice = currentPrice * (1 - currentDiscount / 100);
+        changes.push(`Prix avec réduction : ${finalPrice.toFixed(2)}€ (${currentDiscount}% de réduction)`);
+      }
+      
+      if (imagesToDelete.length > 0) {
+        changes.push(`${imagesToDelete.length} image(s) seront supprimée(s)`);
+      }
+      
+      const newMainImage = document.getElementById('newMainImage').files.length;
+      const newImages = document.getElementById('newImages').files.length;
+      
+      if (newMainImage > 0) {
+        changes.push('Nouvelle image principale sera ajoutée');
+      }
+      if (newImages > 0) {
+        changes.push(`${newImages} nouvelle(s) image(s) additionnelle(s) seront ajoutée(s)`);
+      }
+      
+      if (changes.length === 0) {
+        changes.push('Aucune modification détectée');
+      }
+      
+      alert('Aperçu des modifications :\n\n• ' + changes.join('\n• '));
+    }
+
+    function showAlert(message, type = 'info') {
+      const alertDiv = document.createElement('div');
+      alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+      alertDiv.style.top = '20px';
+      alertDiv.style.right = '20px';
+      alertDiv.style.zIndex = '9999';
+      alertDiv.innerHTML = `
+        <i class="fas fa-check"></i> ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+      document.body.appendChild(alertDiv);
+      
+      setTimeout(() => {
+        if (alertDiv.parentNode) alertDiv.remove();
+      }, 3000);
+    }
+
+    // Soumission du formulaire
+    document.getElementById('jewelForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // Validation
+      const required = ['name', 'category_id', 'matiere', 'price_ttc', 'tva'];
+      let valid = true;
+      
+      required.forEach(field => {
+        const element = document.getElementById(field);
+        if (!element.value.trim()) {
+          element.classList.add('is-invalid');
+          valid = false;
+        } else {
+          element.classList.remove('is-invalid');
+        }
+      });
+      
+      if (!valid) {
+        showAlert('Veuillez remplir tous les champs obligatoires', 'danger');
+        return;
+      }
+
+      // Validation des dates de réduction
+      const startDate = document.getElementById('discount_start_date').value;
+      const endDate = document.getElementById('discount_end_date').value;
+      
+      if (startDate && endDate && new Date(startDate) >= new Date(endDate)) {
+        showAlert('La date de fin de réduction doit être postérieure à la date de début', 'warning');
+        return;
+      }
+
+      // Collecter les tailles
+      const sizes = [];
+      document.querySelectorAll('.size-entry').forEach(entry => {
+        const taille = entry.querySelector('input[name*="[taille]"]').value.trim();
+        const stock = entry.querySelector('input[name*="[stock]"]').value;
+        if (taille) {
+          sizes.push({ taille, stock: parseInt(stock) || 0 });
+        }
+      });
+      
+      if (sizes.length === 0) {
+        showAlert('Au moins une taille doit être définie', 'warning');
+        return;
+      }
+      
+      document.getElementById('taillesToSave').value = JSON.stringify(sizes);
+      
+      // Désactiver le bouton et soumettre
+      const submitBtn = document.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mise à jour...';
+      submitBtn.disabled = true;
+      
+      this.submit();
+    });
+
+    // Initialisation
+    document.addEventListener('DOMContentLoaded', function() {
+      calculatePrices();
+      
+      // Focus sur le premier champ
+      document.getElementById('name').focus();
+      
+      // Validation en temps réel
+      const inputs = document.querySelectorAll('input[required], select[required]');
+      inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+          if (this.value.trim()) {
+            this.classList.remove('is-invalid');
+            this.classList.add('is-valid');
+          } else {
+            this.classList.add('is-invalid');
+            this.classList.remove('is-valid');
+          }
+        });
+      });
+    });
+  </script>
+
+</body>
+</html>

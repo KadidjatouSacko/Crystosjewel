@@ -1,0 +1,151 @@
+
+<style>
+
+footer {
+    background: linear-gradient(135deg, #b76e79 0%, #a05d68 100%);
+    color: white;
+    padding: 3rem 0 1rem;
+    margin-top: 4rem;
+    box-shadow: 0 -4px 20px rgba(183, 110, 121, 0.1);
+}
+
+.footer-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+.footer-column h4 {
+    color: white; /* Titres en blanc sur fond rose */
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.footer-column ul {
+    list-style: none;
+    padding: 0;
+}
+
+.footer-column ul li {
+    margin-bottom: 0.5rem;
+}
+
+.footer-column ul li a {
+    color: rgba(255, 255, 255, 0.9); /* Blanc légèrement transparent */
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+}
+
+.footer-column ul li a:hover {
+    color: white;
+    transform: translateX(5px); /* Petit effet de glissement au hover */
+    text-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.footer-column ul li a i {
+    margin-right: 0.5rem;
+    width: 16px;
+    opacity: 0.8;
+    transition: opacity 0.3s ease;
+}
+
+.footer-column ul li a:hover i {
+    opacity: 1;
+}
+
+.copyright {
+    text-align: center;
+    padding-top: 2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.2); /* Bordure blanche transparente */
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.9rem;
+}
+
+/* Effet dégradé optionnel pour plus d'élégance */
+footer::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+}
+
+footer {
+    position: relative;
+}
+
+@media (max-width: 768px) {
+    .footer-content {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.5rem;
+    }
+    
+    footer {
+        padding: 2rem 0 1rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .footer-content {
+        grid-template-columns: 1fr;
+        text-align: center;
+    }
+    
+    .footer-column ul li a:hover {
+        transform: none; /* Pas d'effet de glissement sur mobile */
+    }
+}
+</style>
+
+<footer>
+    <div class="container">
+        <div class="footer-content">
+            <div class="footer-column">
+                <h4>À propos</h4>
+                <ul>
+                    <li><a href="<%= siteSettings.footer?.about_us_link || '#' %>">Notre histoire</a></li>
+                    <li><a href="<%= siteSettings.footer?.values_link || '#' %>">Nos valeurs</a></li>
+                    <li><a href="#">Nos engagements</a></li>
+                    <li><a href="#">Nos boutiques</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Informations</h4>
+                <ul>
+                    <li><a href="#">Livraison</a></li>
+                    <li><a href="#">Retours & échanges</a></li>
+                    <li><a href="#">Entretien bijoux</a></li>
+                    <li><a href="#">FAQ</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+                <h4>Service client</h4>
+                <ul>
+                    <li><a href="mailto:<%= siteSettings.company?.company_email || 'contact@crystosjewel.com' %>">Contactez-nous</a></li>
+                    <li><a href="#">Suivi de commande</a></li>
+                    <li><a href="#">Mentions légales</a></li>
+                    <li><a href="#">CGV</a></li>
+                </ul>
+            </div>
+            <div class="footer-column">
+    <h4>Suivez-nous</h4>
+    <ul>
+        <li><a href="<%= siteSettings.footer?.instagram_url || '#' %>"><i class="fab fa-instagram"></i> Instagram</a></li>
+        <li><a href="<%= siteSettings.footer?.facebook_url || '#' %>"><i class="fab fa-facebook-f"></i> Facebook</a></li>
+        <li><a href="<%= siteSettings.footer?.pinterest_url || '#' %>"><i class="fab fa-pinterest-p"></i> Pinterest</a></li>
+        <li><a href="<%= siteSettings.footer?.tiktok_url || '#' %>"><i class="fab fa-tiktok"></i> TikTok</a></li>
+    </ul>
+</div>
+        </div>
+        <div class="copyright">
+            <p>&copy; <%= siteSettings.footer?.copyright_text || '2025 CrystosJewel - Tous droits réservés.' %></p>
+        </div>
+    </div>
+</footer>

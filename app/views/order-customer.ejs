@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Suivi de Commande | Bijoux Précieux</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.1.3/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/order-customer.css">
+</head>
+<body>
+
+       <%- include('partials/navbarre.ejs') %>
+       
+    <!-- Page Content -->
+    <div class="container my-5">
+        <!-- Client View -->
+        <div id="clientView">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h2 class="mb-4">Suivi de vos commandes</h2>
+                    
+                    <div class="dropdown mb-4">
+                        <button class="btn btn-outline-primary dropdown-toggle" type="button" id="orderFilterDropdown" data-bs-toggle="dropdown">
+                            Filtrer par statut
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="orderFilterDropdown">
+                            <li><a class="dropdown-item" href="#">Toutes les commandes</a></li>
+                            <li><a class="dropdown-item" href="#">En attente</a></li>
+                            <li><a class="dropdown-item" href="#">En préparation</a></li>
+                            <li><a class="dropdown-item" href="#">Expédiée</a></li>
+                            <li><a class="dropdown-item" href="#">Livrée</a></li>
+                            <li><a class="dropdown-item" href="#">Annulée</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Order List -->
+            <div class="row">
+                <% commandes.forEach(function(commande, index) { %>
+                  <div class="col-12">
+                    <!-- Commande dynamique -->
+                    <div class="card mb-4">
+                      <div class="card-body">
+                        <div class="row">
+                          <div class="col-md-8">
+                            <div class="d-flex justify-content-between">
+                              <h5 class="card-title">Commande #<%= commande.numero_commande %></h5>
+                              <span class="status-badge 
+                                <% if (commande.statut === 'Livrée') { %> status-delivered 
+                                <% } else if (commande.statut === 'Expédiée') { %> status-shipped 
+                                <% } else if (commande.statut === 'Préparation') { %> status-processing 
+                                <% } else { %> status-pending <% } %>">
+                                <%= commande.statut %>
+                              </span>
+                            </div>
+                            <p class="text-muted mb-3">
+                              Passée le <%= new Date(commande.date_commande).toLocaleDateString() %> · 
+                              <%= commande.nb_articles %> article<%= commande.nb_articles > 1 ? 's' : '' %> · 
+                              <%= commande.total.toFixed(2) %> €
+                            </p>
+              
+                            <div class="d-flex overflow-auto mb-3">
+                                <% if (commande.produits && Array.isArray(commande.produits)) { %>
+                                    <% commande.produits.forEach(function(produit) { %>
+                                        <img src="<%= produit.image_url %>" class="product-img me-2" alt="<%= produit.nom %>">
+                                    <% }); %>
+                                <% } else { %>
+                                    <p>Aucun produit dans cette commande.</p>
+                                <% } %>
+                            </div>
+              
+                            <div class="progress mb-3" style="height: 6px;">
+                              <div class="progress-bar" role="progressbar" 
+                                style="width: 
+                                  <% if (commande.statut === 'Préparation') { %> 25%
+                                  <% } else if (commande.statut === 'Expédiée') { %> 75%
+                                  <% } else if (commande.statut === 'Livrée') { %> 100%
+                                  <% } else { %> 10% <% } %>">
+                              </div>
+                            </div>
+              
+                            <div class="d-flex justify-content-between text-muted small mb-3">
+                              <span>Commande</span>
+                              <span>Préparation</span>
+                              <span>Expédition</span>
+                              <span>Livraison</span>
+                            </div>
+                          </div>
+              
+                          <div class="col-md-4 d-flex flex-column justify-content-between align-items-end">
+                            <p class="mb-3">Livraison prévue: <strong><%= new Date(commande.date_livraison_estimee).toLocaleDateString() %></strong></p>
+                            <div>
+                              <button class="btn btn-sm btn-outline-primary mb-2" data-bs-toggle="modal" data-bs-target="#orderDetailsModal<%= index %>">
+                                <i class="fas fa-eye"></i> Détails
+                              </button>
+                              <% if (commande.suivi_lien) { %>
+                                <a href="<%= commande.suivi_lien %>" target="_blank" class="btn btn-sm btn-primary">
+                                  <i class="fas fa-truck"></i> Suivre
+                                </a>
+                              <% } %>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                <% }); %>
+                    
+                <!-- Exemples statiques de commandes (à conserver pour référence) -->
+                <div class="col-12">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="d-flex justify-content-between">
+                                        <h5 class="card-title">Commande #10017</h5>
+                                        <span class="status-badge status-delivered">Livrée</span>
+                                    </div>
+                                    <p class="text-muted mb-3">Passée le 15/04/2025 · 1 article · 150,00 €</p>
+                                    
+                                    <div class="d-flex overflow-auto mb-3">
+                                        <img src="/api/placeholder/60/60" class="product-img me-2" alt="Bracelet argent">
+                                    </div>
+                                    
+                                    <div class="progress mb-3" style="height: 6px;">
+                                        <div class="progress-bar" role="progressbar" style="width: 100%"></div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between text-muted small mb-3">
+                                        <span>Commande</span>
+                                        <span>Préparation</span>
+                                        <span>Expédition</span>
+                                        <span>Livraison</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 d-flex flex-column justify-content-between align-items-end">
+                                    <p class="mb-3">Livrée le: <strong>22/04/2025</strong></p>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary mb-2" data-bs-toggle="modal" data-bs-target="#orderDetailsModal2">
+                                            <i class="fas fa-eye"></i> Détails
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-secondary">
+                                            <i class="fas fa-redo"></i> Commander à nouveau
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12">
+                    <div class="card mb-4">
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <div class="d-flex justify-content-between">
+                                        <h5 class="card-title">Commande #10010</h5>
+                                        <span class="status-badge status-pending">En attente</span>
+                                    </div>
+                                    <p class="text-muted mb-3">Passée le 01/05/2025 · 2 articles · 320,50 €</p>
+                                    
+                                    <div class="d-flex overflow-auto mb-3">
+                                        <img src="/api/placeholder/60/60" class="product-img me-2" alt="Collier perles">
+                                        <img src="/api/placeholder/60/60" class="product-img me-2" alt="Boucles d'oreilles">
+                                    </div>
+                                    
+                                    <div class="progress mb-3" style="height: 6px;">
+                                        <div class="progress-bar" role="progressbar" style="width: 25%"></div>
+                                    </div>
+                                    
+                                    <div class="d-flex justify-content-between text-muted small mb-3">
+                                        <span>Commande</span>
+                                        <span>Préparation</span>
+                                        <span>Expédition</span>
+                                        <span>Livraison</span>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 d-flex flex-column justify-content-between align-items-end">
+                                    <p class="mb-3">Paiement en attente</p>
+                                    <div>
+                                        <button class="btn btn-sm btn-outline-primary mb-2" data-bs-toggle="modal" data-bs-target="#orderDetailsModal3">
+                                            <i class="fas fa-eye"></i> Détails
+                                        </button>
+                                        <button class="btn btn-sm btn-primary">
+                                            <i class="fas fa-credit-card"></i> Payer
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modals -->
+    <% commandes.forEach(function(commande, index) { %>
+        <div class="modal fade" id="orderDetailsModal<%= index %>" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Détails de la commande #<%= commande.numero_commande %></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="order-summary">
+                                    <h4>Informations</h4>
+                                    <p><strong>Date de commande :</strong> <%= new Date(commande.date_commande).toLocaleDateString() %></p>
+                                    <p><strong>Statut :</strong> 
+                                        <span class="status-badge 
+                                            <%= commande.statut === 'Expédiée' ? 'status-shipped' :
+                                                commande.statut === 'En préparation' ? 'status-processing' :
+                                                commande.statut === 'Livrée' ? 'status-delivered' :
+                                                commande.statut === 'Annulée' ? 'status-canceled' :
+                                                'status-pending' %>">
+                                        <%= commande.statut %>
+                                        </span>
+                                    </p>
+                                    <p><strong>Paiement :</strong> <%= commande.mode_paiement %></p>
+                                    <p><strong>Numéro de suivi :</strong> <%= commande.numero_suivi %></p>
+                                </div>
+                                
+                                <div class="order-summary">
+                                    <h4>Adresse de livraison</h4>
+                                    <p><strong><%= commande.client_nom %></strong><br>
+                                    <%= commande.adresse_livraison %><br>
+                                    <%= commande.ville_livraison %><br>
+                                    <%= commande.code_postal_livraison %><br>
+                                    <%= commande.pays_livraison %><br>
+                                    Tél: <%= commande.telephone_livraison %></p>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="order-summary">
+                                    <h4>Résumé de la commande</h4>
+                                    <% 
+                                        const sousTotal = (typeof commande.sous_total === 'number' && !isNaN(commande.sous_total)) ? commande.sous_total : 0;
+                                        const tva = (typeof commande.tva === 'number' && !isNaN(commande.tva)) ? commande.tva : 0;
+                                        const fraisLivraison = (typeof commande.frais_livraison === 'number' && !isNaN(commande.frais_livraison)) ? commande.frais_livraison : 0;
+                                        const total = (typeof commande.total === 'number' && !isNaN(commande.total)) ? commande.total : 0;
+                                    %>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Sous-total</span>
+                                        <span><%= sousTotal.toFixed(2).replace('.', ',') %> €</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>TVA (20%)</span>
+                                        <span><%= tva.toFixed(2).replace('.', ',') %> €</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Livraison</span>
+                                        <span><%= fraisLivraison.toFixed(2).replace('.', ',') %> €</span>
+                                    </div>
+                                    <hr>
+                                    <div class="d-flex justify-content-between">
+                                        <span><strong>Total</strong></span>
+                                        <span><strong><%= total.toFixed(2).replace('.', ',') %> €</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="order-summary">
+                            <h4>Articles</h4>
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Produit</th>
+                                            <th>Prix unitaire</th>
+                                            <th>Quantité</th>
+                                            <th>Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <% if (commande.produits && Array.isArray(commande.produits)) { %>
+                                            <% commande.produits.forEach(function(produit) { %>
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="<%= produit.image_url %>" class="product-img me-3" alt="<%= produit.nom %>">
+                                                            <div>
+                                                                <p class="jewel-name mb-0"><%= produit.nom %></p>
+                                                                <small class="text-muted"><%= produit.description %></small>
+                                                            </div>
+                                                        </div>
+                                                    </td>
+                                                    <td><%= produit.prix_unitaire.toFixed(2).replace('.', ',') %> €</td>
+                                                    <td><%= produit.quantite %></td>
+                                                    <td><%= (produit.prix_unitaire * produit.quantite).toFixed(2).replace('.', ',') %> €</td>
+                                                </tr>
+                                            <% }); %>
+                                        <% } else { %>
+                                            <tr>
+                                                <td colspan="4">Aucun produit disponible</td>
+                                            </tr>
+                                        <% } %>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                        <% if (commande.suivi_lien) { %>
+                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#trackingModal<%= commande.numero_commande %>">Suivre la livraison</button>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <% }); %>
+
+    <!-- Modals pour les exemples statiques -->
+    <!-- Order Details Modal 2 -->
+    <div class="modal fade" id="orderDetailsModal2" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Détails de la commande #10017</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="order-summary">
+                                <h4>Informations</h4>
+                                <p><strong>Date de commande :</strong> 15/04/2025</p>
+                                <p><strong>Statut :</strong> <span class="status-badge status-delivered">Livrée</span></p>
+                                <p><strong>Paiement :</strong> PayPal</p>
+                                <p><strong>Numéro de suivi :</strong> LP12345678FR</p>
+                            </div>
+                            
+                            <div class="order-summary">
+                                <h4>Adresse de livraison</h4>
+                                <p><strong>Marie Dupont</strong><br>
+                                123 Avenue des Fleurs<br>
+                                75008 Paris<br>
+                                France<br>
+                                Tél: 06 12 34 56 78</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="order-summary">
+                                <h4>Résumé de la commande</h4>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Sous-total</span>
+                                    <span>125,00 €</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>TVA (20%)</span>
+                                    <span>25,00 €</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Livraison</span>
+                                    <span>0,00 €</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <span><strong>Total</strong></span>
+                                    <span><strong>150,00 €</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="order-summary">
+                        <h4>Articles</h4>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Produit</th>
+                                        <th>Prix unitaire</th>
+                                        <th>Quantité</th>
+                                        <th>Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <img src="/api/placeholder/60/60" class="product-img me-3" alt="Bracelet argent">
+                                                <div>
+                                                    <p class="jewel-name mb-0">Bracelet Maille Vénitienne</p>
+                                                    <small class="text-muted">Argent 925, 19cm</small>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>150,00 €</td>
+                                        <td>1</td>
+                                        <td>150,00 €</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <button type="button" class="btn btn-primary">Commander à nouveau</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Order Details Modal 3 -->
+    <div class="modal fade" id="orderDetailsModal3" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Détails de la commande #10010</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning" role="alert">
+                        <i class="fas fa-exclamation-triangle me-2"></i> Votre paiement est en attente. Veuillez finaliser votre commande pour lancer la préparation.
+                    </div>
+                
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="order-summary">
+                                <h4>Informations</h4>
+                                <p><strong>Date de commande :</strong> 01/05/2025</p>
+                                <p><strong>Statut :</strong> <span class="status-badge status-pending">En attente</span></p>
+                                <p><strong>Paiement :</strong> En attente</p>
+                            </div>
+                            
+                            <div class="order-summary">
+                                <h4>Adresse de livraison</h4>
+                                <p><strong>Marie Dupont</strong><br>
+                                123 Avenue des Fleurs<br>
+                                75008 Paris<br>
+                                France<br>
+                                Tél: 06 12 34 56 78</p>
+                            </div>
+                        </div>
+                        
+                        <div class="col-md-6">
+                            <div class="order-summary">
+                                <h4>Résumé de la commande</h4>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Sous-total</span>
+                                    <span>267,08 €</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>TVA (20%)</span>
+                                    <span>53,42 €</span>
+                                </div>
+                                <div class="d-flex justify-content-between mb-2">
+                                    <span>Livraison</span>
+                                    <span>0,00 €</span>
+                                </div>
+                                <hr>
+                                <div class="d-flex justify-content-between">
+                                    <span><strong>Total</strong></span>
+                                    <span><strong>320,50 €</strong></span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="order-summary">
+                        <h4>Articles</h4>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Produit</th>
+                                        <th>Prix unitaire</th>
+                                        <th>Quantité</th>
+                                        <th>Total</th>
+<!-- Modals de suivi détaillé des livraisons -->
+<% commandes.forEach((commande) => { %>
+    <% if(commande.suivi_lien && commande.numero_suivi) { %>
+        <div class="modal fade" id="trackingModal<%= commande.numero_commande %>" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Suivi de votre livraison #<%= commande.numero_suivi %></h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="d-flex justify-content-between mb-3">
+                            <div>
+                                <h6>Commande #<%= commande.numero_commande %></h6>
+                                <p class="mb-0 text-muted">Expédiée le: <%= commande.date_expedition ? new Date(commande.date_expedition).toLocaleDateString() : 'Non disponible' %></p>
+                            </div>
+                            <div>
+                                <span class="status-badge 
+                                    <%= commande.statut === 'Expédiée' ? 'status-shipped' :
+                                        commande.statut === 'En préparation' ? 'status-processing' :
+                                        commande.statut === 'Livrée' ? 'status-delivered' :
+                                        'status-pending' %>">
+                                    <%= commande.statut %>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="order-timeline">
+                            <% const events = commande.evenements_suivi || []; %>
+                            <% events.forEach((event, index) => { %>
+                                <div class="timeline-item">
+                                    <div class="timeline-badge <%= index === 0 ? 'active' : '' %>"></div>
+                                    <div class="timeline-content">
+                                        <div class="d-flex justify-content-between">
+                                            <strong><%= event.statut %></strong>
+                                            <span class="text-muted"><%= new Date(event.date).toLocaleString() %></span>
+                                        </div>
+                                        <p class="mb-0"><%= event.description %></p>
+                                        <% if(event.lieu) { %>
+                                            <small class="text-muted"><i class="fas fa-map-marker-alt me-1"></i> <%= event.lieu %></small>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            <% }); %>
+                            
+                            <!-- Fallback si aucun événement n'est encore disponible -->
+                            <% if(events.length === 0) { %>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle me-2"></i> Les informations de suivi détaillées ne sont pas encore disponibles. Veuillez réessayer ultérieurement.
+                                </div>
+                                
+                                <div class="timeline-item">
+                                    <div class="timeline-badge active"></div>
+                                    <div class="timeline-content">
+                                        <div class="d-flex justify-content-between">
+                                            <strong>Commande validée</strong>
+                                            <span class="text-muted"><%= new Date(commande.date_commande).toLocaleString() %></span>
+                                        </div>
+                                        <p class="mb-0">Votre commande a été reçue et est en cours de traitement.</p>
+                                    </div>
+                                </div>
+                            <% } %>
+                        </div>
+                        
+                        <% if(commande.transporteur) { %>
+                            <div class="mt-4">
+                                <strong>Transporteur:</strong> <%= commande.transporteur %>
+                                <br>
+                                <small class="text-muted">Pour plus d'informations, vous pouvez consulter directement le site du transporteur avec votre numéro de suivi: <strong><%= commande.numero_suivi %></strong></small>
+                            </div>
+                        <% } %>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                        <% if(commande.suivi_lien) { %>
+                            <a href="<%= commande.suivi_lien %>" target="_blank" class="btn btn-primary">
+                                <i class="fas fa-external-link-alt me-1"></i> Voir sur le site du transporteur
+                            </a>
+                        <% } %>
+                    </div>
+                </div>
+            </div>
+        </div>
+    <% } %>
+<% }); %>
+
+<!-- Système de notification -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3">
+    <div id="notificationToast" class="toast" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast-header" style="background-color: var(--rose-gold-light);">
+            <i class="fas fa-bell me-2"></i>
+            <strong class="me-auto">Bijoux Précieux</strong>
+            <small class="text-muted">à l'instant</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Votre commande a été mise à jour.
+        </div>
+    </div>
+</div>
+
+<!-- Footer -->
+<footer class="mt-5">
+    <div class="container">
+        <div class="row">
+            <div class="col-lg-4 mb-4 mb-lg-0">
+                <h5>Bijoux Précieux</h5>
+                <p>Des bijoux d'exception pour sublimer votre beauté.</p>
+                <div class="social-icons mt-3">
+                    <a href="#" class="me-2"><i class="fab fa-facebook-f"></i></a>
+                    <a href="#" class="me-2"><i class="fab fa-instagram"></i></a>
+                    <a href="#" class="me-2"><i class="fab fa-pinterest"></i></a>
+                    <a href="#" class="me-2"><i class="fab fa-twitter"></i></a>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                <h6>Collection</h6>
+                <ul class="list-unstyled">
+                    <li><a href="#">Bagues</a></li>
+                    <li><a href="#">Colliers</a></li>
+                    <li><a href="#">Bracelets</a></li>
+                    <li><a href="#">Boucles d'oreilles</a></li>
+                    <li><a href="#">Nouvelles arrivées</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-2 col-md-4 mb-4 mb-md-0">
+                <h6>Aide & Info</h6>
+                <ul class="list-unstyled">
+                    <li><a href="#">Livraison</a></li>
+                    <li><a href="#">Retours</a></li>
+                    <li><a href="#">FAQ</a></li>
+                    <li><a href="#">Entretien des bijoux</a></li>
+                    <li><a href="#">Contact</a></li>
+                </ul>
+            </div>
+            <div class="col-lg-4 col-md-4">
+                <h6>Newsletter</h6>
+                <p>Recevez nos dernières collections et offres exclusives.</p>
+                <div class="input-group mb-3">
+                    <input type="email" class="form-control" placeholder="Votre email" aria-label="Email" aria-describedby="subscribe-btn">
+                    <button class="btn btn-primary" type="button" id="subscribe-btn">S'abonner</button>
+                </div>
+            </div>
+        </div>
+        <hr class="mt-4 mb-3" style="background-color: rgba(255,255,255,0.2);">
+        <div class="row">
+            <div class="col-md-6 text-center text-md-start">
+                <small>&copy; 2025 Bijoux Précieux. Tous droits réservés.</small>
+            </div>
+            <div class="col-md-6 text-center text-md-end">
+                <small><a href="#">Politique de confidentialité</a> | <a href="#">Conditions générales de vente</a></small>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- JavaScript pour le filtrage des commandes et autres fonctionnalités -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Gestionnaire des filtres pour les commandes
+        const filterLinks = document.querySelectorAll('#orderFilterDropdown + .dropdown-menu .dropdown-item');
+        const orderCards = document.querySelectorAll('.card');
+        
+        filterLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                const filterText = this.textContent.trim();
+                document.getElementById('orderFilterDropdown').textContent = filterText;
+                
+                // Logique de filtrage
+                if (filterText === 'Toutes les commandes') {
+                    orderCards.forEach(card => {
+                        card.style.display = 'block';
+                    });
+                } else {
+                    orderCards.forEach(card => {
+                        const statusBadge = card.querySelector('.status-badge');
+                        if (statusBadge && statusBadge.textContent.trim() === filterText) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Initialisation des toasts pour les notifications
+        const toastElList = [].slice.call(document.querySelectorAll('.toast'));
+        const toastList = toastElList.map(function(toastEl) {
+            return new bootstrap.Toast(toastEl);
+        });
+        
+        // Exemple de fonction pour montrer une notification
+        window.showNotification = function(message, title = 'Bijoux Précieux') {
+            const toast = document.getElementById('notificationToast');
+            toast.querySelector('.toast-body').textContent = message;
+            toast.querySelector('.me-auto').textContent = title;
+            
+            const bsToast = bootstrap.Toast.getInstance(toast);
+            if (bsToast) {
+                bsToast.show();
+            } else {
+                const newToast = new bootstrap.Toast(toast);
+                newToast.show();
+            }
+        };
+        
+        // Simuler une mise à jour de commande après 10 secondes pour démonstration
+        setTimeout(() => {
+            // Uniquement pour la démonstration
+            showNotification('Votre commande #10010 a été mise à jour. Le paiement a été reçu!');
+        }, 10000);
+        
+        // Fonctionnalité "commander à nouveau"
+        const reorderButtons = document.querySelectorAll('.btn-outline-secondary');
+        reorderButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                showNotification('Les articles ont été ajoutés à votre panier!');
+            });
+        });
+        
+        // Ajout d'un gestionnaire pour la recherche de commandes (préparation)
+        const searchForm = document.getElementById('orderSearchForm');
+        if (searchForm) {
+            searchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                const searchInput = document.getElementById('orderSearchInput');
+                const searchTerm = searchInput.value.trim().toLowerCase();
+                
+                if (searchTerm) {
+                    orderCards.forEach(card => {
+                        const orderNumber = card.querySelector('.card-title').textContent.toLowerCase();
+                        if (orderNumber.includes(searchTerm)) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    });
+                } else {
+                    orderCards.forEach(card => {
+                        card.style.display = 'block';
+                    });
+                }
+            });
+        }
+    });
+</script>
+
+<!-- Structure pour le service de notifications par email -->
+<script>
+    // Fonctionnalité qui serait implémentée côté serveur
+    function sendOrderUpdateEmail(orderId, status, customerEmail) {
+        // Cette fonction serait appelée depuis le backend
+        // Simulons un modèle d'email
+        
+        const emailTemplates = {
+            'En attente': `
+                Votre commande #${orderId} a été reçue.
+                Nous traiterons votre paiement dans les plus brefs délais.
+                Vous recevrez une confirmation dès que votre commande sera en préparation.
+            `,
+            'Préparation': `
+                Bonne nouvelle! Votre commande #${orderId} est en cours de préparation.
+                Notre équipe s'occupe de vérifier et d'emballer vos bijoux avec soin.
+                Vous recevrez une notification dès que votre commande sera expédiée.
+            `,
+            'Expédiée': `
+                Votre commande #${orderId} a été expédiée!
+                Vous pouvez suivre votre colis en utilisant le numéro de suivi fourni sur votre page de commande.
+                Merci pour votre achat chez Bijoux Précieux.
+            `,
+            'Livrée': `
+                Votre commande #${orderId} a été livrée!
+                Nous espérons que vous appréciez vos nouveaux bijoux.
+                N'hésitez pas à nous contacter si vous avez des questions.
+            `
+        };
+        
+        // Logique d'envoi d'email (serait implémentée côté serveur)
+        console.log(`Email envoyé à ${customerEmail}: ${emailTemplates[status]}`);
+    }
+</script>

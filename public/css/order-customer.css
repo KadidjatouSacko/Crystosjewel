@@ -1,0 +1,160 @@
+        :root {
+            --rose-gold: #b76e79;
+            --rose-gold-light: #e8c2c8;
+            --rose-gold-dark: #7d4b53;
+            --cream: #fff8f0;
+            --dark-text: #3a3a3a;
+        }
+        
+        body {
+            background-color: var(--cream);
+            color: var(--dark-text);
+        }
+
+          html,body {
+                width: 100%;
+            overflow-x: hidden; /* Évite le scroll horizontal */
+                }
+        
+        .btn-primary {
+            background-color: var(--rose-gold);
+            border-color: var(--rose-gold);
+        }
+        
+        .btn-primary:hover, .btn-primary:focus {
+            background-color: var(--rose-gold-dark);
+            border-color: var(--rose-gold-dark);
+        }
+        
+        .btn-outline-primary {
+            color: var(--rose-gold);
+            border-color: var(--rose-gold);
+        }
+        
+        .btn-outline-primary:hover, .btn-outline-primary:focus {
+            background-color: var(--rose-gold);
+            color: white;
+        }
+        
+        .progress-bar {
+            background-color: var(--rose-gold);
+        }
+        
+        .card {
+            border-radius: 8px;
+            border: none;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 20px;
+        }
+        
+        .status-badge {
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-pending {
+            background-color: #FFF3CD;
+            color: #856404;
+        }
+        
+        .status-processing {
+            background-color: #D4EDDA;
+            color: #155724;
+        }
+        
+        .status-shipped {
+            background-color: #CCE5FF;
+            color: #004085;
+        }
+        
+        .status-delivered {
+            background-color: var(--rose-gold-light);
+            color: var(--rose-gold-dark);
+        }
+        
+        .status-canceled {
+            background-color: #F8D7DA;
+            color: #721C24;
+        }
+        
+        .product-img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 4px;
+        }
+        
+        .jewel-name {
+            font-weight: 500;
+        }
+        
+        footer {
+            background-color: var(--rose-gold-dark);
+            color: white;
+            padding: 30px 0;
+        }
+        
+        footer a {
+            color: #E8C2C8;
+            text-decoration: none;
+        }
+        
+        footer a:hover {
+            color: white;
+            text-decoration: none;
+        }
+        
+        .order-summary h4 {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--rose-gold-dark);
+        }
+        
+        .modal-header {
+            background-color: var(--rose-gold-light);
+            color: var(--rose-gold-dark);
+        }
+        
+        .page-link {
+            color: var(--rose-gold);
+        }
+        
+        .page-item.active .page-link {
+            background-color: var(--rose-gold);
+            border-color: var(--rose-gold);
+        }
+        
+        /* Timeline pour le suivi */
+        .order-timeline {
+            position: relative;
+            padding-left: 30px;
+        }
+        
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .timeline-badge {
+            position: absolute;
+            left: -30px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: #e9ecef;
+            border: 2px solid #dee2e6;
+        }
+        
+        .timeline-badge.active {
+            background-color: var(--rose-gold);
+            border-color: var(--rose-gold-light);
+        }
+        
+        .timeline-content {
+            padding: 10px 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }

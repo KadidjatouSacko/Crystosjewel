@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Confirmation de votre commande</title>
+  <style>
+    :root {
+      --rose-gold: #b76e79;
+      --rose-gold-light: #e8c2c8;
+      --rose-gold-dark: #7d4b53;
+      --cream: #fff8f0;
+      --dark-text: #3a3a3a;
+      --box-shadow: 0 8px 20px rgba(183, 110, 121, 0.15);
+    }
+    body {
+      font-family: 'Arial', sans-serif;
+      background: var(--cream);
+      color: var(--dark-text);
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      box-shadow: var(--box-shadow);
+      border-radius: 8px;
+    }
+    h1 {
+      color: var(--rose-gold);
+      text-align: center;
+    }
+    p {
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+    .order-details {
+      margin-top: 20px;
+      border-top: 1px solid var(--rose-gold-light);
+      padding-top: 15px;
+    }
+    .order-details h2 {
+      color: var(--rose-gold-dark);
+    }
+    .order-item {
+      margin-bottom: 10px;
+    }
+    a.button {
+      display: inline-block;
+      background: var(--rose-gold);
+      color: white !important;
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      margin-top: 25px;
+      text-align: center;
+      font-weight: 600;
+    }
+    a.button:hover {
+      background: var(--rose-gold-dark);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Merci pour votre commande, {{customerName}} ! 🎉</h1>
+    <p>Votre bijou préféré est en route vers vous. Voici le récapitulatif :</p>
+    
+    <div class="order-details">
+      <h2>Détails de la commande #{{orderNumber}}</h2>
+      {{#each items}}
+      <div class="order-item">
+        <strong>{{this.name}}</strong> x{{this.quantity}} — {{this.price}} €
+      </div>
+      {{/each}}
+      <p><strong>Total :</strong> {{totalPrice}} €</p>
+    </div>
+
+    <p>Vous pouvez suivre votre commande en cliquant sur le bouton ci-dessous :</p>
+    <a href="{{trackingLink}}" class="button">Suivre ma commande</a>
+
+    <p>Si vous avez la moindre question, n’hésitez pas à répondre à ce mail ou à nous appeler.</p>
+
+    <p>À très vite,<br> L’équipe Crystos Jewel 💖</p>
+  </div>
+</body>
+</html>

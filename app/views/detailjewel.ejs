@@ -1,0 +1,1298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title><%= jewel ? jewel.name + ' - ÉCLAT DORÉ' : 'Détail du bijou - ÉCLAT DORÉ' %></title>
+
+  <!-- FontAwesome -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet"/>
+  
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  
+  <style>
+    /* Styles pour la bannière de réduction */
+    .promo-banner {
+      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+      color: white;
+      text-align: center;
+      padding: 10px 0;
+      font-weight: 600;
+      font-size: 14px;
+      animation: pulse 2s infinite;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .promo-banner::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      animation: shine 3s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    
+    @keyframes shine {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+
+    /* Styles pour les prix avec réduction */
+    .product-price {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    
+    .price-current {
+      font-size: 28px;
+      font-weight: 700;
+      color: #e74c3c;
+    }
+    
+    .price-original {
+      font-size: 20px;
+      color: #7f8c8d;
+      text-decoration: line-through;
+      position: relative;
+    }
+    
+    .discount-badge {
+      background: #e74c3c;
+      color: white;
+      padding: 4px 8px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      animation: bounce 1s infinite alternate;
+    }
+    
+    @keyframes bounce {
+      0% { transform: translateY(0); }
+      100% { transform: translateY(-3px); }
+    }
+
+    /* ===== STYLES ADMIN UNIQUEMENT ===== */
+    .admin-debug {
+      background: linear-gradient(135deg, #2c3e50, #34495e);
+      color: #ecf0f1;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 10px;
+      border-left: 4px solid #f39c12;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .admin-debug h4 {
+      color: #f39c12;
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .admin-debug .debug-item {
+      margin: 5px 0;
+      padding: 3px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .admin-debug .debug-item:last-child {
+      border-bottom: none;
+    }
+    
+    .admin-debug .debug-label {
+      color: #3498db;
+      font-weight: bold;
+    }
+    
+    .admin-debug .debug-value-true {
+      color: #2ecc71;
+      font-weight: bold;
+    }
+    
+    .admin-debug .debug-value-false {
+      color: #e74c3c;
+      font-weight: bold;
+    }
+
+    /* Styles pour les boutons admin */
+    .admin-actions {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      padding: 25px;
+      border-radius: 15px;
+      margin: 40px 0;
+      box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    .admin-notice {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      color: white;
+      font-weight: 600;
+      margin-bottom: 20px;
+      font-size: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      padding: 15px;
+      border-radius: 10px;
+      backdrop-filter: blur(5px);
+    }
+    
+    .admin-notice i {
+      font-size: 22px;
+      color: #ffd700;
+      animation: pulse 2s infinite;
+    }
+    
+    .admin-buttons {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    
+    .btn-admin {
+      padding: 14px 24px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+      font-size: 15px;
+      min-width: 160px;
+      justify-content: center;
+      text-align: center;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+    
+    .btn-edit {
+      background: linear-gradient(135deg, #f39c12, #e67e22);
+      color: white;
+    }
+    
+    .btn-edit:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(243, 156, 18, 0.4);
+      background: linear-gradient(135deg, #e67e22, #d35400);
+      text-decoration: none;
+      color: white;
+    }
+    
+    .btn-delete {
+      background: linear-gradient(135deg, #e74c3c, #c0392b);
+      color: white;
+    }
+    
+    .btn-delete:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
+      background: linear-gradient(135deg, #c0392b, #a93226);
+    }
+    
+    .btn-discount {
+      background: linear-gradient(135deg, #9b59b6, #8e44ad);
+      color: white;
+    }
+    
+    .btn-discount:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(155, 89, 182, 0.4);
+      background: linear-gradient(135deg, #8e44ad, #7d3c98);
+    }
+
+    /* Modal pour les réductions */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.7);
+      z-index: 1000;
+      backdrop-filter: blur(5px);
+    }
+    
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      max-width: 500px;
+      width: 90%;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: modalAppear 0.3s ease;
+    }
+    
+    @keyframes modalAppear {
+      from { transform: scale(0.7); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #eee;
+    }
+    
+    .modal-header h3 {
+      margin: 0;
+      color: #2c3e50;
+    }
+    
+    .close-btn {
+      background: none;
+      border: none;
+      font-size: 24px;
+      cursor: pointer;
+      color: #7f8c8d;
+      transition: color 0.3s;
+    }
+    
+    .close-btn:hover {
+      color: #e74c3c;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #2c3e50;
+    }
+    
+    .form-group input,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ecf0f1;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    
+    .form-group input:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: #3498db;
+    }
+    
+    .modal-footer {
+      display: flex;
+      gap: 15px;
+      justify-content: flex-end;
+      margin-top: 30px;
+    }
+    
+    .btn-secondary {
+      background: #95a5a6;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    
+    .btn-secondary:hover {
+      background: #7f8c8d;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #3498db, #2980b9);
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .admin-actions, .admin-debug {
+        margin: 20px 0;
+        padding: 20px;
+      }
+      
+      .admin-buttons {
+        flex-direction: column;
+      }
+      
+      .btn-admin {
+        width: 100%;
+        min-width: auto;
+      }
+      
+      .admin-notice {
+        font-size: 14px;
+        padding: 12px;
+      }
+      
+      .product-price {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+      }
+    }
+  </style>
+  
+  <link rel="stylesheet" href="/css/detailjewel.css">
+</head>
+
+<body>
+
+  <!-- DEBUG ADMIN UNIQUEMENT -->
+  <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+    <div class="admin-debug">
+      <h4><i class="fas fa-bug"></i> DEBUG ADMINISTRATEUR</h4>
+      <div class="debug-item">
+        <span class="debug-label">Utilisateur connecté:</span> 
+        <span class="<%= user ? 'debug-value-true' : 'debug-value-false' %>">
+          <%= user ? 'OUI' : 'NON' %>
+        </span>
+      </div>
+      <% if (user) { %>
+        <div class="debug-item">
+          <span class="debug-label">ID utilisateur:</span> 
+          <span class="debug-value-true"><%= user.id || 'Non défini' %></span>
+        </div>
+        <div class="debug-item">
+          <span class="debug-label">Rôle objet:</span> 
+          <span class="<%= user.role ? 'debug-value-true' : 'debug-value-false' %>">
+            <%= user.role ? 'OUI' : 'NON' %>
+          </span>
+        </div>
+        <% if (user.role) { %>
+          <div class="debug-item">
+            <span class="debug-label">Nom du rôle:</span> 
+            <span class="debug-value-true"><%= user.role.name || 'Non défini' %></span>
+          </div>
+        <% } %>
+        <div class="debug-item">
+          <span class="debug-label">Role ID:</span> 
+          <span class="debug-value-true"><%= user.role_id || 'Non défini' %></span>
+        </div>
+        <div class="debug-item">
+          <span class="debug-label">Est administrateur:</span> 
+          <span class="<%= ((user.role && user.role.name === 'administrateur') || user.role_id === 2) ? 'debug-value-true' : 'debug-value-false' %>">
+            <%= ((user.role && user.role.name === 'administrateur') || user.role_id === 2) ? 'OUI' : 'NON' %>
+          </span>
+        </div>
+        <div class="debug-item">
+          <span class="debug-label">Bijou ID:</span> 
+          <span class="debug-value-true"><%= jewel.id %></span>
+        </div>
+        <div class="debug-item">
+          <span class="debug-label">Vues actuelles:</span> 
+          <span class="debug-value-true"><%= jewel.views_count || 0 %></span>
+        </div>
+      <% } %>
+    </div>
+  <% } %>
+
+  <!-- Bannière promotionnelle -->
+  <% if (jewel.discount_percentage > 0) { %>
+  <div class="promo-banner">
+    <i class="fas fa-fire"></i>
+    PROMOTION EXCEPTIONNELLE ! -<%= jewel.discount_percentage %>% sur ce bijou
+    <i class="fas fa-fire"></i>
+  </div>
+  <% } %>
+
+  <header>
+    <%- include('partials/navbarre.ejs') %>
+    <div class="overlay" id="overlay"></div>
+  </header>
+
+  <main class="container">
+    <div class="breadcrumb">
+      <a href="/">Accueil</a> / 
+      <a href="#"><%= jewel.category?.name || 'Catégorie' %></a> / 
+      <%= jewel ? jewel.name : 'Bijou inconnu' %>
+    </div>
+
+    <div class="product-container">
+      <!-- GALERIE D'IMAGES -->
+      <div class="product-gallery">
+        <div class="main-image-container">
+          <% 
+          let allImages = [];
+          
+          if (jewel && jewel.image) {
+            allImages.push({
+              url: jewel.image,
+              alt: jewel.name + ' - Image principale'
+            });
+          }
+          
+          if (jewel && jewel.additionalImages && Array.isArray(jewel.additionalImages)) {
+            jewel.additionalImages.forEach((img, index) => {
+              if (img && img.image_url) {
+                allImages.push({
+                  url: img.image_url,
+                  alt: jewel.name + ' - Vue ' + (index + 2)
+                });
+              }
+            });
+          }
+          
+          let mainImageSrc = '/images/no-image.jpg';
+          if (allImages.length > 0) {
+            mainImageSrc = `/uploads/jewels/${allImages[0].url}`;
+          }
+          %>
+          
+          <img src="<%= mainImageSrc %>" alt="<%= jewel.name %>" class="main-image" id="mainImage">
+          
+          <% if (allImages.length > 1) { %>
+            <button class="gallery-nav prev-btn" onclick="changeImage(-1)">
+              <i class="fas fa-chevron-left"></i>
+            </button>
+            <button class="gallery-nav next-btn" onclick="changeImage(1)">
+              <i class="fas fa-chevron-right"></i>
+            </button>
+          <% } %>
+        </div>
+        
+        <% if (allImages.length > 1) { %>
+        <div class="thumbnail-gallery">
+          <% allImages.forEach((image, index) => { %>
+            <img 
+              src="/uploads/jewels/<%= image.url %>" 
+              class="thumbnail <%= index === 0 ? 'active' : '' %>" 
+              alt="<%= image.alt %>" 
+              onclick="selectImage(<%= index %>)"
+            >
+          <% }) %>
+        </div>
+        <% } %>
+      </div>
+
+      <!-- INFORMATIONS PRODUIT -->
+      <div class="product-info">
+        <h1 class="product-title"><%= jewel.name %></h1>
+        
+        <div class="product-category">
+          <i class="fas fa-tag"></i>
+          <%= jewel.category?.name || 'Catégorie non spécifiée' %>
+          <% if (jewel.type?.name) { %>
+            - <%= jewel.type.name %>
+          <% } %>
+        </div>
+
+        <!-- PRIX AVEC GESTION DES RÉDUCTIONS -->
+        <div class="product-price">
+          <% 
+          let currentPrice = jewel.price_ttc;
+          let originalPrice = jewel.price_ttc;
+          let hasDiscount = false;
+          
+          if (jewel.discount_percentage && jewel.discount_percentage > 0) {
+            hasDiscount = true;
+            currentPrice = jewel.price_ttc * (1 - jewel.discount_percentage / 100);
+          }
+          %>
+          
+          <span class="price-current">
+            <%= new Intl.NumberFormat('fr-FR', {
+              style: 'currency',
+              currency: 'EUR'
+            }).format(currentPrice) %>
+          </span>
+          
+          <% if (hasDiscount) { %>
+            <span class="price-original">
+              <%= new Intl.NumberFormat('fr-FR', {
+                style: 'currency',
+                currency: 'EUR'
+              }).format(originalPrice) %>
+            </span>
+            <span class="discount-badge">
+              -<%= jewel.discount_percentage %>%
+            </span>
+          <% } %>
+        </div>
+        
+        <div class="product-price-details">
+          Prix HT : <%= (currentPrice / 1.20).toFixed(2) %>€ (TVA 20%)
+        </div>
+
+        <% if (jewel.description) { %>
+        <div class="product-description">
+          <p><%= jewel.description %></p>
+        </div>
+        <% } %>
+
+        <!-- CARACTÉRISTIQUES -->
+        <div class="product-specs">
+          <h3><i class="fas fa-info-circle"></i> Caractéristiques</h3>
+          <div class="specs-list">
+            <% if (jewel.poids) { %>
+              <div class="spec-item">
+                <span class="spec-label">Poids</span>
+                <span class="spec-value"><%= jewel.poids %> g</span>
+              </div>
+            <% } %>
+            <% if (jewel.matiere) { %>
+              <div class="spec-item">
+                <span class="spec-label">Matière</span>
+                <span class="spec-value"><%= jewel.matiere %></span>
+              </div>
+            <% } %>
+            <% if (jewel.carat) { %>
+              <div class="spec-item">
+                <span class="spec-label">Carat</span>
+                <span class="spec-value"><%= jewel.carat %> carats</span>
+              </div>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- SÉLECTION DE TAILLES -->
+        <% 
+        let sizesAvailable = [];
+        if (jewel.tailles && Array.isArray(jewel.tailles)) {
+          sizesAvailable = jewel.tailles.filter(t => t.stock > 0);
+        }
+        %>
+        
+        <% if (sizesAvailable.length > 0) { %>
+        <div class="product-sizes">
+          <h3><i class="fas fa-ruler"></i> Choisir une taille *</h3>
+          <div class="sizes-selector">
+            <% sizesAvailable.forEach((size, index) => { %>
+              <div class="size-option" 
+                   data-size="<%= size.taille %>" 
+                   data-stock="<%= size.stock %>"
+                   onclick="selectSize('<%= size.taille %>', <%= size.stock %>)">
+                <span class="size-label">Taille <%= size.taille %></span>
+                <span class="size-stock"><%= size.stock %> dispo</span>
+              </div>
+            <% }) %>
+          </div>
+          <div class="size-error" id="sizeError" style="display: none;">
+            <i class="fas fa-exclamation-triangle"></i>
+            Veuillez sélectionner une taille
+          </div>
+        </div>
+        <% } %>
+
+        <!-- ACTIONS -->
+        <div class="product-actions">
+          <div class="quantity-selector">
+            <label>Quantité :</label>
+            <div class="quantity-controls">
+              <button type="button" class="quantity-btn" onclick="changeQuantity(-1)">-</button>
+              <input type="number" id="quantity" value="1" min="1" max="<%= jewel.stock || 1 %>" readonly>
+              <button type="button" class="quantity-btn" onclick="changeQuantity(1)">+</button>
+            </div>
+            <div class="stock-info">
+              <i class="fas fa-check-circle"></i>
+              <span id="stockText">En stock</span>
+            </div>
+          </div>
+          
+          <div class="action-buttons">
+            <button type="button" class="btn btn-primary" onclick="addToCart()" 
+                    <%= (jewel.stock || 0) <= 0 ? 'disabled' : '' %>>
+              <i class="fas fa-shopping-bag"></i> 
+              <span>Ajouter au panier</span>
+            </button>
+
+            <button type="button" class="btn btn-secondary">
+              <i class="fas fa-heart"></i> Favoris
+            </button>
+
+            <button type="button" class="btn btn-info" onclick="shareProduct()">
+              <i class="fas fa-share-alt"></i> Partager
+            </button>
+          </div>
+        </div>
+
+        <!-- Compteur de vues (visible pour tous) -->
+        <div id="view-counter" style="font-size: 0.9em; color: #666; margin-top: 15px; display: flex; align-items: center; gap: 5px;">
+          <i class="fas fa-eye"></i>
+          <span><%= jewel.views_count || 0 %> vues</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIONS ADMIN (UNIQUEMENT POUR LES ADMINS) -->
+    <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+      <div class="admin-actions">
+        <div class="admin-notice">
+          <i class="fas fa-user-shield"></i>
+          Panneau d'administration - Bijou: <%= jewel.name %>
+        </div>
+        <div class="admin-buttons">
+          <a href="/admin/jewels/<%= jewel.slug %>/edit" class="btn-admin btn-edit">
+            <i class="fas fa-edit"></i> Modifier le bijou
+          </a>
+          <button type="button" class="btn-admin btn-delete" onclick="confirmDelete()">
+            <i class="fas fa-trash"></i> Supprimer
+          </button>
+          <button type="button" class="btn-admin btn-discount" onclick="openDiscountModal()">
+            <i class="fas fa-percent"></i> Gérer la réduction
+          </button>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- ONGLETS -->
+    <div class="product-tabs">
+      <div class="tabs-nav">
+        <button class="tab-btn active" onclick="showTab('description')">Description</button>
+        <button class="tab-btn" onclick="showTab('delivery')">Livraison</button>
+        <button class="tab-btn" onclick="showTab('care')">Entretien</button>
+      </div>
+
+      <div class="tab-content active" id="tab-description">
+        <h3>Description détaillée</h3>
+        <p><%= jewel.description || 'Aucune description disponible.' %></p>
+      </div>
+
+      <div class="tab-content" id="tab-delivery">
+        <h3>Informations de livraison</h3>
+        <div class="delivery-info">
+          <div class="delivery-option">
+            <i class="fas fa-truck"></i>
+            <div>
+              <strong>Livraison standard</strong>
+              <p>4,90€ - 3-5 jours ouvrés</p>
+            </div>
+          </div>
+          <div class="delivery-option">
+            <i class="fas fa-tachometer-alt"></i>
+            <div>
+              <strong>Livraison express</strong>
+              <p>8,90€ - 24-48h</p>
+            </div>
+          </div>
+          <div class="delivery-option">
+            <i class="fas fa-gift"></i>
+            <div>
+              <strong>Livraison gratuite</strong>
+              <p>Dès 75€ d'achat</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-content" id="tab-care">
+        <h3>Conseils d'entretien</h3>
+        <div class="care-tips">
+          <div class="care-tip">
+            <i class="fas fa-shield-alt"></i>
+            <p>Évitez le contact avec l'eau et les parfums</p>
+          </div>
+          <div class="care-tip">
+            <i class="fas fa-hand-sparkles"></i>
+            <p>Nettoyez avec un chiffon doux</p>
+          </div>
+          <div class="care-tip">
+            <i class="fas fa-box"></i>
+            <p>Rangez dans un écrin</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PRODUITS SIMILAIRES -->
+    <% if (similarJewels && similarJewels.length > 0) { %>
+    <div class="related-products">
+      <h2>Vous aimerez aussi</h2>
+      <div class="products-grid">
+        <% similarJewels.forEach(similar => { %>
+          <div class="product-card">
+            <a href="/bijoux/<%= similar.slug %>">
+              <div class="product-card-img" 
+                   style="background-image: url('/uploads/jewels/<%= similar.image || 'no-image.jpg' %>');">
+              </div>
+              <div class="product-card-info">
+                <h4><%= similar.name %></h4>
+                <div class="product-card-category"><%= similar.category?.name || '' %></div>
+                <div class="product-card-price">
+                  <%= new Intl.NumberFormat('fr-FR', {
+                    style: 'currency',
+                    currency: 'EUR'
+                  }).format(similar.price_ttc) %>
+                </div>
+              </div>
+            </a>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+    <% } %>
+  </main>
+
+  <!-- MODAL SUPPRESSION (ADMIN UNIQUEMENT) -->
+  <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+    <div id="deleteModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Confirmer la suppression</h3>
+          <button onclick="closeModal('deleteModal')" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Êtes-vous sûr de vouloir supprimer "<%= jewel.name %>" ?</p>
+          <p>Cette action est irréversible.</p>
+        </div>
+        <div class="modal-footer">
+          <button onclick="closeModal('deleteModal')" class="btn-secondary">Annuler</button>
+          <form action="/bijoux/<%= jewel.slug %>/supprimer" method="POST" style="display: inline;">
+            <button type="submit" class="btn-primary" style="background: #e74c3c;">Supprimer</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- MODAL RÉDUCTION (ADMIN UNIQUEMENT) -->
+    <div id="discountModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Gérer la réduction</h3>
+          <button onclick="closeModal('discountModal')" class="close-btn">&times;</button>
+        </div>
+        <form id="discountForm" action="/admin/jewels/<%= jewel.slug %>/discount" method="POST">
+          <div class="modal-body">
+            <div class="form-group">
+              <label for="discount_percentage">Pourcentage de réduction (%)</label>
+              <input type="number" 
+                     id="discount_percentage" 
+                     name="discount_percentage" 
+                     min="0" 
+                     max="90" 
+                     step="1" 
+                     value="<%= jewel.discount_percentage || 0 %>"
+                     placeholder="Ex: 20 pour -20%">
+            </div>
+            
+            <div class="form-group">
+              <label for="discount_start_date">Date de début (optionnel)</label>
+              <input type="datetime-local" 
+                     id="discount_start_date" 
+                     name="discount_start_date"
+                     value="<%= jewel.discount_start_date ? new Date(jewel.discount_start_date).toISOString().slice(0,16) : '' %>">
+            </div>
+            
+            <div class="form-group">
+              <label for="discount_end_date">Date de fin (optionnel)</label>
+              <input type="datetime-local" 
+                     id="discount_end_date" 
+                     name="discount_end_date"
+                     value="<%= jewel.discount_end_date ? new Date(jewel.discount_end_date).toISOString().slice(0,16) : '' %>">
+            </div>
+            
+            <div class="form-group">
+              <small style="color: #7f8c8d;">
+                <i class="fas fa-info-circle"></i>
+                Laissez le pourcentage à 0 pour supprimer la réduction.
+                Les dates sont optionnelles.
+              </small>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" onclick="closeModal('discountModal')" class="btn-secondary">Annuler</button>
+            <button type="submit" class="btn-primary">Appliquer</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- NOTIFICATION -->
+  <div id="notification" class="notification hidden">
+    <div class="notification-content">
+      <i class="fas fa-check-circle"></i>
+      <span id="notificationText">Article ajouté au panier !</span>
+    </div>
+  </div>
+
+  <footer>
+    <div class="container">
+      <div class="footer-content">
+        <div class="footer-column">
+          <h4>À propos</h4>
+          <ul>
+            <li><a href="#">Notre histoire</a></li>
+            <li><a href="#">Nos valeurs</a></li>
+            <li><a href="#">Contact</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Informations</h4>
+          <ul>
+            <li><a href="#">Livraison</a></li>
+            <li><a href="#">Retours</a></li>
+            <li><a href="#">FAQ</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Service client</h4>
+          <ul>
+            <li><a href="#">Contactez-nous</a></li>
+            <li><a href="#">Suivi commande</a></li>
+            <li><a href="#">CGV</a></li>
+          </ul>
+        </div>
+        <div class="footer-column">
+          <h4>Suivez-nous</h4>
+          <ul>
+            <li><a href="#"><i class="fab fa-instagram"></i> Instagram</a></li>
+            <li><a href="#"><i class="fab fa-facebook-f"></i> Facebook</a></li>
+            <li><a href="#"><i class="fab fa-pinterest-p"></i> Pinterest</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="copyright">
+        <p>&copy; 2025 CrystosJewel -  Tous droits réservés.</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // VARIABLES GLOBALES
+    const images = [
+      <% allImages.forEach((image, index) => { %>
+        '/uploads/jewels/<%= image.url %>'<%= index < allImages.length - 1 ? ',' : '' %>
+      <% }) %>
+    ];
+    
+    let currentImageIndex = 0;
+    let selectedSize = '';
+    let selectedStock = 0;
+    let quantity = 1;
+
+    // GESTION DES IMAGES
+    function selectImage(index) {
+      currentImageIndex = index;
+      document.getElementById('mainImage').src = images[index];
+      
+      document.querySelectorAll('.thumbnail').forEach((thumb, i) => {
+        thumb.classList.toggle('active', i === index);
+      });
+    }
+
+    function changeImage(direction) {
+      currentImageIndex += direction;
+      if (currentImageIndex < 0) currentImageIndex = images.length - 1;
+      if (currentImageIndex >= images.length) currentImageIndex = 0;
+      selectImage(currentImageIndex);
+    }
+
+    // GESTION DES TAILLES
+    function selectSize(size, stock) {
+      document.querySelectorAll('.size-option').forEach(option => {
+        option.classList.remove('selected');
+      });
+      
+      const selectedOption = document.querySelector(`[data-size="${size}"]`);
+      if (selectedOption) {
+        selectedOption.classList.add('selected');
+        selectedSize = size;
+        selectedStock = stock;
+        
+        const quantityInput = document.getElementById('quantity');
+        quantityInput.max = stock;
+        
+        if (quantity > stock) {
+          quantity = stock;
+          quantityInput.value = quantity;
+        }
+        
+        document.getElementById('stockText').textContent = `${stock} disponible(s)`;
+        document.getElementById('sizeError').style.display = 'none';
+      }
+    }
+
+    // GESTION DE LA QUANTITÉ
+    function changeQuantity(change) {
+      const quantityInput = document.getElementById('quantity');
+      const newQuantity = quantity + change;
+      const maxStock = selectedStock || parseInt(quantityInput.max) || 1;
+      
+      if (newQuantity >= 1 && newQuantity <= maxStock) {
+        quantity = newQuantity;
+        quantityInput.value = quantity;
+      }
+    }
+
+    // AJOUT AU PANIER
+    async function addToCart() {
+      const hasSizes = document.querySelectorAll('.size-option').length > 0;
+      
+      if (hasSizes && !selectedSize) {
+        const sizeError = document.getElementById('sizeError');
+        sizeError.style.display = 'block';
+        sizeError.scrollIntoView({ behavior: 'smooth' });
+        showNotification('Veuillez sélectionner une taille', 'warning');
+        return;
+      }
+      
+      const cartData = {
+        jewelId: '<%= jewel.id %>',
+        quantity: quantity
+      };
+      
+      if (selectedSize) {
+        cartData.selectedSize = selectedSize;
+      }
+      
+      const btn = document.querySelector('.btn-primary');
+      const originalContent = btn.innerHTML;
+      btn.style.transform = 'scale(0.95)';
+      btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ajout en cours...';
+      btn.disabled = true;
+      
+      try {
+        const response = await fetch('/panier/ajouter', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+          },
+          body: JSON.stringify(cartData),
+          credentials: 'same-origin'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Erreur HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        
+        if (data.success) {
+          showNotification(`${data.jewelName || '<%= jewel.name %>'} ajouté au panier${selectedSize ? ` (Taille ${selectedSize})` : ''} !`, 'success');
+          updateCartCounter();
+        } else {
+          showNotification(data.message || 'Erreur lors de l\'ajout au panier', 'error');
+        }
+        
+      } catch (error) {
+        console.error('Erreur lors de l\'ajout au panier:', error);
+        showNotification('Erreur de connexion. Veuillez réessayer.', 'error');
+      } finally {
+        setTimeout(() => {
+          btn.style.transform = 'scale(1)';
+          btn.innerHTML = originalContent;
+          btn.disabled = false;
+        }, 1000);
+      }
+    }
+
+    // NOTIFICATION
+    function showNotification(message, type = 'success') {
+      const notification = document.getElementById('notification');
+      const content = notification.querySelector('.notification-content');
+      const text = document.getElementById('notificationText');
+      const icon = content.querySelector('i');
+      
+      notification.className = 'notification';
+      if (type === 'error') {
+        notification.classList.add('error');
+        icon.className = 'fas fa-exclamation-circle';
+      } else if (type === 'warning') {
+        notification.classList.add('warning');
+        icon.className = 'fas fa-exclamation-triangle';
+      } else {
+        icon.className = 'fas fa-check-circle';
+      }
+      
+      text.textContent = message;
+      notification.classList.remove('hidden');
+      notification.classList.add('show');
+      
+      setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+          notification.classList.add('hidden');
+        }, 300);
+      }, 4000);
+    }
+
+    // MISE À JOUR DU COMPTEUR PANIER
+    function updateCartCounter() {
+      const cartCounter = document.querySelector('.cart-counter');
+      if (cartCounter) {
+        let count = parseInt(cartCounter.textContent || '0');
+        cartCounter.textContent = count + quantity;
+      }
+    }
+
+    // ONGLETS
+    function showTab(tabName) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+      
+      event.target.classList.add('active');
+      document.getElementById('tab-' + tabName).classList.add('active');
+    }
+
+    // PARTAGE
+    function shareProduct() {
+      if (navigator.share) {
+        navigator.share({
+          title: '<%= jewel.name %>',
+          url: window.location.href
+        });
+      } else {
+        navigator.clipboard.writeText(window.location.href);
+        showNotification('Lien copié !');
+      }
+    }
+
+    // GESTION DES MODALS (ADMIN UNIQUEMENT)
+    <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+    function confirmDelete() {
+      document.getElementById('deleteModal').classList.add('show');
+    }
+
+    function openDiscountModal() {
+      document.getElementById('discountModal').classList.add('show');
+    }
+
+    function closeModal(modalId) {
+      document.getElementById(modalId).classList.remove('show');
+    }
+
+    // FERMETURE MODAL AU CLIC EXTÉRIEUR
+    document.addEventListener('click', function(e) {
+      if (e.target.classList.contains('modal')) {
+        e.target.classList.remove('show');
+      }
+    });
+    <% } %>
+
+    // MENU MOBILE
+    document.getElementById('menuToggle')?.addEventListener('click', () => {
+      const nav = document.querySelector('nav');
+      const overlay = document.getElementById('overlay');
+      nav?.classList.toggle('active');
+      overlay?.classList.toggle('active');
+    });
+
+    document.getElementById('overlay')?.addEventListener('click', () => {
+      const nav = document.querySelector('nav');
+      const overlay = document.getElementById('overlay');
+      nav?.classList.remove('active');
+      overlay?.classList.remove('active');
+    });
+
+    // NAVIGATION CLAVIER
+    document.addEventListener('keydown', (e) => {
+      if (images.length > 1) {
+        if (e.key === 'ArrowLeft') changeImage(-1);
+        if (e.key === 'ArrowRight') changeImage(1);
+      }
+      if (e.key === 'Escape') {
+        document.querySelectorAll('.modal.show').forEach(modal => {
+          modal.classList.remove('show');
+        });
+      }
+    });
+
+    // INITIALISATION
+    document.addEventListener('DOMContentLoaded', function() {
+      const quantityInput = document.getElementById('quantity');
+      if (quantityInput) {
+        quantity = parseInt(quantityInput.value);
+      }
+    });
+  </script>
+
+  <!-- TRACKING DES VUES (INTELLIGENT) -->
+  <script>
+  document.addEventListener('DOMContentLoaded', function() {
+      let startTime = Date.now();
+      let viewTracked = false;
+      let hasInteracted = false;
+      let hasScrolled = false;
+      
+      <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+        console.log('🎯 Tracking initialisé pour bijou <%= jewel.id %> (Mode Admin)');
+      <% } %>
+      
+      // Détecter les interactions utilisateur réelles
+      const interactions = ['click', 'scroll', 'keydown', 'mousemove'];
+      
+      interactions.forEach(eventType => {
+          document.addEventListener(eventType, function() {
+              if (!hasInteracted) {
+                  hasInteracted = true;
+                  <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+                    console.log('👆 Interaction utilisateur détectée:', eventType);
+                  <% } %>
+              }
+          }, { once: true, passive: true });
+      });
+      
+      // Détecter le scroll spécifiquement
+      window.addEventListener('scroll', function() {
+          if (!hasScrolled && window.scrollY > 50) {
+              hasScrolled = true;
+              <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+                console.log('📜 Scroll détecté');
+              <% } %>
+          }
+      }, { passive: true });
+      
+      // Fonction de tracking avec conditions strictes
+      function attemptTracking() {
+          if (viewTracked) return;
+          
+          const timeOnPage = (Date.now() - startTime) / 1000;
+          
+          <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+            console.log(`⏱️ Tentative tracking: ${timeOnPage}s, interagi: ${hasInteracted}, scrollé: ${hasScrolled}`);
+          <% } %>
+          
+          // CONDITIONS STRICTES POUR UNE VUE VALIDE :
+          // 1. Au moins 3 secondes sur la page
+          // 2. ET (a interagi OU a scrollé OU plus de 8 secondes)
+          const isValidView = timeOnPage >= 3 && (hasInteracted || hasScrolled || timeOnPage >= 8);
+          
+          if (isValidView) {
+              viewTracked = true;
+              
+              <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+                console.log('✅ Conditions remplies, tracking de la vue...');
+              <% } %>
+              
+              fetch('/api/bijoux/<%= jewel.id %>/track-vue-unique', {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({
+                      timeOnPage: Math.round(timeOnPage),
+                      hasInteracted: hasInteracted,
+                      hasScrolled: hasScrolled
+                  })
+              })
+              .then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      if (data.alreadyCounted) {
+                          <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+                            console.log('🚫 Vue déjà comptée:', data.message);
+                          <% } %>
+                      } else {
+                          <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+                            console.log('🎯 Vue trackée avec succès! Total:', data.views);
+                          <% } %>
+                          
+                          // Mettre à jour le compteur sur la page
+                          const viewCounter = document.querySelector('#view-counter span');
+                          if (viewCounter) {
+                              viewCounter.textContent = data.views + ' vues';
+                          }
+                      }
+                  } else {
+                      <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+                        console.log('❌ Erreur tracking:', data.message);
+                      <% } %>
+                  }
+              })
+              .catch(error => {
+                  <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+                    console.log('❌ Erreur réseau tracking:', error);
+                  <% } %>
+              });
+          }
+      }
+      
+      // Vérifier toutes les 2 secondes si les conditions sont remplies
+      const trackingInterval = setInterval(function() {
+          if (!viewTracked) {
+              attemptTracking();
+          } else {
+              clearInterval(trackingInterval);
+          }
+      }, 2000);
+      
+      // Arrêter l'interval après 30 secondes max
+      setTimeout(function() {
+          clearInterval(trackingInterval);
+          if (!viewTracked) {
+              <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+                console.log('⏰ Timeout tracking - pas de vue comptée');
+              <% } %>
+          }
+      }, 30000);
+      
+      // Tracking au moment de quitter la page (si pas encore fait)
+      window.addEventListener('beforeunload', function() {
+          if (!viewTracked) {
+              const timeOnPage = (Date.now() - startTime) / 1000;
+              
+              // Conditions allégées pour la sortie de page
+              if (timeOnPage >= 2 && (hasInteracted || hasScrolled)) {
+                  <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+                    console.log('🚪 Tracking de sortie de page');
+                  <% } %>
+                  
+                  // Utiliser sendBeacon pour l'envoi synchrone
+                  const data = JSON.stringify({
+                      timeOnPage: Math.round(timeOnPage),
+                      hasInteracted: hasInteracted,
+                      hasScrolled: hasScrolled,
+                      isBeforeUnload: true
+                  });
+                  
+                  navigator.sendBeacon('/api/bijoux/<%= jewel.id %>/track-vue-unique', data);
+                  viewTracked = true;
+              }
+          }
+      });
+      
+      // Debug en mode admin uniquement
+      <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
+        setInterval(function() {
+            if (!viewTracked) {
+                const time = Math.round((Date.now() - startTime) / 1000);
+                console.log(`📊 Debug Admin: ${time}s, interagi: ${hasInteracted}, scrollé: ${hasScrolled}`);
+            }
+        }, 5000);
+      <% } %>
+  });
+  </script>
+
+</body>
+</html>

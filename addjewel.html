@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajouter un bijou | Administration</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/addjewel.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>ÉLÉGANCE</h1>
+                <span>ADMINISTRATION</span>
+            </div>
+        </div>
+    </header>
+
+    <section class="admin-section">
+        <div class="container">
+            <div class="section-title">
+                <h2>Ajouter un nouveau bijou</h2>
+            </div>
+
+            <form id="jewelForm">
+                <div class="form-card">
+                    <div class="form-section">
+                        <h3 class="form-section-title">Informations générales</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="name" class="required">Nom du bijou</label>
+                                <input type="text" id="name" name="name" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="category" class="required">Catégorie</label>
+                                <div class="input-group">
+                                    <select id="category" name="category_id" required>
+                                        <option value="">-- Sélectionner une catégorie --</option>
+                                        <!-- Les catégories seront chargées dynamiquement -->
+                                    </select>
+                                    <button type="button" class="new-category-btn" onclick="toggleNewCategoryForm()">+</button>
+                                </div>
+                                
+                                <div id="newCategoryForm" class="new-category-form">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label for="newCategory" class="required">Nouvelle catégorie</label>
+                                        <input type="text" id="newCategory" name="newCategory" placeholder="Nom de la catégorie">
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="addNewCategory()">Ajouter cette catégorie</button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="description">Description</label>
+                            <textarea id="description" name="description" placeholder="Description détaillée du bijou..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="form-section-title">Caractéristiques</h3>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="taille">Taille</label>
+                                <input type="text" id="taille" name="taille" placeholder="Ex: 16 cm, M, etc.">
+                            </div>
+                            <div class="form-group">
+                                <label for="poids">Poids (grammes)</label>
+                                <input type="number" id="poids" name="poids" min="0" step="0.01" placeholder="Ex: 4.5">
+                            </div>
+                            <div class="form-group">
+                                <label for="matiere" class="required">Matière</label>
+                                <div class="input-group">
+                                    <select id="matiere" name="matiere" required>
+                                        <option value="">-- Sélectionner une matière --</option>
+                                        <option value="or">Or</option>
+                                        <option value="plaqué or">Plaqué or</option>
+                                        <option value="argent">Argent</option>
+                                        <option value="argent 925">Argent 925</option>
+                                        <option value="vermeil">Vermeil</option>
+                                        <option value="acier inoxydable">Acier inoxydable</option>
+                                        <option value="titane">Titane</option>
+                                        <option value="platine">Platine</option>
+                                        <!-- Les autres matières seront chargées dynamiquement -->
+                                    </select>
+                                    <button type="button" class="new-material-btn" onclick="toggleNewMaterialForm()">+</button>
+                                </div>
+                                
+                                <div id="newMaterialForm" class="new-material-form">
+                                    <div class="form-group" style="margin-bottom: 15px;">
+                                        <label for="newMaterial" class="required">Nouvelle matière</label>
+                                        <input type="text" id="newMaterial" name="newMaterial" placeholder="Nom de la matière">
+                                    </div>
+                                    <button type="button" class="btn btn-primary btn-sm" onclick="addNewMaterial()">Ajouter cette matière</button>
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="carat">Carat</label>
+                                <select id="carat" name="carat">
+                                    <option value="">-- Sélectionner --</option>
+                                    <option value="9">9 carats</option>
+                                    <option value="14">14 carats</option>
+                                    <option value="18">18 carats</option>
+                                    <option value="22">22 carats</option>
+                                    <option value="24">24 carats</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="form-section-title">Tarification</h3>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="priceTTC" class="required">Prix TTC (€)</label>
+                                <input type="number" id="priceTTC" name="price_ttc" min="0" step="0.01" required onchange="calculatePriceHT()">
+                            </div>
+                            <div class="form-group">
+                                <label for="tva" class="required">Taux de TVA (%)</label>
+                                <input type="number" id="tva" name="tva" min="0" step="0.1" value="20" required onchange="calculatePriceHT()">
+                            </div>
+                            <div class="form-group">
+                                <label for="priceHT">Prix HT (€)</label>
+                                <input type="number" id="priceHT" name="price_ht" step="0.01" readonly>
+                                <span class="form-help">Calculé automatiquement</span>
+                            </div>
+                        </div>
+                        
+                        <div class="price-calculation">
+                            <div class="price-row">
+                                <span>Prix TTC:</span>
+                                <span id="summaryTTC">0.00 €</span>
+                            </div>
+                            <div class="price-row">
+                                <span>TVA (<span id="summaryTVARate">20</span>%):</span>
+                                <span id="summaryTVA">0.00 €</span>
+                            </div>
+                            <div class="price-row">
+                                <span>Prix HT:</span>
+                                <span id="summaryHT">0.00 €</span>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-top: 20px;">
+                            <label for="stock" class="required">Stock disponible</label>
+                            <input type="number" id="stock" name="stock" min="0" value="0" required>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="form-section-title">Images du produit</h3>
+                        <div class="form-group">
+                            <label>Ajouter des images <span class="info-icon" data-tooltip="Ajoutez la photo principale et différents angles du bijou">i</span></label>
+                            <div id="imagePreviewContainer" class="image-preview-container">
+                                <div class="add-image-container" onclick="document.getElementById('imageUpload').click()">
+                                    <span class="add-image-icon">+</span>
+                                    <input type="file" id="imageUpload" style="display: none;" accept="image/*" multiple onchange="handleImageUpload(this)">
+                                </div>
+                            </div>
+                            <p class="form-help">
+                                Pour un rendu optimal, utilisez des images carrées avec une résolution minimale de 800×800px
+                            </p>
+                            <input type="hidden" id="imageData" name="image">
+                        </div>
+                    </div>
+
+                    <div class="buttons">
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Ajouter le bijou</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </section>
+
+    <script>
+        // Variables globales pour stocker les données
+        let categories = [];
+        let materials = [];
+        let uploadedImages = [];
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCategories();
+            loadMaterials();
+            
+            // Configurer le formulaire pour soumettre via AJAX
+            document.getElementById('jewelForm').addEventListener('submit', submitForm);
+        });
+
+        // Calcul automatique du prix HT
+        function calculatePriceHT() {
+            const priceTTC = parseFloat(document.getElementById('priceTTC').value) || 0;
+            const tva = parseFloat(document.getElementById('tva').value) || 0;
+            
+            if (priceTTC > 0) {
+                const priceHT = priceTTC / (1 + (tva / 100));
+                document.getElementById('priceHT').value = priceHT.toFixed(2);
+                
+                // Mise à jour du récapitulatif
+                document.getElementById('summaryTTC').textContent = priceTTC.toFixed(2) + ' €';
+                document.getElementById('summaryTVARate').textContent = tva.toFixed(1);
+                
+                const tvaAmount = priceTTC - priceHT;
+                document.getElementById('summaryTVA').textContent = tvaAmount.toFixed(2) + ' €';
+                document.getElementById('summaryHT').textContent = priceHT.toFixed(2) + ' €';
+            } else {
+                document.getElementById('priceHT').value = '';
+                document.getElementById('summaryTTC').textContent = '0.00 €';
+                document.getElementById('summaryTVA').textContent = '0.00 €';
+                document.getElementById('summaryHT').textContent = '0.00 €';
+            }
+        }
+
+        // Chargement des catégories depuis la base de données
+        function loadCategories() {
+            fetch('/api/categories')
+                .then(response => response.json())
+                .then(data => {
+                    categories = data;
+                    const categorySelect = document.getElementById('category');
+                    categorySelect.innerHTML = '<option value="">-- Sélectionner une catégorie --</option>';
+                    
+                    data.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        categorySelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des catégories:', error);
+                    // Simuler des catégories pour la démonstration
+                    const demoCategories = [
+                        { id: 1, name: 'Bagues' },
+                        { id: 2, name: 'Colliers' },
+                        { id: 3, name: 'Bracelets' },
+                        { id: 4, name: 'Boucles d\'oreilles' }
+                    ];
+                    
+                    const categorySelect = document.getElementById('category');
+                    categorySelect.innerHTML = '<option value="">-- Sélectionner une catégorie --</option>';
+                    
+                    demoCategories.forEach(category => {
+                        const option = document.createElement('option');
+                        option.value = category.id;
+                        option.textContent = category.name;
+                        categorySelect.appendChild(option);
+                    });
+                });
+        }
+
+        // Chargement des matières depuis la base de données
+        function loadMaterials() {
+            fetch('/api/materials')
+                .then(response => response.json())
+                .then(data => {
+                    materials = data;
+                    const materialsSelect = document.getElementById('matiere');
+                    
+                    // Conserver les options par défaut
+                    const defaultOptions = materialsSelect.innerHTML;
+                    
+                    // Ajouter les options de la base de données
+                    data.forEach(material => {
+                        if (!materialsSelect.querySelector(`option[value="${material.name}"]`)) {
+                            const option = document.createElement('option');
+                            option.value = material.name;
+                            option.textContent = material.name;
+                            materialsSelect.appendChild(option);
+                        }
+                    });
+                })
+                .catch(error => {
+                    console.error('Erreur lors du chargement des matières:', error);
+                });
+        }
+
+        // Afficher/Masquer le formulaire de nouvelle catégorie
+        function toggleNewCategoryForm() {
+            const form = document.getElementById('newCategoryForm');
+            form.style.display = form.style.display === 'none' || form.style.display === '' ? 'block' : 'none';
+        }
+
+        // Afficher/Masquer le formulaire de nouvelle matière
+        function toggleNewMaterialForm() {
+            const form = document.getElementById('newMaterialForm');
+            form.style.display = form.style.display === 'none' || form.style.display === '' ? 'block' : 'none';
+        }
+
+        // Ajouter une nouvelle catégorie
+        function addNewCategory() {
+            const newCategoryName = document.getElementById('newCategory').value.trim();
+            
+            if (!newCategoryName) {
+                alert('Veuillez saisir un nom de catégorie');
+                return;
+            }
+            
+            // Appel API pour ajouter la catégorie
+            fetch('/api/categories', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: newCategoryName }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Recharger les catégories
+                loadCategories();
+                
+                // Sélectionner la nouvelle catégorie
+                setTimeout(() => {
+                    const categorySelect = document.getElementById('category');
+                    Array.from(categorySelect.options).forEach(option => {
+                        if (option.textContent === newCategoryName) {
+                            option.selected = true;
+                        }
+                    });
+                }, 500);
+                
+                // Masquer le formulaire
+                toggleNewCategoryForm();
+                document.getElementById('newCategory').value = '';
+            })
+            .catch(error => {
+                console.error('Erreur lors de l\'ajout de la catégorie:', error);
+                
+                // Pour la démonstration, simuler l'ajout
+                const categorySelect = document.getElementById('category');
+                const option = document.createElement('option');
+                option.value = 'new_' + Date.now();
+                option.textContent = newCategoryName;
+                option.selected = true;
+                categorySelect.appendChild(option);
+                
+                // Masquer le formulaire
+                toggleNewCategoryForm();
+                document.getElementById('newCategory').value = '';
+            });
+        }
+
+        // Ajouter une nouvelle matière
+        function addNewMaterial() {
+            const newMaterialName = document.getElementById('newMaterial').value.trim();
+            
+            if (!newMaterialName) {
+                alert('Veuillez saisir un nom de matière');
+                return;
+            }
+            
+            // Appel API pour ajouter la matière
+            fetch('/api/materials', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ name: newMaterialName }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                // Recharger les matières
+                loadMaterials();
+                
+                // Sélectionner la nouvelle matière
+                setTimeout(() => {
+                    const materialsSelect = document.getElementById('matiere');
+                    Array.from(materialsSelect.options).forEach(option => {
+                        if (option.textContent === newMaterialName) {
+                            option.selected = true;
+                        }
+                    });
+                }, 500);
+                
+                // Masquer le formulaire
+                toggleNewMaterialForm();
+                document.getElementById('newMaterial').value = '';
+            })
+            .catch(error => {
+                console.error('Erreur lors de l\'ajout de la matière:', error);
+                
+                // Pour la démonstration, simuler l'ajout
+                const materialsSelect = document.getElementById('matiere');
+                const option = document.createElement('option');
+                option.value = newMaterialName;
+                option.textContent = newMaterialName;
+                option.selected = true;
+                materialsSelect.appendChild(option);
+                
+                // Masquer le formulaire
+                toggleNewMaterialForm();
+                document.getElementById('newMaterial').value = '';
+            });
+        }
+
+        // Gérer l'upload d'images
+        function handleImageUpload(input) {
+            if (input.files) {
+                const files = Array.from(input.files);
+                
+                files.forEach(file => {
+                    if (!file.type.match('image.*')) {
+                        alert('Veuillez sélectionner uniquement des images');
+                        return;
+                    }
+                    
+                    const reader = new FileReader();
+                    
+                    reader.onload = function(e) {
+                        // Ajouter l'image au tableau
+                        uploadedImages.push(e.target.result);
+                        
+                        // Créer l'aperçu
+                        const imagePreview = document.createElement('div');
+                        imagePreview.className = 'image-preview';
+                        imagePreview.style.backgroundImage = `url(${e.target.result})`;
+                        
+                        // Bouton de suppression
+                        const removeBtn = document.createElement('div');
+                        removeBtn.className = 'remove-image';
+                        removeBtn.innerHTML = '×';
+                        removeBtn.addEventListener('click', function(e) {
+                            e.stopPropagation();
+                            const index = uploadedImages.indexOf(e.target.result);
+                            if (index > -1) {
+                                uploadedImages.splice(index, 1);
+                            }
+                            imagePreview.remove();
+                            updateImageData();
+                        });
+                        
+                        imagePreview.appendChild(removeBtn);
+                        
+                        // Ajouter avant le bouton d'ajout
+                        const container = document.getElementById('imagePreviewContainer');
+                        container.insertBefore(imagePreview, container.lastChild);
+                        
+                        // Mettre à jour le champ caché
+                        updateImageData();
+                    };
+                    
+                    reader.readAsDataURL(file);
+                });
+            }
+        }
+
+        // Mise à jour du champ caché avec les données des images
+        function updateImageData() {
+            const imageDataField = document.getElementById('imageData');
+            // Stocker les URLs des images en JSON
+            imageDataField.value = JSON.stringify(uploadedImages);
+        }
+
+        // Soumettre le formulaire
+        function submit

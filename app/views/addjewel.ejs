@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ajouter un bijou | Administration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/addjewel.css">
+</head>
+
+<body>
+ <%- include('partials/navbarre.ejs') %>
+
+  <header>
+    <div class="container">
+      <div class="logo">
+        <h1>ÉLÉGANCE</h1>
+        <span>ADMINISTRATION</span>
+      </div>
+    </div>
+  </header>
+
+  <section class="admin-section">
+    <div class="container">
+      <div class="section-title">
+        <h2>Ajouter un nouveau bijou</h2>
+      </div>
+
+      <% if (error) { %>
+        <div class="error-message"><%= error %></div>
+      <% } %>
+      
+      <% if (success) { %>
+        <div class="success-message"><%= success %></div>
+      <% } %>
+
+      <form id="jewelForm" action="/ajouter-bijou" method="POST">
+        <div class="form-card">
+
+          <!-- Informations générales -->
+          <div class="form-section">
+            <h3 class="form-section-title">Informations générales</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="name" class="required">Nom du bijou</label>
+                <input type="text" id="name" name="name" required>
+              </div>
+
+              <div class="form-group">
+                <label for="category" class="required">Catégorie</label>
+                <div class="input-group">
+                  <select id="category" name="category_id" onchange="updateTypesForCategory()" required>
+                    <option value="">-- Sélectionner une catégorie --</option>
+                    <% categories.forEach(category => { %>
+                      <option value="<%= category.id %>"><%= category.name %></option>
+                    <% }); %>
+                  </select>
+                  <button type="button" class="new-category-btn" onclick="toggleInlineModal('categoryModal')">+</button>
+                </div>
+                
+                <!-- Modal inline pour ajouter une catégorie -->
+                <div id="categoryModal" class="inline-modal">
+                  <div class="modal-content">
+                    <h4>Ajouter une nouvelle catégorie</h4>
+                    <div class="form-group">
+                      <label for="newCategoryName">Nom de la catégorie</label>
+                      <input type="text" id="newCategoryName" placeholder="Ex: Bagues, Colliers...">
+                    </div>
+                    <div class="form-buttons">
+                      <button type="button" class="btn btn-secondary btn-sm" onclick="toggleInlineModal('categoryModal')">Annuler</button>
+                      <button type="button" class="btn btn-primary btn-sm" onclick="addCategory()">Ajouter</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" placeholder="Description détaillée du bijou..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Caractéristiques -->
+          <div class="form-section">
+            <h3 class="form-section-title">Caractéristiques</h3>
+            <div class="form-grid">
+              <div class="form-group">
+                <label for="poids">Poids (grammes)</label>
+                <input type="number" id="poids" name="poids" min="0" step="0.01" placeholder="Ex: 4.5">
+              </div>
+          
+              <div class="form-group">
+                <label for="matiere" class="required">Matière</label>
+                <div class="input-group">
+                  <select id="matiere" name="matiere" required>
+                    <option value="">-- Sélectionner une matière --</option>
+                    <% materials.forEach(material => { %>
+                      <option value="<%= material.name %>"><%= material.name %></option>
+                    <% }); %>
+                  </select>
+                  <button type="button" class="new-material-btn" onclick="toggleInlineModal('materialModal')">+</button>
+                </div>
+                
+                <!-- Modal inline pour ajouter une matière -->
+                <div id="materialModal" class="inline-modal">
+                  <div class="modal-content">
+                    <h4>Ajouter une nouvelle matière</h4>
+                    <div class="form-group">
+                      <label for="newMaterialName">Nom de la matière</label>
+                      <input type="text" id="newMaterialName" placeholder="Ex: Or, Argent, Platine...">
+                    </div>
+                    <div class="form-buttons">
+                      <button type="button" class="btn btn-secondary btn-sm" onclick="toggleInlineModal('materialModal')">Annuler</button>
+                      <button type="button" class="btn btn-primary btn-sm" onclick="addMaterial()">Ajouter</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="type">Type</label>
+                <div class="input-group">
+                  <select id="type" name="type_id">
+                    <option value="">-- Sélectionner d'abord une catégorie --</option>
+                  </select>
+                  <button type="button" class="new-type-btn" onclick="toggleInlineModal('typeModal')">+</button>
+                </div>
+                
+                <!-- Modal inline pour ajouter un type -->
+                <div id="typeModal" class="inline-modal">
+                  <div class="modal-content">
+                    <h4>Ajouter un nouveau type</h4>
+                    <div class="form-group">
+                      <label for="typeCategory">Catégorie</label>
+                      <select id="typeCategory">
+                        <option value="">-- Sélectionner une catégorie --</option>
+                      </select>
+                    </div>
+                    <div class="form-group">
+                      <label for="newTypeName">Nom du type</label>
+                      <input type="text" id="newTypeName" placeholder="Ex: Alliance, Bague solitaire...">
+                    </div>
+                    <div class="form-buttons">
+                      <button type="button" class="btn btn-secondary btn-sm" onclick="toggleInlineModal('typeModal')">Annuler</button>
+                      <button type="button" class="btn btn-primary btn-sm" onclick="addType()">Ajouter</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label for="carat">Carat</label>
+                <select id="carat" name="carat">
+                  <option value="">-- Sélectionner --</option>
+                  <option value="9">9 carats</option>
+                  <option value="14">14 carats</option>
+                  <option value="18">18 carats</option>
+                  <option value="22">22 carats</option>
+                  <option value="24">24 carats</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tailles et Stock -->
+          <div class="form-section">
+            <h3 class="form-section-title">Tailles et Stock</h3>
+            <div id="sizesContainer">
+              <div class="size-entry" data-index="0">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label>Taille</label>
+                    <input type="text" name="sizes[0][taille]" placeholder="Ex: S, M, L, 16cm, etc.">
+                  </div>
+                  <div class="form-group">
+                    <label>Stock</label>
+                    <input type="number" name="sizes[0][stock]" min="0" value="0">
+                  </div>
+                  <div class="form-group">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeSizeEntry(0)">Supprimer</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-secondary" onclick="addSizeEntry()">Ajouter une taille</button>
+          </div>
+
+          <!-- Tarification -->
+          <div class="form-section">
+            <h3 class="form-section-title">Tarification</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="priceTTC" class="required">Prix TTC (€)</label>
+                <input type="number" id="priceTTC" name="price_ttc" min="0" step="0.01" onchange="calculatePriceHT()" required>
+              </div>
+
+              <div class="form-group">
+                <label for="tva" class="required">Taux de TVA (%)</label>
+                <input type="number" id="tva" name="tva" min="0" step="0.1" value="20" onchange="calculatePriceHT()" required>
+              </div>
+
+              <div class="form-group">
+                <label for="priceHT">Prix HT (€)</label>
+                <input type="number" id="priceHT" name="price_ht" step="0.01" readonly>
+                <span class="form-help">Calculé automatiquement</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Images -->
+          <div class="form-section">
+            <h3 class="form-section-title">Images du produit</h3>
+            <div class="form-group">
+              <label for="images">
+                Ajouter des images <span class="info-icon" data-tooltip="Ajoutez la photo principale et différents angles du bijou">i</span>
+              </label>
+              <div id="imagePreviewContainer" class="image-preview-container">
+                <div class="add-image-container" onclick="document.getElementById('imageUpload').click()">
+                  <span class="add-image-icon">+</span>
+                  <span class="add-image-text">Ajouter des images</span>
+                  <input type="file" id="imageUpload" name="images" accept="image/*" multiple style="display: none;" onchange="handleImageUpload(this)">
+                </div>
+              </div>
+              <p class="form-help">Pour un rendu optimal, utilisez des images carrées avec une résolution minimale de 800×800px</p>
+              <p class="form-help"><strong>Note:</strong> La première image ajoutée sera l'image principale du bijou, ou cliquez sur une image pour la définir comme principale.</p>
+              <input type="hidden" id="imageData" name="image">
+              <input type="hidden" id="additionalImagesData" name="additionalImages">
+            </div>
+          </div>
+
+          <!-- Boutons -->
+          <div class="buttons">
+            <button type="button" class="btn btn-secondary" onclick="resetForm()">Annuler</button>
+            <button type="submit" class="btn btn-primary">Ajouter le bijou</button>
+          </div>
+
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Styles améliorés pour les modales et interface -->
+  <style>
+    /* Styles de base pour les modales */
+    .inline-modal {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      z-index: 1000;
+      background: white;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      margin-top: 5px;
+      animation: slideDown 0.3s ease;
+    }
+
+    .inline-modal.show {
+      display: block;
+    }
+
+    .modal-content {
+      padding: 20px;
+    }
+
+    .modal-content h4 {
+      margin: 0 0 15px 0;
+      color: #495057;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .form-buttons {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 15px;
+    }
+
+    /* Assurer que les groupes de formulaire avec modales sont en position relative */
+    .form-group {
+      position: relative;
+    }
+
+    /* Styles pour les groupes d'inputs */
+    .input-group {
+      display: flex;
+      align-items: stretch;
+      position: relative;
+    }
+
+    .input-group select {
+      flex: 1;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+      border-right: none;
+    }
+
+    .new-category-btn,
+    .new-material-btn,
+    .new-type-btn {
+      background: #28a745;
+      color: white;
+      border: 1px solid #28a745;
+      border-left: none;
+      border-top-left-radius: 0;
+      border-bottom-left-radius: 0;
+      border-top-right-radius: 4px;
+      border-bottom-right-radius: 4px;
+      padding: 8px 12px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      min-width: 40px;
+    }
+
+    .new-category-btn:hover,
+    .new-material-btn:hover,
+    .new-type-btn:hover {
+      background: #218838;
+      border-color: #218838;
+      transform: translateY(-1px);
+    }
+
+    /* Styles pour les boutons */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: 500;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s ease;
+      font-size: 14px;
+    }
+
+    .btn-primary {
+      background: #007bff;
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #0056b3;
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+
+    .btn-secondary:hover {
+      background: #545b62;
+    }
+
+    .btn-danger {
+      background: #dc3545;
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: #c82333;
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    /* Messages d'erreur et de succès */
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 4px;
+      border: 1px solid #f5c6cb;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 12px;
+      border-radius: 4px;
+      border: 1px solid #c3e6cb;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+
+    /* Styles pour les champs requis */
+    .required::after {
+      content: " *";
+      color: #dc3545;
+      font-weight: bold;
+    }
+
+    /* Focus states */
+    input:focus,
+    select:focus,
+    textarea:focus {
+      outline: none;
+      border-color: #007bff;
+      box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+    }
+
+    /* Animation pour les modales */
+    @keyframes slideDown {
+      from {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    /* Styles pour les images */
+    .image-preview-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 15px 0;
+      padding: 15px;
+      border: 2px dashed #dee2e6;
+      border-radius: 8px;
+      min-height: 120px;
+    }
+
+    .add-image-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100px;
+      height: 100px;
+      border: 2px dashed #007bff;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      background: #f8f9fa;
+    }
+
+    .add-image-container:hover {
+      background: #e9ecef;
+      border-color: #0056b3;
+    }
+
+    .add-image-icon {
+      font-size: 24px;
+      color: #007bff;
+      margin-bottom: 5px;
+    }
+
+    .add-image-text {
+      font-size: 12px;
+      color: #6c757d;
+      text-align: center;
+    }
+
+    .image-preview {
+      position: relative;
+      width: 100px;
+      height: 100px;
+      border: 2px solid #28a745;
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .image-preview.main-image {
+      border-color: #ffc107;
+    }
+
+    .image-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .remove-image {
+      position: absolute;
+      top: -8px;
+      right: -8px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      width: 24px;
+      height: 24px;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Tooltip */
+    .info-icon {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      background: #007bff;
+      color: white;
+      border-radius: 50%;
+      text-align: center;
+      line-height: 16px;
+      font-size: 10px;
+      font-weight: bold;
+      cursor: help;
+      margin-left: 5px;
+    }
+
+    .form-help {
+      font-size: 12px;
+      color: #6c757d;
+      margin-top: 5px;
+      font-style: italic;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .form-row {
+        flex-direction: column;
+      }
+      
+      .inline-modal {
+        left: -20px;
+        right: -20px;
+      }
+    }
+  </style>
+
+  <script>
+    // Variables globales
+    let allTypes = [];
+    let allCategories = [];
+    let allMaterials = [];
+    let mainImageSet = false;
+    let additionalImages = [];
+    let sizeCounter = 1;
+
+    // Initialisation au chargement du DOM
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('🚀 DOM chargé, initialisation...');
+      
+      // Charger les données depuis le serveur
+      try {
+        allCategories = <%- JSON.stringify(categories || []) %>;
+        allMaterials = <%- JSON.stringify(materials || []) %>;
+        allTypes = <%- JSON.stringify(types || []) %>;
+        
+        console.log('📊 Données chargées:', {
+          categories: allCategories.length,
+          materials: allMaterials.length, 
+          types: allTypes.length
+        });
+        
+      } catch (error) {
+        console.error('❌ Erreur chargement données:', error);
+        allCategories = [];
+        allMaterials = [];
+        allTypes = [];
+      }
+
+      // Remplir les selects pour les modales
+      fillTypeCategoriesSelect();
+      
+      // Initialisation du calcul du prix HT
+      calculatePriceHT();
+      
+      // Fermer les modales quand on clique en dehors
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.inline-modal') && !e.target.closest('.new-category-btn') && 
+            !e.target.closest('.new-material-btn') && !e.target.closest('.new-type-btn')) {
+          document.querySelectorAll('.inline-modal').forEach(modal => {
+            modal.classList.remove('show');
+          });
+        }
+      });
+    });
+
+    /**
+     * Remplit le select des catégories dans le modal type
+     */
+    function fillTypeCategoriesSelect() {
+      const typeCategorySelect = document.getElementById('typeCategory');
+      if (typeCategorySelect) {
+        typeCategorySelect.innerHTML = '<option value="">-- Sélectionner une catégorie --</option>';
+        
+        allCategories.forEach(category => {
+          const option = document.createElement('option');
+          option.value = category.id;
+          option.textContent = category.name;
+          typeCategorySelect.appendChild(option);
+        });
+      }
+    }
+
+    /**
+     * Met à jour les types selon la catégorie sélectionnée
+     */
+    function updateTypesForCategory() {
+      const categorySelect = document.getElementById('category');
+      const typeSelect = document.getElementById('type');
+      const selectedCategoryId = parseInt(categorySelect.value);
+
+      console.log('🔄 Mise à jour types pour catégorie:', selectedCategoryId);
+
+      typeSelect.innerHTML = '';
+
+      if (!selectedCategoryId) {
+        typeSelect.innerHTML = '<option value="">-- Sélectionner d\'abord une catégorie --</option>';
+        return;
+      }
+
+      // Filtrer les types selon la catégorie sélectionnée
+      const filteredTypes = allTypes.filter(type => {
+        const typeCategoryId = type.category_id || (type.category ? type.category.id : null);
+        return typeCategoryId === selectedCategoryId;
+      });
+
+      console.log('🔍 Types filtrés pour cette catégorie:', filteredTypes.length);
+
+      if (filteredTypes.length === 0) {
+        typeSelect.innerHTML = '<option value="">-- Aucun type disponible pour cette catégorie --</option>';
+      } else {
+        typeSelect.innerHTML = '<option value="">-- Sélectionner un type --</option>';
+        filteredTypes.forEach(type => {
+          const option = document.createElement('option');
+          option.value = type.id;
+          option.textContent = type.name;
+          typeSelect.appendChild(option);
+        });
+      }
+    }
+
+    /**
+     * Gestion des modales inline
+     */
+    function toggleInlineModal(modalId) {
+      const modal = document.getElementById(modalId);
+      const isCurrentlyVisible = modal.classList.contains('show');
+      
+      // Fermer toutes les modales
+      document.querySelectorAll('.inline-modal').forEach(m => m.classList.remove('show'));
+      
+      // Si la modale n'était pas visible, l'afficher
+      if (!isCurrentlyVisible) {
+        modal.classList.add('show');
+        
+        // Focus sur le premier input
+        const firstInput = modal.querySelector('input');
+        if (firstInput) {
+          setTimeout(() => firstInput.focus(), 100);
+        }
+      }
+    }
+
+    /**
+     * Ajouter une nouvelle catégorie
+     */
+    async function addCategory() {
+      const categoryName = document.getElementById('newCategoryName').value.trim();
+      
+      if (!categoryName) {
+        showMessage('Veuillez saisir un nom de catégorie', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch('/admin/categories/add', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: categoryName })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success !== false) {
+          // Ajouter à la liste locale
+          const newCategory = result.category || result;
+          allCategories.push(newCategory);
+          
+          // Ajouter au select principal
+          const categorySelect = document.getElementById('category');
+          const option = new Option(newCategory.name, newCategory.id, false, true);
+          categorySelect.add(option);
+          categorySelect.value = newCategory.id;
+          
+          // Mettre à jour le select des types
+          fillTypeCategoriesSelect();
+          updateTypesForCategory();
+          
+          // Fermer la modale et nettoyer
+          document.getElementById('newCategoryName').value = '';
+          toggleInlineModal('categoryModal');
+          
+          showMessage('Catégorie ajoutée avec succès !', 'success');
+        } else {
+          showMessage(result.message || 'Erreur lors de l\'ajout de la catégorie', 'error');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        showMessage('Erreur de connexion lors de l\'ajout de la catégorie', 'error');
+      }
+    }
+
+    /**
+     * Ajouter une nouvelle matière
+     */
+    async function addMaterial() {
+      const materialName = document.getElementById('newMaterialName').value.trim();
+      
+      if (!materialName) {
+        showMessage('Veuillez saisir un nom de matière', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch('/admin/materials/add', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: materialName })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success !== false) {
+          const newMaterial = result.material || result;
+          allMaterials.push(newMaterial);
+          
+          const materialSelect = document.getElementById('matiere');
+          const option = new Option(newMaterial.name, newMaterial.name, false, true);
+          materialSelect.add(option);
+          materialSelect.value = newMaterial.name;
+          
+          document.getElementById('newMaterialName').value = '';
+          toggleInlineModal('materialModal');
+          
+          showMessage('Matière ajoutée avec succès !', 'success');
+        } else {
+          showMessage(result.message || 'Erreur lors de l\'ajout de la matière', 'error');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        showMessage('Erreur de connexion lors de l\'ajout de la matière', 'error');
+      }
+    }
+
+    /**
+     * Ajouter un nouveau type
+     */
+    async function addType() {
+      const typeName = document.getElementById('newTypeName').value.trim();
+      const categoryId = parseInt(document.getElementById('typeCategory').value);
+      
+      if (!typeName || !categoryId) {
+        showMessage('Veuillez remplir tous les champs', 'error');
+        return;
+      }
+
+      try {
+        const response = await fetch('/admin/types/add', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ name: typeName, category_id: categoryId })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success !== false) {
+          const newType = result.type || result;
+          allTypes.push(newType);
+          
+          // Si le type appartient à la catégorie actuellement sélectionnée
+          const currentCategoryId = parseInt(document.getElementById('category').value);
+          if (currentCategoryId === categoryId) {
+            const typeSelect = document.getElementById('type');
+            const option = new Option(newType.name, newType.id, false, true);
+            typeSelect.add(option);
+            typeSelect.value = newType.id;
+          }
+          
+          document.getElementById('newTypeName').value = '';
+          document.getElementById('typeCategory').value = '';
+          toggleInlineModal('typeModal');
+          
+          showMessage('Type ajouté avec succès !', 'success');
+        } else {
+          showMessage(result.message || 'Erreur lors de l\'ajout du type', 'error');
+        }
+      } catch (error) {
+        console.error('Erreur:', error);
+        showMessage('Erreur de connexion lors de l\'ajout du type', 'error');
+      }
+    }
+
+    /**
+     * Affiche un message de succès ou d'erreur
+     */
+    function showMessage(message, type) {
+      // Supprimer les messages existants
+      const existingMessages = document.querySelectorAll('.success-message, .error-message');
+      existingMessages.forEach(msg => msg.remove());
+
+      const messageDiv = document.createElement('div');
+      messageDiv.className = type === 'success' ? 'success-message' : 'error-message';
+      messageDiv.textContent = message;
+
+      const container = document.querySelector('.container');
+      const sectionTitle = container.querySelector('.section-title');
+      sectionTitle.insertAdjacentElement('afterend', messageDiv);
+
+      // Supprimer automatiquement après 5 secondes
+      setTimeout(() => {
+        if (messageDiv.parentNode) {
+          messageDiv.remove();
+        }
+      }, 5000);
+    }
+
+    /**
+     * Gestion des tailles multiples
+     */
+    function addSizeEntry() {
+      const container = document.getElementById('sizesContainer');
+      const newEntry = document.createElement('div');
+      newEntry.className = 'size-entry';
+      newEntry.setAttribute('data-index', sizeCounter);
+      
+      newEntry.innerHTML = `
+        <div class="form-row">
+          <div class="form-group">
+            <label>Taille</label>
+            <input type="text" name="sizes[${sizeCounter}][taille]" placeholder="Ex: S, M, L, 16cm, etc.">
+          </div>
+          <div class="form-group">
+            <label>Stock</label>
+            <input type="number" name="sizes[${sizeCounter}][stock]" min="0" value="0">
+          </div>
+          <div class="form-group">
+            <button type="button" class="btn btn-danger btn-sm" onclick="removeSizeEntry(${sizeCounter})">Supprimer</button>
+          </div>
+        </div>
+      `;
+      
+      container.appendChild(newEntry);
+      sizeCounter++;
+    }
+
+    function removeSizeEntry(index) {
+      const entry = document.querySelector(`[data-index="${index}"]`);
+      if (entry && document.querySelectorAll('.size-entry').length > 1) {
+        entry.remove();
+      } else {
+        showMessage('Vous devez garder au moins une taille', 'error');
+      }
+    }
+
+    /**
+     * Calcule le prix HT
+     */
+    function calculatePriceHT() {
+      const priceTTC = parseFloat(document.getElementById('priceTTC').value) || 0;
+      const tva = parseFloat(document.getElementById('tva').value) || 20;
+      
+      if (priceTTC > 0) {
+        const priceHT = priceTTC / (1 + (tva / 100));
+        document.getElementById('priceHT').value = priceHT.toFixed(2);
+      } else {
+        document.getElementById('priceHT').value = '';
+      }
+    }
+
+    /**
+     * Gestion des images
+     */
+    function handleImageUpload(input) {
+      if (input.files && input.files.length > 0) {
+        const previewContainer = document.getElementById('imagePreviewContainer');
+        const addImageContainer = previewContainer.querySelector('.add-image-container');
+        
+        const maxImages = 5;
+        let currentImages = previewContainer.querySelectorAll('.image-preview').length;
+        
+        for (let i = 0; i < Math.min(input.files.length, maxImages - currentImages); i++) {
+          const file = input.files[i];
+          
+          if (!file.type.match('image.*')) {
+            continue;
+          }
+          
+          const reader = new FileReader();
+          
+          reader.onload = function(e) {
+            const imageData = e.target.result;
+            
+            const previewDiv = document.createElement('div');
+            previewDiv.className = 'image-preview';
+            
+            const img = document.createElement('img');
+            img.src = imageData;
+            img.alt = "Aperçu image";
+            previewDiv.appendChild(img);
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.type = 'button';
+            removeBtn.innerHTML = '×';
+            removeBtn.className = 'remove-image';
+            removeBtn.onclick = function() {
+              if (previewDiv.classList.contains('main-image')) {
+                mainImageSet = false;
+                document.getElementById('imageData').value = '';
+                
+                if (additionalImages.length > 0) {
+                  const firstAdditionalImage = additionalImages.shift();
+                  document.getElementById('imageData').value = firstAdditionalImage;
+                  mainImageSet = true;
+                  
+                  const firstAdditionalImageContainer = document.querySelectorAll('.image-preview:not(.main-image)')[0];
+                  if (firstAdditionalImageContainer) {
+                    firstAdditionalImageContainer.classList.add('main-image');
+                  }
+                  
+                  updateAdditionalImagesField();
+                }
+              } else {
+                const imgIndex = additionalImages.findIndex(src => src === imageData);
+                if (imgIndex !== -1) {
+                  additionalImages.splice(imgIndex, 1);
+                  updateAdditionalImagesField();
+                }
+              }
+              
+              previewContainer.removeChild(previewDiv);
+            };
+            previewDiv.appendChild(removeBtn);
+            
+            previewContainer.insertBefore(previewDiv, addImageContainer);
+            
+            if (!mainImageSet) {
+              document.getElementById('imageData').value = imageData;
+              previewDiv.classList.add('main-image');
+              mainImageSet = true;
+            } else {
+              additionalImages.push(imageData);
+              updateAdditionalImagesField();
+            }
+            
+            img.addEventListener('click', function() {
+              if (!previewDiv.classList.contains('main-image')) {
+                const currentMainImage = document.querySelector('.image-preview.main-image');
+                if (currentMainImage) {
+                  currentMainImage.classList.remove('main-image');
+                  const oldMainImageSrc = document.getElementById('imageData').value;
+                  additionalImages.push(oldMainImageSrc);
+                }
+                
+                previewDiv.classList.add('main-image');
+                document.getElementById('imageData').value = imageData;
+                
+                const imgIndex = additionalImages.findIndex(src => src === imageData);
+                if (imgIndex !== -1) {
+                  additionalImages.splice(imgIndex, 1);
+                }
+                
+                updateAdditionalImagesField();
+              }
+            });
+          };
+          
+          reader.readAsDataURL(file);
+        }
+        
+        input.value = '';
+      }
+    }
+
+    function updateAdditionalImagesField() {
+      const additionalImagesField = document.getElementById('additionalImagesData');
+      if (additionalImagesField) {
+        additionalImagesField.value = JSON.stringify(additionalImages);
+      }
+    }
+
+    /**
+     * Gestion de la soumission du formulaire
+     */
+    document.getElementById('jewelForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      console.log('🚀 DEBUT SOUMISSION FORMULAIRE');
+      
+      // Validation des champs requis
+      const requiredFields = [
+        { name: 'name', label: 'Nom du bijou' },
+        { name: 'category_id', label: 'Catégorie' },
+        { name: 'matiere', label: 'Matière' },
+        { name: 'price_ttc', label: 'Prix TTC' },
+        { name: 'tva', label: 'TVA' }
+      ];
+      
+      let isValid = true;
+      let missingFields = [];
+      
+      requiredFields.forEach(field => {
+        const element = document.querySelector(`[name="${field.name}"]`);
+        if (element) {
+          const value = element.value.trim();
+          if (!value) {
+            isValid = false;
+            element.style.borderColor = 'red';
+            missingFields.push(field.label);
+          } else {
+            element.style.borderColor = '';
+          }
+        }
+      });
+      
+      if (!isValid) {
+        const message = `Veuillez remplir les champs suivants :\n• ${missingFields.join('\n• ')}`;
+        alert(message);
+        showMessage('Veuillez remplir tous les champs requis', 'error');
+        return;
+      }
+      
+      // Vérification de l'image
+      const imageData = document.getElementById('imageData').value;
+      if (!imageData) {
+        alert('Veuillez ajouter au moins une image du bijou');
+        showMessage('Veuillez ajouter au moins une image du bijou', 'error');
+        return;
+      }
+      
+      console.log('✅ Validation OK, collecte des tailles...');
+      
+      // Collecter les données des tailles
+      const sizes = [];
+      const sizeEntries = document.querySelectorAll('.size-entry');
+      
+      sizeEntries.forEach((entry, index) => {
+        const tailleInput = entry.querySelector(`input[name*="[taille]"]`);
+        const stockInput = entry.querySelector(`input[name*="[stock]"]`);
+        
+        if (tailleInput && tailleInput.value.trim()) {
+          const sizeData = {
+            taille: tailleInput.value.trim(),
+            stock: parseInt(stockInput.value) || 0
+          };
+          sizes.push(sizeData);
+        }
+      });
+      
+      // Ajouter les tailles au formulaire
+      let sizesField = document.getElementById('taillesToSave');
+      if (!sizesField) {
+        sizesField = document.createElement('input');
+        sizesField.type = 'hidden';
+        sizesField.id = 'taillesToSave';
+        sizesField.name = 'taillesToSave';
+        this.appendChild(sizesField);
+      }
+      sizesField.value = JSON.stringify(sizes);
+      
+      console.log('✅ Données préparées, soumission du formulaire...');
+      
+      // Afficher un indicateur de chargement
+      const submitButton = document.querySelector('button[type="submit"]');
+      const originalText = submitButton.textContent;
+      submitButton.textContent = 'Ajout en cours...';
+      submitButton.disabled = true;
+      
+      // Soumettre le formulaire
+      try {
+        this.submit();
+      } catch (submitError) {
+        console.error('❌ Erreur lors de la soumission:', submitError);
+        submitButton.textContent = originalText;
+        submitButton.disabled = false;
+        showMessage('Erreur lors de la soumission du formulaire', 'error');
+      }
+    });
+    
+    /**
+     * Réinitialise le formulaire
+     */
+    function resetForm() {
+      if (confirm('Êtes-vous sûr de vouloir annuler ? Toutes les données saisies seront perdues.')) {
+        document.getElementById('jewelForm').reset();
+        
+        // Réinitialiser les images
+        const previewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreviews = previewContainer.querySelectorAll('.image-preview');
+        imagePreviews.forEach(preview => preview.remove());
+        
+        mainImageSet = false;
+        additionalImages = [];
+        document.getElementById('imageData').value = '';
+        document.getElementById('additionalImagesData').value = '';
+        
+        // Réinitialiser les tailles
+        const sizesContainer = document.getElementById('sizesContainer');
+        const sizeEntries = sizesContainer.querySelectorAll('.size-entry');
+        sizeEntries.forEach((entry, index) => {
+          if (index > 0) entry.remove();
+        });
+        sizeCounter = 1;
+        
+        // Fermer toutes les modales
+        document.querySelectorAll('.inline-modal').forEach(modal => {
+          modal.classList.remove('show');
+        });
+        
+        // Réinitialiser les selects
+        updateTypesForCategory();
+        calculatePriceHT();
+        
+        // Supprimer les messages
+        document.querySelectorAll('.success-message, .error-message').forEach(msg => msg.remove());
+      }
+    }
+
+    // Gestion des tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.info-icon').forEach(icon => {
+        icon.addEventListener('mouseenter', function() {
+          const tooltip = this.getAttribute('data-tooltip');
+          if (tooltip) {
+            const tooltipElement = document.createElement('div');
+            tooltipElement.className = 'tooltip';
+            tooltipElement.textContent = tooltip;
+            tooltipElement.style.cssText = `
+              position: absolute;
+              background: #333;
+              color: white;
+              padding: 8px 12px;
+              border-radius: 4px;
+              font-size: 12px;
+              z-index: 1000;
+              white-space: nowrap;
+              pointer-events: none;
+            `;
+            document.body.appendChild(tooltipElement);
+            
+            const rect = this.getBoundingClientRect();
+            tooltipElement.style.left = (rect.left + rect.width / 2 - tooltipElement.offsetWidth / 2) + 'px';
+            tooltipElement.style.top = (rect.top - tooltipElement.offsetHeight - 8) + 'px';
+            
+            this.tooltipElement = tooltipElement;
+          }
+        });
+        
+        icon.addEventListener('mouseleave', function() {
+          if (this.tooltipElement) {
+            document.body.removeChild(this.tooltipElement);
+            this.tooltipElement = null;
+          }
+        });
+      });
+    });
+  </script>
+</body>
+</html>

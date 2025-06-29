@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Votre commande a été expédiée !</title>
+  <style>
+    :root {
+      --rose-gold: #b76e79;
+      --rose-gold-light: #e8c2c8;
+      --rose-gold-dark: #7d4b53;
+      --cream: #fff8f0;
+      --dark-text: #3a3a3a;
+      --box-shadow: 0 8px 20px rgba(183, 110, 121, 0.15);
+    }
+    body {
+      font-family: 'Arial', sans-serif;
+      background: var(--cream);
+      color: var(--dark-text);
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 600px;
+      margin: 30px auto;
+      background: white;
+      padding: 20px;
+      box-shadow: var(--box-shadow);
+      border-radius: 8px;
+    }
+    h1 {
+      color: var(--rose-gold);
+      text-align: center;
+    }
+    p {
+      font-size: 1rem;
+      line-height: 1.5;
+    }
+    a.button {
+      display: inline-block;
+      background: var(--rose-gold);
+      color: white !important;
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 30px;
+      margin-top: 20px;
+      text-align: center;
+      font-weight: 600;
+    }
+    a.button:hover {
+      background: var(--rose-gold-dark);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bonne nouvelle, {{customerName}} ! Votre bijou est en chemin ✨</h1>
+    <p>Votre commande #{{orderNumber}} vient d’être expédiée.</p>
+    <p>Vous pouvez suivre son trajet en temps réel grâce au lien ci-dessous :</p>
+    <a href="{{trackingLink}}" class="button">Suivre ma commande</a>
+    <p>Nous espérons que votre bijou vous fera briller !</p>
+    <p>Avec amour,<br> L’équipe Crystos Jewel 💖</p>
+  </div>
+</body>
+</html>

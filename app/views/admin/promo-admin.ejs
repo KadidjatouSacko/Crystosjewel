@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Administration</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #E8B4B8;
+            --primary-dark: #B8868A;
+            --primary-light: #F5D7DA;
+            --secondary: #FDF9F6;
+            --accent: #D4A5A9;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #1f2937;
+            --gray-light: #f8fafc;
+            --gray-medium: #64748b;
+            --white: #ffffff;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+            --radius-lg: 12px;
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--gray-light);
+            color: var(--dark);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .page-header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 30px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+            pointer-events: none;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .page-title {
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .breadcrumb {
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        .breadcrumb a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .breadcrumb a:hover {
+            color: white;
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            margin-bottom: 20px;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: var(--radius);
+            margin-bottom: 15px;
+            border-left: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: var(--success);
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border-color: var(--danger);
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            color: #92400e;
+            border-color: var(--warning);
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border-left: 4px solid var(--primary);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-card.success {
+            border-left-color: var(--success);
+        }
+
+        .stat-card.warning {
+            border-left-color: var(--warning);
+        }
+
+        .stat-card.danger {
+            border-left-color: var(--danger);
+        }
+
+        .stat-card.info {
+            border-left-color: var(--info);
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--gray-medium);
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .stat-icon.primary {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+
+        .stat-icon.success {
+            background: #dcfce7;
+            color: var(--success);
+        }
+
+        .stat-icon.warning {
+            background: #fef3c7;
+            color: var(--warning);
+        }
+
+        .stat-icon.danger {
+            background: #fee2e2;
+            color: var(--danger);
+        }
+
+        .stat-icon.info {
+            background: #dbeafe;
+            color: var(--info);
+        }
+
+        .stat-value {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin-bottom: 8px;
+        }
+
+        .stat-trend {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.85rem;
+        }
+
+        .stat-trend.up {
+            color: var(--success);
+        }
+
+        .stat-trend.down {
+            color: var(--danger);
+        }
+
+        .stat-trend.neutral {
+            color: var(--gray-medium);
+        }
+
+        /* Controls */
+        .controls-section {
+            background: white;
+            padding: 25px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            margin-bottom: 25px;
+        }
+
+        .controls-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .controls-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .search-filters {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 20px;
+            align-items: end;
+        }
+
+        .filters-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            min-width: 180px;
+        }
+
+        .filter-label {
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--dark);
+        }
+
+        .form-control {
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            transition: var(--transition);
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(232, 180, 184, 0.1);
+        }
+
+        .search-box {
+            position: relative;
+            min-width: 300px;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-medium);
+        }
+
+        .search-input {
+            padding-left: 40px;
+            width: 100%;
+        }
+
+        .actions-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--gray-light);
+            color: var(--gray-medium);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-info {
+            background: var(--info);
+            color: white;
+        }
+
+        .btn:hover:not(.btn-secondary) {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.8rem;
+        }
+
+        /* Table */
+        .table-container {
+            background: white;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            margin-bottom: 25px;
+        }
+
+        .table-header {
+            background: var(--gray-light);
+            padding: 20px 25px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .table-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .table-count {
+            background: var(--primary);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.9rem;
+        }
+
+        .table th {
+            background: var(--gray-light);
+            padding: 15px 20px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--dark);
+            border-bottom: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .table td {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            vertical-align: middle;
+        }
+
+        .table tbody tr {
+            transition: var(--transition);
+        }
+
+        .table tbody tr:hover {
+            background: var(--gray-light);
+        }
+
+        .table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        /* Status badges */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .badge-secondary {
+            background: var(--gray-light);
+            color: var(--gray-medium);
+        }
+
+        .badge-info {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        /* Code styling */
+        .promo-code {
+            font-family: 'Monaco', 'Menlo', monospace;
+            background: var(--gray-light);
+            padding: 6px 10px;
+            border-radius: 4px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            font-size: 0.95rem;
+        }
+
+        .promo-id {
+            font-size: 0.75rem;
+            color: var(--gray-medium);
+            margin-top: 2px;
+        }
+
+        /* Usage progress */
+        .usage-progress {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .usage-text {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .progress-bar {
+            width: 80px;
+            height: 6px;
+            background: var(--gray-light);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            transition: var(--transition);
+        }
+
+        .progress-fill.warning {
+            background: var(--warning);
+        }
+
+        .progress-fill.danger {
+            background: var(--danger);
+        }
+
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            font-size: 0.85rem;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 3.5rem;
+            color: var(--gray-medium);
+            opacity: 0.6;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.3rem;
+            color: var(--dark);
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: var(--gray-medium);
+            margin-bottom: 25px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* Pagination */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: white;
+            padding: 20px 25px;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow);
+        }
+
+        .pagination-info {
+            font-size: 0.9rem;
+            color: var(--gray-medium);
+        }
+
+        .pagination {
+            display: flex;
+            gap: 5px;
+        }
+
+        .page-link {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            text-decoration: none;
+            color: var(--dark);
+            transition: var(--transition);
+        }
+
+        .page-link:hover {
+            background: var(--primary-light);
+            border-color: var(--primary);
+        }
+
+        .page-link.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .page-link:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .page-header {
+                padding: 20px;
+                margin-bottom: 20px;
+            }
+
+            .page-title {
+                font-size: 1.8rem;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+
+            .stat-card {
+                padding: 20px;
+            }
+
+            .controls-header {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 15px;
+            }
+
+            .search-filters {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .filters-row {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .filter-group {
+                min-width: auto;
+            }
+
+            .search-box {
+                min-width: auto;
+            }
+
+            .table-responsive {
+                font-size: 0.8rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 10px 12px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 5px;
+            }
+
+            .action-btn {
+                width: 28px;
+                height: 28px;
+                font-size: 0.8rem;
+            }
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .fade-in {
+            animation: slideIn 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <!-- Include navbar -->
+    <%- include('../partials/navbarre.ejs') %>
+
+    <div class="container">
+        <!-- Page Header -->
+        <div class="page-header fade-in">
+            <div class="header-content">
+                <h1 class="page-title">
+                    <i class="fas fa-tags"></i>
+                    <%= title %>
+                </h1>
+                <div class="breadcrumb">
+                    <a href="/admin">Administration</a> › 
+                    <span>Codes Promo</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        <% if (typeof flashMessages !== 'undefined' && flashMessages.length > 0) { %>
+            <div class="flash-messages">
+                <% flashMessages.forEach(flash => { %>
+                    <div class="alert alert-<%= flash.type %>">
+                        <i class="fas fa-<%= flash.type === 'success' ? 'check-circle' : (flash.type === 'error' ? 'exclamation-triangle' : 'info-circle') %>"></i>
+                        <%= flash.message %>
+                    </div>
+                <% }) %>
+            </div>
+        <% } %>
+
+        <!-- Statistics Cards -->
+        <div class="stats-grid fade-in">
+            <div class="stat-card primary">
+                <div class="stat-header">
+                    <div class="stat-label">Total Codes Promo</div>
+                    <div class="stat-icon primary">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                </div>
+                <div class="stat-value"><%= stats.totalPromos || 0 %></div>
+                <div class="stat-trend neutral">
+                    <i class="fas fa-info-circle"></i>
+                    Tous statuts confondus
+                </div>
+            </div>
+
+            <div class="stat-card success">
+                <div class="stat-header">
+                    <div class="stat-label">Codes Actifs</div>
+                    <div class="stat-icon success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+                <div class="stat-value"><%= stats.activePromos || 0 %></div>
+                <div class="stat-trend up">
+                    <i class="fas fa-arrow-up"></i>
+                    Utilisables actuellement
+                </div>
+            </div>
+
+            <div class="stat-card info">
+                <div class="stat-header">
+                    <div class="stat-label">Utilisations Totales</div>
+                    <div class="stat-icon info">
+                        <i class="fas fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="stat-value"><%= stats.totalUsage || 0 %></div>
+                <div class="stat-trend neutral">
+                    <i class="fas fa-shopping-cart"></i>
+                    Commandes avec promo
+                </div>
+            </div>
+
+            <div class="stat-card warning">
+                <div class="stat-header">
+                    <div class="stat-label">CA avec Promo (30j)</div>
+                    <div class="stat-icon warning">
+                        <i class="fas fa-euro-sign"></i>
+                    </div>
+                </div>
+                <div class="stat-value"><%= stats.revenueWithPromo || '0.00' %>€</div>
+                <div class="stat-trend up">
+                    <i class="fas fa-arrow-up"></i>
+                    Économies: <%= stats.totalDiscountGiven || '0.00' %>€
+                </div>
+            </div>
+        </div>
+
+        <!-- Controls Section -->
+        <div class="controls-section fade-in">
+            <div class="controls-header">
+                <h3 class="controls-title">
+                    <i class="fas fa-filter"></i>
+                    Gestion des Codes Promo
+                </h3>
+                <a href="/admin/promos/create" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Nouveau Code Promo
+                </a>
+            </div>
+
+            <form method="GET" action="/admin/promos" class="search-filters">
+                <div class="filters-row">
+                    <div class="filter-group">
+                        <label class="filter-label">Rechercher</label>
+                        <div class="search-box">
+                            <i class="fas fa-search"></i>
+                            <input type="text" 
+                                   name="search" 
+                                   value="<%= search || '' %>" 
+                                   placeholder="Code promo, description..." 
+                                   class="form-control search-input">
+                        </div>
+                    </div>
+
+                    <div class="filter-group">
+                        <label class="filter-label">Statut</label>
+                        <select name="status" class="form-control">
+                            <option value="all" <%= (status === 'all' || !status) ? 'selected' : '' %>>Tous les statuts</option>
+                            <option value="active" <%= status === 'active' ? 'selected' : '' %>>Actifs</option>
+                            <option value="expired" <%= status === 'expired' ? 'selected' : '' %>>Expirés</option>
+                            <option value="exhausted" <%= status === 'exhausted' ? 'selected' : '' %>>Épuisés</option>
+                            <option value="inactive" <%= status === 'inactive' ? 'selected' : '' %>>Inactifs</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="actions-group">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i>
+                        Filtrer
+                    </button>
+                    <a href="/admin/promos" class="btn btn-secondary">
+                        <i class="fas fa-undo"></i>
+                        Reset
+                    </a>
+                    <a href="/admin/promos/export" class="btn btn-info">
+                        <i class="fas fa-download"></i>
+                        Export CSV
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <!-- Codes Promo Table -->
+        <div class="table-container fade-in">
+            <div class="table-header">
+                <h3 class="table-title">
+                    <i class="fas fa-list"></i>
+                    Liste des Codes Promo
+                    <% if (promoCodes && promoCodes.length > 0) { %>
+                        <span class="table-count"><%= promoCodes.length %></span>
+                    <% } %>
+                </h3>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Code</th>
+                            <th>Réduction</th>
+                            <th>Montant Min.</th>
+                            <th>Utilisation</th>
+                            <th>Expiration</th>
+                            <th>Statut</th>
+                            <th>Performance</th>
+                            <th>Créé le</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% if (promoCodes && promoCodes.length > 0) { %>
+                            <% promoCodes.forEach(promo => { 
+                                // Calcul du statut et de la couleur
+                                let statusClass = 'secondary';
+                                let statusText = 'Inactif';
+                                let statusIcon = 'pause';
+                                
+                                if (promo.is_active) {
+                                    const now = new Date();
+                                    const expiresAt = promo.expires_at ? new Date(promo.expires_at) : null;
+                                    const isExpired = expiresAt && now > expiresAt;
+                                    const isExhausted = promo.used_count >= promo.usage_limit;
+                                    
+                                    if (isExpired) {
+                                        statusClass = 'danger';
+                                        statusText = 'Expiré';
+                                        statusIcon = 'clock';
+                                    } else if (isExhausted) {
+                                        statusClass = 'warning';
+                                        statusText = 'Épuisé';
+                                        statusIcon = 'exclamation-triangle';
+                                    } else {
+                                        statusClass = 'success';
+                                        statusText = 'Actif';
+                                        statusIcon = 'check-circle';
+                                    }
+                                }
+                                
+                                // Calcul du pourcentage d'utilisation
+                                const usagePercent = promo.usage_limit > 0 ? (promo.used_count / promo.usage_limit) * 100 : 0;
+                                let progressClass = '';
+                                if (usagePercent >= 90) progressClass = 'danger';
+                                else if (usagePercent >= 70) progressClass = 'warning';
+                            %>
+                                <tr>
+                                    <td>
+                                        <div class="promo-code"><%= promo.code %></div>
+                                        <div class="promo-id">ID: <%= promo.id %></div>
+                                    </td>
+                                    <td>
+                                        <strong><%= promo.discount_value || promo.discount_percent || 0 %>%</strong>
+                                    </td>
+                                    <td>
+                                        <% if (promo.min_order_amount && promo.min_order_amount > 0) { %>
+                                            <%= Number(promo.min_order_amount).toFixed(2) %>€
+                                        <% } else { %>
+                                            <span style="color: var(--gray-medium);">Aucun</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <div class="usage-progress">
+                                            <div class="usage-text">
+                                                <%= promo.used_count || 0 %>/<%= promo.usage_limit || 100 %>
+                                            </div>
+                                            <div class="progress-bar">
+                                                <div class="progress-fill <%= progressClass %>" 
+                                                     style="width: <%= Math.min(usagePercent, 100) %>%"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <% if (promo.expires_at) { %>
+                                            <%= new Date(promo.expires_at).toLocaleDateString('fr-FR') %>
+                                        <% } else { %>
+                                            <span style="color: var(--gray-medium);">Aucune</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <span class="badge badge-<%= statusClass %>">
+                                            <i class="fas fa-<%= statusIcon %>"></i>
+                                            <%= statusText %>
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div style="text-align: center;">
+                                            <div style="font-weight: 600; color: var(--primary-dark);">
+                                                <%= promo.ordersCount || 0 %> commandes
+                                            </div>
+                                            <div style="font-size: 0.8rem; color: var(--gray-medium);">
+                                                <%= promo.totalRevenue || '0.00' %>€ CA
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <% if (promo.created_at) { %>
+                                            <%= new Date(promo.created_at).toLocaleDateString('fr-FR') %>
+                                            <div style="font-size: 0.75rem; color: var(--gray-medium);">
+                                                <%= new Date(promo.created_at).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) %>
+                                            </div>
+                                        <% } else { %>
+                                            <span style="color: var(--gray-medium);">N/A</span>
+                                        <% } %>
+                                    </td>
+                                    <td>
+                                        <div class="action-buttons">
+                                            <a href="/admin/promos/<%= promo.id %>/details" 
+                                               class="action-btn btn-info" 
+                                               title="Voir les détails">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="/admin/promos/<%= promo.id %>/edit" 
+                                               class="action-btn btn-warning" 
+                                               title="Modifier">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <% if ((promo.ordersCount || 0) === 0) { %>
+                                                <button onclick="deletePromo('<%= promo.id %>', '<%= promo.code %>')" 
+                                                        class="action-btn btn-danger" 
+                                                        title="Supprimer">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            <% } else { %>
+                                                <button class="action-btn btn-secondary" 
+                                                        title="Impossible de supprimer (utilisé dans des commandes)" 
+                                                        disabled>
+                                                    <i class="fas fa-lock"></i>
+                                                </button>
+                                            <% } %>
+                                        </div>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        <% } else { %>
+                            <tr>
+                                <td colspan="9">
+                                    <div class="empty-state">
+                                        <div class="empty-state-icon">
+                                            <i class="fas fa-tags"></i>
+                                        </div>
+                                        <h3>Aucun code promo trouvé</h3>
+                                        <p>
+                                            <% if (search || (status && status !== 'all')) { %>
+                                                Aucun code promo ne correspond à vos critères de recherche.
+                                                <br>
+                                                <a href="/admin/promos" class="btn btn-secondary" style="margin-top: 10px;">
+                                                    <i class="fas fa-undo"></i>
+                                                    Voir tous les codes
+                                                </a>
+                                            <% } else { %>
+                                                Vous n'avez pas encore créé de codes promo.
+                                                <br>
+                                                Commencez par en créer un pour offrir des réductions à vos clients.
+                                            <% } %>
+                                        </p>
+                                        <a href="/admin/promos/create" class="btn btn-primary">
+                                            <i class="fas fa-plus"></i>
+                                            Créer mon premier code promo
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% } %>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <% if (pagination && pagination.totalPages > 1) { %>
+            <div class="pagination-container fade-in">
+                <div class="pagination-info">
+                    Page <%= pagination.page %> sur <%= pagination.totalPages %> 
+                    (<%= pagination.total %> code<%= pagination.total > 1 ? 's' : '' %> au total)
+                </div>
+                
+                <div class="pagination">
+                    <% if (pagination.hasPrev) { %>
+                        <a href="?page=<%= pagination.page - 1 %>&search=<%= search || '' %>&status=<%= status || '' %>" 
+                           class="page-link">
+                            <i class="fas fa-chevron-left"></i>
+                            Précédent
+                        </a>
+                    <% } %>
+                    
+                    <% 
+                        let startPage = Math.max(1, pagination.page - 2);
+                        let endPage = Math.min(pagination.totalPages, pagination.page + 2);
+                        
+                        if (startPage > 1) { %>
+                            <a href="?page=1&search=<%= search || '' %>&status=<%= status || '' %>" class="page-link">1</a>
+                            <% if (startPage > 2) { %>
+                                <span class="page-link" style="cursor: default;">...</span>
+                            <% } %>
+                        <% }
+                        
+                        for (let i = startPage; i <= endPage; i++) { %>
+                            <a href="?page=<%= i %>&search=<%= search || '' %>&status=<%= status || '' %>" 
+                               class="page-link <%= i === pagination.page ? 'active' : '' %>">
+                                <%= i %>
+                            </a>
+                        <% }
+                        
+                        if (endPage < pagination.totalPages) {
+                            if (endPage < pagination.totalPages - 1) { %>
+                                <span class="page-link" style="cursor: default;">...</span>
+                            <% } %>
+                            <a href="?page=<%= pagination.totalPages %>&search=<%= search || '' %>&status=<%= status || '' %>" 
+                               class="page-link"><%= pagination.totalPages %></a>
+                        <% } %>
+                    
+                    <% if (pagination.hasNext) { %>
+                        <a href="?page=<%= pagination.page + 1 %>&search=<%= search || '' %>&status=<%= status || '' %>" 
+                           class="page-link">
+                            Suivant
+                            <i class="fas fa-chevron-right"></i>
+                        </a>
+                    <% } %>
+                </div>
+            </div>
+        <% } %>
+
+        <!-- Recent Orders with Promo Codes (Optional section) -->
+        <% if (recentOrders && recentOrders.length > 0) { %>
+            <div class="table-container fade-in">
+                <div class="table-header">
+                    <h3 class="table-title">
+                        <i class="fas fa-shopping-cart"></i>
+                        Commandes récentes avec codes promo
+                        <span class="table-count"><%= recentOrders.length %></span>
+                    </h3>
+                    <a href="/admin/commandes?promo=with-promo" class="btn btn-secondary btn-sm">
+                        <i class="fas fa-external-link-alt"></i>
+                        Voir toutes
+                    </a>
+                </div>
+
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Commande</th>
+                                <th>Client</th>
+                                <th>Code Promo</th>
+                                <th>Réduction</th>
+                                <th>Total</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% recentOrders.forEach(order => { %>
+                                <tr>
+                                    <td>
+                                        <strong>#<%= order.numero_commande || 'CMD-' + order.id %></strong>
+                                    </td>
+                                    <td>
+                                        <%= order.customer_name || 'N/A' %>
+                                    </td>
+                                    <td>
+                                        <div class="promo-code"><%= order.promo_code %></div>
+                                    </td>
+                                    <td>
+                                        <span style="color: var(--success); font-weight: 600;">
+                                            -<%= Number(order.promo_discount_amount || 0).toFixed(2) %>€
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong><%= Number(order.total || 0).toFixed(2) %>€</strong>
+                                    </td>
+                                    <td>
+                                        <%= new Date(order.created_at).toLocaleDateString('fr-FR') %>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        <% } %>
+
+        <!-- Quick Actions -->
+        <div style="margin-top: 30px; text-align: center;">
+            <div style="display: inline-flex; gap: 15px; flex-wrap: wrap;">
+                <a href="/admin/promos/create" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Nouveau Code Promo
+                </a>
+                <a href="/admin/promos/export" class="btn btn-info">
+                    <i class="fas fa-download"></i>
+                    Exporter les données
+                </a>
+                <a href="/admin/statistiques" class="btn btn-secondary">
+                    <i class="fas fa-chart-bar"></i>
+                    Voir les statistiques
+                </a>
+                <a href="/admin" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Retour admin
+                </a>
+            </div>
+        </div>
+    </div>
+
+    
+    <%- include('../partials/footer.ejs') %>
+
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎫 Page admin codes promo chargée');
+
+            // Auto-hide flash messages
+            setTimeout(() => {
+                document.querySelectorAll('.alert').forEach(alert => {
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-10px)';
+                    setTimeout(() => alert.remove(), 300);
+                });
+            }, 5000);
+
+            // Confirm delete function
+            window.deletePromo = async function(promoId, promoCode) {
+                if (!confirm(`Êtes-vous sûr de vouloir supprimer le code promo "${promoCode}" ?\n\nCette action est irréversible.`)) {
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/admin/promos/${promoId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    });
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        showNotification(data.message || 'Code promo supprimé', 'success');
+                        setTimeout(() => window.location.reload(), 1000);
+                    } else {
+                        showNotification(data.message || 'Erreur lors de la suppression', 'error');
+                    }
+
+                } catch (error) {
+                    console.error('❌ Erreur suppression:', error);
+                    showNotification('Erreur de connexion', 'error');
+                }
+            };
+
+            // Notification function
+            function showNotification(message, type = 'success') {
+                // Remove existing notifications
+                document.querySelectorAll('.notification').forEach(notif => notif.remove());
+
+                const notification = document.createElement('div');
+                notification.className = `notification notification-${type}`;
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    z-index: 9999;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    color: white;
+                    font-weight: 500;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                    transform: translateX(400px);
+                    transition: transform 0.3s ease;
+                    ${type === 'success' ? 'background: #10b981;' : 'background: #ef4444;'}
+                `;
+                
+                notification.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'}"></i>
+                        <span>${message}</span>
+                        <button onclick="this.parentElement.parentElement.remove()" 
+                                style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: 10px;">×</button>
+                    </div>
+                `;
+                
+                document.body.appendChild(notification);
+                
+                // Slide in
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(0)';
+                }, 100);
+                
+                // Auto remove
+                setTimeout(() => {
+                    notification.style.transform = 'translateX(400px)';
+                    setTimeout(() => notification.remove(), 300);
+                }, 4000);
+            }
+
+            // Search form auto-submit on filter change
+            const statusSelect = document.querySelector('select[name="status"]');
+            if (statusSelect) {
+                statusSelect.addEventListener('change', function() {
+                    this.form.submit();
+                });
+            }
+
+            // Enhanced search with debounce
+            const searchInput = document.querySelector('input[name="search"]');
+            if (searchInput) {
+                let searchTimeout;
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+                    searchTimeout = setTimeout(() => {
+                        if (this.value.length >= 2 || this.value.length === 0) {
+                            this.form.submit();
+                        }
+                    }, 500);
+                });
+            }
+
+            // Progress bar animation
+            document.querySelectorAll('.progress-fill').forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0%';
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 200);
+            });
+
+            // Table row click to view details
+            document.querySelectorAll('.table tbody tr').forEach(row => {
+                row.style.cursor = 'pointer';
+                row.addEventListener('click', function(e) {
+                    // Don't trigger if clicking on action buttons
+                    if (e.target.closest('.action-buttons')) return;
+                    
+                    const detailsLink = this.querySelector('a[href*="/details"]');
+                    if (detailsLink) {
+                        window.location.href = detailsLink.href;
+                    }
+                });
+            });
+
+            // Tooltip for disabled delete buttons
+            document.querySelectorAll('.action-btn:disabled').forEach(btn => {
+                btn.addEventListener('mouseenter', function() {
+                    const tooltip = document.createElement('div');
+                    tooltip.textContent = this.title;
+                    tooltip.style.cssText = `
+                        position: absolute;
+                        background: rgba(0,0,0,0.8);
+                        color: white;
+                        padding: 5px 8px;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        z-index: 1000;
+                        pointer-events: none;
+                        white-space: nowrap;
+                    `;
+                    document.body.appendChild(tooltip);
+                    
+                    const rect = this.getBoundingClientRect();
+                    tooltip.style.left = rect.left + 'px';
+                    tooltip.style.top = (rect.top - tooltip.offsetHeight - 5) + 'px';
+                    
+                    this.addEventListener('mouseleave', () => tooltip.remove(), { once: true });
+                });
+            });
+
+            console.log('✅ Scripts admin codes promo initialisés');
+        });
+    </script>
+</body>
+</html>

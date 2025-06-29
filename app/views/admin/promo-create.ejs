@@ -1,0 +1,586 @@
+<!-- views/admin/promo-create.ejs - VERSION CORRIGÉE -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - Administration</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #E8B4B8;
+            --primary-dark: #B8868A;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --gray-light: #f8fafc;
+            --gray-medium: #64748b;
+            --white: #ffffff;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --border-radius: 8px;
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--gray-light);
+            color: var(--dark);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .breadcrumb {
+            margin-top: 10px;
+            opacity: 0.9;
+        }
+
+        .breadcrumb a {
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+
+        .breadcrumb a:hover {
+            color: white;
+        }
+
+        /* Cards */
+        .card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 20px;
+            border-bottom: 1px solid #e5e7eb;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            padding: 30px;
+        }
+
+        /* Forms */
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            transition: var(--transition);
+            background: var(--white);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(232, 180, 184, 0.1);
+        }
+
+        .form-control.error {
+            border-color: var(--danger);
+        }
+
+        .form-help {
+            font-size: 0.85rem;
+            color: var(--gray-medium);
+            margin-top: 5px;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--gray-light);
+            color: var(--dark);
+            border: 1px solid #e5e7eb;
+        }
+
+        .btn-secondary:hover {
+            background: #f1f5f9;
+        }
+
+        /* Alerts */
+        .alert {
+            padding: 15px 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: var(--success);
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border-color: var(--danger);
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            color: #92400e;
+            border-color: var(--warning);
+        }
+
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        /* Stats preview pour l'édition */
+        .stats-preview {
+            background: var(--gray-light);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 15px;
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--gray-medium);
+            margin-top: 5px;
+        }
+
+        /* Info box */
+        .info-box {
+            background: var(--gray-light);
+            padding: 20px;
+            border-radius: var(--border-radius);
+            border-left: 4px solid var(--info);
+            margin-bottom: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Include your navbar -->
+    <%- include('../partials/navbarre.ejs') %>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>
+                <i class="fas fa-<%= isEdit ? 'edit' : 'plus' %>"></i>
+                <%= title %>
+            </h1>
+            <div class="breadcrumb">
+                <a href="/admin">Administration</a> › 
+                <a href="/admin/promos">Codes Promo</a> › 
+                <%= isEdit ? 'Modifier' : 'Créer' %>
+            </div>
+        </div>
+
+        <!-- Flash Messages -->
+        <% if (typeof flashMessages !== 'undefined' && flashMessages.length > 0) { %>
+            <% flashMessages.forEach(flash => { %>
+                <div class="alert alert-<%= flash.type %>">
+                    <i class="fas fa-<%= flash.type === 'success' ? 'check-circle' : 'exclamation-triangle' %>"></i>
+                    <%= flash.message %>
+                </div>
+            <% }) %>
+        <% } %>
+
+        <!-- Statistiques si édition -->
+        <% if (isEdit && promo && promo.ordersCount !== undefined) { %>
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Statistiques du Code
+                    </h3>
+                </div>
+                <div class="card-body">
+                    <div class="stats-preview">
+                        <div class="stats-grid">
+                            <div class="stat-item">
+                                <div class="stat-value"><%= promo.used_count %></div>
+                                <div class="stat-label">Utilisations</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value"><%= promo.ordersCount || 0 %></div>
+                                <div class="stat-label">Commandes</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value"><%= ((promo.used_count / promo.usage_limit) * 100).toFixed(1) %>%</div>
+                                <div class="stat-label">Taux d'usage</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <% if (promo.ordersCount > 0) { %>
+                        <div style="background: #fef3c7; color: #92400e; padding: 12px; border-radius: var(--border-radius); text-align: center;">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            Ce code a été utilisé dans <%= promo.ordersCount %> commande(s). Certaines modifications peuvent affecter l'historique.
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        <% } %>
+
+        <!-- Formulaire -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-form"></i>
+                    <%= isEdit ? 'Modifier le code promo' : 'Informations du nouveau code' %>
+                </h3>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="<%= isEdit ? `/admin/promos/${promo.id}/edit` : '/admin/promos/create' %>">
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Code Promo *</label>
+                            <input type="text" 
+                                   name="code" 
+                                   class="form-control" 
+                                   value="<%= promo ? promo.code : '' %>"
+                                   <%= isEdit ? 'readonly' : 'required' %>
+                                   maxlength="20" 
+                                   style="<%= isEdit ? 'background: #f9fafb; text-transform: uppercase;' : 'text-transform: uppercase;' %>"
+                                   placeholder="Ex: WELCOME10">
+                            <div class="form-help">
+                                <%= isEdit ? 'Le code ne peut pas être modifié après création' : 'Lettres et chiffres uniquement, automatiquement en majuscules' %>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Réduction (%) *</label>
+                            <input type="number" 
+                                   name="discountPercent" 
+                                   class="form-control" 
+                                   value="<%= promo ? (promo.discount_value || promo.discount_percent) : '' %>"
+                                   required 
+                                   min="1" 
+                                   max="100" 
+                                   placeholder="10">
+                            <div class="form-help">Entre 1% et 100%</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Date d'expiration</label>
+                            <input type="datetime-local" 
+                                   name="expiresAt" 
+                                   class="form-control"
+                                   value="<%= promo && promo.expires_at ? new Date(promo.expires_at).toISOString().slice(0, 16) : '' %>">
+                            <div class="form-help">Laisser vide pour aucune expiration</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Limite d'utilisation</label>
+                            <input type="number" 
+                                   name="usageLimit" 
+                                   class="form-control" 
+                                   value="<%= promo ? promo.usage_limit : '100' %>"
+                                   min="1" 
+                                   placeholder="100">
+                            <div class="form-help">Nombre maximum d'utilisations</div>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label class="form-label">Montant minimum (€)</label>
+                            <input type="number" 
+                                   name="minOrderAmount" 
+                                   class="form-control" 
+                                   value="<%= promo ? (promo.min_order_amount || '') : '' %>"
+                                   min="0" 
+                                   step="0.01"
+                                   placeholder="0.00">
+                            <div class="form-help">Montant minimum de commande requis (0 ou vide = aucun minimum)</div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Statut</label>
+                            <select name="isActive" class="form-control">
+                                <option value="true" <%= (!promo || promo.is_active !== false) ? 'selected' : '' %>>Actif</option>
+                                <option value="false" <%= (promo && promo.is_active === false) ? 'selected' : '' %>>Inactif</option>
+                            </select>
+                            <div class="form-help">Un code inactif ne peut pas être utilisé</div>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="/admin/promos" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i>
+                            Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i>
+                            <%= isEdit ? 'Modifier le code' : 'Créer le code' %>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Aide -->
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-info-circle"></i>
+                    Aide
+                </h3>
+            </div>
+            <div class="card-body">
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px;">
+                    <div>
+                        <h4 style="color: var(--primary-dark); margin-bottom: 10px;">
+                            <i class="fas fa-lightbulb"></i>
+                            Bonnes pratiques
+                        </h4>
+                        <ul style="color: var(--gray-medium); line-height: 1.8;">
+                            <li>Utilisez des codes courts et mémorables</li>
+                            <li>Indiquez le pourcentage dans le code (ex: SUMMER20)</li>
+                            <li>Définissez une date d'expiration pour l'urgence</li>
+                            <li>Limitez les usages pour créer la rareté</li>
+                            <li>Utilisez un montant minimum pour augmenter le panier moyen</li>
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 style="color: var(--primary-dark); margin-bottom: 10px;">
+                            <i class="fas fa-shield-alt"></i>
+                            Sécurité & Paramètres
+                        </h4>
+                        <ul style="color: var(--gray-medium); line-height: 1.8;">
+                            <li>Les codes sont automatiquement en majuscules</li>
+                            <li>Montant minimum : 0€ = aucune restriction</li>
+                            <li>Les codes inactifs ne sont pas utilisables</li>
+                            <li>L'historique des commandes est préservé</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <%- include('../partials/footer.ejs') %>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📝 Page création/édition code promo chargée');
+
+            // Auto-format du code promo (si pas en édition)
+            const codeInput = document.querySelector('input[name="code"]');
+            if (codeInput && !codeInput.readOnly) {
+                codeInput.addEventListener('input', function() {
+                    this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+                });
+            }
+
+            // Validation du formulaire
+            const form = document.querySelector('form');
+            form.addEventListener('submit', function(e) {
+                const discountPercentInput = document.querySelector('input[name="discountPercent"]');
+                const discountPercent = parseFloat(discountPercentInput.value);
+                
+                // Vérifier que le pourcentage est un nombre valide
+                if (isNaN(discountPercent) || discountPercent < 1 || discountPercent > 100) {
+                    e.preventDefault();
+                    alert('Le pourcentage doit être un nombre entre 1 et 100');
+                    discountPercentInput.focus();
+                    return false;
+                }
+
+                const usageLimitInput = document.querySelector('input[name="usageLimit"]');
+                const usageLimit = parseInt(usageLimitInput.value);
+                if (isNaN(usageLimit) || usageLimit < 1) {
+                    e.preventDefault();
+                    alert('La limite d\'utilisation doit être d\'au moins 1');
+                    usageLimitInput.focus();
+                    return false;
+                }
+
+                const minAmountInput = document.querySelector('input[name="minOrderAmount"]');
+                const minAmount = parseFloat(minAmountInput.value || 0);
+                if (isNaN(minAmount) || minAmount < 0) {
+                    e.preventDefault();
+                    alert('Le montant minimum ne peut pas être négatif');
+                    minAmountInput.focus();
+                    return false;
+                }
+
+                const codeInput = document.querySelector('input[name="code"]');
+                const code = codeInput.value.trim();
+                if (!code) {
+                    e.preventDefault();
+                    alert('Le code promo est requis');
+                    codeInput.focus();
+                    return false;
+                }
+
+                // Confirmation pour les modifications importantes
+                <% if (isEdit && promo && promo.ordersCount > 0) { %>
+                    if (!confirm('Ce code a été utilisé dans des commandes. Confirmer les modifications ?')) {
+                        e.preventDefault();
+                        return false;
+                    }
+                <% } %>
+
+                // Si tout est valide, on peut soumettre
+                console.log('✅ Formulaire valide, soumission...');
+                return true;
+            });
+
+            // Auto-hide des messages flash
+            setTimeout(() => {
+                document.querySelectorAll('.alert').forEach(alert => {
+                    alert.style.opacity = '0';
+                    alert.style.transform = 'translateY(-10px)';
+                    setTimeout(() => alert.remove(), 300);
+                });
+            }, 5000);
+
+            // Amélioration UX pour le montant minimum
+            const minAmountInput = document.querySelector('input[name="minOrderAmount"]');
+            const minAmountHelp = minAmountInput.nextElementSibling;
+            
+            minAmountInput.addEventListener('input', function() {
+                const value = parseFloat(this.value || 0);
+                if (value > 0) {
+                    minAmountHelp.textContent = `Les clients devront commander au minimum ${value.toFixed(2)}€ pour utiliser ce code`;
+                    minAmountHelp.style.color = 'var(--warning)';
+                } else {
+                    minAmountHelp.textContent = 'Montant minimum de commande requis (0 ou vide = aucun minimum)';
+                    minAmountHelp.style.color = 'var(--gray-medium)';
+                }
+            });
+        });
+    </script>
+</body>
+</html>

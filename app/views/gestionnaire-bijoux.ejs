@@ -1,0 +1,2175 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title || 'Gestionnaire de Bijoux' %> | Bijoux Élégance</title>
+    <meta name="description" content="Interface de gestion dynamique pour votre collection de bijoux">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/favicon.png">
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --rose-gold: #b76e79;
+            --rose-gold-light: #e8c2c8;
+            --rose-gold-dark: #7d4b53;
+            --cream: #fff8f0;
+            --dark-text: #3a3a3a;
+            --light-gray: #f5f5f5;
+        }
+
+        html, body {
+            width: 100%;
+            overflow-x: hidden;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--rose-gold-light) 0%, var(--cream) 50%, var(--rose-gold-light) 100%);
+            min-height: 100vh;
+            color: var(--dark-text);
+        }
+
+        .container-fluid {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 2rem;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(183, 110, 121, 0.15);
+            margin-bottom: 2rem;
+            border: 1px solid var(--rose-gold-light);
+        }
+
+        .header h1 {
+            color: var(--rose-gold-dark);
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem;
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .navbar-custom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding: 1rem;
+            background: rgba(183, 110, 121, 0.1);
+            border-radius: 15px;
+            border: 2px solid var(--rose-gold-light);
+        }
+
+        .nav-items {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .nav-item {
+            padding: 0.5rem 1rem;
+            background: rgba(255, 255, 255, 0.9);
+            border: 2px solid var(--rose-gold);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: var(--rose-gold);
+            position: relative;
+            text-decoration: none;
+            font-size: 0.9rem;
+            user-select: none;
+        }
+
+        .nav-item:hover {
+            background: var(--rose-gold);
+            color: white;
+            transform: translateY(-2px);
+            text-decoration: none;
+        }
+
+        .nav-item.active {
+            background: var(--rose-gold);
+            color: white;
+            box-shadow: 0 4px 15px rgba(183, 110, 121, 0.3);
+        }
+
+        .nav-item .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--rose-gold-dark);
+            color: white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 0.7rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(183, 110, 121, 0.1);
+            transition: transform 0.3s ease;
+            border: 1px solid var(--rose-gold-light);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--rose-gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--rose-gold-dark);
+            font-weight: 600;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .btn-custom {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary-custom {
+            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+            color: white;
+        }
+
+        .btn-secondary-custom {
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--rose-gold);
+            border: 2px solid var(--rose-gold);
+        }
+
+        .btn-danger-custom {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+        }
+
+        .btn-success-custom {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+        }
+
+        .btn-warning-custom {
+            background: linear-gradient(135deg, #ffc107, #fd7e14);
+            color: var(--dark-text);
+        }
+
+        .btn-info-custom {
+            background: linear-gradient(135deg, #17a2b8, #138496);
+            color: white;
+        }
+
+        .btn-custom:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .btn-small {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.75rem;
+        }
+
+        .search-filters {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin-bottom: 2rem;
+            border: 1px solid var(--rose-gold-light);
+        }
+
+        .form-control-custom {
+            border: 2px solid var(--rose-gold-light);
+            border-radius: 8px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control-custom:focus {
+            border-color: var(--rose-gold);
+            box-shadow: 0 0 0 0.2rem rgba(183, 110, 121, 0.25);
+        }
+
+        /* CORRECTION: Grille responsive pour 2 cartes par ligne sur mobile */
+        .jewelry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .jewelry-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(183, 110, 121, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            border: 1px solid var(--rose-gold-light);
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        /* NOUVEAU: État masqué */
+        .jewelry-card.hidden-jewel {
+            opacity: 0.3;
+            transform: scale(0.95);
+        }
+
+        .jewelry-card.filtered-out {
+            display: none !important;
+        }
+
+        .jewelry-card:hover {
+            transform: translateY(-5px) scale(1.02);
+        }
+
+        /* NOUVEAU: Bouton de masquage */
+        .hide-toggle {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            border: none;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+        }
+
+        .hide-toggle:hover {
+            background: rgba(0, 0, 0, 0.9);
+            transform: scale(1.1);
+        }
+
+        .jewelry-image {
+            width: 100%;
+            height: 180px;
+            background: linear-gradient(135deg, var(--rose-gold-light), var(--rose-gold));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: white;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .banner {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 0.4rem 0.8rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            z-index: 2;
+        }
+
+        .banner-new { background: #28a745; }
+        .banner-sale { 
+            background: #dc3545;
+            animation: pulse 2s infinite;
+        }
+        .banner-limited { background: #ffc107; color: #333; }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .jewelry-content {
+            padding: 1.2rem;
+        }
+
+        .jewelry-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+
+        .jewelry-type {
+            color: var(--rose-gold);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+        }
+
+        .jewelry-description {
+            color: var(--rose-gold-dark);
+            margin-bottom: 1rem;
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            font-size: 0.85rem;
+        }
+
+        /* CORRECTION: Prix avec logique mathématique corrigée */
+        .price-section {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .price-original {
+            font-size: 1rem;
+            color: #999;
+            text-decoration: line-through;
+        }
+
+        .price-current {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--rose-gold);
+        }
+
+        .discount-badge {
+            background: #dc3545;
+            color: white;
+            padding: 0.2rem 0.6rem;
+            border-radius: 15px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .jewelry-actions {
+            display: flex;
+            gap: 0.4rem;
+            flex-wrap: wrap;
+        }
+
+        .stock-info {
+            color: var(--rose-gold-dark);
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+        }
+
+        .stock-in { color: #28a745; }
+        .stock-out { color: #dc3545; }
+        .stock-low { color: #ffc107; }
+
+        /* Modal améliorée */
+        .modal-custom {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            overflow-y: auto;
+            padding: 20px 0;
+        }
+
+        .modal-content-custom {
+            background-color: var(--cream);
+            margin: 20px auto;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 90vh;
+            overflow-y: auto;
+            text-align: left;
+            border: 2px solid var(--rose-gold-light);
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .modal-header-custom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--rose-gold-light);
+        }
+
+        .modal-header-custom h3 {
+            margin: 0;
+            color: var(--rose-gold-dark);
+            text-align: center;
+            flex: 1;
+        }
+
+        .btn-close-custom {
+            background: none;
+            border: none;
+            font-size: 1.2rem;
+            color: var(--rose-gold);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-close-custom:hover {
+            background: var(--rose-gold-light);
+            color: var(--rose-gold-dark);
+            transform: scale(1.1);
+        }
+
+        .modal-body-custom {
+            margin-bottom: 2rem;
+        }
+
+        .discount-tabs {
+            display: flex;
+            margin-bottom: 1.5rem;
+            border-bottom: 2px solid var(--rose-gold-light);
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 1rem;
+            background: transparent;
+            border: none;
+            color: var(--rose-gold);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+
+        .tab-btn.active {
+            color: var(--rose-gold-dark);
+            border-bottom-color: var(--rose-gold);
+            background: rgba(183, 110, 121, 0.1);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .selected-jewel-info {
+            background: var(--rose-gold-light);
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .jewel-name {
+            font-weight: bold;
+            color: var(--rose-gold-dark);
+        }
+
+        .jewel-price {
+            color: var(--rose-gold);
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .discount-preview {
+            background: var(--cream);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border: 1px solid var(--rose-gold-light);
+        }
+
+        .price-comparison {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .original-price {
+            color: #999;
+            text-decoration: line-through;
+        }
+
+        .discounted-price {
+            color: var(--rose-gold);
+            font-weight: bold;
+            font-size: 1.1rem;
+        }
+
+        .savings {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .bulk-preview {
+            background: var(--cream);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+            border: 1px solid var(--rose-gold-light);
+        }
+
+        .affected-count {
+            font-weight: bold;
+            color: var(--rose-gold);
+            margin-bottom: 0.5rem;
+        }
+
+        .affected-list {
+            max-height: 150px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 2rem;
+        }
+
+        .pagination-custom {
+            display: flex;
+            justify-content: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .page-btn {
+            padding: 0.5rem 1rem;
+            border: 2px solid var(--rose-gold);
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--rose-gold);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+        }
+
+        .page-btn.active {
+            background: var(--rose-gold);
+            color: white;
+        }
+
+        .page-btn:hover {
+            background: var(--rose-gold);
+            color: white;
+            text-decoration: none;
+        }
+
+        .footer-custom {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            margin-top: 3rem;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid var(--rose-gold-light);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--rose-gold-dark);
+            grid-column: 1 / -1;
+        }
+
+        .empty-state i {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+            color: var(--rose-gold-light);
+        }
+
+        .loading-spinner {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .alert-custom {
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        /* Responsive Design corrigé */
+        @media (max-width: 768px) {
+            .container-fluid {
+                padding: 1rem;
+            }
+
+            /* CORRECTION: 2 cartes par ligne sur tablettes */
+            .jewelry-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 1rem;
+            }
+
+            .jewelry-card {
+                min-height: auto;
+            }
+
+            .jewelry-image {
+                height: 140px;
+                font-size: 2rem;
+            }
+
+            .jewelry-content {
+                padding: 1rem;
+            }
+
+            .jewelry-title {
+                font-size: 1rem;
+            }
+
+            .price-current {
+                font-size: 1.1rem;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-custom {
+                justify-content: center;
+                padding: 0.6rem 1rem;
+            }
+
+            .header h1 {
+                font-size: 1.8rem;
+            }
+
+            .nav-items {
+                justify-content: center;
+                gap: 0.3rem;
+            }
+
+            .nav-item {
+                padding: 0.4rem 0.8rem;
+                font-size: 0.8rem;
+            }
+
+            .stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stat-number {
+                font-size: 1.5rem;
+            }
+
+            .modal-custom {
+                padding: 10px;
+            }
+
+            .modal-content-custom {
+                width: 95%;
+                max-width: none;
+                padding: 1.5rem;
+                margin: 10px auto;
+                max-height: 95vh;
+            }
+
+            .modal-header-custom {
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .modal-actions {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .btn-custom {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .discount-tabs {
+                flex-direction: column;
+            }
+
+            .tab-btn {
+                border-bottom: none;
+                border-right: 3px solid transparent;
+                text-align: center;
+            }
+
+            .tab-btn.active {
+                border-bottom: none;
+                border-right-color: var(--rose-gold);
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* CORRECTION: 1 carte par ligne sur mobile */
+            .jewelry-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .nav-items {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .navbar-custom {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Admin -->
+    <%- include('partials/navbarre.ejs') %>
+    
+    <div class="container-fluid">
+        <!-- Messages Flash -->
+        <% if (success && success.length > 0) { %>
+            <div class="alert alert-success alert-custom">
+                <i class="fas fa-check-circle me-2"></i>
+                <%= success[0] %>
+            </div>
+        <% } %>
+        
+        <% if (error && error.length > 0) { %>
+            <div class="alert alert-danger alert-custom">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                <%= error[0] %>
+            </div>
+        <% } %>
+
+        <!-- Header -->
+        <div class="header">
+            <h1><i class="fas fa-gem me-3"></i>Gestionnaire de Bijoux</h1>
+            
+            <!-- Navigation dynamique -->
+            <nav class="navbar-custom">
+                <div class="nav-left">
+                    <div class="nav-items" id="navItems">
+                        <div class="nav-item active" onclick="selectNavCategory('all')">
+                            🏠 Tous
+                            <span class="badge" id="badge-all"><%= jewels ? jewels.length : 0 %></span>
+                        </div>
+                        <div class="nav-item" onclick="selectNavCategory('rings')">
+                            💍 Bagues
+                            <span class="badge" id="badge-rings">
+                                <%= jewels ? jewels.filter(j => j.category && j.category.name === 'Bague').length : 0 %>
+                            </span>
+                        </div>
+                        <div class="nav-item" onclick="selectNavCategory('necklaces')">
+                            📿 Colliers
+                            <span class="badge" id="badge-necklaces">
+                                <%= jewels ? jewels.filter(j => j.category && j.category.name === 'Collier').length : 0 %>
+                            </span>
+                        </div>
+                        <div class="nav-item" onclick="selectNavCategory('bracelets')">
+                            🔗 Bracelets
+                            <span class="badge" id="badge-bracelets">
+                                <%= jewels ? jewels.filter(j => j.category && j.category.name === 'Bracelet').length : 0 %>
+                            </span>
+                        </div>
+                        <div class="nav-item" onclick="selectNavCategory('earrings')">
+                            👂 Boucles d'oreilles
+                            <span class="badge" id="badge-earrings">
+                                <%= jewels ? jewels.filter(j => j.category && j.category.name === 'Boucles d\'oreilles').length : 0 %>
+                            </span>
+                        </div>
+                        <div class="nav-item" onclick="selectNavCategory('sale')">
+                            🏷️ Promotions
+                            <span class="badge" id="badge-sale">
+                                <%= jewels ? jewels.filter(j => j.discount_percentage && j.discount_percentage > 0).length : 0 %>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="nav-right">
+                    <button class="btn-custom btn-info-custom btn-small" onclick="toggleHiddenJewels()">
+                        <i class="fas fa-eye-slash me-1"></i>
+                        <span id="hiddenToggleText">Voir masqués (0)</span>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- Statistiques -->
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="totalJewelry"><%= stats ? stats.totalJewels : 0 %></div>
+                    <div class="stat-label">Total Bijoux</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalValue"><%= stats ? stats.totalValue : '0.00' %>€</div>
+                    <div class="stat-label">Valeur Totale</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="onSale"><%= stats ? stats.onSale : 0 %></div>
+                    <div class="stat-label">En Promotion</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="totalStock"><%= stats ? stats.totalStock : 0 %></div>
+                    <div class="stat-label">Stock Total</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contrôles -->
+        <div class="controls">
+            <a href="/ajouter-bijou" class="btn-custom btn-primary-custom">
+                <i class="fas fa-plus me-2"></i>Ajouter un Bijou
+            </a>
+            <a href="/admin/bijoux/ajouter" class="btn-custom btn-primary-custom">
+                <i class="fas fa-plus-circle me-2"></i>Formulaire Complet
+            </a>
+            <button class="btn-custom btn-secondary-custom" onclick="exportData()">
+                <i class="fas fa-download me-2"></i>Exporter Données
+            </button>
+            <button class="btn-custom btn-warning-custom" onclick="openBulkDiscountModal()">
+                <i class="fas fa-tags me-2"></i>Réduction en Masse
+            </button>
+            <button class="btn-custom btn-info-custom" onclick="resetAllFilters()">
+                <i class="fas fa-refresh me-2"></i>Réinitialiser
+            </button>
+        </div>
+
+        <!-- Filtres de recherche améliorés -->
+        <div class="search-filters">
+            <form method="GET" action="/admin/gestionnaire-bijoux" id="filterForm">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label fw-bold">Rechercher</label>
+                        <input type="text" class="form-control form-control-custom" 
+                               id="searchInput"
+                               name="search" value="<%= filters ? filters.search : '' %>" 
+                               placeholder="Nom, type, matériau..."
+                               oninput="applyFilters()">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Catégorie</label>
+                        <select class="form-select form-control-custom" name="category" id="categoryFilter" onchange="applyFilters()">
+                            <option value="">Toutes</option>
+                            <% if (categories && categories.length > 0) { %>
+                                <% categories.forEach(category => { %>
+                                    <option value="<%= category.name %>" 
+                                            <%= filters && filters.category === category.name ? 'selected' : '' %>>
+                                        <%= category.name %>
+                                    </option>
+                                <% }); %>
+                            <% } %>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Matériau</label>
+                        <select class="form-select form-control-custom" name="material" id="materialFilter" onchange="applyFilters()">
+                            <option value="">Tous</option>
+                            <% if (materials && materials.length > 0) { %>
+                                <% materials.forEach(material => { %>
+                                    <option value="<%= material.name %>" 
+                                            <%= filters && filters.material === material.name ? 'selected' : '' %>>
+                                        <%= material.name %>
+                                    </option>
+                                <% }); %>
+                            <% } %>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Prix Max</label>
+                        <input type="number" class="form-control form-control-custom" 
+                               id="maxPriceFilter"
+                               name="maxPrice" value="<%= filters ? filters.maxPrice : '' %>" 
+                               placeholder="€"
+                               oninput="applyFilters()">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label fw-bold">Tri</label>
+                        <select class="form-select form-control-custom" name="sort" id="sortFilter" onchange="applyFilters()">
+                            <option value="newest" <%= filters && filters.sort === 'newest' ? 'selected' : '' %>>Plus récent</option>
+                            <option value="price_asc" <%= filters && filters.sort === 'price_asc' ? 'selected' : '' %>>Prix croissant</option>
+                            <option value="price_desc" <%= filters && filters.sort === 'price_desc' ? 'selected' : '' %>>Prix décroissant</option>
+                            <option value="name_asc" <%= filters && filters.sort === 'name_asc' ? 'selected' : '' %>>Nom A-Z</option>
+                            <option value="popularity" <%= filters && filters.sort === 'popularity' ? 'selected' : '' %>>Popularité</option>
+                        </select>
+                    </div>
+                    <div class="col-md-1">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Grille des bijoux -->
+        <div class="jewelry-grid" id="jewelryGrid">
+            <% if (jewels && jewels.length > 0) { %>
+                <% jewels.forEach(jewel => { %>
+                    <% 
+                    // CORRECTION: Calcul mathématique correct des prix avec réduction
+                    let originalPrice = parseFloat(jewel.price_ttc) || 0;
+                    let discountPercentage = parseFloat(jewel.discount_percentage) || 0;
+                    let currentPrice = originalPrice;
+                    let hasDiscount = discountPercentage > 0;
+                    
+                    if (hasDiscount) {
+                        // Si il y a une réduction, le prix actuel est déjà réduit
+                        // Donc on calcule le prix original
+                        originalPrice = currentPrice / (1 - discountPercentage / 100);
+                    }
+                    
+                    // Déterminer le statut du stock
+                    let stockStatus = 'out';
+                    let stockClass = 'stock-out';
+                    let stockText = 'Rupture de stock';
+                    
+                    if (jewel.stock > 0) {
+                        if (jewel.stock <= 5) {
+                            stockStatus = 'low';
+                            stockClass = 'stock-low';
+                            stockText = 'Stock faible';
+                        } else {
+                            stockStatus = 'in';
+                            stockClass = 'stock-in';
+                            stockText = 'En stock';
+                        }
+                    }
+                    %>
+                    
+                    <div class="jewelry-card" 
+                         data-category="<%= jewel.category ? jewel.category.name : '' %>" 
+                         data-material="<%= jewel.matiere || '' %>" 
+                         data-price="<%= currentPrice %>"
+                         data-jewel-id="<%= jewel.id %>"
+                         data-jewel-name="<%= jewel.name || 'Bijou' %>"
+                         data-has-discount="<%= hasDiscount ? 'true' : 'false' %>"
+                         data-stock="<%= jewel.stock || 0 %>"
+                         data-hidden="false">
+                        
+                        <!-- Bouton de masquage -->
+                        <button class="hide-toggle" onclick="toggleJewelVisibility(<%= jewel.id %>)" title="Masquer/Afficher ce bijou">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        
+                        <div class="jewelry-image" 
+                             <% if (jewel.image) { %>
+                                style="background-image: url('/uploads/jewels/<%= jewel.image %>'); background-size: cover; background-position: center;"
+                             <% } %>>
+                            
+                            <% if (!jewel.image) { %>
+                                <% 
+                                const getJewelryIcon = (categoryName) => {
+                                    const icons = {
+                                        'Bague': '💍',
+                                        'Collier': '📿',
+                                        'Bracelet': '🔗',
+                                        'Boucles d\'oreilles': '👂',
+                                        'Broche': '📎'
+                                    };
+                                    return icons[categoryName] || '💎';
+                                };
+                                %>
+                                <%= getJewelryIcon(jewel.category ? jewel.category.name : 'Bijou') %>
+                            <% } %>
+                            
+                            <% if (hasDiscount) { %>
+                                <div class="banner banner-sale">-<%= Math.round(discountPercentage) %>%</div>
+                            <% } else if (jewel.isNew) { %>
+                                <div class="banner banner-new">NOUVEAU</div>
+                            <% } else if (jewel.stock && jewel.stock <= 5 && jewel.stock > 0) { %>
+                                <div class="banner banner-limited">DERNIERS</div>
+                            <% } %>
+                        </div>
+                        
+                        <div class="jewelry-content">
+                            <div class="jewelry-title"><%= jewel.name || 'Bijou sans nom' %></div>
+                            <div class="jewelry-type">
+                                <i class="fas fa-tag me-1"></i>
+                                <%= jewel.category ? jewel.category.name : 'Bijou' %> - <%= jewel.matiere || 'N/A' %>
+                            </div>
+                            <div class="jewelry-description">
+                                <%= jewel.description || 'Aucune description disponible' %>
+                            </div>
+                            
+                            <!-- CORRECTION: Affichage des prix corrigé -->
+                            <div class="price-section">
+                                <% if (hasDiscount) { %>
+                                    <span class="price-original"><%= originalPrice.toFixed(2) %>€</span>
+                                    <span class="price-current"><%= currentPrice.toFixed(2) %>€</span>
+                                    <span class="discount-badge">-<%= Math.round(discountPercentage) %>%</span>
+                                <% } else { %>
+                                    <span class="price-current"><%= currentPrice.toFixed(2) %>€</span>
+                                <% } %>
+                            </div>
+                            
+                            <!-- CORRECTION: Affichage du stock amélioré -->
+                            <div class="stock-info">
+                                <i class="fas fa-cube me-1"></i>
+                                <strong>Stock:</strong> 
+                                <span class="<%= stockClass %>">
+                                    <%= jewel.stock || 0 %> disponible(s) - <%= stockText %>
+                                </span>
+                            </div>
+                            
+                            <div class="jewelry-actions">
+                                <a href="/bijoux/<%= jewel.slug %>" class="btn-custom btn-primary-custom btn-small">
+                                    <i class="fas fa-eye me-1"></i>Voir
+                                </a>
+                                <button class="btn-custom btn-warning-custom btn-small" 
+                                        onclick="openDiscountModal(<%= jewel.id %>, '<%= (jewel.name || 'Bijou').replace(/'/g, '\\\'') %>', <%= currentPrice %>)">
+                                    <i class="fas fa-percent me-1"></i>Réduction
+                                </button>
+                                <a href="/admin/jewels/<%= jewel.slug %>/edit" class="btn-custom btn-secondary-custom btn-small">
+                                    <i class="fas fa-edit me-1"></i>Modifier
+                                </a>
+                                <button class="btn-custom btn-success-custom btn-small" onclick="duplicateJewelry(<%= jewel.id %>)">
+                                    <i class="fas fa-copy me-1"></i>Dupliquer
+                                </button>
+                                <button class="btn-custom btn-danger-custom btn-small" onclick="deleteJewelry(<%= jewel.id %>, '<%= jewel.slug %>')">
+                                    <i class="fas fa-trash me-1"></i>Supprimer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div class="empty-state">
+                    <i class="fas fa-gem"></i>
+                    <h3>Aucun bijou trouvé</h3>
+                    <p>Commencez par ajouter vos premiers bijoux ou modifiez vos critères de recherche.</p>
+                    <a href="/ajouter-bijou" class="btn-custom btn-primary-custom">
+                        <i class="fas fa-plus me-2"></i>Ajouter un bijou
+                    </a>
+                </div>
+            <% } %>
+        </div>
+
+        <!-- Modal de gestion des réductions CORRIGÉE -->
+        <div id="discountManagementModal" class="modal-custom">
+            <div class="modal-content-custom">
+                <div class="modal-header-custom">
+                    <h3><i class="fas fa-tags text-warning me-2"></i>Gestion des Réductions</h3>
+                    <button type="button" class="btn-close-custom" onclick="closeDiscountManagementModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="modal-body-custom">
+                    <div class="discount-tabs">
+                        <button class="tab-btn active" onclick="switchTab('individual')">
+                            <i class="fas fa-gem me-2"></i>Réduction Individuelle
+                        </button>
+                        <button class="tab-btn" onclick="switchTab('bulk')">
+                            <i class="fas fa-layer-group me-2"></i>Réduction en Masse
+                        </button>
+                    </div>
+
+                    <!-- Onglet Réduction Individuelle -->
+                    <div id="individual-tab" class="tab-content active">
+                        <form id="individualDiscountForm">
+                            <div class="form-group mb-3">
+                                <label class="form-label fw-bold">Bijou sélectionné</label>
+                                <div class="selected-jewel-info">
+                                    <span id="selectedJewelName" class="jewel-name">Aucun bijou sélectionné</span>
+                                    <span id="selectedJewelPrice" class="jewel-price">0€</span>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Type de réduction</label>
+                                    <select id="discountType" class="form-select form-control-custom" required onchange="updateDiscountPreview()">
+                                        <option value="percentage">Pourcentage (%)</option>
+                                        <option value="fixed">Montant fixe (€)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Valeur</label>
+                                    <div class="input-group">
+                                        <input type="number" id="discountValue" class="form-control form-control-custom" 
+                                               placeholder="0" min="0" step="0.01" required oninput="updateDiscountPreview()">
+                                        <span class="input-group-text" id="discountUnit">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Date de début (optionnel)</label>
+                                    <input type="datetime-local" id="startDate" class="form-control form-control-custom">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Date de fin (optionnel)</label>
+                                    <input type="datetime-local" id="endDate" class="form-control form-control-custom">
+                                </div>
+                            </div>
+
+                            <div class="discount-preview" id="discountPreview">
+                                <h5><i class="fas fa-eye me-2"></i>Aperçu de la réduction</h5>
+                                <div class="price-comparison">
+                                    <span class="original-price">Prix original: <span id="previewOriginal">0€</span></span>
+                                    <span class="discounted-price">Prix réduit: <span id="previewDiscounted">0€</span></span>
+                                    <span class="savings">Économie: <span id="previewSavings">0€</span></span>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Onglet Réduction en Masse CORRIGÉ -->
+                    <div id="bulk-tab" class="tab-content">
+                        <form id="bulkDiscountForm">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Cette réduction sera appliquée à tous les bijoux correspondant aux critères sélectionnés.
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Filtre par catégorie</label>
+                                    <select id="bulkCategoryFilter" class="form-select form-control-custom" onchange="updateBulkPreview()">
+                                        <option value="">Toutes les catégories</option>
+                                        <% if (categories && categories.length > 0) { %>
+                                            <% categories.forEach(category => { %>
+                                                <option value="<%= category.name %>"><%= category.name %></option>
+                                            <% }); %>
+                                        <% } %>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Filtre par matériau</label>
+                                    <select id="bulkMaterialFilter" class="form-select form-control-custom" onchange="updateBulkPreview()">
+                                        <option value="">Tous les matériaux</option>
+                                        <% if (materials && materials.length > 0) { %>
+                                            <% materials.forEach(material => { %>
+                                                <option value="<%= material.name %>"><%= material.name %></option>
+                                            <% }); %>
+                                        <% } %>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Type de réduction</label>
+                                    <select id="bulkDiscountType" class="form-select form-control-custom" required onchange="updateBulkDiscountUnit()">
+                                        <option value="percentage">Pourcentage (%)</option>
+                                        <option value="fixed">Montant fixe (€)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Valeur</label>
+                                    <div class="input-group">
+                                        <input type="number" id="bulkDiscountValue" class="form-control form-control-custom" 
+                                               placeholder="0" min="0" step="0.01" required>
+                                        <span class="input-group-text" id="bulkDiscountUnit">%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Date de début (optionnel)</label>
+                                    <input type="datetime-local" id="bulkStartDate" class="form-control form-control-custom">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Date de fin (optionnel)</label>
+                                    <input type="datetime-local" id="bulkEndDate" class="form-control form-control-custom">
+                                </div>
+                            </div>
+
+                            <div class="bulk-preview">
+                                <h5><i class="fas fa-layer-group me-2"></i>Bijoux affectés</h5>
+                                <div id="affectedJewelsCount" class="affected-count">0 bijoux sélectionnés</div>
+                                <div id="affectedJewelsList" class="affected-list">Aucun bijou sélectionné</div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn-custom btn-secondary-custom" onclick="closeDiscountManagementModal()">
+                        <i class="fas fa-times me-1"></i>Annuler
+                    </button>
+                    <button type="button" class="btn-custom btn-warning-custom" id="applyDiscountBtn" onclick="applyDiscount()">
+                        <i class="fas fa-check me-1"></i>Appliquer la réduction
+                    </button>
+                    <button type="button" class="btn-custom btn-danger-custom" id="removeDiscountBtn" style="display: none;" onclick="removeDiscount()">
+                        <i class="fas fa-trash me-1"></i>Supprimer la réduction
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        <% if (pagination && pagination.totalPages > 1) { %>
+            <div class="pagination-custom">
+                <% if (pagination.hasPrevPage) { %>
+                    <a href="?page=<%= pagination.prevPage %>" class="page-btn">
+                        <i class="fas fa-chevron-left me-1"></i>Précédent
+                    </a>
+                <% } %>
+                
+                <% for (let i = Math.max(1, pagination.currentPage - 2); i <= Math.min(pagination.totalPages, pagination.currentPage + 2); i++) { %>
+                    <a href="?page=<%= i %>" class="page-btn <%= i === pagination.currentPage ? 'active' : '' %>">
+                        <%= i %>
+                    </a>
+                <% } %>
+                
+                <% if (pagination.hasNextPage) { %>
+                    <a href="?page=<%= pagination.nextPage %>" class="page-btn">
+                        Suivant<i class="fas fa-chevron-right ms-1"></i>
+                    </a>
+                <% } %>
+            </div>
+        <% } %>
+
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-border" style="color: var(--rose-gold);" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+            <p class="mt-2">Traitement en cours...</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer-custom">
+        <div class="d-flex justify-content-between align-items-center flex-wrap">
+            <div>
+                <h5><i class="fas fa-gem me-2"></i>Gestionnaire de Bijoux</h5>
+                <p class="mb-0 text-muted">Interface de gestion dynamique pour votre collection</p>
+            </div>
+            
+            <div class="d-flex gap-3">
+                <a href="/admin/gestionnaire-bijoux" class="text-decoration-none" style="color: var(--rose-gold);">
+                    <i class="fas fa-home me-1"></i>Gestionnaire
+                </a>
+                <a href="/ajouter-bijou" class="text-decoration-none" style="color: var(--rose-gold);">
+                    <i class="fas fa-plus me-1"></i>Ajouter
+                </a>
+                <a href="/" class="text-decoration-none" style="color: var(--rose-gold);">
+                    <i class="fas fa-chart-bar me-1"></i>Accueil
+                </a>
+            </div>
+        </div>
+        
+        <hr class="my-3">
+        
+        <div class="text-muted">
+            <span id="footerStats">
+                <%= stats ? stats.totalJewels : 0 %> bijoux • 
+                <%= stats ? stats.totalStock : 0 %> en stock • 
+                <%= stats ? stats.onSale : 0 %> en promotion
+            </span>
+        </div>
+        
+        <p class="mt-2 mb-0 text-muted">
+            © <%= new Date().getFullYear() %> - Bijoux Élégance - Gestionnaire Dynamique
+        </p>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+ 
+    <!-- Script principal CORRIGÉ -->
+    <script>
+        // ================================
+        // VARIABLES GLOBALES
+        // ================================
+        let currentFilter = 'all';
+        let hiddenJewels = new Set();
+        let showingHidden = false;
+        let currentJewelData = null;
+        let currentTab = 'individual';
+
+        // ================================
+        // GESTION DE LA NAVIGATION
+        // ================================
+        function selectNavCategory(categoryId) {
+            currentFilter = categoryId;
+            
+            // Mettre à jour l'affichage visuel
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            event.target.classList.add('active');
+            
+            // Appliquer le filtre
+            applyAllFilters();
+        }
+
+        // ================================
+        // SYSTÈME DE FILTRAGE CORRIGÉ
+        // ================================
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const materialFilter = document.getElementById('materialFilter').value;
+            const maxPrice = parseFloat(document.getElementById('maxPriceFilter').value) || Infinity;
+            const sortOrder = document.getElementById('sortFilter').value;
+
+            const cards = Array.from(document.querySelectorAll('.jewelry-card'));
+            let visibleCards = [];
+
+            cards.forEach(card => {
+                const jewelName = card.getAttribute('data-jewel-name').toLowerCase();
+                const jewelCategory = card.getAttribute('data-category');
+                const jewelMaterial = card.getAttribute('data-material');
+                const jewelPrice = parseFloat(card.getAttribute('data-price'));
+                const hasDiscount = card.getAttribute('data-has-discount') === 'true';
+                const isHidden = card.getAttribute('data-hidden') === 'true';
+
+                let isVisible = true;
+
+                // Filtre de navigation
+                if (currentFilter !== 'all') {
+                    switch(currentFilter) {
+                        case 'rings':
+                            isVisible = jewelCategory === 'Bague';
+                            break;
+                        case 'necklaces':
+                            isVisible = jewelCategory === 'Collier';
+                            break;
+                        case 'bracelets':
+                            isVisible = jewelCategory === 'Bracelet';
+                            break;
+                        case 'earrings':
+                            isVisible = jewelCategory === 'Boucles d\'oreilles';
+                            break;
+                        case 'sale':
+                            isVisible = hasDiscount;
+                            break;
+                    }
+                }
+
+                // Filtre de recherche
+                if (isVisible && searchTerm) {
+                    isVisible = jewelName.includes(searchTerm) || 
+                               jewelCategory.toLowerCase().includes(searchTerm) ||
+                               jewelMaterial.toLowerCase().includes(searchTerm);
+                }
+
+                // Filtre de catégorie
+                if (isVisible && categoryFilter) {
+                    isVisible = jewelCategory === categoryFilter;
+                }
+
+                // Filtre de matériau
+                if (isVisible && materialFilter) {
+                    isVisible = jewelMaterial === materialFilter;
+                }
+
+                // Filtre de prix
+                if (isVisible && jewelPrice > maxPrice) {
+                    isVisible = false;
+                }
+
+                // Filtre de masquage
+                if (isVisible && isHidden && !showingHidden) {
+                    isVisible = false;
+                }
+
+                if (isVisible) {
+                    visibleCards.push(card);
+                    card.classList.remove('filtered-out');
+                } else {
+                    card.classList.add('filtered-out');
+                }
+            });
+
+            // Tri des cartes visibles
+            sortCards(visibleCards, sortOrder);
+
+            // Mise à jour des statistiques
+            updateStats();
+            updateNavBadges();
+        }
+
+        function applyAllFilters() {
+            applyFilters();
+        }
+
+        function sortCards(cards, sortOrder) {
+            cards.sort((a, b) => {
+                const priceA = parseFloat(a.getAttribute('data-price'));
+                const priceB = parseFloat(b.getAttribute('data-price'));
+                const nameA = a.getAttribute('data-jewel-name');
+                const nameB = b.getAttribute('data-jewel-name');
+
+                switch(sortOrder) {
+                    case 'price_asc':
+                        return priceA - priceB;
+                    case 'price_desc':
+                        return priceB - priceA;
+                    case 'name_asc':
+                        return nameA.localeCompare(nameB);
+                    case 'newest':
+                    default:
+                        return 0; // Garder l'ordre original
+                }
+            });
+
+            // Réorganiser les cartes dans le DOM
+            const grid = document.getElementById('jewelryGrid');
+            cards.forEach(card => {
+                grid.appendChild(card);
+            });
+        }
+
+        function resetAllFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('categoryFilter').value = '';
+            document.getElementById('materialFilter').value = '';
+            document.getElementById('maxPriceFilter').value = '';
+            document.getElementById('sortFilter').value = 'newest';
+            currentFilter = 'all';
+            
+            // Réactiver tous les onglets de navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector('.nav-item').classList.add('active');
+            
+            applyAllFilters();
+            showAlert('info', 'Filtres réinitialisés');
+        }
+
+        // ================================
+        // GESTION DU MASQUAGE DES BIJOUX
+        // ================================
+        function toggleJewelVisibility(jewelId) {
+            const card = document.querySelector(`[data-jewel-id="${jewelId}"]`);
+            if (!card) return;
+
+            const isHidden = card.getAttribute('data-hidden') === 'true';
+            const hideButton = card.querySelector('.hide-toggle i');
+
+            if (isHidden) {
+                // Afficher le bijou
+                card.setAttribute('data-hidden', 'false');
+                card.classList.remove('hidden-jewel');
+                hideButton.className = 'fas fa-eye';
+                hiddenJewels.delete(jewelId);
+                showAlert('success', 'Bijou affiché');
+            } else {
+                // Masquer le bijou
+                card.setAttribute('data-hidden', 'true');
+                card.classList.add('hidden-jewel');
+                hideButton.className = 'fas fa-eye-slash';
+                hiddenJewels.add(jewelId);
+                showAlert('info', 'Bijou masqué');
+            }
+
+            updateHiddenToggleButton();
+            applyAllFilters();
+        }
+
+        function toggleHiddenJewels() {
+            showingHidden = !showingHidden;
+            updateHiddenToggleButton();
+            applyAllFilters();
+        }
+
+        function updateHiddenToggleButton() {
+            const button = document.getElementById('hiddenToggleText');
+            const hiddenCount = hiddenJewels.size;
+            
+            if (showingHidden) {
+                button.textContent = `Masquer cachés (${hiddenCount})`;
+                button.parentElement.classList.add('btn-danger-custom');
+                button.parentElement.classList.remove('btn-info-custom');
+            } else {
+                button.textContent = `Voir masqués (${hiddenCount})`;
+                button.parentElement.classList.add('btn-info-custom');
+                button.parentElement.classList.remove('btn-danger-custom');
+            }
+        }
+
+        // ================================
+        // GESTION DES RÉDUCTIONS
+        // ================================
+        function openDiscountModal(jewelId, jewelName, jewelPrice) {
+            currentJewelData = {
+                id: jewelId,
+                name: jewelName,
+                price_ttc: jewelPrice
+            };
+            
+            // Mettre à jour les informations du bijou
+            document.getElementById('selectedJewelName').textContent = jewelName;
+            document.getElementById('selectedJewelPrice').textContent = `${jewelPrice}€`;
+            
+            // Réinitialiser le formulaire
+            document.getElementById('individualDiscountForm').reset();
+            document.getElementById('discountUnit').textContent = '%';
+            
+            // Charger les données existantes si disponibles
+            loadExistingDiscount(jewelId);
+            
+            // Afficher la modal
+            document.getElementById('discountManagementModal').style.display = 'block';
+            
+            // Mettre à jour la prévisualisation
+            updateDiscountPreview();
+        }
+
+        function openBulkDiscountModal() {
+            currentJewelData = null;
+            
+            // Passer à l'onglet en masse
+            switchTab('bulk');
+            
+            // Réinitialiser le formulaire
+            document.getElementById('bulkDiscountForm').reset();
+            document.getElementById('bulkDiscountUnit').textContent = '%';
+            
+            // Afficher la modal
+            document.getElementById('discountManagementModal').style.display = 'block';
+            
+            // Mettre à jour la prévisualisation
+            updateBulkPreview();
+        }
+
+        function closeDiscountManagementModal() {
+            document.getElementById('discountManagementModal').style.display = 'none';
+            document.getElementById('removeDiscountBtn').style.display = 'none';
+            currentJewelData = null;
+        }
+
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Mettre à jour les onglets
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            const tabIndex = tabName === 'individual' ? 0 : 1;
+            document.querySelectorAll('.tab-btn')[tabIndex].classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            if (tabName === 'bulk') {
+                updateBulkPreview();
+            }
+        }
+
+        function updateDiscountPreview() {
+            if (!currentJewelData) return;
+
+            const discountType = document.getElementById('discountType').value;
+            const discountValue = parseFloat(document.getElementById('discountValue').value) || 0;
+            const originalPrice = parseFloat(currentJewelData.price_ttc);
+
+            // Mettre à jour l'unité
+            document.getElementById('discountUnit').textContent = discountType === 'percentage' ? '%' : '€';
+
+            let discountedPrice, savings;
+
+            if (discountType === 'percentage') {
+                if (discountValue > 100) {
+                    showAlert('warning', 'Le pourcentage ne peut pas dépasser 100%');
+                    return;
+                }
+                discountedPrice = originalPrice * (1 - discountValue / 100);
+                savings = originalPrice - discountedPrice;
+            } else {
+                discountedPrice = Math.max(0, originalPrice - discountValue);
+                savings = Math.min(discountValue, originalPrice);
+            }
+
+            document.getElementById('previewOriginal').textContent = `${originalPrice.toFixed(2)}€`;
+            document.getElementById('previewDiscounted').textContent = `${discountedPrice.toFixed(2)}€`;
+            document.getElementById('previewSavings').textContent = `${savings.toFixed(2)}€`;
+        }
+
+        function updateBulkDiscountUnit() {
+            const discountType = document.getElementById('bulkDiscountType').value;
+            document.getElementById('bulkDiscountUnit').textContent = discountType === 'percentage' ? '%' : '€';
+        }
+
+        function updateBulkPreview() {
+            const categoryFilter = document.getElementById('bulkCategoryFilter').value;
+            const materialFilter = document.getElementById('bulkMaterialFilter').value;
+            
+            const affectedJewels = getAffectedJewels(categoryFilter, materialFilter);
+            
+            document.getElementById('affectedJewelsCount').textContent = `${affectedJewels.length} bijoux sélectionnés`;
+            
+            if (affectedJewels.length > 0) {
+                const jewelsList = affectedJewels.slice(0, 5).map(jewel => jewel.name).join(', ');
+                const moreText = affectedJewels.length > 5 ? ` et ${affectedJewels.length - 5} autres...` : '';
+                document.getElementById('affectedJewelsList').textContent = jewelsList + moreText;
+            } else {
+                document.getElementById('affectedJewelsList').textContent = 'Aucun bijou correspondant aux critères';
+            }
+        }
+
+        function getAffectedJewels(categoryFilter, materialFilter) {
+            const cards = document.querySelectorAll('.jewelry-card:not(.filtered-out)');
+            const affectedJewels = [];
+
+            cards.forEach(card => {
+                const jewelCategory = card.getAttribute('data-category');
+                const jewelMaterial = card.getAttribute('data-material');
+                const jewelName = card.getAttribute('data-jewel-name');
+                
+                if ((!categoryFilter || jewelCategory === categoryFilter) &&
+                    (!materialFilter || jewelMaterial === materialFilter)) {
+                    affectedJewels.push({
+                        id: card.getAttribute('data-jewel-id'),
+                        name: jewelName,
+                        category: jewelCategory,
+                        material: jewelMaterial
+                    });
+                }
+            });
+
+            return affectedJewels;
+        }
+
+        async function loadExistingDiscount(jewelId) {
+            try {
+                const response = await fetch(`/api/bijoux/${jewelId}/discount`);
+                if (response.ok) {
+                    const discount = await response.json();
+                    if (discount.hasDiscount) {
+                        document.getElementById('discountType').value = discount.type || 'percentage';
+                        document.getElementById('discountValue').value = discount.value || '';
+                        
+                        if (discount.startDate) {
+                            document.getElementById('startDate').value = formatDateForInput(discount.startDate);
+                        }
+                        if (discount.endDate) {
+                            document.getElementById('endDate').value = formatDateForInput(discount.endDate);
+                        }
+
+                        document.getElementById('removeDiscountBtn').style.display = 'block';
+                        updateDiscountPreview();
+                    }
+                }
+            } catch (error) {
+                console.error('Erreur lors du chargement de la réduction:', error);
+            }
+        }
+
+        async function applyDiscount() {
+            if (currentTab === 'individual') {
+                await applyIndividualDiscount();
+            } else {
+                await applyBulkDiscount();
+            }
+        }
+
+        async function applyIndividualDiscount() {
+            if (!currentJewelData) {
+                showAlert('error', 'Aucun bijou sélectionné');
+                return;
+            }
+
+            const discountType = document.getElementById('discountType').value;
+            const discountValue = parseFloat(document.getElementById('discountValue').value);
+            const startDate = document.getElementById('startDate').value || null;
+            const endDate = document.getElementById('endDate').value || null;
+
+            if (!discountValue || discountValue <= 0) {
+                showAlert('error', 'Veuillez entrer une valeur de réduction valide');
+                return;
+            }
+
+            if (discountType === 'percentage' && discountValue > 100) {
+                showAlert('error', 'Le pourcentage ne peut pas dépasser 100%');
+                return;
+            }
+
+            const discountData = {
+                type: discountType,
+                value: discountValue,
+                startDate: startDate,
+                endDate: endDate
+            };
+
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`/api/bijoux/${currentJewelData.id}/discount`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(discountData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('success', 'Réduction appliquée avec succès!');
+                    closeDiscountManagementModal();
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showAlert('error', result.message || 'Erreur lors de l\'application de la réduction');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showAlert('error', 'Erreur lors de l\'application de la réduction');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function applyBulkDiscount() {
+            const discountType = document.getElementById('bulkDiscountType').value;
+            const discountValue = parseFloat(document.getElementById('bulkDiscountValue').value);
+            const categoryFilter = document.getElementById('bulkCategoryFilter').value || null;
+            const materialFilter = document.getElementById('bulkMaterialFilter').value || null;
+            const startDate = document.getElementById('bulkStartDate').value || null;
+            const endDate = document.getElementById('bulkEndDate').value || null;
+
+            if (!discountValue || discountValue <= 0) {
+                showAlert('error', 'Veuillez entrer une valeur de réduction valide');
+                return;
+            }
+
+            if (discountType === 'percentage' && discountValue > 100) {
+                showAlert('error', 'Le pourcentage ne peut pas dépasser 100%');
+                return;
+            }
+
+            const affectedJewels = getAffectedJewels(categoryFilter, materialFilter);
+            
+            if (affectedJewels.length === 0) {
+                showAlert('error', 'Aucun bijou correspondant aux critères sélectionnés');
+                return;
+            }
+
+            if (!confirm(`Appliquer la réduction à ${affectedJewels.length} bijoux ?`)) {
+                return;
+            }
+
+            const discountData = {
+                type: discountType,
+                value: discountValue,
+                categoryFilter: categoryFilter,
+                materialFilter: materialFilter,
+                startDate: startDate,
+                endDate: endDate
+            };
+
+            try {
+                showLoading(true);
+                
+                const response = await fetch('/api/bijoux/bulk-discount', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(discountData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('success', `Réduction appliquée à ${result.affectedCount} bijoux!`);
+                    closeDiscountManagementModal();
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showAlert('error', result.message || 'Erreur lors de l\'application de la réduction');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showAlert('error', 'Erreur lors de l\'application de la réduction');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function removeDiscount() {
+            if (!currentJewelData) return;
+
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette réduction ?')) {
+                return;
+            }
+
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`/api/bijoux/${currentJewelData.id}/discount`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('success', 'Réduction supprimée avec succès!');
+                    closeDiscountManagementModal();
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showAlert('error', result.message || 'Erreur lors de la suppression de la réduction');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showAlert('error', 'Erreur lors de la suppression de la réduction');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // ================================
+        // ACTIONS SUR LES BIJOUX
+        // ================================
+        async function duplicateJewelry(jewelId) {
+            if (!confirm('Voulez-vous dupliquer ce bijou ?')) return;
+
+            showLoading(true);
+
+            try {
+                const response = await fetch(`/api/bijoux/${jewelId}/duplicate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('success', 'Bijou dupliqué avec succès !');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showAlert('error', 'Erreur lors de la duplication : ' + result.message);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showAlert('error', 'Erreur lors de la duplication du bijou');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function deleteJewelry(jewelId, slug) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer ce bijou ? Cette action est irréversible.')) return;
+
+            showLoading(true);
+
+            try {
+                const response = await fetch(`/api/bijoux/${slug}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    showAlert('success', 'Bijou supprimé avec succès !');
+                    const card = document.querySelector(`[data-jewel-id="${jewelId}"]`);
+                    if (card) {
+                        card.remove();
+                    }
+                    updateStats();
+                    updateNavBadges();
+                } else {
+                    showAlert('error', 'Erreur lors de la suppression : ' + result.message);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showAlert('error', 'Erreur lors de la suppression du bijou');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function exportData() {
+            const visibleCards = document.querySelectorAll('.jewelry-card:not(.filtered-out)');
+            const data = {
+                jewels: Array.from(visibleCards).map(card => ({
+                    id: card.getAttribute('data-jewel-id'),
+                    name: card.getAttribute('data-jewel-name'),
+                    category: card.getAttribute('data-category'),
+                    material: card.getAttribute('data-material'),
+                    price: card.getAttribute('data-price'),
+                    hasDiscount: card.getAttribute('data-has-discount'),
+                    stock: card.getAttribute('data-stock')
+                })),
+                exportDate: new Date().toISOString(),
+                filters: {
+                    category: currentFilter,
+                    search: document.getElementById('searchInput').value,
+                    material: document.getElementById('materialFilter').value,
+                    maxPrice: document.getElementById('maxPriceFilter').value
+                },
+                stats: {
+                    totalJewels: document.getElementById('totalJewelry').textContent,
+                    totalValue: document.getElementById('totalValue').textContent,
+                    totalStock: document.getElementById('totalStock').textContent,
+                    onSale: document.getElementById('onSale').textContent
+                }
+            };
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `bijoux_export_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            showAlert('success', 'Export des données terminé !');
+        }
+
+        // ================================
+        // MISE À JOUR DES STATISTIQUES
+        // ================================
+        function updateStats() {
+            const visibleCards = document.querySelectorAll('.jewelry-card:not(.filtered-out)');
+            
+            let totalValue = 0;
+            let onSaleCount = 0;
+            let totalStock = 0;
+
+            visibleCards.forEach(card => {
+                const price = parseFloat(card.getAttribute('data-price')) || 0;
+                const stock = parseInt(card.getAttribute('data-stock')) || 0;
+                const hasDiscount = card.getAttribute('data-has-discount') === 'true';
+                
+                totalValue += price * stock;
+                totalStock += stock;
+                
+                if (hasDiscount) {
+                    onSaleCount++;
+                }
+            });
+
+            document.getElementById('totalJewelry').textContent = visibleCards.length;
+            document.getElementById('totalValue').textContent = totalValue.toFixed(2) + '€';
+            document.getElementById('onSale').textContent = onSaleCount;
+            document.getElementById('totalStock').textContent = totalStock;
+            
+            // Mise à jour du footer
+            document.getElementById('footerStats').innerHTML = 
+                visibleCards.length + ' bijoux • ' + totalStock + ' en stock • ' + onSaleCount + ' en promotion';
+        }
+
+        function updateNavBadges() {
+            const allCards = document.querySelectorAll('.jewelry-card');
+            
+            const counts = {
+                all: allCards.length,
+                rings: 0,
+                necklaces: 0,
+                bracelets: 0,
+                earrings: 0,
+                sale: 0
+            };
+
+            allCards.forEach(card => {
+                const category = card.getAttribute('data-category') || '';
+                const hasDiscount = card.getAttribute('data-has-discount') === 'true';
+                
+                if (category === 'Bague') counts.rings++;
+                if (category === 'Collier') counts.necklaces++;
+                if (category === 'Bracelet') counts.bracelets++;
+                if (category === 'Boucles d\'oreilles') counts.earrings++;
+                if (hasDiscount) counts.sale++;
+            });
+
+            // Mettre à jour les badges
+            Object.keys(counts).forEach(key => {
+                const badge = document.getElementById(`badge-${key}`);
+                if (badge) {
+                    badge.textContent = counts[key];
+                }
+            });
+        }
+
+        // ================================
+        // FONCTIONS UTILITAIRES
+        // ================================
+        function showLoading(show) {
+            const spinner = document.getElementById('loadingSpinner');
+            const applyBtn = document.getElementById('applyDiscountBtn');
+            
+            if (spinner) {
+                spinner.style.display = show ? 'block' : 'none';
+            }
+            
+            if (applyBtn) {
+                if (show) {
+                    applyBtn.disabled = true;
+                    applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Application...';
+                } else {
+                    applyBtn.disabled = false;
+                    applyBtn.innerHTML = '<i class="fas fa-check me-1"></i>Appliquer la réduction';
+                }
+            }
+        }
+
+        function showAlert(type, message) {
+            // Supprimer les anciennes alertes
+            const existingAlerts = document.querySelectorAll('.alert-custom');
+            existingAlerts.forEach(alert => alert.remove());
+
+            // Créer la nouvelle alerte
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-custom`;
+            
+            const iconClass = type === 'success' ? 'check-circle' : 
+                              type === 'error' ? 'exclamation-circle' : 
+                              type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+            
+            alertDiv.innerHTML = 
+                `<i class="fas fa-${iconClass} me-2"></i>` +
+                message +
+                '<button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>';
+            
+            // Insérer en haut de la page
+            const container = document.querySelector('.container-fluid');
+            if (container) {
+                container.insertBefore(alertDiv, container.firstChild);
+            }
+
+            // Auto-suppression après 5 secondes
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        function formatDateForInput(dateString) {
+            const date = new Date(dateString);
+            return date.toISOString().slice(0, 16);
+        }
+
+        // ================================
+        // INITIALISATION
+        // ================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Gestionnaire de bijoux initialisé');
+            
+            updateStats();
+            updateNavBadges();
+            updateHiddenToggleButton();
+            
+            // Fermer les modals en cliquant à l'extérieur
+            window.addEventListener('click', function(event) {
+                const modal = document.getElementById('discountManagementModal');
+                if (event.target === modal) {
+                    closeDiscountManagementModal();
+                }
+            });
+
+            // Ajouter des listeners pour les filtres en temps réel
+            document.getElementById('searchInput').addEventListener('input', applyFilters);
+            document.getElementById('categoryFilter').addEventListener('change', applyFilters);
+            document.getElementById('materialFilter').addEventListener('change', applyFilters);
+            document.getElementById('maxPriceFilter').addEventListener('input', applyFilters);
+            document.getElementById('sortFilter').addEventListener('change', applyFilters);
+
+            // Initialiser les événements pour les réductions
+            document.getElementById('discountType').addEventListener('change', updateDiscountPreview);
+            document.getElementById('discountValue').addEventListener('input', updateDiscountPreview);
+            document.getElementById('bulkDiscountType').addEventListener('change', updateBulkDiscountUnit);
+            document.getElementById('bulkCategoryFilter').addEventListener('change', updateBulkPreview);
+            document.getElementById('bulkMaterialFilter').addEventListener('change', updateBulkPreview);
+            
+            setTimeout(() => {
+                showAlert('success', 'Gestionnaire de bijoux chargé avec succès !');
+            }, 1000);
+        });
+
+        // Animation au chargement
+        window.addEventListener('load', function() {
+            const cards = document.querySelectorAll('.jewelry-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                setTimeout(() => {
+                    card.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 50);
+            });
+        });
+
+        console.log('✨ Script du gestionnaire de bijoux chargé');
+    </script>
+</body>
+</html>

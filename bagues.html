@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bagues - Éclat Doré</title>
+    <link rel="stylesheet" href="css/bagues.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <h1>ÉCLAT DORÉ</h1>
+                <span>BIJOUX PRÉCIEUX</span>
+            </div>
+            <div class="menu-toggle" id="menuToggle">
+                <i class="fas fa-bars"></i>
+            </div>
+            <nav id="mobileNav">
+                <ul>
+                    <li><a href="./index.html">Accueil</a></li>
+                    <li><a href="./bracelets.html">Bracelets</a></li>
+                    <li><a href="colliers.html">Colliers</a></li>
+                    <li><a href="./bagues.html" class="active">Bagues</a></li>
+                    <li><a href="promotions.html">Promotions</a></li>
+                    <li><a href="contact.html">Contact</a></li>
+                </ul>
+            </nav>
+            <div class="overlay" id="overlay"></div>
+        </div>
+    </header>
+
+    <section class="page-banner">
+        <div class="banner-content">
+            <h2>Nos Bagues</h2>
+            <p>Des créations délicates pour sublimer vos mains</p>
+        </div>
+    </section>
+
+    <section class="category-intro">
+        <div class="container">
+            <div class="intro-content">
+                <h3>L'élégance au bout des doigts</h3>
+                <p>Découvrez notre collection de bagues en rose gold et or, ornées de pierres précieuses soigneusement sélectionnées. Chaque pièce est conçue pour magnifier votre style et apporter une touche d'éclat à vos tenues quotidiennes ou vos occasions spéciales.</p>
+            </div>
+            <div class="filter-controls">
+                <div class="filter-dropdown">
+                    <button class="filter-btn">Filtrer <i class="fas fa-chevron-down"></i></button>
+                    <div class="filter-options">
+                        <div class="filter-group">
+                            <h4>Matériau</h4>
+                            <label><input type="checkbox"> Or rose</label>
+                            <label><input type="checkbox"> Or jaune</label>
+                            <label><input type="checkbox"> Argent</label>
+                        </div>
+                        <div class="filter-group">
+                            <h4>Style</h4>
+                            <label><input type="checkbox"> Solitaire</label>
+                            <label><input type="checkbox"> Alliance</label>
+                            <label><input type="checkbox"> Cocktail</label>
+                            <label><input type="checkbox"> Fiançailles</label>
+                        </div>
+                        <div class="filter-group">
+                            <h4>Prix</h4>
+                            <label><input type="checkbox"> Moins de 100€</label>
+                            <label><input type="checkbox"> 100€ - 200€</label>
+                            <label><input type="checkbox"> 200€ - 500€</label>
+                            <label><input type="checkbox"> Plus de 500€</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="sort-dropdown">
+                    <button class="sort-btn">Trier par <i class="fas fa-chevron-down"></i></button>
+                    <div class="sort-options">
+                        <a href="#" class="sort-option active">Popularité</a>
+                        <a href="#" class="sort-option">Prix croissant</a>
+                        <a href="#" class="sort-option">Prix décroissant</a>
+                        <a href="#" class="sort-option">Nouveautés</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="featured-collection">
+        <div class="container">
+            <div class="collection-title">
+                <h3>Collection Signature</h3>
+                <p>Notre sélection de pièces emblématiques</p>
+            </div>
+            <div class="collection-grid">
+                <div class="collection-card">
+                    <div class="collection-img bague-signature-1"></div>
+                    <div class="collection-name">Éternité</div>
+                </div>
+                <div class="collection-card">
+                    <div class="collection-img bague-signature-2"></div>
+                    <div class="collection-name">Épanoui</div>
+                </div>
+                <div class="collection-card">
+                    <div class="collection-img bague-signature-3"></div>
+                    <div class="collection-name">Lumière</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="products">
+        <div class="container">
+            <div class="products-grid">
+                <div class="product-card">
+                    <div class="product-badge new">Nouveau</div>
+                    <div class="product-img bague-1"></div>
+                    <div class="product-info">
+                            <h4 class="product-name">Bague "Perles d'eau douce"</h4>
+                            <p class="product-desc">Bague Argent Sterling S925, Plaqué or 18K</p>
+                            <p class="product-price">39,90 €</p>
+                            <div class="product-actions">
+                                <a href="#" class="product-btn">Ajouter au panier</a>
+                                <button class="wishlist-btn"><i class="far fa-heart"></i></button>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-img bague-2" ><img src="./public/img/bague perles d'eau douces.jpg" class="product-img" alt=""></div>
+                    <div class="product-info">
+                        <h4 class="product-name">Bague "Perles d'eau douce"</h4>
+                        <p class="product-desc">Bague Argent Sterling S925, Plaqué or 18K</p>
+                        <p class="product-price">39,90 €</p>
+                        <div class="product-actions">
+                            <a href="#" class="product-btn">Ajouter au panier</a>
+                            <button class="wishlist-btn"><i class="far fa-heart"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-badge bestseller">Best-seller</div>
+                    <div class="product-img bague-3"><img src="/public/img/bague perles d'eau douce gold.jpg" class="product-img" alt=""></div>
+                    <div class="product-info">
+                        <h4 class="product-name">Bague "Perles d'eau douce"</h4>
+                        <p class="product-desc">Bague OR Sterling S925, Plaqué or 18K</p>
+                        <p class="product-price">89,90 €</p>
+                        <div class="product-actions">
+                            <a href="#" class="product-btn">Ajouter au panier</a>
+                            <button class="wishlist-btn"><i class="far fa-heart"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-img bague-4"></div>
+                    <div class="product-info">
+                        <h4 class="product-name">Solitaire "Promesse"</h4>
+                        <p class="product-desc">Bague de fiançailles élégante</p>
+                        <p class="product-price">299,90 €</p>
+                        <div class="product-actions">
+                            <a href="#" class="product-btn">Ajouter au panier</a>
+                            <button class="wishlist-btn"><i class="far fa-heart"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-img bague-5"></div>
+                    <div class="product-info">
+                        <h4 class="product-name">Bague "Ondulée"</h4>
+                        <p class="product-desc">Design contemporain en or rose</p>
+                        <p class="product-price">129,90 €</p>
+                        <div class="product-actions">
+                            <a href="#" class="product-btn">Ajouter au panier</a>
+                            <button class="wishlist-btn"><i class="far fa-heart"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-badge sale">-20%</div>
+                    <div class="product-img bague-6"></div>
+                    <div class="product-info">
+                        <h4 class="product-name">Bague "Éclat"</h4>
+                        <p class="product-desc">Motif floral pavé de cristaux</p>
+                        <div class="price-container">
+                            <p class="product-price">99,90 €</p>
+                            <p class="product-old-price">125,90 €</p>
+                        </div>
+                        <div class="product-actions">
+                            <a href="#" class="product-btn">Ajouter au panier</a>
+                            <button class="wishlist-btn"><i class="far fa-heart"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-img bague-7"></div>
+                    <div class="product-info">
+                        <h4 class="product-name">Trio "Harmonie"</h4>
+                        <p class="product-desc">Ensemble de trois bagues fines</p>
+                        <p class="product-price">159,90 €</p>
+                        <div class="product-actions">
+                            <a href="#" class="product-btn">Ajouter au panier</a>
+                            <button class="wishlist-btn"><i class="far fa-heart"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <div class="product-card">
+                    <div class="product-img bague-8"></div>
+                    <div class="product-info">
+                        <h4 class="product-name">Bague "Luxe"</h4>
+                        <p class="product-desc">Bague cocktail avec zirconium</p>
+                        <p class="product-price">189,90 €</p>
+                        <div class="product-actions">
+                            <a href="#" class="product-btn">Ajouter au panier</a>
+                            <button class="wishlist-btn"><i class="far fa-heart"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="pagination">
+                <a href="#" class="page-link active">1</a>
+                <a href="#" class="page-link">2</a>
+                <a href="#" class="page-link">3</a>
+                <span class="page-dots">...</span>
+                <a href="#" class="page-link">8</a>
+                <a href="#" class="page-link next"><i class="fas fa-chevron-right"></i></a>
+            </div>
+        </div>
+    </section>
+
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-title">
+                <h3>Ce que nos clientes disent</h3>
+            </div>
+            <div class="testimonials-slider">
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">"Ma bague Étincelle ne me quitte plus ! La qualité est exceptionnelle et le design vraiment élégant. Je reçois des compliments à chaque fois que je la porte."</p>
+                    <p class="testimonial-author">Sophie L.</p>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <p class="testimonial-text">"J'ai offert la bague Céleste à ma femme pour notre anniversaire et elle en est tombée amoureuse. Le packaging était magnifique et la bague encore plus belle que sur les photos."</p>
+                    <p class="testimonial-author">Thomas B.</p>
+                </div>
+                <div class="testimonial-card">
+                    <div class="testimonial-stars">
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star"></i>
+                        <i class="fas fa-star-half-alt"></i>
+                    </div>
+                    <p class="testimonial-text">"Je cherchais une bague délicate pour tous les jours et j'ai trouvé mon bonheur avec l'Alliance Délicate. Elle est fine, élégante et très confortable à porter."</p>
+                    <p class="testimonial-author">Camille D.</p>
+                </div>
+            </div>
+            <div class="testimonial-dots">
+                <span class="dot active"></span>
+                <span class="dot"></span>
+                <span class="dot"></span>
+            </div>
+        </div>
+    </section>
+
+    <section class="cta-banner">
+        <div class="container">
+            <div class="cta-content">
+                <h3>Rejoignez notre programme de fidélité</h3>
+                <p>Recevez 10% de réduction sur votre première commande et profitez d'avantages exclusifs toute l'année.</p>
+                <a href="#" class="cta-btn">S'inscrire</a>
+            </div>
+        </div>
+    </section>
+
+    <section class="guide">
+        <div class="container">
+            <div class="guide-content">
+                <div class="guide-text">
+                    <h3>Guide des tailles</h3>
+                    <p>Trouvez la taille de bague parfaite pour vous ou pour offrir. Notre guide vous aide à déterminer facilement la taille idéale.</p>
+                    <ul class="guide-tips">
+                        <li><i class="fas fa-check"></i> Comment mesurer votre doigt</li>
+                        <li><i class="fas fa-check"></i> Tableau des correspondances internationales</li>
+                        <li><i class="fas fa-check"></i> Conseils pour offrir la bonne taille</li>
+                    </ul>
+                    <a href="#" class="guide-btn">Consulter le guide</a>
+                </div>
+                <div class="guide-image"></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="newsletter">
+        <div class="container">
+            <div class="newsletter-content">
+                <div class="section-title">
+                    <h3>Restez informée</h3>
+                </div>
+                <p>Inscrivez-vous à notre newsletter pour recevoir en avant-première nos nouvelles collections et offres exclusives.</p>
+                <form class="newsletter-form">
+                    <input type="email" class="newsletter-input" placeholder="Votre adresse email" required>
+                    <button type="submit" class="newsletter-btn">S'inscrire</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h4>À propos</h4>
+                    <ul>
+                        <li><a href="#">Notre histoire</a></li>
+                        <li><a href="#">Nos valeurs</a></li>
+                        <li><a href="#">Nos engagements</a></li>
+                        <li><a href="#">Nos boutiques</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Informations</h4>
+                    <ul>
+                        <li><a href="#">Livraison</a></li>
+                        <li><a href="#">Retours & échanges</a></li>
+                        <li><a href="#">Entretien bijoux</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Service client</h4>
+                    <ul>
+                        <li><a href="#">Contactez-nous</a></li>
+                        <li><a href="#">Suivi de commande</a></li>
+                        <li><a href="#">Mentions légales</a></li>
+                        <li><a href="#">CGV</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Suivez-nous</h4>
+                    <ul>
+                        <li><a href="#"><i class="fab fa-instagram"></i> Instagram</a></li>
+                        <li><a href="#"><i class="fab fa-facebook-f"></i> Facebook</a></li>
+                        <li><a href="#"><i class="fab fa-pinterest-p"></i> Pinterest</a></li>
+                        <li><a href="#"><i class="fab fa-tiktok"></i> TikTok</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2025 Éclat Doré. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-chevron-up"></i>
+    </a>
+
+    <script>
+        // Menu mobile toggle
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const overlay = document.getElementById('overlay');
+        const backToTop = document.getElementById('backToTop');
+        
+        menuToggle.addEventListener('click', function() {
+            mobileNav.classList.toggle('active');
+            overlay.classList.toggle('active');
+            
+            // Changer l'icône du menu
+            if (mobileNav.classList.contains('active')) {
+                menuToggle.innerHTML = '<i class="fas fa-times"></i>';
+            } else {
+                menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+            }
+        });
+        
+        // Fermer le menu en cliquant sur l'overlay
+        overlay.addEventListener('click', function() {
+            mobileNav.classList.remove('active');
+            overlay.classList.remove('active');
+            menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+        });
+        
+        // Fermer le menu en cliquant sur un lien
+        const navLinks = document.querySelectorAll('nav a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', function() {
+                mobileNav.classList.remove('active');
+                overlay.classList.remove('active');
+                menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+            });
+        });
+        
+        // Bouton retour en haut
+        window.addEventListener('scroll', function() {
+            if (window.pageYOffset > 300) {
+                backToTop.classList.add('visible');
+            } else {
+                backToTop.classList.remove('visible');
+            }
+        });
+        
+        // Toggle des filtres et du tri
+        const filterBtn = document.querySelector('.filter-btn');
+        const filterOptions = document.querySelector('.filter-options');
+        const sortBtn = document.querySelector('.sort-btn');
+        const sortOptions = document.querySelector('.sort-options');
+        
+        filterBtn.addEventListener('click', function() {
+            filterOptions.classList.toggle('active');
+            sortOptions.classList.remove('active');
+        });
+        
+        sortBtn.addEventListener('click', function() {
+            sortOptions.classList.toggle('active');
+            filterOptions.classList.remove('active');
+        });
+        
+        // Fermer les menus au clic en dehors
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('.filter-dropdown') && filterOptions.classList.contains('active')) {
+                filterOptions.classList.remove('active');
+            }
+            
+            if (!e.target.closest('.sort-dropdown') && sortOptions.classList.contains('active')) {
+                sortOptions.classList.remove('active');
+            }
+        });
+        
+        // Slider témoignages
+        const dots = document.querySelectorAll('.dot');
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', function() {
+                // Mettre à jour les dots actifs
+                document.querySelector('.dot.active').classList.remove('active');
+                this.classList.add('active');
+                
+                // Faire défiler les témoignages (simple simulation)
+                const testimonialSlider = document.querySelector('.testimonials-slider');
+                testimonialSlider.style.transform = `translateX(-${index * 100 / 3}%)`;
+            });
+        });
+    </script>
+</body>
+</html>

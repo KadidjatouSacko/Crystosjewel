@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paramètres Essentiels</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #b76e79;
+            --primary-light: #e8c2c8;
+            --cream: #fff8f0;
+            --dark-text: #3a3a3a;
+            --white: #ffffff;
+            --success: #4caf50;
+            --danger: #f44336;
+            --shadow: rgba(183, 110, 121, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--cream) 0%, #f5f5f5 100%);
+            color: var(--dark-text);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px var(--shadow);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .sections-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+        }
+
+        .section-card {
+            background: white;
+            border-radius: 15px;
+            padding: 2rem;
+            box-shadow: 0 4px 15px var(--shadow);
+            transition: transform 0.3s ease;
+        }
+
+        .section-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--primary-light);
+        }
+
+        .section-icon {
+            background: var(--primary-color);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark-text);
+        }
+
+        .section-description {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: var(--dark-text);
+        }
+
+        .form-input,
+        .form-textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        /* Switch pour les booléens */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: 0.3s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary-color);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .save-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+
+        .save-btn:hover {
+            background: #a05d68;
+            transform: translateY(-2px);
+        }
+
+        .save-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: var(--success);
+        }
+
+        .notification.error {
+            background: var(--danger);
+        }
+
+        @media (max-width: 768px) {
+            .sections-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-card {
+                padding: 1.5rem;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-cogs"></i> Paramètres Essentiels</h1>
+            <p>Configuration des éléments principaux de votre site</p>
+        </div>
+
+        <div class="sections-grid">
+            <!-- Section Paiements -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-credit-card"></i>
+                    </div>
+                    <div>
+                        <div class="section-title">Paiements</div>
+                        <div class="section-description">Configuration des moyens de paiement</div>
+                    </div>
+                </div>
+                
+                <form id="form-payment">
+                    <div class="form-group">
+                        <label class="form-label">Clé publique Stripe</label>
+                        <input type="text" class="form-input" name="stripe_public_key" 
+                               value="" placeholder="pk_live_...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Clé secrète Stripe</label>
+                        <input type="password" class="form-input" name="stripe_secret_key" 
+                               value="" placeholder="sk_live_...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Client ID PayPal</label>
+                        <input type="text" class="form-input" name="paypal_client_id" 
+                               value="" placeholder="Votre Client ID PayPal">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Accepter les cartes de crédit</label>
+                        <label class="switch">
+                            <input type="checkbox" name="accept_credit_cards" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Accepter PayPal</label>
+                        <label class="switch">
+                            <input type="checkbox" name="accept_paypal" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <button type="button" class="save-btn" onclick="saveSection('payment')">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </form>
+            </div>
+
+            <!-- Section Livraison -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div>
+                        <div class="section-title">Livraison</div>
+                        <div class="section-description">Frais et zones de livraison</div>
+                    </div>
+                </div>
+                
+                <form id="form-shipping">
+                    <div class="form-group">
+                        <label class="form-label">Livraison gratuite à partir de (€)</label>
+                        <input type="number" class="form-input" name="free_shipping_threshold" 
+                               value="100" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Frais livraison standard (€)</label>
+                        <input type="number" class="form-input" name="standard_shipping_cost" 
+                               value="7.50" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Frais livraison express (€)</label>
+                        <input type="number" class="form-input" name="express_shipping_cost" 
+                               value="15.00" step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Zones de livraison</label>
+                        <input type="text" class="form-input" name="shipping_zones" 
+                               value="France, Europe, International" 
+                               placeholder="France, Europe, International">
+                    </div>
+                    
+                    <button type="button" class="save-btn" onclick="saveSection('shipping')">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </form>
+            </div>
+
+            <!-- Section Sécurité -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div>
+                        <div class="section-title">Sécurité</div>
+                        <div class="section-description">Paramètres de sécurité</div>
+                    </div>
+                </div>
+                
+                <form id="form-security">
+                    <div class="form-group">
+                        <label class="form-label">Timeout session (secondes)</label>
+                        <input type="number" class="form-input" name="session_timeout" 
+                               value="3600">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Tentatives de connexion max</label>
+                        <input type="number" class="form-input" name="max_login_attempts" 
+                               value="5">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Vérification email obligatoire</label>
+                        <label class="switch">
+                            <input type="checkbox" name="require_email_verification" checked>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <button type="button" class="save-btn" onclick="saveSection('security')">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </form>
+            </div>
+
+            <!-- Section Coordonnées Entreprise -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div>
+                        <div class="section-title">Coordonnées Entreprise</div>
+                        <div class="section-description">Informations pour les factures</div>
+                    </div>
+                </div>
+                
+                <form id="form-company">
+                    <div class="form-group">
+                        <label class="form-label">Nom de l'entreprise</label>
+                        <input type="text" class="form-input" name="company_name" 
+                               value="Crystos Jewel">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Adresse de facturation</label>
+                        <textarea class="form-textarea" name="company_address">123 Rue de la Paix, 75001 Paris</textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Téléphone</label>
+                        <input type="tel" class="form-input" name="company_phone" 
+                               value="+33 1 23 45 67 89">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email officiel</label>
+                        <input type="email" class="form-input" name="company_email" 
+                               value="contact@crystosjewel.com">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Numéro SIRET</label>
+                        <input type="text" class="form-input" name="siret" 
+                               value="" placeholder="12345678901234">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Numéro TVA</label>
+                        <input type="text" class="form-input" name="vat_number" 
+                               value="" placeholder="FR12345678901">
+                    </div>
+                    
+                    <button type="button" class="save-btn" onclick="saveSection('company')">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </form>
+            </div>
+
+            <!-- Section Footer -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <div>
+                        <div class="section-title">Footer & Réseaux sociaux</div>
+                        <div class="section-description">Liens du pied de page</div>
+                    </div>
+                </div>
+                
+                <form id="form-footer">
+                    <div class="form-group">
+                        <label class="form-label">Lien Instagram</label>
+                        <input type="url" class="form-input" name="instagram_url" 
+                               value="https://instagram.com/crystosjewel">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Lien Facebook</label>
+                        <input type="url" class="form-input" name="facebook_url" 
+                               value="https://facebook.com/crystosjewel">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Lien Pinterest</label>
+                        <input type="url" class="form-input" name="pinterest_url" 
+                               value="https://pinterest.com/crystosjewel">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Lien TikTok</label>
+                        <input type="url" class="form-input" name="tiktok_url" 
+                               value="https://tiktok.com/@crystosjewel">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Texte copyright</label>
+                        <input type="text" class="form-input" name="copyright_text" 
+                               value="2025 CrystosJewel - Tous droits réservés.">
+                    </div>
+                    
+                    <button type="button" class="save-btn" onclick="saveSection('footer')">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function saveSection(sectionName) {
+            const form = document.getElementById(`form-${sectionName}`);
+            const btn = form.querySelector('.save-btn');
+            
+            // Désactiver le bouton
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
+            
+            // Collecter les données du formulaire
+            const formData = new FormData(form);
+            const settings = {};
+            
+            for (let [key, value] of formData.entries()) {
+                const input = form.querySelector(`[name="${key}"]`);
+                if (input.type === 'checkbox') {
+                    settings[key] = input.checked;
+                } else if (input.type === 'number') {
+                    settings[key] = parseFloat(value) || 0;
+                } else {
+                    settings[key] = value;
+                }
+            }
+            
+            // Envoyer au serveur
+            fetch('/admin/parametres/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    section: sectionName,
+                    settings: settings
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Paramètres sauvegardés avec succès', 'success');
+                } else {
+                    showNotification(data.message || 'Erreur lors de la sauvegarde', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showNotification('Erreur de connexion', 'error');
+            })
+            .finally(() => {
+                // Réactiver le bouton
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
+            });
+        }
+        
+        function showNotification(message, type) {
+            // Supprimer les notifications existantes
+            const existing = document.querySelector('.notification');
+            if (existing) {
+                existing.remove();
+            }
+            
+            // Créer la nouvelle notification
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Afficher
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // Masquer après 4 secondes
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+    </script>
+</body>
+</html>

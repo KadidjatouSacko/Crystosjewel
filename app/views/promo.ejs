@@ -1,0 +1,1081 @@
+// Gestion des filtres de promotion
+            const filterBtn = document.querySelector('.filter-btn');
+            const filterOptions = document.querySelector('.filter-options');
+            const sortBtn = document.querySelector('.sort-btn');
+            const sortOptions = document.querySelector('.sort-options');
+            
+            if (filterBtn && filterOptions) {
+                filterBtn.addEventListener('click', function() {
+                    filterOptions.classList.toggle('active');
+                    if (sortOptions) {
+                        sortOptions.classList.remove('active');
+                    }
+                });
+            }
+            
+            if (sortBtn && sortOptions) {
+                sortBtn.addEventListener('click', function() {
+                    sortOptions.classList.toggle('active');
+                    if (filterOptions) {
+                        filterOptions.classList.remove('active');
+                    }
+                });
+            }
+
+            // Fermer les filtres en cliquant ailleurs
+            document.addEventListener('click', function(e) {
+                if (filterOptions && !e.target.closest('.filter-dropdown')) {
+                    filterOptions.classList.remove('active');
+                }
+                if (sortOptions && !e.target.closest('.sort-dropdown')) {
+                    sortOptions.classList.remove('active');
+                }
+            });
+
+            // Filtrage des produits
+            function filterProducts() {
+                const products = document.querySelectorAll('.product-card');
+                const categoryFilters = Array.from(document.querySelectorAll('input[name="category"]:checked')).map(cb => cb.value);
+                const discountFilters = Array.from(document.querySelectorAll('input[name="discount"]:checked')).map(cb => cb.value);
+                const priceFilters = Array.from(document.querySelectorAll('input[name="price"]:checked')).map(cb => cb.value);
+
+                products.forEach(product => {
+                    let show = true;
+                    
+                    // Filter by category
+                    if (categoryFilters.length > 0) {
+                        const productCategory = product.dataset.category;
+                        if (!categoryFilters.includes(productCategory)) {
+                            show = false;
+                        }
+                    }
+                    
+                    // Filter by discount
+                    if (discountFilters.length > 0 && show) {
+                        const productDiscount = parseInt(product.dataset.discount) || 0;
+                        let matchesDiscount = false;
+                        
+                        discountFilters.forEach(range => {
+                            switch(range) {
+                                case '70+':
+                                    if (productDiscount >= 70) matchesDiscount = true;
+                                    break;
+                                case '50-70':
+                                    if (productDiscount >= 50 && productDiscount < 70) matchesDiscount = true;
+                                    break;
+                                case '30-50':
+                                    if (productDiscount >= 30 && productDiscount < 50) matchesDiscount = true;
+                                    break;
+                                case '0-30':
+                                    if (productDiscount < 30) matchesDiscount = true;
+                                    break;
+                            }
+                        });
+                        
+                        if (!matchesDiscount) show = false;
+                    }
+                    
+                    // Filter by price
+                    if (priceFilters.length > 0 && show) {
+                        const productPrice = parseFloat(product.dataset.price) || 0;
+                        let matchesPrice = false;
+                        
+                        priceFilters.forEach(range => {
+                            switch(range) {
+                                case '0-50':
+                                    if (productPrice < 50) matchesPrice = true;
+                                    break;
+                                case '50-100':
+                                    if (productPrice >= 50 && productPrice < 100) matchesPrice = true;
+                                    break;
+                                case '100-200':
+                                    if (productPrice >= 100 && productPrice < 200) matchesPrice = true;
+                                    break;
+                                case '200+':
+                                    if (productPrice >= 200) matchesPrice = true;
+                                    break;
+                            }
+                        });
+                <!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Promotions - Éclat Doré</title>
+    <link rel="stylesheet" href="/css/bagues.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Styles spécifiques aux promotions */
+        .promo-banner {
+            background: linear-gradient(135deg, var(--rose-gold-light), var(--rose-gold));
+            padding: 80px 0;
+            text-align: center;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .promo-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="sparkle" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.3)"/></pattern></defs><rect width="100" height="100" fill="url(%23sparkle)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .promo-content {
+            position: relative;
+            z-index: 2;
+        }
+
+        .promo-title {
+            font-size: 3.5rem;
+            font-weight: 300;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .promo-subtitle {
+            font-size: 1.3rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+
+        .promo-timer {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 30px;
+            margin: 40px auto;
+            max-width: 600px;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .timer-title {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            font-weight: 500;
+        }
+
+        .countdown {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .countdown-item {
+            background: white;
+            color: var(--rose-gold);
+            padding: 15px 20px;
+            border-radius: 10px;
+            text-align: center;
+            min-width: 80px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        .countdown-number {
+            font-size: 2rem;
+            font-weight: 700;
+            display: block;
+        }
+
+        .countdown-label {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 5px;
+        }
+
+        .promo-categories {
+            padding: 80px 0;
+            background: var(--cream);
+        }
+
+        .promo-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .promo-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .promo-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+        }
+
+        .promo-card-image {
+            height: 250px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+
+        .discount-badge {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 15px rgba(231, 76, 60, 0.4);
+        }
+
+        .promo-card-content {
+            padding: 30px;
+        }
+
+        .promo-card-title {
+            font-size: 1.5rem;
+            color: var(--rose-gold);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .promo-card-desc {
+            color: var(--dark-text);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .promo-card-btn {
+            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 25px;
+            text-decoration: none;
+            display: inline-block;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .promo-card-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(183, 110, 121, 0.3);
+        }
+
+        .flash-sales {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+            padding: 80px 0;
+            position: relative;
+        }
+
+        .flash-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            color: #ecf0f1;
+        }
+
+        .flash-subtitle {
+            text-align: center;
+            font-size: 1.2rem;
+            margin-bottom: 50px;
+            opacity: 0.8;
+        }
+
+        .flash-products {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .flash-product {
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .flash-product:hover {
+            transform: translateY(-5px);
+            background: rgba(255,255,255,0.15);
+        }
+
+        .flash-product-img {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: var(--rose-gold-light);
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: var(--rose-gold);
+        }
+
+        .flash-product-name {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .flash-price {
+            margin-bottom: 20px;
+        }
+
+        .flash-old-price {
+            text-decoration: line-through;
+            color: #bdc3c7;
+            margin-right: 10px;
+        }
+
+        .flash-new-price {
+            color: #e74c3c;
+            font-size: 1.3rem;
+            font-weight: 700;
+        }
+
+        .newsletter-promo {
+            background: linear-gradient(135deg, var(--rose-gold-light), white);
+            padding: 80px 0;
+            text-align: center;
+        }
+
+        .newsletter-promo-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .newsletter-promo-title {
+            font-size: 2.5rem;
+            color: var(--rose-gold);
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .newsletter-promo-text {
+            font-size: 1.1rem;
+            color: var(--dark-text);
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+
+        .promo-form {
+            display: flex;
+            max-width: 400px;
+            margin: 0 auto;
+            gap: 0;
+            border-radius: 50px;
+            overflow: hidden;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .promo-input {
+            flex: 1;
+            padding: 15px 25px;
+            border: none;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .promo-btn {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .promo-btn:hover {
+            background: linear-gradient(135deg, var(--rose-gold-dark), #5d3940);
+        }
+
+        .exclusive-benefits {
+            padding: 80px 0;
+            background: linear-gradient(135deg, var(--cream), white);
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 50px;
+        }
+
+        .benefit-card {
+            background: white;
+            padding: 40px 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+            border: 1px solid var(--border-light);
+        }
+
+        .benefit-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        }
+
+        .benefit-icon {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--rose-gold-light), var(--rose-gold));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2rem;
+            color: white;
+        }
+
+        .benefit-card h4 {
+            font-size: 1.3rem;
+            color: var(--rose-gold);
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        .benefit-card p {
+            color: var(--dark-text);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* Styles pour les filtres de promotion */
+        .filter-controls .filter-btn:hover,
+        .filter-controls .sort-btn:hover {
+            background: var(--rose-gold-light);
+            border-color: var(--rose-gold);
+            color: var(--rose-gold-dark);
+        }
+
+        /* Responsive pour les nouvelles sections */
+        @media (max-width: 768px) {
+            .benefits-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+            
+            .benefit-card {
+                padding: 30px 20px;
+            }
+            
+            .benefit-icon {
+                width: 60px;
+                height: 60px;
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <%- include('partials/navbarre.ejs') %>
+        <div class="overlay" id="overlay"></div>
+    </header>
+
+    <!-- Banner Promotions -->
+    <section class="promo-banner">
+        <div class="container">
+            <div class="promo-content">
+                <h1 class="promo-title">🎉 Soldes Exceptionnels 🎉</h1>
+                <p class="promo-subtitle">Jusqu'à -70% sur une sélection de bijoux</p>
+                
+                <div class="promo-timer">
+                    <h3 class="timer-title">⏰ Offre limitée - Dépêchez-vous !</h3>
+                    <div class="countdown" id="countdown">
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="days">00</span>
+                            <span class="countdown-label">Jours</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="hours">00</span>
+                            <span class="countdown-label">Heures</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="minutes">00</span>
+                            <span class="countdown-label">Minutes</span>
+                        </div>
+                        <div class="countdown-item">
+                            <span class="countdown-number" id="seconds">00</span>
+                            <span class="countdown-label">Secondes</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Catégories en Promotion -->
+    <section class="promo-categories">
+        <div class="container">
+            <div class="intro-content">
+                <h2>🛍️ Promotions par Catégorie</h2>
+                <p>Découvrez nos offres exceptionnelles sur toutes nos collections</p>
+            </div>
+            
+            <div class="promo-cards">
+                <div class="promo-card">
+                    <div class="promo-card-image" style="background-image: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), url('/images/bagues-promo.jpg');">
+                        <div class="discount-badge">-50%</div>
+                    </div>
+                    <div class="promo-card-content">
+                        <h3 class="promo-card-title">💍 Bagues en Promotion</h3>
+                        <p class="promo-card-desc">Sublimez vos mains avec notre collection de bagues en or rose et or blanc. Des créations délicates aux designs audacieux.</p>
+                        <a href="/bagues?promo=true" class="promo-card-btn">Voir les Bagues</a>
+                    </div>
+                </div>
+                
+                <div class="promo-card">
+                    <div class="promo-card-image" style="background-image: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), url('/images/colliers-promo.jpg');">
+                        <div class="discount-badge">-40%</div>
+                    </div>
+                    <div class="promo-card-content">
+                        <h3 class="promo-card-title">📿 Colliers en Solde</h3>
+                        <p class="promo-card-desc">Illuminez votre décolleté avec nos colliers raffinés. Des pièces uniques pour toutes les occasions.</p>
+                        <a href="/colliers?promo=true" class="promo-card-btn">Voir les Colliers</a>
+                    </div>
+                </div>
+                
+                <div class="promo-card">
+                    <div class="promo-card-image" style="background-image: linear-gradient(rgba(0,0,0,0.2), rgba(0,0,0,0.2)), url('/images/bracelets-promo.jpg');">
+                        <div class="discount-badge">-35%</div>
+                    </div>
+                    <div class="promo-card-content">
+                        <h3 class="promo-card-title">⌚ Bracelets à Prix Réduit</h3>
+                        <p class="promo-card-desc">Ornez vos poignets avec élégance. Découvrez notre gamme de bracelets fins et sophistiqués.</p>
+                        <a href="/bracelets?promo=true" class="promo-card-btn">Voir les Bracelets</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Ventes Flash -->
+    <section class="flash-sales">
+        <div class="container">
+            <h2 class="flash-title">⚡ Ventes Flash</h2>
+            <p class="flash-subtitle">Offres exclusives disponibles pendant 24h seulement</p>
+            
+            <div class="flash-products">
+                <div class="flash-product">
+                    <div class="flash-product-img">💎</div>
+                    <h4 class="flash-product-name">Bague Étincelle</h4>
+                    <div class="flash-price">
+                        <span class="flash-old-price">299€</span>
+                        <span class="flash-new-price">149€</span>
+                    </div>
+                    <a href="/bijoux/bague-etincelle" class="promo-card-btn">Acheter Maintenant</a>
+                </div>
+                
+                <div class="flash-product">
+                    <div class="flash-product-img">✨</div>
+                    <h4 class="flash-product-name">Collier Cascade</h4>
+                    <div class="flash-price">
+                        <span class="flash-old-price">459€</span>
+                        <span class="flash-new-price">229€</span>
+                    </div>
+                    <a href="/bijoux/collier-cascade" class="promo-card-btn">Acheter Maintenant</a>
+                </div>
+                
+                <div class="flash-product">
+                    <div class="flash-product-img">🌟</div>
+                    <h4 class="flash-product-name">Bracelet Infinie</h4>
+                    <div class="flash-price">
+                        <span class="flash-old-price">189€</span>
+                        <span class="flash-new-price">99€</span>
+                    </div>
+                    <a href="/bijoux/bracelet-infinie" class="promo-card-btn">Acheter Maintenant</a>
+                </div>
+                
+                <div class="flash-product">
+                    <div class="flash-product-img">💫</div>
+                    <h4 class="flash-product-name">Ensemble Céleste</h4>
+                    <div class="flash-price">
+                        <span class="flash-old-price">799€</span>
+                        <span class="flash-new-price">399€</span>
+                    </div>
+                    <a href="/bijoux/ensemble-celeste" class="promo-card-btn">Acheter Maintenant</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter Promotion -->
+    <section class="newsletter-promo">
+        <div class="container">
+            <div class="newsletter-promo-content">
+                <h2 class="newsletter-promo-title">🎁 -15% Supplémentaires</h2>
+                <p class="newsletter-promo-text">Inscrivez-vous à notre newsletter et recevez immédiatement un code de réduction de 15% en plus des promotions actuelles !</p>
+                <form class="promo-form">
+                    <input type="email" class="promo-input" placeholder="Votre adresse email" required>
+                    <button type="submit" class="promo-btn">Obtenir -15%</button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Produits en Promotion (Dynamique) -->
+    <section class="products">
+        <div class="container">
+            <div class="intro-content">
+                <h3>🏷️ Tous les Bijoux en Promotion</h3>
+                <p>Découvrez l'ensemble de notre sélection en cours de promotion</p>
+            </div>
+            
+            <!-- Filtres pour les promotions -->
+            <div class="filter-controls">
+                <div class="filter-dropdown">
+                    <button type="button" class="filter-btn">Filtrer <i class="fas fa-chevron-down"></i></button>
+                    <div class="filter-options">
+                        <!-- Réduction -->
+                        <div class="filter-group">
+                            <h4>Réduction</h4>
+                            <label>
+                                <input type="checkbox" name="discount" value="70+">
+                                Plus de 70%
+                            </label>
+                            <label>
+                                <input type="checkbox" name="discount" value="50-70">
+                                50% - 70%
+                            </label>
+                            <label>
+                                <input type="checkbox" name="discount" value="30-50">
+                                30% - 50%
+                            </label>
+                            <label>
+                                <input type="checkbox" name="discount" value="0-30">
+                                Jusqu'à 30%
+                            </label>
+                        </div>
+                        
+                        <!-- Catégorie -->
+                        <div class="filter-group">
+                            <h4>Catégorie</h4>
+                            <label>
+                                <input type="checkbox" name="category" value="bagues">
+                                Bagues
+                            </label>
+                            <label>
+                                <input type="checkbox" name="category" value="colliers">
+                                Colliers
+                            </label>
+                            <label>
+                                <input type="checkbox" name="category" value="bracelets">
+                                Bracelets
+                            </label>
+                        </div>
+                        
+                        <!-- Prix après réduction -->
+                        <div class="filter-group">
+                            <h4>Prix Final</h4>
+                            <label>
+                                <input type="checkbox" name="price" value="0-50">
+                                Moins de 50€
+                            </label>
+                            <label>
+                                <input type="checkbox" name="price" value="50-100">
+                                50€ - 100€
+                            </label>
+                            <label>
+                                <input type="checkbox" name="price" value="100-200">
+                                100€ - 200€
+                            </label>
+                            <label>
+                                <input type="checkbox" name="price" value="200+">
+                                Plus de 200€
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="sort-dropdown">
+                    <button type="button" class="sort-btn">Trier par <i class="fas fa-chevron-down"></i></button>
+                    <div class="sort-options">
+                        <a href="#" class="sort-option active" data-sort="discount_desc">Réduction décroissante</a>
+                        <a href="#" class="sort-option" data-sort="discount_asc">Réduction croissante</a>
+                        <a href="#" class="sort-option" data-sort="price_asc">Prix croissant</a>
+                        <a href="#" class="sort-option" data-sort="price_desc">Prix décroissant</a>
+                        <a href="#" class="sort-option" data-sort="newest">Nouveautés</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="products-grid" id="promoProductsGrid">
+                <% if (typeof promoJewels !== 'undefined' && promoJewels.length > 0) { %>
+                    <% promoJewels.forEach(jewel => { %>
+                        <div class="product-card" data-category="<%= jewel.category?.name?.toLowerCase() %>" data-price="<%= jewel.price_ttc %>" data-discount="<%= jewel.discount_percentage || 0 %>">
+                            <div class="product-badge solde">-<%= jewel.discount_percentage || 50 %>%</div>
+                            <div class="product-img">
+                                <img src="/uploads/jewels/<%= jewel.image %>" alt="<%= jewel.name %>">
+                            </div>
+                            <div class="product-info">
+                                <h4 class="product-name"><%= jewel.name %></h4>
+                                <p class="product-desc"><%= jewel.description %></p>
+                                <div class="price-container">
+                                    <% if (jewel.old_price || jewel.formattedOldPrice) { %>
+                                        <span class="product-old-price"><%= jewel.formattedOldPrice || jewel.old_price + ' €' %></span>
+                                    <% } %>
+                                    <span class="product-price"><%= jewel.formattedPrice || jewel.price_ttc + ' €' %></span>
+                                </div>
+                                <div class="product-actions">
+                                    <button class="product-btn add-to-cart-btn" data-jewel-id="<%= jewel.id %>" data-jewel-name="<%= jewel.name %>">
+                                        <i class="fas fa-shopping-cart"></i> Ajouter au panier
+                                    </button>
+                                    <a href="/bijoux/<%= jewel.slug %>" class="product-btn view-jewel-btn">
+                                        <i class="fas fa-eye"></i> Voir le bijou
+                                    </a>
+                                    <button class="wishlist-btn" data-jewel-id="<%= jewel.id %>">
+                                        <i class="far fa-heart"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <!-- Produits d'exemple si pas de données dynamiques -->
+                    <div class="product-card" data-category="bagues" data-price="159" data-discount="60">
+                        <div class="product-badge solde">-60%</div>
+                        <div class="product-img">
+                            <img src="/images/promo-1.jpg" alt="Bague Mystère">
+                        </div>
+                        <div class="product-info">
+                            <h4 class="product-name">Bague Mystère</h4>
+                            <p class="product-desc">Bague en or rose 18k avec diamant</p>
+                            <div class="price-container">
+                                <span class="product-old-price">399 €</span>
+                                <span class="product-price">159 €</span>
+                            </div>
+                            <div class="product-actions">
+                                <button class="product-btn add-to-cart-btn">
+                                    <i class="fas fa-shopping-cart"></i> Ajouter au panier
+                                </button>
+                                <button class="product-btn">
+                                    <i class="fas fa-eye"></i> Voir le bijou
+                                </button>
+                                <button class="wishlist-btn">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="product-card" data-category="colliers" data-price="125" data-discount="45">
+                        <div class="product-badge solde">-45%</div>
+                        <div class="product-img">
+                            <img src="/images/promo-2.jpg" alt="Collier Harmonie">
+                        </div>
+                        <div class="product-info">
+                            <h4 class="product-name">Collier Harmonie</h4>
+                            <p class="product-desc">Collier délicat en argent 925</p>
+                            <div class="price-container">
+                                <span class="product-old-price">229 €</span>
+                                <span class="product-price">125 €</span>
+                            </div>
+                            <div class="product-actions">
+                                <button class="product-btn add-to-cart-btn">
+                                    <i class="fas fa-shopping-cart"></i> Ajouter au panier
+                                </button>
+                                <button class="product-btn">
+                                    <i class="fas fa-eye"></i> Voir le bijou
+                                </button>
+                                <button class="wishlist-btn">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="product-card" data-category="bracelets" data-price="125" data-discount="30">
+                        <div class="product-badge solde">-30%</div>
+                        <div class="product-img">
+                            <img src="/images/promo-3.jpg" alt="Bracelet Élégance">
+                        </div>
+                        <div class="product-info">
+                            <h4 class="product-name">Bracelet Élégance</h4>
+                            <p class="product-desc">Bracelet fin en or blanc</p>
+                            <div class="price-container">
+                                <span class="product-old-price">179 €</span>
+                                <span class="product-price">125 €</span>
+                            </div>
+                            <div class="product-actions">
+                                <button class="product-btn add-to-cart-btn">
+                                    <i class="fas fa-shopping-cart"></i> Ajouter au panier
+                                </button>
+                                <button class="product-btn">
+                                    <i class="fas fa-eye"></i> Voir le bijou
+                                </button>
+                                <button class="wishlist-btn">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card" data-category="bagues" data-price="89" data-discount="55">
+                        <div class="product-badge solde">-55%</div>
+                        <div class="product-img">
+                            <img src="/images/promo-4.jpg" alt="Bague Étoile">
+                        </div>
+                        <div class="product-info">
+                            <h4 class="product-name">Bague Étoile</h4>
+                            <p class="product-desc">Bague solitaire en or jaune</p>
+                            <div class="price-container">
+                                <span class="product-old-price">199 €</span>
+                                <span class="product-price">89 €</span>
+                            </div>
+                            <div class="product-actions">
+                                <button class="product-btn add-to-cart-btn">
+                                    <i class="fas fa-shopping-cart"></i> Ajouter au panier
+                                </button>
+                                <button class="product-btn">
+                                    <i class="fas fa-eye"></i> Voir le bijou
+                                </button>
+                                <button class="wishlist-btn">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card" data-category="colliers" data-price="199" data-discount="40">
+                        <div class="product-badge solde">-40%</div>
+                        <div class="product-img">
+                            <img src="/images/promo-5.jpg" alt="Collier Perle">
+                        </div>
+                        <div class="product-info">
+                            <h4 class="product-name">Collier Perle</h4>
+                            <p class="product-desc">Collier avec perles de culture</p>
+                            <div class="price-container">
+                                <span class="product-old-price">329 €</span>
+                                <span class="product-price">199 €</span>
+                            </div>
+                            <div class="product-actions">
+                                <button class="product-btn add-to-cart-btn">
+                                    <i class="fas fa-shopping-cart"></i> Ajouter au panier
+                                </button>
+                                <button class="product-btn">
+                                    <i class="fas fa-eye"></i> Voir le bijou
+                                </button>
+                                <button class="wishlist-btn">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="product-card" data-category="bracelets" data-price="69" data-discount="65">
+                        <div class="product-badge solde">-65%</div>
+                        <div class="product-img">
+                            <img src="/images/promo-6.jpg" alt="Bracelet Chaîne">
+                        </div>
+                        <div class="product-info">
+                            <h4 class="product-name">Bracelet Chaîne</h4>
+                            <p class="product-desc">Bracelet chaîne fine en argent</p>
+                            <div class="price-container">
+                                <span class="product-old-price">199 €</span>
+                                <span class="product-price">69 €</span>
+                            </div>
+                            <div class="product-actions">
+                                <button class="product-btn add-to-cart-btn">
+                                    <i class="fas fa-shopping-cart"></i> Ajouter au panier
+                                </button>
+                                <button class="product-btn">
+                                    <i class="fas fa-eye"></i> Voir le bijou
+                                </button>
+                                <button class="wishlist-btn">
+                                    <i class="far fa-heart"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                <% } %>
+            </div>
+
+            <!-- Pagination pour les promotions -->
+            <div class="pagination">
+                <a href="#" class="page-link" data-page="prev"><i class="fas fa-chevron-left"></i></a>
+                <a href="#" class="page-link active" data-page="1">1</a>
+                <a href="#" class="page-link" data-page="2">2</a>
+                <a href="#" class="page-link" data-page="3">3</a>
+                <span class="page-dots">...</span>
+                <a href="#" class="page-link" data-page="5">5</a>
+                <a href="#" class="page-link" data-page="next"><i class="fas fa-chevron-right"></i></a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Section Avantages Exclusifs -->
+    <section class="exclusive-benefits">
+        <div class="container">
+            <div class="intro-content">
+                <h2>🎁 Avantages Exclusifs</h2>
+                <p>Profitez d'avantages supplémentaires pendant nos promotions</p>
+            </div>
+            
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <h4>Livraison Gratuite</h4>
+                    <p>Sur toutes les commandes de plus de 99€ pendant les promotions</p>
+                </div>
+                
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="fas fa-undo-alt"></i>
+                    </div>
+                    <h4>Retours Gratuits</h4>
+                    <p>30 jours pour changer d'avis, retours gratuits même sur les promotions</p>
+                </div>
+                
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="fas fa-gift"></i>
+                    </div>
+                    <h4>Emballage Cadeau</h4>
+                    <p>Emballage cadeau offert sur tous les achats pendant les soldes</p>
+                </div>
+                
+                <div class="benefit-card">
+                    <div class="benefit-icon">
+                        <i class="fas fa-star"></i>
+                    </div>
+                    <h4>Points de Fidélité</h4>
+                    <p>Double points de fidélité sur tous les achats en promotion</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Notification système -->
+    <div class="notification" id="notification">
+        <i class="fas fa-check-circle notification-icon"></i>
+        <div class="notification-content">
+            <div class="notification-title">Succès</div>
+            <div class="notification-message" id="notification-message"></div>
+        </div>
+        <div class="notification-close" id="notification-close">
+            <i class="fas fa-times"></i>
+        </div>
+    </div>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-column">
+                    <h4>À propos</h4>
+                    <ul>
+                        <li><a href="#">Notre histoire</a></li>
+                        <li><a href="#">Nos valeurs</a></li>
+                        <li><a href="#">Nos engagements</a></li>
+                        <li><a href="#">Nos boutiques</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Informations</h4>
+                    <ul>
+                        <li><a href="#">Livraison</a></li>
+                        <li><a href="#">Retours & échanges</a></li>
+                        <li><a href="#">Entretien bijoux</a></li>
+                        <li><a href="#">FAQ</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Service client</h4>
+                    <ul>
+                        <li><a href="#">Contactez-nous</a></li>
+                        <li><a href="#">Suivi de commande</a></li>
+                        <li><a href="#">Mentions légales</a></li>
+                        <li><a href="#">CGV</a></li>
+                    </ul>
+                </div>
+                <div class="footer-column">
+                    <h4>Suivez-nous</h4>
+                    <ul>
+                        <li><a href="#"><i class="fab fa-instagram"></i> Instagram</a></li>
+                        <li><a href="#"><i class="fab fa-facebook-f"></i> Facebook</a></li>
+                        <li><a href="#"><i class="fab fa-pinterest-p"></i> Pinterest</a></li>
+                        <li><a href="#"><i class="fab fa-tiktok"></i> TikTok</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2025 CrystosJewel- Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <a href="#" class="back-to-top" id="backToTop">
+        <i class="fas fa-chevron-up"></i>
+    </a>
+
+    <script>
+        // Countdown Timer
+        function startCountdown() {
+            // Date de fin des promotions (7 jours à partir d'aujourd'hui)
+            const endDate = new Date();
+            endDate.setDate(endDate.getDate() + 7);
+            endDate.setHours(23, 59, 59, 999);
+
+            function updateCountdown() {
+                const now = new Date().getTime();
+                const distance = endDate.getTime() - now;
+
+                if (distance > 0) {
+                    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    const hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    document.getElementById('days').textContent = String(days).padStart(2, '0');
+                    document.getElementById('hours').textContent = String(hours).padStart(2, '0');
+                    document.getElementById('minutes').textContent = String(minutes).padStart(2, '0');
+                    document.getElementById('seconds').textContent = String(seconds).padStart(2, '0');
+                } else {
+                    document.getElementById('countdown').innerHTML = '<div class="countdown-item"><span class="countdown-number">00</span><span class="countdown-label">Terminé</span></div>';
+                }
+            }
+
+            updateCountdown();
+            setInterval(updateCountdown, 1000);
+        }
+
+        // Menu mobile et navigation
+        const menuToggle = document.getElementById('menuToggle');
+        const mobileNav = document.getElementById('mobileNav');
+        const overlay = document.getElementById('overlay');
+        const backToTop = document.getElementById('backToTop');
+        
+        if (menuToggle) {
+            menuToggle.addEventListener('click', function() {
+                mobileNav.classList.toggle('active');
+                overlay.classList.toggle('active');
+                
+                if (mobileNav.classList.contains('active')) {
+                    menuToggle.innerHTML = '<i class="fas fa-times"></i>';
+                } else {
+                    menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                }
+            });

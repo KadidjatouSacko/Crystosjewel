@@ -1,0 +1,1011 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - CrystosJewel</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .form-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .image-preview {
+            max-width: 150px;
+            max-height: 150px;
+            border-radius: 8px;
+            margin: 10px;
+            border: 2px solid #ddd;
+            object-fit: cover;
+        }
+
+        .image-container {
+            position: relative;
+            display: inline-block;
+            margin: 10px;
+        }
+
+        .image-container .btn-remove {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 25px;
+            height: 25px;
+            padding: 0;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+
+        .main-image-container {
+            border: 3px solid #007bff;
+            border-radius: 12px;
+            padding: 5px;
+        }
+
+        .main-image-container::after {
+            content: "Image Principale";
+            position: absolute;
+            bottom: 5px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #007bff;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        
+        .taille-item {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .taille-item input {
+            flex: 1;
+        }
+        
+        .discount-preview {
+            background: linear-gradient(135deg, #e7f3ff 0%, #f0f8ff 100%);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 15px;
+            border-left: 4px solid #0066cc;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .drag-drop-zone {
+            border: 2px dashed #007bff;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+            margin: 10px 0;
+        }
+
+        .drag-drop-zone:hover {
+            border-color: #0056b3;
+            background: #e3f2fd;
+        }
+
+        .drag-drop-zone.dragover {
+            border-color: #28a745;
+            background: #d4edda;
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: #80bdff;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+
+        .btn-outline-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section-title {
+            color: #495057;
+            border-bottom: 2px solid #007bff;
+            padding-bottom: 8px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbarre.ejs') %>
+    
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2><i class="fas fa-edit text-primary"></i> <%= title %></h2>
+                    <a href="/bijoux/<%= jewel.slug %>" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> Retour au bijou
+                    </a>
+                </div>
+                
+                <% if (error) { %>
+                    <div class="alert alert-danger alert-dismissible fade show">
+                        <i class="fas fa-exclamation-triangle"></i> <%= error %>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <% } %>
+                
+                <% if (success) { %>
+                    <div class="alert alert-success alert-dismissible fade show">
+                        <i class="fas fa-check-circle"></i> <%= success %>
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                <% } %>
+                
+                <form id="updateJewelForm" action="/admin/bijoux/<%= jewel.slug %>/update" method="POST" enctype="multipart/form-data">
+                    
+                    <!-- Informations de base -->
+                    <div class="form-section">
+                        <h4 class="section-title"><i class="fas fa-info-circle"></i> Informations générales</h4>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="name" class="form-label">Nom du bijou *</label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           value="<%= jewel.name %>" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="category_id" class="form-label">Catégorie *</label>
+                                    <select class="form-select" id="category_id" name="category_id" required>
+                                        <option value="">Sélectionner une catégorie</option>
+                                        <% categories.forEach(category => { %>
+                                            <option value="<%= category.id %>" 
+                                                <%= jewel.category_id === category.id ? 'selected' : '' %>>
+                                                <%= category.name %>
+                                            </option>
+                                        <% }) %>
+                                    </select>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addNewCategory()">
+                                        <i class="fas fa-plus"></i> Nouvelle catégorie
+                                    </button>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="type_id" class="form-label">Type</label>
+                                    <select class="form-select" id="type_id" name="type_id">
+                                        <option value="">Sélectionner un type</option>
+                                        <% types.forEach(type => { %>
+                                            <option value="<%= type.id %>" 
+                                                data-category="<%= type.category_id %>"
+                                                <%= jewel.type_id === type.id ? 'selected' : '' %>>
+                                                <%= type.name %>
+                                            </option>
+                                        <% }) %>
+                                    </select>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addNewType()">
+                                        <i class="fas fa-plus"></i> Nouveau type
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="matiere" class="form-label">Matière *</label>
+                                    <select class="form-select" id="matiere" name="matiere" required>
+                                        <option value="">Sélectionner une matière</option>
+                                        <% materials.forEach(material => { %>
+                                            <option value="<%= material.name %>" 
+                                                <%= jewel.matiere === material.name ? 'selected' : '' %>>
+                                                <%= material.name %>
+                                            </option>
+                                        <% }) %>
+                                    </select>
+                                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="addNewMaterial()">
+                                        <i class="fas fa-plus"></i> Nouvelle matière
+                                    </button>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="poids" class="form-label">Poids (g)</label>
+                                    <input type="number" step="0.01" class="form-control" id="poids" name="poids" 
+                                           value="<%= jewel.poids || '' %>">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="carat" class="form-label">Carat</label>
+                                    <input type="number" step="0.01" class="form-control" id="carat" name="carat" 
+                                           value="<%= jewel.carat || '' %>">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" id="description" name="description" rows="4"><%= jewel.description || '' %></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Prix et réductions -->
+                    <div class="form-section">
+                        <h4 class="section-title"><i class="fas fa-euro-sign"></i> Prix et réductions</h4>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="price_ttc" class="form-label">Prix TTC (€) *</label>
+                                    <input type="number" step="0.01" class="form-control" id="price_ttc" name="price_ttc" 
+                                           value="<%= jewel.price_ttc %>" required>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="tva" class="form-label">TVA (%)</label>
+                                    <input type="number" step="0.01" class="form-control" id="tva" name="tva" 
+                                           value="<%= jewel.tva || 20 %>">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="discount_percentage" class="form-label">Réduction (%)</label>
+                                    <input type="number" min="0" max="90" class="form-control" id="discount_percentage" name="discount_percentage" 
+                                           value="<%= jewel.discount_percentage || 0 %>">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="discount_start_date" class="form-label">Date début réduction</label>
+                                    <input type="datetime-local" class="form-control" id="discount_start_date" name="discount_start_date"
+                                           value="<%= jewel.discount_start_date || '' %>">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="discount_end_date" class="form-label">Date fin réduction</label>
+                                    <input type="datetime-local" class="form-control" id="discount_end_date" name="discount_end_date"
+                                           value="<%= jewel.discount_end_date || '' %>">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="pricePreview" class="discount-preview" style="display: none;">
+                            <strong><i class="fas fa-calculator"></i> Aperçu du prix :</strong>
+                            <div id="previewContent"></div>
+                        </div>
+                    </div>
+
+                    <!-- Images existantes et nouvelles -->
+                    <div class="form-section">
+                        <h4 class="section-title"><i class="fas fa-images"></i> Gestion des images</h4>
+                        
+                        <!-- Image principale actuelle -->
+                        <div class="mb-4">
+                            <label class="form-label">Image principale actuelle</label>
+                            <div class="d-flex flex-wrap align-items-start">
+                                <% if (jewel.image) { %>
+                                    <div class="image-container main-image-container">
+                                        <img src="/uploads/jewels/<%= jewel.image %>" alt="Image principale" class="image-preview">
+                                        <button type="button" class="btn btn-danger btn-sm btn-remove" onclick="removeMainImage()">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                <% } else { %>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i> Aucune image principale définie
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <!-- Images additionnelles actuelles -->
+                        <div class="mb-4">
+                            <label class="form-label">Images additionnelles actuelles</label>
+                            <div class="d-flex flex-wrap" id="existingImagesContainer">
+                                <% if (jewel.additionalImages && jewel.additionalImages.length > 0) { %>
+                                    <% jewel.additionalImages.forEach(img => { %>
+                                        <div class="image-container" data-image-id="<%= img.id %>">
+                                            <img src="/uploads/jewels/<%= img.image_url %>" alt="Image additionnelle" class="image-preview">
+                                            <button type="button" class="btn btn-danger btn-sm btn-remove" onclick="removeExistingImage(<%= img.id %>)">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    <% }) %>
+                                    
+                                    <div class="w-100 mt-3">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" id="keepExistingImages" name="keepExistingImages" checked>
+                                            <label class="form-check-label" for="keepExistingImages">
+                                                <i class="fas fa-save"></i> Conserver les images existantes non supprimées
+                                            </label>
+                                        </div>
+                                    </div>
+                                <% } else { %>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle"></i> Aucune image additionnelle
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+
+                        <!-- Nouvelle image principale -->
+                        <div class="mb-4">
+                            <label class="form-label">Remplacer l'image principale</label>
+                            <div class="drag-drop-zone" id="mainImageDropZone">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                                <p>Glissez-déposez une nouvelle image principale ici ou cliquez pour sélectionner</p>
+                                <input type="file" class="d-none" id="newMainImageInput" accept="image/*">
+                                <input type="hidden" id="newMainImageData" name="image">
+                            </div>
+                            <div id="newMainImagePreview" class="mt-2"></div>
+                        </div>
+                        
+                        <!-- Nouvelles images additionnelles -->
+                        <div class="mb-4">
+                            <label class="form-label">Ajouter de nouvelles images additionnelles</label>
+                            <div class="drag-drop-zone" id="additionalImagesDropZone">
+                                <i class="fas fa-images fa-3x text-primary mb-3"></i>
+                                <p>Glissez-déposez des images additionnelles ici ou cliquez pour sélectionner</p>
+                                <small class="text-muted">Vous pouvez sélectionner plusieurs images à la fois</small>
+                                <input type="file" class="d-none" id="newAdditionalImagesInput" multiple accept="image/*">
+                                <input type="hidden" id="newAdditionalImagesData" name="additionalImages">
+                            </div>
+                            <div id="newAdditionalImagesPreview" class="mt-2"></div>
+                        </div>
+
+                        <!-- Images à supprimer (hidden input) -->
+                        <input type="hidden" id="imagesToDelete" name="imagesToDelete" value="[]">
+                    </div>
+
+                    <!-- Tailles et stock -->
+                    <div class="form-section">
+                        <h4 class="section-title"><i class="fas fa-boxes"></i> Tailles et stock</h4>
+                        <div id="taillesContainer">
+                            <% if (jewel.tailles && Array.isArray(jewel.tailles) && jewel.tailles.length > 0) { %>
+                                <% jewel.tailles.forEach((taille, index) => { %>
+                                    <div class="taille-item">
+                                        <div class="flex-fill">
+                                            <label class="form-label small text-muted">Taille</label>
+                                            <input type="text" class="form-control" placeholder="ex: S, M, 52..." 
+                                                   value="<%= taille.taille %>" name="taille_size_<%= index %>">
+                                        </div>
+                                        <div class="flex-fill">
+                                            <label class="form-label small text-muted">Stock</label>
+                                            <input type="number" class="form-control" placeholder="Stock" 
+                                                   value="<%= taille.stock %>" name="taille_stock_<%= index %>" min="0">
+                                        </div>
+                                        <div class="align-self-end">
+                                            <button type="button" class="btn btn-danger btn-sm" onclick="removeTaille(this)">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                <% }) %>
+                            <% } else { %>
+                                <div class="taille-item">
+                                    <div class="flex-fill">
+                                        <label class="form-label small text-muted">Taille</label>
+                                        <input type="text" class="form-control" placeholder="ex: S, M, 52...">
+                                    </div>
+                                    <div class="flex-fill">
+                                        <label class="form-label small text-muted">Stock</label>
+                                        <input type="number" class="form-control" placeholder="Stock" min="0" value="<%= jewel.stock || 0 %>">
+                                    </div>
+                                    <div class="align-self-end">
+                                        <button type="button" class="btn btn-danger btn-sm" onclick="removeTaille(this)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            <% } %>
+                        </div>
+                        <button type="button" class="btn btn-success mt-3" onclick="addTaille()">
+                            <i class="fas fa-plus"></i> Ajouter une taille
+                        </button>
+                        <input type="hidden" id="taillesToSave" name="taillesToSave">
+                    </div>
+
+                    <!-- Boutons de soumission -->
+                    <div class="text-center mt-4 mb-5">
+                        <button type="button" class="btn btn-secondary btn-lg me-3" onclick="window.location.href='/bijoux/<%= jewel.slug %>'">
+                            <i class="fas fa-times"></i> Annuler
+                        </button>
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-save"></i> Mettre à jour le bijou
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variables globales
+        let imagesToDeleteArray = [];
+        let newMainImageData = null;
+        let newAdditionalImagesData = [];
+
+        // ==========================================
+        // GESTION DES IMAGES EXISTANTES
+        // ==========================================
+
+        function removeMainImage() {
+            if (confirm('Êtes-vous sûr de vouloir supprimer l\'image principale ?')) {
+                const container = document.querySelector('.main-image-container');
+                if (container) {
+                    container.remove();
+                }
+                // Marquer pour suppression côté serveur si nécessaire
+                console.log('Image principale marquée pour suppression');
+            }
+        }
+
+        function removeExistingImage(imageId) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer cette image ?')) {
+                // Ajouter à la liste des images à supprimer
+                imagesToDeleteArray.push(imageId);
+                document.getElementById('imagesToDelete').value = JSON.stringify(imagesToDeleteArray);
+                
+                // Supprimer visuellement l'image
+                const container = document.querySelector(`[data-image-id="${imageId}"]`);
+                if (container) {
+                    container.remove();
+                }
+                
+                console.log('Image marquée pour suppression:', imageId);
+            }
+        }
+
+        // ==========================================
+        // GESTION DES NOUVELLES IMAGES
+        // ==========================================
+
+        // Gestion de la nouvelle image principale
+        document.getElementById('mainImageDropZone').addEventListener('click', () => {
+            document.getElementById('newMainImageInput').click();
+        });
+
+        document.getElementById('newMainImageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleMainImageFile(file);
+            }
+        });
+
+        function handleMainImageFile(file) {
+            if (!file.type.startsWith('image/')) {
+                alert('Veuillez sélectionner un fichier image valide.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                newMainImageData = e.target.result;
+                document.getElementById('newMainImageData').value = newMainImageData;
+                
+                // Afficher l'aperçu
+                const preview = document.getElementById('newMainImagePreview');
+                preview.innerHTML = `
+                    <div class="image-container main-image-container">
+                        <img src="${e.target.result}" alt="Nouvelle image principale" class="image-preview">
+                        <button type="button" class="btn btn-danger btn-sm btn-remove" onclick="removeNewMainImage()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeNewMainImage() {
+            newMainImageData = null;
+            document.getElementById('newMainImageData').value = '';
+            document.getElementById('newMainImagePreview').innerHTML = '';
+            document.getElementById('newMainImageInput').value = '';
+        }
+
+        // Gestion des nouvelles images additionnelles
+        document.getElementById('additionalImagesDropZone').addEventListener('click', () => {
+            document.getElementById('newAdditionalImagesInput').click();
+        });
+
+        document.getElementById('newAdditionalImagesInput').addEventListener('change', function(e) {
+            const files = Array.from(e.target.files);
+            if (files.length > 0) {
+                handleAdditionalImagesFiles(files);
+            }
+        });
+
+        function handleAdditionalImagesFiles(files) {
+            const validFiles = files.filter(file => file.type.startsWith('image/'));
+            
+            if (validFiles.length !== files.length) {
+                alert('Certains fichiers ne sont pas des images et ont été ignorés.');
+            }
+
+            if (validFiles.length === 0) return;
+
+            let loadedCount = 0;
+            const newImages = [];
+
+            validFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    newImages.push(e.target.result);
+                    loadedCount++;
+                    
+                    if (loadedCount === validFiles.length) {
+                        // Ajouter aux données existantes
+                        newAdditionalImagesData = [...newAdditionalImagesData, ...newImages];
+                        document.getElementById('newAdditionalImagesData').value = JSON.stringify(newAdditionalImagesData);
+                        
+                        // Mettre à jour l'aperçu
+                        updateAdditionalImagesPreview();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function updateAdditionalImagesPreview() {
+            const preview = document.getElementById('newAdditionalImagesPreview');
+            const imagesHtml = newAdditionalImagesData.map((imageData, index) => `
+                <div class="image-container" data-new-index="${index}">
+                    <img src="${imageData}" alt="Nouvelle image ${index + 1}" class="image-preview">
+                    <button type="button" class="btn btn-danger btn-sm btn-remove" onclick="removeNewAdditionalImage(${index})">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `).join('');
+            
+            preview.innerHTML = imagesHtml;
+        }
+
+        function removeNewAdditionalImage(index) {
+            newAdditionalImagesData.splice(index, 1);
+            document.getElementById('newAdditionalImagesData').value = JSON.stringify(newAdditionalImagesData);
+            updateAdditionalImagesPreview();
+        }
+
+        // ==========================================
+        // DRAG & DROP
+        // ==========================================
+
+        // Image principale
+        const mainDropZone = document.getElementById('mainImageDropZone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            mainDropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            mainDropZone.addEventListener(eventName, () => mainDropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            mainDropZone.addEventListener(eventName, () => mainDropZone.classList.remove('dragover'), false);
+        });
+
+        mainDropZone.addEventListener('drop', function(e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleMainImageFile(files[0]);
+            }
+        });
+
+        // Images additionnelles
+        const additionalDropZone = document.getElementById('additionalImagesDropZone');
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            additionalDropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            additionalDropZone.addEventListener(eventName, () => additionalDropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            additionalDropZone.addEventListener(eventName, () => additionalDropZone.classList.remove('dragover'), false);
+        });
+
+        additionalDropZone.addEventListener('drop', function(e) {
+            const files = Array.from(e.dataTransfer.files);
+            if (files.length > 0) {
+                handleAdditionalImagesFiles(files);
+            }
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        // ==========================================
+        // GESTION DES TAILLES
+        // ==========================================
+
+        function addTaille() {
+            const container = document.getElementById('taillesContainer');
+            const div = document.createElement('div');
+            div.className = 'taille-item';
+            div.innerHTML = `
+                <div class="flex-fill">
+                    <label class="form-label small text-muted">Taille</label>
+                    <input type="text" class="form-control" placeholder="ex: S, M, 52...">
+                </div>
+                <div class="flex-fill">
+                    <label class="form-label small text-muted">Stock</label>
+                    <input type="number" class="form-control" placeholder="Stock" min="0">
+                </div>
+                <div class="align-self-end">
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeTaille(this)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            container.appendChild(div);
+        }
+
+        function removeTaille(button) {
+            if (confirm('Supprimer cette taille ?')) {
+                button.closest('.taille-item').remove();
+            }
+        }
+
+        // ==========================================
+        // APERÇU DU PRIX AVEC RÉDUCTION
+        // ==========================================
+
+        function updatePricePreview() {
+            const price = parseFloat(document.getElementById('price_ttc').value) || 0;
+            const discount = parseFloat(document.getElementById('discount_percentage').value) || 0;
+            const preview = document.getElementById('pricePreview');
+            const content = document.getElementById('previewContent');
+            
+            if (price > 0 && discount > 0) {
+                const discountedPrice = price * (1 - discount / 100);
+                const savings = price - discountedPrice;
+                
+                content.innerHTML = `
+                    <div class="row">
+                        <div class="col-md-4">
+                            <strong>Prix original :</strong><br>
+                            <span style="text-decoration: line-through; color: #666; font-size: 1.1em;">
+                                ${price.toFixed(2)} €
+                            </span>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Prix avec réduction :</strong><br>
+                            <span style="color: #28a745; font-weight: bold; font-size: 1.2em;">
+                                ${discountedPrice.toFixed(2)} €
+                            </span>
+                        </div>
+                        <div class="col-md-4">
+                            <strong>Économie :</strong><br>
+                            <span style="color: #dc3545; font-weight: bold;">
+                                ${savings.toFixed(2)} € (-${discount}%)
+                            </span>
+                        </div>
+                    </div>
+                `;
+                
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+
+        // ==========================================
+        // GESTION DES TYPES SELON LA CATÉGORIE
+        // ==========================================
+
+        document.getElementById('category_id').addEventListener('change', function() {
+            const categoryId = this.value;
+            const typeSelect = document.getElementById('type_id');
+            const options = typeSelect.querySelectorAll('option');
+            
+            options.forEach(option => {
+                if (option.value === '') {
+                    option.style.display = 'block';
+                } else {
+                    const optionCategory = option.getAttribute('data-category');
+                    option.style.display = optionCategory === categoryId ? 'block' : 'none';
+                }
+            });
+            
+            typeSelect.value = '';
+        });
+
+        // ==========================================
+        // PRÉPARATION DES DONNÉES AVANT SOUMISSION
+        // ==========================================
+
+        document.getElementById('updateJewelForm').addEventListener('submit', function(e) {
+            // Préparer les tailles
+            const taillesItems = document.querySelectorAll('.taille-item');
+            const tailles = [];
+            
+            taillesItems.forEach(item => {
+                const sizeInput = item.querySelector('input[type="text"]');
+                const stockInput = item.querySelector('input[type="number"]');
+                
+                if (sizeInput && stockInput && sizeInput.value.trim() && stockInput.value) {
+                    tailles.push({
+                        taille: sizeInput.value.trim(),
+                        stock: parseInt(stockInput.value) || 0
+                    });
+                }
+            });
+            
+            document.getElementById('taillesToSave').value = JSON.stringify(tailles);
+            
+            // Afficher un indicateur de chargement
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mise à jour en cours...';
+            
+            // Restaurer le bouton après un délai (au cas où)
+            setTimeout(() => {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = originalText;
+            }, 10000);
+        });
+
+        // ==========================================
+        // FONCTIONS AJAX POUR AJOUTER DES ÉLÉMENTS
+        // ==========================================
+
+        async function addNewCategory() {
+            const name = prompt('Nom de la nouvelle catégorie :');
+            if (name && name.trim()) {
+                try {
+                    const response = await fetch('/admin/categories/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ name: name.trim() })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const select = document.getElementById('category_id');
+                        const option = document.createElement('option');
+                        option.value = data.category.id;
+                        option.textContent = data.category.name;
+                        option.selected = true;
+                        select.appendChild(option);
+                        
+                        // Déclencher l'événement change pour mettre à jour les types
+                        select.dispatchEvent(new Event('change'));
+                        
+                        alert('Catégorie ajoutée avec succès !');
+                    } else {
+                        alert('Erreur : ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de l\'ajout de la catégorie');
+                }
+            }
+        }
+
+        async function addNewType() {
+            const categoryId = document.getElementById('category_id').value;
+            if (!categoryId) {
+                alert('Veuillez d\'abord sélectionner une catégorie');
+                return;
+            }
+            
+            const name = prompt('Nom du nouveau type :');
+            if (name && name.trim()) {
+                try {
+                    const response = await fetch('/admin/types/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ name: name.trim(), category_id: categoryId })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const select = document.getElementById('type_id');
+                        const option = document.createElement('option');
+                        option.value = data.type.id;
+                        option.textContent = data.type.name;
+                        option.setAttribute('data-category', categoryId);
+                        option.selected = true;
+                        select.appendChild(option);
+                        
+                        alert('Type ajouté avec succès !');
+                    } else {
+                        alert('Erreur : ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de l\'ajout du type');
+                }
+            }
+        }
+
+        async function addNewMaterial() {
+            const name = prompt('Nom de la nouvelle matière :');
+            if (name && name.trim()) {
+                try {
+                    const response = await fetch('/admin/materials/add', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ name: name.trim() })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        const select = document.getElementById('matiere');
+                        const option = document.createElement('option');
+                        option.value = data.material.name;
+                        option.textContent = data.material.name;
+                        option.selected = true;
+                        select.appendChild(option);
+                        
+                        alert('Matière ajoutée avec succès !');
+                    } else {
+                        alert('Erreur : ' + data.message);
+                    }
+                } catch (error) {
+                    console.error('Erreur:', error);
+                    alert('Erreur lors de l\'ajout de la matière');
+                }
+            }
+        }
+
+        // ==========================================
+        // INITIALISATION
+        // ==========================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialiser l'aperçu du prix
+            updatePricePreview();
+            
+            // Écouter les changements de prix et réduction
+            document.getElementById('price_ttc').addEventListener('input', updatePricePreview);
+            document.getElementById('discount_percentage').addEventListener('input', updatePricePreview);
+            
+            // Déclencher le filtrage des types au chargement
+            const categorySelect = document.getElementById('category_id');
+            if (categorySelect.value) {
+                categorySelect.dispatchEvent(new Event('change'));
+            }
+            
+            console.log('🎉 Formulaire de modification initialisé');
+        });
+
+        // ==========================================
+        // FONCTIONS UTILITAIRES
+        // ==========================================
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function validateImageFile(file) {
+            const maxSize = 5 * 1024 * 1024; // 5MB
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+            
+            if (!allowedTypes.includes(file.type)) {
+                alert('Type de fichier non autorisé. Utilisez: JPEG, PNG, GIF ou WebP');
+                return false;
+            }
+            
+            if (file.size > maxSize) {
+                alert(`Fichier trop volumineux. Taille maximale: 5MB. Taille actuelle: ${formatFileSize(file.size)}`);
+                return false;
+            }
+            
+            return true;
+        }
+
+        // Validation avant upload
+        function handleMainImageFile(file) {
+            if (!validateImageFile(file)) return;
+            
+            if (!file.type.startsWith('image/')) {
+                alert('Veuillez sélectionner un fichier image valide.');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                newMainImageData = e.target.result;
+                document.getElementById('newMainImageData').value = newMainImageData;
+                
+                // Afficher l'aperçu
+                const preview = document.getElementById('newMainImagePreview');
+                preview.innerHTML = `
+                    <div class="image-container main-image-container">
+                        <img src="${e.target.result}" alt="Nouvelle image principale" class="image-preview">
+                        <button type="button" class="btn btn-danger btn-sm btn-remove" onclick="removeNewMainImage()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i> 
+                        Fichier: ${file.name} (${formatFileSize(file.size)})
+                    </small>
+                `;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function handleAdditionalImagesFiles(files) {
+            const validFiles = files.filter(file => validateImageFile(file) && file.type.startsWith('image/'));
+            
+            if (validFiles.length !== files.length) {
+                alert('Certains fichiers ne sont pas valides et ont été ignorés.');
+            }
+
+            if (validFiles.length === 0) return;
+
+            let loadedCount = 0;
+            const newImages = [];
+
+            validFiles.forEach((file, index) => {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    newImages.push({
+                        data: e.target.result,
+                        name: file.name,
+                        size: file.size
+                    });
+                    loadedCount++;
+                    
+                    if (loadedCount === validFiles.length) {
+                        // Ajouter aux données existantes
+                        newAdditionalImagesData = [...newAdditionalImagesData, ...newImages.map(img => img.data)];
+                        document.getElementById('newAdditionalImagesData').value = JSON.stringify(newAdditionalImagesData);
+                        
+                        // Mettre à jour l'aperçu
+                        updateAdditionalImagesPreview();
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    </script>
+</body>
+</html>

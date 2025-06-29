@@ -1,0 +1,37 @@
+<link rel="stylesheet" href="/css/style.css">
+
+<%- include('partials/navbarre.ejs') %>
+
+
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-danger text-white">
+            <h2>Confirmer la suppression</h2>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-warning">
+                <p><strong>Attention :</strong> Vous êtes sur le point de supprimer le bijou suivant :</p>
+                <h4><%= jewel.name %></h4>
+                <% if (jewel.image) { %>
+                    <div class="mt-2 mb-2">
+                        <img src="<%= jewel.image %>" alt="<%= jewel.name %>" style="max-width: 150px; max-height: 150px;" class="img-thumbnail">
+                    </div>
+                <% } %>
+                <p>Catégorie : <%= jewel.category ? jewel.category.name : 'Non catégorisé' %></p>
+                <p>Prix : <%= jewel.price_ttc.toFixed(2) %> €</p>
+                <p>Cette action est irréversible.</p>
+            </div>
+            
+            <form action="/admin/jewels/delete/<%= jewel.slug %>" method="POST">
+                <input type="hidden" name="confirmation" value="oui">
+                <div class="d-flex justify-content-between">
+                    <a href="/admin/jewels" class="btn btn-secondary">Annuler</a>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt"></i> Confirmer la suppression
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
