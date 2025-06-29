@@ -1,5 +1,5 @@
 // middleware/settingsMiddleware.js
-import { Setting } from 'app\models\SettingModel.js';
+import { Setting } from '../models/SettingModel.js';
 
 
 let settingsCache = null;
