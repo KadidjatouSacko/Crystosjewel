@@ -1,5 +1,6 @@
 // middleware/settingsMiddleware.js
-import { Setting } from '../models/SettingModel.js';
+import { Setting } from '\Users\Dalla\OneDrive\Documents\developpement web\bijoux-dev\app\models\SiteSetting.js';
+
 
 let settingsCache = null;
 let lastUpdate = null;
