@@ -1,5 +1,5 @@
 // middleware/settingsMiddleware.js
-import Setting from '../models/SettingModel.js'; // ✅ OK
+import Setting from '../models/SettingModel.js' ;
 
 
 
