@@ -59,7 +59,7 @@ export const guestOrderController = {
         - Livraison: ${deliveryFee.toFixed(2)}€
         - Total final: ${finalTotal.toFixed(2)}€`);
 
-      res.render('order-summary', {
+      res.render('summary', {
         title: 'Récapitulatif de commande',
         cartItems,
         subtotal: cartDetails.totalPrice,

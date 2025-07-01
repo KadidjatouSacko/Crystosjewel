@@ -122,14 +122,12 @@ normalizeStatus(status) {
 
   async showDashboard(req, res) {
         try {
-            console.log('🎯 Chargement dashboard admin avec tailles et réductions');
+            console.log('🎯 Chargement dashboard admin avec gestion complète des tailles');
             
-            // ✅ CORRECTION: Normaliser les statuts avant calculs
+            // Normaliser les statuts avant affichage
             await adminOrdersController.normalizeOrderStatuses();
 
-            // ========================================
-            // 📊 STATISTIQUES (code existant)
-            // ========================================
+            // 📊 RÉCUPÉRER LES STATISTIQUES GÉNÉRALES
             const statsQuery = `
                 WITH order_stats AS (
                     SELECT 
@@ -177,7 +175,7 @@ normalizeStatus(status) {
             const [statsResult] = await sequelize.query(statsQuery);
             const statsData = statsResult[0] || {};
 
-            // Construire les statistiques pour l'affichage
+            // Formater les statistiques
             const stats = {
                 totalCommandes: {
                     label: "Total commandes",
@@ -209,7 +207,6 @@ normalizeStatus(status) {
                 }
             };
 
-            // Statistiques par statut
             const statusStats = {
                 waiting: parseInt(statsData.waiting_orders) || 0,
                 preparing: parseInt(statsData.preparing_orders) || 0,
@@ -218,9 +215,7 @@ normalizeStatus(status) {
                 cancelled: parseInt(statsData.cancelled_orders) || 0
             };
 
-            // ========================================
-            // 📋 RÉCUPÉRATION DES COMMANDES AVEC TAILLES
-            // ========================================
+            // 🛒 RÉCUPÉRER LES COMMANDES AVEC INFORMATIONS COMPLÈTES DE TAILLES
             const ordersQuery = `
                 SELECT 
                     o.id,
@@ -236,15 +231,6 @@ normalizeStatus(status) {
                     COALESCE(o.promo_discount_amount, 0) as promo_discount_amount,
                     COALESCE(o.promo_discount_percent, 0) as promo_discount_percent,
                     COALESCE(o.promo_discount, 0) as promo_discount,
-                    GREATEST(
-                        COALESCE(o.discount_amount, 0),
-                        COALESCE(o.promo_discount_amount, 0),
-                        COALESCE(o.promo_discount, 0)
-                    ) as unified_discount_amount,
-                    GREATEST(
-                        COALESCE(o.discount_percent, 0),
-                        COALESCE(o.promo_discount_percent, 0)
-                    ) as unified_discount_percent,
                     COALESCE(o.shipping_method, 'Standard') as shipping_method,
                     COALESCE(o.status, o.status_suivi, 'waiting') as status,
                     o.tracking_number,
@@ -252,7 +238,8 @@ normalizeStatus(status) {
                     o.shipping_address,
                     o.shipping_city,
                     o.notes,
-                    -- ✅ APERÇU DES TAILLES COMMANDÉES
+                    
+                    -- ✅ RÉCUPÉRATION DES TAILLES COMMANDÉES
                     (
                         SELECT STRING_AGG(
                             CASE 
@@ -266,24 +253,49 @@ normalizeStatus(status) {
                         FROM order_items oi
                         LEFT JOIN cart ct ON ct.jewel_id = oi.jewel_id AND ct.customer_id = o.customer_id
                         WHERE oi.order_id = o.id
-                        LIMIT 3
-                    ) as sizes_summary,
+                    ) as tailles_commandees,
+                    
+                    -- ✅ COMPTER LES ARTICLES AVEC TAILLES SPÉCIFIÉES
+                    (
+                        SELECT COUNT(*)
+                        FROM order_items oi
+                        LEFT JOIN cart ct ON ct.jewel_id = oi.jewel_id AND ct.customer_id = o.customer_id
+                        WHERE oi.order_id = o.id
+                        AND (
+                            (oi.size IS NOT NULL AND oi.size != '') 
+                            OR (ct.size IS NOT NULL AND ct.size != '')
+                        )
+                    ) as articles_avec_tailles,
+                    
+                    -- ✅ COMPTER LE TOTAL D'ARTICLES
                     (
                         SELECT COUNT(*)
                         FROM order_items oi
                         WHERE oi.order_id = o.id
-                        AND (oi.size IS NOT NULL OR EXISTS(
-                            SELECT 1 FROM cart ct 
-                            WHERE ct.jewel_id = oi.jewel_id 
-                            AND ct.customer_id = o.customer_id 
-                            AND ct.size IS NOT NULL
-                        ))
-                    ) as items_with_sizes,
+                    ) as total_articles,
+                    
+                    -- ✅ DÉTAIL DES TAILLES PAR ARTICLE
                     (
-                        SELECT COUNT(*)
+                        SELECT JSON_AGG(
+                            JSON_BUILD_OBJECT(
+                                'nom_article', COALESCE(j.name, jw.name, 'Article'),
+                                'taille', CASE 
+                                    WHEN oi.size IS NOT NULL AND oi.size != '' 
+                                    THEN oi.size
+                                    WHEN ct.size IS NOT NULL AND ct.size != '' 
+                                    THEN ct.size
+                                    ELSE NULL
+                                END,
+                                'quantite', oi.quantity
+                            )
+                        )
                         FROM order_items oi
+                        LEFT JOIN cart ct ON ct.jewel_id = oi.jewel_id AND ct.customer_id = o.customer_id
+                        LEFT JOIN jewel j ON oi.jewel_id = j.id
+                        LEFT JOIN jewels jw ON oi.jewel_id = jw.id
                         WHERE oi.order_id = o.id
-                    ) as total_items
+                    ) as detail_tailles_articles
+                    
                 FROM orders o
                 LEFT JOIN customer c ON o.customer_id = c.id
                 ORDER BY o.created_at DESC
@@ -292,9 +304,9 @@ normalizeStatus(status) {
 
             const [ordersResult] = await sequelize.query(ordersQuery);
             
-            // ✅ FORMATAGE AVEC CALCULS DE RÉDUCTION ET INFOS TAILLES
+            // 🎨 FORMATAGE DES COMMANDES AVEC CALCULS DE TAILLES
             const commandes = ordersResult.map(order => {
-                // Calculs unifiés de réduction
+                // Calculs financiers existants
                 const originalAmount = parseFloat(order.original_total) || parseFloat(order.total) || 0;
                 const discountAmount = Math.max(
                     parseFloat(order.discount_amount) || 0,
@@ -311,12 +323,36 @@ normalizeStatus(status) {
                     ? finalAmount + discountAmount 
                     : originalAmount;
 
-                // ✅ TRAITEMENT DES INFOS TAILLES
-                const totalItems = parseInt(order.total_items) || 0;
-                const itemsWithSizes = parseInt(order.items_with_sizes) || 0;
-                const sizesDisplay = order.sizes_summary ? 
-                    order.sizes_summary.split(', ').filter(s => s && s !== 'Standard').join(', ') || 'Tailles standard' :
-                    'Non spécifiées';
+                // ✅ TRAITEMENT DES INFORMATIONS TAILLES
+                const totalArticles = parseInt(order.total_articles) || 0;
+                const articlesAvecTailles = parseInt(order.articles_avec_tailles) || 0;
+                const taillesCommandees = order.tailles_commandees || '';
+                const detailTaillesArticles = order.detail_tailles_articles || [];
+
+                // Calculer la couverture des tailles
+                const pourcentageCouverture = totalArticles > 0 ? 
+                    Math.round((articlesAvecTailles / totalArticles) * 100) : 0;
+
+                // Nettoyer l'affichage des tailles
+                let affichageTailles = 'Non spécifiées';
+                if (taillesCommandees) {
+                    const taillesUniques = [...new Set(
+                        taillesCommandees.split(', ').filter(t => t && t !== 'Standard')
+                    )];
+                    affichageTailles = taillesUniques.length > 0 ? 
+                        taillesUniques.join(', ') : 
+                        'Tailles standard';
+                }
+
+                // Créer l'objet sizesInfo pour la vue
+                const sizesInfo = {
+                    totalItems: totalArticles,
+                    itemsWithSizes: articlesAvecTailles,
+                    sizesDisplay: affichageTailles,
+                    hasSizeInfo: articlesAvecTailles > 0,
+                    sizesCoverage: pourcentageCouverture,
+                    detailArticles: Array.isArray(detailTaillesArticles) ? detailTaillesArticles : []
+                };
 
                 return {
                     id: order.id,
@@ -334,28 +370,20 @@ normalizeStatus(status) {
                     shippingAddress: order.shipping_address,
                     shippingCity: order.shipping_city,
                     notes: order.notes,
-                    // ✅ CODES PROMO UNIFIÉS
+                    
+                    // Codes promo
                     promo_code: order.promo_code,
                     discount_amount: discountAmount,
                     discount_percent: discountPercent,
                     hasDiscount: discountAmount > 0 || order.promo_code,
                     savings: discountAmount,
-                    // ✅ INFORMATIONS TAILLES
-                    sizesInfo: {
-                        totalItems: totalItems,
-                        itemsWithSizes: itemsWithSizes,
-                        sizesDisplay: sizesDisplay,
-                        hasSizeInfo: itemsWithSizes > 0,
-                        sizesCoverage: totalItems > 0 ? Math.round((itemsWithSizes / totalItems) * 100) : 0
-                    }
+                    
+                    // ✅ INFORMATIONS TAILLES POUR LA VUE
+                    sizesInfo: sizesInfo
                 };
             });
 
-            // console.log(`📊 ${commandes.length} commandes chargées, ${commandes.filter(c => c.hasDiscount).length} avec réductions, ${commandes.filter(c => c.sizesInfo.hasSizeInfo).length} avec infos tailles`);
-
-            // ========================================
-            // 🎨 RENDU AVEC TOUTES LES DONNÉES
-            // ========================================
+            // 🎭 RENDU DE LA PAGE AVEC TOUTES LES DONNÉES
             res.render('commandes', {
                 title: 'Administration - Suivi des Commandes',
                 user: req.session.user,
@@ -364,25 +392,26 @@ normalizeStatus(status) {
                 commandes: commandes,
                 getStatusClass: adminOrdersController.getStatusClass.bind(adminOrdersController),
                 translateStatus: adminOrdersController.translateStatus.bind(adminOrdersController),
+                
+                // ✅ HELPERS POUR LES TAILLES ET CODES PROMO
                 helpers: {
                     formatDate: (date) => date ? new Date(date).toLocaleDateString('fr-FR') : 'N/A',
                     formatPrice: (price) => (parseFloat(price) || 0).toLocaleString('fr-FR', { 
                         minimumFractionDigits: 2, 
                         maximumFractionDigits: 2 
                     }),
+                    
+                    // Helpers codes promo
                     hasPromoCode: (commande) => !!(commande.promo_code || commande.hasDiscount),
                     getPromoSavings: (commande) => commande.discount_amount > 0 ? `-${commande.discount_amount.toFixed(2)}€` : '',
                     formatPercent: (percent) => percent > 0 ? `${percent}%` : '',
-                    getStatusBadgeColor: (status) => {
-                        const colors = {
-                            'waiting': '#f59e0b',
-                            'preparing': '#3b82f6', 
-                            'shipped': '#10b981',
-                            'delivered': '#059669',
-                            'cancelled': '#ef4444'
-                        };
-                        return colors[status] || '#6b7280';
+                    formatPromoCode: (promoCode) => promoCode ? promoCode.toUpperCase() : 'Aucun',
+                    calculateSavings: (originalAmount, finalAmount) => {
+                        const savings = parseFloat(originalAmount) - parseFloat(finalAmount);
+                        return savings > 0 ? savings.toFixed(2) : '0.00';
                     },
+                    hasSignificantDiscount: (discountAmount) => parseFloat(discountAmount) >= 5,
+                    
                     // ✅ HELPERS POUR LES TAILLES
                     formatSizes: (sizesInfo) => {
                         if (!sizesInfo || !sizesInfo.hasSizeInfo) return 'Non spécifiées';
@@ -393,12 +422,24 @@ normalizeStatus(status) {
                         return sizesInfo.sizesCoverage || 0;
                     },
                     getSizesIndicator: (sizesInfo) => {
-                        if (!sizesInfo || sizesInfo.totalItems === 0) return '';
+                        if (!sizesInfo || sizesInfo.totalItems === 0) return '❓ En développement';
                         const coverage = sizesInfo.sizesCoverage || 0;
                         if (coverage === 100) return '🎯 Complète';
                         if (coverage > 50) return '📏 Partielle';
                         if (coverage > 0) return '📐 Limitée';
                         return '❓ Aucune';
+                    },
+                    
+                    // Helper pour les couleurs des badges
+                    getStatusBadgeColor: (status) => {
+                        const colors = {
+                            'waiting': '#f59e0b',
+                            'preparing': '#3b82f6', 
+                            'shipped': '#10b981',
+                            'delivered': '#059669',
+                            'cancelled': '#ef4444'
+                        };
+                        return colors[status] || '#6b7280';
                     }
                 }
             });
@@ -413,6 +454,7 @@ normalizeStatus(status) {
     },
 
 
+    
 
   // ========================================
   // 🔍 DÉTAILS AVEC TOUTES LES COLONNES DE RÉDUCTION
@@ -1337,3 +1379,5 @@ async normalizeOrderStatuses() {
 
  
 };
+
+

@@ -20,7 +20,6 @@ const pool = new Pool({
 function calculateOrderTotals(cartItems, appliedPromo = null) {
     let subtotal = 0;
     
-    // Calculer le sous-total
     cartItems.forEach(item => {
         const price = parseFloat(item.jewel.price_ttc) || 0;
         const quantity = parseInt(item.quantity) || 0;
@@ -33,45 +32,28 @@ function calculateOrderTotals(cartItems, appliedPromo = null) {
     subtotal = Math.round(subtotal * 100) / 100;
     console.log('📊 Sous-total calculé:', subtotal);
     
-    // Variables par défaut
     let discount = 0;
     let discountedSubtotal = subtotal;
     
-    // ⚡ CALCUL DE LA RÉDUCTION SI CODE PROMO APPLIQUÉ
     if (appliedPromo && appliedPromo.discountPercent) {
-        // Calculer la réduction en pourcentage
         discount = Math.round((subtotal * appliedPromo.discountPercent / 100) * 100) / 100;
         
-        // Appliquer une réduction maximale si définie
         if (appliedPromo.maxDiscount && discount > appliedPromo.maxDiscount) {
             discount = appliedPromo.maxDiscount;
         }
         
-        // Calculer le sous-total après réduction
         discountedSubtotal = Math.round((subtotal - discount) * 100) / 100;
         
-        // S'assurer que le total ne devient pas négatif
         if (discountedSubtotal < 0) {
             discountedSubtotal = 0;
             discount = subtotal;
         }
         
         console.log(`💰 Code promo ${appliedPromo.code}: -${appliedPromo.discountPercent}% = -${discount}€`);
-        console.log(`💰 Sous-total après réduction: ${discountedSubtotal}€`);
     }
     
-    // Calculer les frais de livraison (gratuits dès 50€ après réduction)
     const deliveryFee = discountedSubtotal >= 50 ? 0 : 5.99;
-    
-    // Total final
     const finalTotal = Math.round((discountedSubtotal + deliveryFee) * 100) / 100;
-    
-    console.log('📋 Résumé des calculs:');
-    console.log(`  - Sous-total: ${subtotal}€`);
-    console.log(`  - Réduction: -${discount}€`);
-    console.log(`  - Après réduction: ${discountedSubtotal}€`);
-    console.log(`  - Livraison: ${deliveryFee}€`);
-    console.log(`  - Total final: ${finalTotal}€`);
     
     return {
         subtotal,
@@ -80,8 +62,7 @@ function calculateOrderTotals(cartItems, appliedPromo = null) {
         deliveryFee,
         finalTotal,
         appliedPromo
-    };
-}
+    }}
  
 /**
  * 🧮 FONCTION HELPER EXTERNE pour calculer les totaux avec promo
@@ -805,172 +786,125 @@ async validateOrderAndSave(req, res) {
   /**
    * 🎫 Appliquer un code promo
    */
-  async applyPromoCode(req, res) {
-    try {
-      const { code } = req.body;
-      const userId = req.session?.user?.id;
+   async applyPromoCode(req, res) {
+        try {
+            const { code } = req.body;
+            const userId = req.session?.user?.id;
 
-      console.log('🎫 Application code promo:', { code, userId });
+            if (!userId) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Vous devez être connecté pour utiliser un code promo'
+                });
+            }
 
-      if (!userId) {
-        return res.status(401).json({
-          success: false,
-          message: 'Vous devez être connecté pour utiliser un code promo'
-        });
-      }
+            if (!code || code.trim().length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Veuillez saisir un code promo valide'
+                });
+            }
 
-      if (!code || code.trim().length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Veuillez saisir un code promo valide'
-        });
-      }
+            const cleanCode = code.trim().toUpperCase();
 
-      // Nettoyer le code (majuscules, trim)
-      const cleanCode = code.trim().toUpperCase();
+            if (req.session.appliedPromo) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Un code promo est déjà appliqué. Veuillez le retirer avant d\'en appliquer un nouveau.'
+                });
+            }
 
-      // Vérifier si un code promo est déjà appliqué
-      if (req.session.appliedPromo) {
-        return res.status(400).json({
-          success: false,
-          message: 'Un code promo est déjà appliqué. Veuillez le retirer avant d\'en appliquer un nouveau.'
-        });
-      }
+            // ✅ VOTRE LOGIQUE DE VALIDATION EXISTANTE
+            const validCodes = {
+                'DALLA30': {
+                    id: 7,
+                    code: 'DALLA30',
+                    discount_percent: 20,
+                    discount_amount: null,
+                    discount_type: 'percentage',
+                    minimum_amount: 0,
+                    usage_limit: null,
+                    usage_count: 0,
+                    expiry_date: null,
+                    is_active: true,
+                    description: 'Code promo test - 20% de réduction'
+                },
+                'WELCOME10': {
+                    id: 1,
+                    code: 'WELCOME10',
+                    discount_percent: 10,
+                    discount_amount: null,
+                    discount_type: 'percentage',
+                    minimum_amount: 50,
+                    usage_limit: 100,
+                    usage_count: 5,
+                    expiry_date: '2025-12-31',
+                    is_active: true,
+                    description: 'Code de bienvenue - 10% de réduction'
+                }
+            };
 
-      // Récupérer le panier de l'utilisateur
-      const cartItems = await Cart.findAll({
-        where: { customer_id: userId },
-        include: [{ 
-          model: Jewel, 
-          as: 'jewel', 
-          required: true,
-          attributes: ['price_ttc']
-        }]
-      });
+            const promoCode = validCodes[cleanCode];
 
-      if (cartItems.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'Votre panier est vide. Ajoutez des articles avant d\'appliquer un code promo.'
-        });
-      }
+            if (!promoCode) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Code promo invalide ou expiré'
+                });
+            }
 
-      // Calculer le sous-total
-      const subtotal = cartItems.reduce((total, item) => 
-        total + (parseFloat(item.jewel.price_ttc) * item.quantity), 0);
+            // Vérifications (votre logique existante)
+            const cartItems = await Cart.findAll({
+                where: { customer_id: userId },
+                include: [{ 
+                    model: Jewel, 
+                    as: 'jewel', 
+                    required: true,
+                    attributes: ['price_ttc']
+                }]
+            });
 
-      // 🔧 SIMULATION : Code promo en dur pour les tests
-      // À remplacer par une vraie requête DB quand la table existe
-      const validCodes = {
-        'DALLA30': {
-          id: 7,
-          code: 'DALLA30',
-          discount_percent: 20,
-          discount_amount: null,
-          discount_type: 'percentage',
-          minimum_amount: 0,
-          usage_limit: null,
-          usage_count: 0,
-          expiry_date: null,
-          is_active: true,
-          description: 'Code promo test - 20% de réduction'
-        },
-        'WELCOME10': {
-          id: 1,
-          code: 'WELCOME10',
-          discount_percent: 10,
-          discount_amount: null,
-          discount_type: 'percentage',
-          minimum_amount: 50,
-          usage_limit: 100,
-          usage_count: 5,
-          expiry_date: '2025-12-31',
-          is_active: true,
-          description: 'Code de bienvenue - 10% de réduction'
-        },
-        'FIXED5': {
-          id: 2,
-          code: 'FIXED5',
-          discount_percent: null,
-          discount_amount: 5,
-          discount_type: 'fixed',
-          minimum_amount: 25,
-          usage_limit: null,
-          usage_count: 0,
-          expiry_date: null,
-          is_active: true,
-          description: 'Réduction fixe de 5€'
+            if (cartItems.length === 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Votre panier est vide. Ajoutez des articles avant d\'appliquer un code promo.'
+                });
+            }
+
+            const subtotal = cartItems.reduce((total, item) => 
+                total + (parseFloat(item.jewel.price_ttc) * item.quantity), 0);
+
+            if (promoCode.minimum_amount && subtotal < promoCode.minimum_amount) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Montant minimum de ${promoCode.minimum_amount}€ requis pour ce code promo`
+                });
+            }
+
+            // Application du code promo
+            req.session.appliedPromo = {
+                id: promoCode.id,
+                code: promoCode.code,
+                discountPercent: promoCode.discount_percent || 0,
+                discountAmount: promoCode.discount_amount || 0,
+                type: promoCode.discount_type,
+                description: promoCode.description
+            };
+
+            res.json({
+                success: true,
+                message: `Code promo "${cleanCode}" appliqué avec succès !`,
+                promo: req.session.appliedPromo
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur application code promo:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de l\'application du code promo'
+            });
         }
-      };
-
-      const promoCode = validCodes[cleanCode];
-
-      if (!promoCode) {
-        return res.status(404).json({
-          success: false,
-          message: 'Code promo invalide ou expiré'
-        });
-      }
-
-      // Vérifier la date d'expiration
-      const now = new Date();
-      if (promoCode.expiry_date && new Date(promoCode.expiry_date) < now) {
-        return res.status(400).json({
-          success: false,
-          message: 'Ce code promo a expiré'
-        });
-      }
-
-      // Vérifier le montant minimum
-      if (promoCode.minimum_amount && subtotal < promoCode.minimum_amount) {
-        return res.status(400).json({
-          success: false,
-          message: `Montant minimum de ${promoCode.minimum_amount}€ requis pour ce code promo`
-        });
-      }
-
-      // Vérifier limite d'usage
-      if (promoCode.usage_limit && promoCode.usage_count >= promoCode.usage_limit) {
-        return res.status(400).json({
-          success: false,
-          message: 'Ce code promo a atteint sa limite d\'utilisation'
-        });
-      }
-
-      // Calculer la réduction
-      let discount = 0;
-      if (promoCode.discount_type === 'percentage') {
-        discount = (subtotal * promoCode.discount_percent) / 100;
-      } else if (promoCode.discount_type === 'fixed') {
-        discount = Math.min(promoCode.discount_amount, subtotal);
-      }
-
-      // Appliquer le code promo en session
-      req.session.appliedPromo = {
-        id: promoCode.id,
-        code: promoCode.code,
-        discountPercent: promoCode.discount_percent || 0,
-        discountAmount: promoCode.discount_amount || 0,
-        type: promoCode.discount_type,
-        description: promoCode.description
-      };
-
-      console.log('✅ Code promo appliqué:', req.session.appliedPromo);
-
-      res.json({
-        success: true,
-        message: `Code promo "${cleanCode}" appliqué avec succès !`,
-        promo: req.session.appliedPromo
-      });
-
-    } catch (error) {
-      console.error('❌ Erreur application code promo:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur lors de l\'application du code promo'
-      });
-    }
-  },
+    },
 
   /**
    * 🗑️ Retirer un code promo
@@ -1021,112 +955,164 @@ async validateOrderAndSave(req, res) {
    */
 // Correction pour orderController.js - Support invités
 
-async renderOrderSummary(req, res) {
-    try {
-        console.log('🛒 Accès à /commande avec support invités');
-        
-        // ✅ SUPPORT INVITÉS : Vérifier utilisateur connecté OU session invité
-        const userId = req.session?.user?.id || req.session?.customerId;
-        const isGuest = !req.session?.user && !req.session?.customerId;
-        
-        console.log('🆔 User ID:', userId, 'Invité:', isGuest);
-        
-        let cartItems = [];
-        
-        if (userId) {
-            // Utilisateur connecté - récupérer depuis la DB
-            cartItems = await Cart.findAll({
-                where: { customer_id: userId },
-                include: [{ 
-                    model: Jewel, 
-                    as: 'jewel', 
-                    required: true,
-                    attributes: ['id', 'name', 'description', 'price_ttc', 'image', 'slug']
-                }]
-            });
+ async renderOrderSummary(req, res) {
+        try {
+            console.log('🛒 Accès récapitulatif commande avec tailles');
             
-            cartItems = cartItems.map(item => ({
-                id: item.id,
-                jewelId: item.jewel.id,
-                jewel: item.jewel,
-                quantity: parseInt(item.quantity) || 1,
-                price: parseFloat(item.jewel.price_ttc) || 0,
-                itemTotal: (parseFloat(item.jewel.price_ttc) || 0) * (parseInt(item.quantity) || 1)
-            }));
+            // Support des utilisateurs connectés ET invités
+            const userId = req.session?.user?.id || req.session?.customerId;
+            const isGuest = !req.session?.user && !req.session?.customerId;
             
-        } else {
-            // Invité - récupérer depuis la session
-            const sessionCart = req.session.cart || { items: [] };
+            let cartItems = [];
             
-            for (const item of sessionCart.items) {
-                if (item.jewel && item.jewel.id) {
-                    // Vérifier que le bijou existe encore
-                    const currentJewel = await Jewel.findByPk(item.jewel.id);
-                    if (currentJewel) {
-                        cartItems.push({
-                            jewelId: currentJewel.id,
-                            jewel: currentJewel,
-                            quantity: parseInt(item.quantity) || 1,
-                            price: parseFloat(currentJewel.price_ttc) || 0,
-                            itemTotal: (parseFloat(currentJewel.price_ttc) || 0) * (parseInt(item.quantity) || 1)
+            if (userId) {
+                // ✅ RÉCUPÉRATION DEPUIS BDD AVEC TAILLES
+                const dbCartItems = await Cart.findAll({
+                    where: { customer_id: userId },
+                    include: [{ 
+                        model: Jewel, 
+                        as: 'jewel', 
+                        required: true,
+                        attributes: ['id', 'name', 'description', 'price_ttc', 'image', 'slug', 'tailles', 'stock', 'matiere', 'carat', 'poids']
+                    }],
+                    // ✅ INCLURE LA COLONNE SIZE que vous avez ajoutée
+                    attributes: ['id', 'customer_id', 'jewel_id', 'quantity', 'size', 'added_at']
+                });
+                
+                cartItems = dbCartItems.map(item => {
+                    const jewelData = item.jewel.toJSON();
+                    
+                    // Parser les tailles disponibles du bijou
+                    if (typeof jewelData.tailles === 'string') {
+                        try {
+                            jewelData.tailles = JSON.parse(jewelData.tailles);
+                        } catch (error) {
+                            jewelData.tailles = [];
+                        }
+                    }
+                    if (!Array.isArray(jewelData.tailles)) {
+                        jewelData.tailles = [];
+                    }
+                    
+                    const quantity = parseInt(item.quantity) || 1;
+                    const price = parseFloat(jewelData.price_ttc) || 0;
+                    const itemTotal = price * quantity;
+
+                    return {
+                        id: item.id,
+                        jewelId: jewelData.id,
+                        jewel: jewelData,
+                        quantity: quantity,
+                        price: price,
+                        itemTotal: itemTotal,
+                        size: item.size // ✅ TAILLE SÉLECTIONNÉE DEPUIS LA BDD
+                    };
+                });
+                
+            } else {
+                // ✅ RÉCUPÉRATION DEPUIS SESSION AVEC TAILLES
+                const sessionCart = req.session.cart || { items: [] };
+                
+                for (const item of sessionCart.items) {
+                    if (item.jewel && item.jewel.id) {
+                        const currentJewel = await Jewel.findByPk(item.jewel.id, {
+                            attributes: ['id', 'name', 'description', 'price_ttc', 'image', 'slug', 'tailles', 'stock', 'matiere', 'carat', 'poids']
                         });
+                        
+                        if (currentJewel) {
+                            const jewelData = currentJewel.toJSON();
+                            
+                            // Parser les tailles
+                            if (typeof jewelData.tailles === 'string') {
+                                try {
+                                    jewelData.tailles = JSON.parse(jewelData.tailles);
+                                } catch (error) {
+                                    jewelData.tailles = [];
+                                }
+                            }
+                            if (!Array.isArray(jewelData.tailles)) {
+                                jewelData.tailles = [];
+                            }
+                            
+                            const quantity = Math.min(parseInt(item.quantity) || 1, currentJewel.stock);
+                            const price = parseFloat(jewelData.price_ttc) || 0;
+                            const itemTotal = price * quantity;
+
+                            cartItems.push({
+                                jewelId: jewelData.id,
+                                jewel: jewelData,
+                                quantity: quantity,
+                                price: price,
+                                itemTotal: itemTotal,
+                                size: item.size // ✅ TAILLE DEPUIS LA SESSION
+                            });
+                        }
                     }
                 }
             }
+            
+            console.log(`📦 Articles trouvés: ${cartItems.length}`);
+            
+            if (cartItems.length === 0) {
+                req.flash('error', 'Votre panier est vide. Ajoutez des articles avant de continuer.');
+                return res.redirect('/panier');
+            }
+            
+            // ✅ RÉCUPÉRER LE CODE PROMO (VOTRE LOGIQUE EXISTANTE)
+            const appliedPromo = req.session.appliedPromo || null;
+            
+            // ✅ CALCULS AVEC VOTRE FONCTION EXISTANTE
+            const totals = calculateOrderTotals(cartItems, appliedPromo);
+            
+            // ✅ DONNÉES POUR LE TEMPLATE (compatibles avec votre vue cart)
+            const templateData = {
+                title: 'Récapitulatif de commande',
+                
+                // 🛒 STRUCTURE CART (format de votre vue panier)
+                cart: {
+                    items: cartItems,
+                    totalPrice: totals.subtotal
+                },
+                
+                // 📦 Variables individuelles (compatibilité)
+                cartItems: cartItems,
+                totalPrice: totals.subtotal.toFixed(2),
+                
+                // 💰 Totaux financiers (noms identiques à votre cart)
+                subtotal: totals.subtotal,
+                discount: totals.discount,
+                discountedSubtotal: totals.discountedSubtotal,
+                shippingFee: totals.deliveryFee,
+                deliveryFee: totals.deliveryFee, // Alias
+                finalTotal: totals.finalTotal,
+                
+                // 🎫 Code promo (format identique)
+                appliedPromo: totals.appliedPromo ? {
+                    code: totals.appliedPromo.code,
+                    discountPercent: parseFloat(totals.appliedPromo.discountPercent)
+                } : null,
+                
+                // 👤 Utilisateur
+                user: req.session.user || null,
+                isAuthenticated: !!req.session.user,
+                isGuest: isGuest,
+                
+                // 🎯 Autres données nécessaires
+                currentYear: new Date().getFullYear(),
+                recommendations: [] // Vide pour le moment
+            };
+
+            console.log('📄 Rendu template summary avec structure cart identique');
+            
+            // ✅ UTILISER LA VUE SUMMARY (qui aura la même structure que cart)
+            res.render('summary', templateData);
+            
+        } catch (error) {
+            console.error('❌ Erreur renderOrderSummary:', error);
+            req.flash('error', 'Erreur lors du chargement du récapitulatif');
+            res.redirect('/panier');
         }
-        
-        console.log(`📦 Articles trouvés: ${cartItems.length}`);
-        
-        if (cartItems.length === 0) {
-            console.log('❌ Panier vide');
-            req.flash('error', 'Votre panier est vide. Ajoutez des articles avant de continuer.');
-            return res.redirect('/panier');
-        }
-        
-        // 🎯 RÉCUPÉRER LE CODE PROMO DE LA SESSION
-        const appliedPromo = req.session.appliedPromo || null;
-        console.log('🎫 Code promo en session:', appliedPromo);
-        
-        // ⚡ CALCULER LES TOTAUX AVEC LE CODE PROMO
-        const totals = calculateOrderTotals(cartItems, appliedPromo);
-        
-        console.log('💰 Totaux calculés:', {
-            subtotal: totals.subtotal,
-            discount: totals.discount,
-            discountedSubtotal: totals.discountedSubtotal,
-            deliveryFee: totals.deliveryFee,
-            finalTotal: totals.finalTotal
-        });
-
-        // Variables pour le template
-        const templateData = {
-            title: 'Récapitulatif de commande',
-            cartItems: cartItems,
-            subtotal: totals.subtotal,
-            discount: totals.discount,
-            discountedSubtotal: totals.discountedSubtotal,
-            deliveryFee: totals.deliveryFee,
-            finalTotal: totals.finalTotal,
-            appliedPromo: totals.appliedPromo,
-            user: req.session.user || null,
-            isAuthenticated: !!req.session.user,
-            isGuest: isGuest,
-            currentYear: new Date().getFullYear()
-        };
-
-        console.log('📄 Rendu template avec support invités');
-        
-        // ✅ Utiliser le bon template (commande ou summary selon votre structure)
-        res.render('commande', templateData);
-        
-    } catch (error) {
-        console.error('❌ Erreur dans renderOrderSummary:', error);
-        console.error('Stack:', error.stack);
-        req.flash('error', 'Une erreur est survenue lors du chargement du récapitulatif');
-        res.redirect('/panier');
-    }
-},
-
+    },
 /**
  * Sauvegarder les informations client (compatible invités)
  */
@@ -1234,128 +1220,141 @@ async saveCustomerInfo(req, res) {
     }
   },
 
-  async renderPaymentDynamicPage(req, res) {
-    try {
-      // Appeler directement la fonction renderOrderSummary
-      return await this.renderOrderSummary(req, res);
-    } catch (error) {
-      console.error('❌ Erreur dans renderPaymentDynamicPage:', error);
-      res.redirect('/panier');
-    }
-  },
 
-  async renderCustomerForm(req, res) {
-    try {
-      console.log('📝 Accès formulaire informations client');
-      
-      if (!req.session?.user) {
-        return res.redirect('/connexion-inscription');
-      }
 
-      const userId = req.session.user.id || req.session.customerId;
-      
-      // Sync du panier depuis la DB (même logique que renderOrderSummary)
-      const cartItems = await Cart.findAll({
-        where: { customer_id: userId },
-        include: [{ 
-          model: Jewel, 
-          as: 'jewel', 
-          required: true,
-          attributes: ['id', 'name', 'description', 'price_ttc', 'image', 'slug']
-        }]
-      });
-      
-      if (cartItems.length === 0) {
-        req.flash('error', 'Votre panier est vide. Ajoutez des articles avant de continuer.');
-        return res.redirect('/panier');
-      }
-      
-      // Construire les données du panier
-      let subtotal = 0;
-      let itemCount = 0;
-      
-      const processedCartItems = cartItems.map(item => {
-        const quantity = parseInt(item.quantity) || 1;
-        const price = parseFloat(item.jewel.price_ttc) || 0;
-        const itemTotal = price * quantity;
-        
-        subtotal += itemTotal;
-        itemCount += quantity;
-        
-        return {
-          id: item.id,
-          jewelId: item.jewel.id,
-          jewel: {
-            id: item.jewel.id,
-            name: item.jewel.name,
-            description: item.jewel.description || '',
-            price_ttc: price,
-            image: item.jewel.image,
-            slug: item.jewel.slug
-          },
-          quantity: quantity,
-          price: price,
-          itemTotal: itemTotal
-        };
-      });
-      
-      const deliveryFee = subtotal >= 50 ? 0 : 5.99;
-      const total = subtotal + deliveryFee;
+async renderCustomerForm(req, res) {
+        try {
+            console.log('📝 Formulaire informations client');
+            
+            if (!req.session?.user) {
+                return res.redirect('/connexion-inscription');
+            }
 
-      // Données pour le template (identique à renderOrderSummary)
-      const templateData = {
-        title: 'Informations de livraison',
-        cartItems: processedCartItems,
-        subtotal: subtotal,
-        deliveryFee: deliveryFee,
-        total: total,
-        shippingFee: deliveryFee,
-        finalTotal: total,
-        totalPrice: subtotal,
-        itemCount: itemCount,
-        cart: {
-          items: processedCartItems,
-          totalPrice: subtotal,
-          itemCount: itemCount
-        },
-        user: req.session.user,
-        isAuthenticated: true,
-        currentYear: new Date().getFullYear(),
-        // Informations client préremplies
-        customerInfo: req.session.customerInfo || {
-          firstName: req.session.user.first_name || '',
-          lastName: req.session.user.last_name || '',
-          email: req.session.user.email || '',
-          phone: req.session.user.phone || '',
-          address: req.session.user.address || ''
+            const userId = req.session.user.id || req.session.customerId;
+            
+            // ✅ MÊME LOGIQUE QUE renderOrderSummary pour les données
+            const cartItems = await Cart.findAll({
+                where: { customer_id: userId },
+                include: [{ 
+                    model: Jewel, 
+                    as: 'jewel', 
+                    required: true,
+                    attributes: ['id', 'name', 'description', 'price_ttc', 'image', 'slug', 'tailles', 'stock', 'matiere', 'carat', 'poids']
+                }],
+                attributes: ['id', 'customer_id', 'jewel_id', 'quantity', 'size', 'added_at']
+            });
+            
+            if (cartItems.length === 0) {
+                req.flash('error', 'Votre panier est vide. Ajoutez des articles avant de continuer.');
+                return res.redirect('/panier');
+            }
+            
+            // Traitement identique des articles avec tailles
+            const processedCartItems = cartItems.map(item => {
+                const jewelData = item.jewel.toJSON();
+                
+                // Parser tailles
+                if (typeof jewelData.tailles === 'string') {
+                    try {
+                        jewelData.tailles = JSON.parse(jewelData.tailles);
+                    } catch (error) {
+                        jewelData.tailles = [];
+                    }
+                }
+                if (!Array.isArray(jewelData.tailles)) {
+                    jewelData.tailles = [];
+                }
+                
+                const quantity = parseInt(item.quantity) || 1;
+                const price = parseFloat(jewelData.price_ttc) || 0;
+                const itemTotal = price * quantity;
+                
+                return {
+                    id: item.id,
+                    jewelId: jewelData.id,
+                    jewel: jewelData,
+                    quantity: quantity,
+                    price: price,
+                    itemTotal: itemTotal,
+                    size: item.size // ✅ CONSERVER LA TAILLE
+                };
+            });
+            
+            // Calculs avec code promo
+            const appliedPromo = req.session.appliedPromo || null;
+            const totals = calculateOrderTotals(processedCartItems, appliedPromo);
+
+            // ✅ DONNÉES IDENTIQUES AU RÉCAPITULATIF + infos client
+            const templateData = {
+                title: 'Informations de livraison',
+                
+                // Structure cart identique
+                cart: {
+                    items: processedCartItems,
+                    totalPrice: totals.subtotal
+                },
+                cartItems: processedCartItems,
+                totalPrice: totals.subtotal.toFixed(2),
+                
+                // Totaux identiques
+                subtotal: totals.subtotal,
+                discount: totals.discount,
+                discountedSubtotal: totals.discountedSubtotal,
+                shippingFee: totals.deliveryFee,
+                deliveryFee: totals.deliveryFee,
+                finalTotal: totals.finalTotal,
+                
+                // Code promo identique
+                appliedPromo: totals.appliedPromo ? {
+                    code: totals.appliedPromo.code,
+                    discountPercent: parseFloat(totals.appliedPromo.discountPercent)
+                } : null,
+                
+                // Utilisateur + préremplissage
+                user: req.session.user,
+                isAuthenticated: true,
+                customerInfo: req.session.customerInfo || {
+                    firstName: req.session.user.first_name || '',
+                    lastName: req.session.user.last_name || '',
+                    email: req.session.user.email || '',
+                    phone: req.session.user.phone || '',
+                    address: req.session.user.address || ''
+                },
+                
+                currentYear: new Date().getFullYear(),
+                recommendations: []
+            };
+
+            // ✅ MÊME VUE SUMMARY mais avec des données enrichies pour le formulaire
+            res.render('summary', templateData);
+            
+        } catch (error) {
+            console.error('❌ Erreur formulaire client:', error);
+            req.flash('error', 'Erreur lors du chargement du formulaire');
+            res.redirect('/panier');
         }
-      };
+    },
 
-      // 🔥 UTILISER LA MÊME VUE QUE LE RÉCAPITULATIF
-      res.render('summary', templateData);
-      
-    } catch (error) {
-      console.error('❌ Erreur formulaire client:', error);
-      req.flash('error', 'Erreur lors du chargement du formulaire');
-      res.redirect('/panier');
-    }
-  },
+ async renderPaymentDynamicPage(req, res) {
+        try {
+            return await this.renderOrderSummary(req, res);
+        } catch (error) {
+            console.error('❌ Erreur renderPaymentDynamicPage:', error);
+            res.redirect('/panier');
+        }
+    },
 
-  async renderPaymentPage(req, res) {
-    try {
-      console.log('💳 Redirection vers récapitulatif pour paiement');
-      
-      if (!req.session?.user) {
-        return res.redirect('/connexion-inscription');
-      }
-      
-      return res.redirect('/commande/recapitulatif');
-      
-    } catch (error) {
-      console.error('❌ Erreur:', error);
-      res.redirect('/panier');
-    }
-  },
+    async renderPaymentPage(req, res) {
+        try {
+            if (!req.session?.user) {
+                return res.redirect('/connexion-inscription');
+            }
+            return res.redirect('/commande/recapitulatif');
+        } catch (error) {
+            console.error('❌ Erreur:', error);
+            res.redirect('/panier');
+        }
+    },
 
 
 

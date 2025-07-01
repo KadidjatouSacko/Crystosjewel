@@ -35,6 +35,34 @@ function translateStatus(status) {
     };
     return statusMap[normalizedStatus] || 'En attente';
 }
+
+// ✅ FONCTION POUR RÉCUPÉRER LES TAILLES DEPUIS LA BASE DE DONNÉES
+function getTaillesFromOrder(commande) {
+    // Cette fonction sera alimentée par le contrôleur admin
+    return commande.sizesInfo || null;
+}
+
+// ✅ FONCTION POUR FORMATTER L'AFFICHAGE DES TAILLES
+function formatSizesDisplay(sizesInfo) {
+    if (!sizesInfo || !sizesInfo.hasSizeInfo) {
+        return 'Non spécifiées';
+    }
+    
+    return sizesInfo.sizesDisplay || 'Tailles standards';
+}
+
+// ✅ FONCTION POUR OBTENIR L'INDICATEUR DE COUVERTURE
+function getSizesCoverageIndicator(sizesInfo) {
+    if (!sizesInfo || sizesInfo.totalItems === 0) {
+        return '❓ En développement';
+    }
+    
+    const coverage = sizesInfo.sizesCoverage || 0;
+    if (coverage === 100) return '🎯 Complète';
+    if (coverage > 50) return '📏 Partielle';
+    if (coverage > 0) return '📐 Limitée';
+    return '❓ Aucune';
+}
 %>
 <head>
     <meta charset="UTF-8">
@@ -923,6 +951,167 @@ function translateStatus(status) {
 .sizes-info:hover .size-coverage {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
+
+     :root {
+            --primary: #E8B4B8;
+            --primary-dark: #B8868A;
+            --primary-light: #F5D7DA;
+            --secondary: #FDF9F6;
+            --accent: #D4A5A9;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --info: #3b82f6;
+            --dark: #1f2937;
+            --gray-light: #f8fafc;
+            --gray-medium: #64748b;
+            --white: #ffffff;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+            --radius-lg: 12px;
+            --transition: all 0.2s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--gray-light);
+            color: var(--dark);
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        /* Styles existants... (conservez tout le CSS existant) */
+        
+        /* ✅ STYLES CORRIGÉS POUR LA COLONNE TAILLES */
+        .sizes-info {
+            min-width: 140px;
+            max-width: 180px;
+        }
+
+        .sizes-summary {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .sizes-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .size-coverage {
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
+            font-weight: 600;
+            border: 1px solid rgba(0,0,0,0.1);
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+
+        /* ✅ COULEURS SELON LA COUVERTURE */
+        .size-coverage.full-coverage {
+            background: #dcfce7 !important;
+            color: #065f46 !important;
+            border-color: #10b981;
+        }
+
+        .size-coverage.partial-coverage {
+            background: #fef3c7 !important;
+            color: #92400e !important;
+            border-color: #f59e0b;
+        }
+
+        .size-coverage.limited-coverage {
+            background: #fecaca !important;
+            color: #991b1b !important;
+            border-color: #ef4444;
+        }
+
+        .size-coverage.no-coverage {
+            background: #f1f5f9 !important;
+            color: #64748b !important;
+            border-color: #cbd5e1;
+        }
+
+        /* ✅ INDICATEUR VISUEL DU DÉVELOPPEMENT */
+        .development-indicator {
+            color: var(--gray-medium);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-style: italic;
+        }
+
+        .development-indicator i {
+            opacity: 0.5;
+        }
+
+        /* ✅ ANIMATION POUR LES ÉLÉMENTS DE TAILLE */
+        .sizes-info:hover {
+            transform: scale(1.02);
+            transition: transform 0.2s ease;
+        }
+
+        .sizes-info:hover .size-coverage {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Responsive pour la colonne tailles */
+        @media (max-width: 1200px) {
+            .sizes-info {
+                min-width: 120px;
+                max-width: 140px;
+            }
+            
+            .sizes-summary {
+                font-size: 0.8rem;
+            }
+            
+            .sizes-meta span {
+                font-size: 0.65rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            /* La colonne tailles sera masquée sur mobile et affichée dans les cartes */
+            .table th:nth-child(6),
+            .table td:nth-child(6) {
+                display: none;
+            }
+        }
+
+        /* Amélioration pour les cartes mobiles */
+        .sizes-card-info {
+            background: rgba(243, 244, 246, 0.7);
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-top: 8px;
+        }
+
+        .sizes-card-info .sizes-label {
+            font-weight: 600;
+            color: var(--info);
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+        }
     </style>
 </head>
 <body>
@@ -1161,231 +1350,260 @@ function translateStatus(status) {
                 <th>Actions</th>
             </tr>
         </thead>
-        <tbody id="commandesTableBody">
+ <tbody id="commandesTableBody">
+                    <% if (commandes && commandes.length > 0) { %>
+                        <% commandes.forEach(commande => { %>
+                            <tr data-order-id="<%= commande.id %>" 
+                                data-status="<%= commande.status %>"
+                                data-promo="<%= commande.promo_code ? 'with-promo' : 'without-promo' %>"
+                                data-date="<%= commande.date %>">
+                                
+                                <!-- Colonnes existantes... -->
+                                <td>
+                                    <div class="order-number">
+                                        <%= commande.numero_commande || 'CMD-' + commande.id %>
+                                    </div>
+                                    <% if (commande.trackingNumber) { %>
+                                        <small style="color: var(--gray-medium);">
+                                            📦 <%= commande.trackingNumber %>
+                                        </small>
+                                    <% } %>
+                                </td>
+                                
+                                <td>
+                                    <div><%= commande.date %></div>
+                                    <% if (commande.dateTime) { %>
+                                        <small style="color: var(--gray-medium);">
+                                            <%= commande.dateTime.split(' ')[1] %>
+                                        </small>
+                                    <% } %>
+                                </td>
+                                
+                                <td>
+                                    <div class="customer-info">
+                                        <div class="customer-name"><%= commande.customerName %></div>
+                                        <% if (commande.customerEmail && commande.customerEmail !== 'N/A') { %>
+                                            <div class="customer-email"><%= commande.customerEmail %></div>
+                                        <% } %>
+                                    </div>
+                                </td>
+                                
+                                <td>
+                                    <div class="amount">
+                                        <%= (commande.amount || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
+                                    </div>
+                                    <% if (commande.discount_amount && commande.discount_amount > 0) { %>
+                                        <small class="discount-amount">
+                                            -<%= commande.discount_amount.toFixed(2) %>€
+                                        </small>
+                                    <% } %>
+                                </td>
+                                
+                                <td>
+                                    <% if (commande.promo_code) { %>
+                                        <div class="promo-info">
+                                            <i class="fas fa-tag"></i>
+                                            <%= commande.promo_code %>
+                                        </div>
+                                        <% if (commande.discount_percent) { %>
+                                            <small style="color: var(--success); font-weight: 500;">
+                                                -<%= commande.discount_percent %>%
+                                            </small>
+                                        <% } %>
+                                    <% } else { %>
+                                        <span style="color: var(--gray-medium); font-size: 0.8rem;">
+                                            Aucun
+                                        </span>
+                                    <% } %>
+                                </td>
+                                
+                                <!-- ✅ COLONNE TAILLES CORRIGÉE -->
+                                <td>
+                                    <% 
+                                    // Récupérer les informations de tailles de la commande
+                                    const sizesInfo = commande.sizesInfo || getTaillesFromOrder(commande);
+                                    %>
+                                    
+                                    <% if (sizesInfo && sizesInfo.hasSizeInfo) { %>
+                                        <div class="sizes-info">
+                                            <div class="sizes-summary">
+                                                <i class="fas fa-ruler" style="color: var(--info); margin-right: 4px;"></i>
+                                                <%= formatSizesDisplay(sizesInfo) %>
+                                            </div>
+                                            <div class="sizes-meta">
+                                                <!-- ✅ Indicateur de couverture avec couleurs -->
+                                                <% 
+                                                const coverage = sizesInfo.sizesCoverage || 0;
+                                                let coverageClass = 'no-coverage';
+                                                if (coverage === 100) coverageClass = 'full-coverage';
+                                                else if (coverage > 50) coverageClass = 'partial-coverage';
+                                                else if (coverage > 0) coverageClass = 'limited-coverage';
+                                                %>
+                                                <span class="size-coverage <%= coverageClass %>">
+                                                    <%= sizesInfo.itemsWithSizes %>/<%= sizesInfo.totalItems %>
+                                                </span>
+                                                <!-- Badge indicateur -->
+                                                <span style="font-size: 0.7rem; opacity: 0.8;">
+                                                    <%= getSizesCoverageIndicator(sizesInfo) %>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    <% } else { %>
+                                        <div class="development-indicator">
+                                            <i class="fas fa-cog"></i>
+                                            En développement
+                                        </div>
+                                    <% } %>
+                                </td>
+                                
+                                <td>
+                                    <span class="status <%= getStatusClass(commande.status) %>">
+                                        <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
+                                        <%= translateStatus(commande.status) %>
+                                    </span>
+                                </td>
+                                
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="action-btn view" 
+                                                onclick="viewOrderDetails('<%= commande.id %>')"
+                                                title="Voir les détails">
+                                            <i class="fas fa-eye"></i>
+                                        </button>
+                                        <button class="action-btn edit" 
+                                                onclick="editOrder('<%= commande.id %>')"
+                                                title="Modifier">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr id="no-data-row">
+                            <td colspan="8" class="empty-state"> <!-- ✅ COLSPAN = 8 colonnes -->
+                                <i class="fas fa-inbox"></i>
+                                <div>Aucune commande trouvée</div>
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+
+            <!-- Mobile Cards -->
+ <div class="mobile-cards" id="mobileCards">
             <% if (commandes && commandes.length > 0) { %>
                 <% commandes.forEach(commande => { %>
-                    <tr data-order-id="<%= commande.id %>" 
-                        data-status="<%= commande.status %>"
-                        data-promo="<%= commande.promo_code ? 'with-promo' : 'without-promo' %>"
-                        data-date="<%= commande.date %>">
-                        <td>
+                    <div class="order-card" 
+                         data-order-id="<%= commande.id %>" 
+                         data-status="<%= commande.status %>"
+                         data-promo="<%= commande.promo_code ? 'with-promo' : 'without-promo' %>"
+                         data-date="<%= commande.date %>">
+                        
+                        <!-- Header et body existants... -->
+                        <div class="order-card-header">
                             <div class="order-number">
                                 <%= commande.numero_commande || 'CMD-' + commande.id %>
                             </div>
-                            <% if (commande.trackingNumber) { %>
-                                <small style="color: var(--gray-medium);">
-                                    📦 <%= commande.trackingNumber %>
-                                </small>
-                            <% } %>
-                        </td>
-                        <td>
-                            <div><%= commande.date %></div>
-                            <% if (commande.dateTime) { %>
-                                <small style="color: var(--gray-medium);">
-                                    <%= commande.dateTime.split(' ')[1] %>
-                                </small>
-                            <% } %>
-                        </td>
-                        <td>
-                            <div class="customer-info">
-                                <div class="customer-name"><%= commande.customerName %></div>
-                                <% if (commande.customerEmail && commande.customerEmail !== 'N/A') { %>
-                                    <div class="customer-email"><%= commande.customerEmail %></div>
-                                <% } %>
-                            </div>
-                        </td>
-                        <td>
-                            <div class="amount">
-                                <%= (commande.amount || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
-                            </div>
-                            <% if (commande.discount_amount && commande.discount_amount > 0) { %>
-                                <small class="discount-amount">
-                                    -<%= commande.discount_amount.toFixed(2) %>€
-                                </small>
-                            <% } %>
-                        </td>
-                        <td>
-                            <% if (commande.promo_code) { %>
-                                <div class="promo-info">
-                                    <i class="fas fa-tag"></i>
-                                    <%= commande.promo_code %>
-                                </div>
-                                <% if (commande.discount_percent) { %>
-                                    <small style="color: var(--success); font-weight: 500;">
-                                        -<%= commande.discount_percent %>%
-                                    </small>
-                                <% } %>
-                            <% } else { %>
-                                <span style="color: var(--gray-medium); font-size: 0.8rem;">
-                                    Aucun
-                                </span>
-                            <% } %>
-                        </td>
-                        <!-- ✅ NOUVELLE COLONNE TAILLES -->
-                        <td>
-    <% if (commande.sizesInfo && commande.sizesInfo.hasSizeInfo) { %>
-        <div class="sizes-info">
-            <div class="sizes-summary" style="font-size: 0.85rem; margin-bottom: 4px;">
-                <i class="fas fa-ruler" style="color: var(--info); margin-right: 4px;"></i>
-                <%= commande.sizesInfo.sizesDisplay %>
-            </div>
-            <div class="sizes-meta" style="display: flex; align-items: center; gap: 8px;">
-                <!-- Indicateur de couverture -->
-                <span class="size-coverage" style="font-size: 0.75rem; padding: 2px 6px; border-radius: 12px; 
-                      background: <%= commande.sizesInfo.sizesCoverage === 100 ? '#dcfce7' : commande.sizesInfo.sizesCoverage > 50 ? '#fef3c7' : '#fecaca' %>;
-                      color: <%= commande.sizesInfo.sizesCoverage === 100 ? '#065f46' : commande.sizesInfo.sizesCoverage > 50 ? '#92400e' : '#991b1b' %>;">
-                    <%= commande.sizesInfo.itemsWithSizes %>/<%= commande.sizesInfo.totalItems %>
-                </span>
-                <!-- Badge indicateur -->
-                <span style="font-size: 0.7rem; opacity: 0.8;">
-                    <% 
-                    // Helper local pour les tailles
-                    let indicator = '';
-                    if (commande.sizesInfo.sizesCoverage === 100) indicator = '🎯 Complète';
-                    else if (commande.sizesInfo.sizesCoverage > 50) indicator = '📏 Partielle';
-                    else if (commande.sizesInfo.sizesCoverage > 0) indicator = '📐 Limitée';
-                    else indicator = '❓ Aucune';
-                    %>
-                    <%= indicator %>
-                </span>
-            </div>
-        </div>
-    <% } else { %>
-        <span style="color: var(--gray-medium); font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
-            <i class="fas fa-cog" style="opacity: 0.5;"></i>
-            🔧 En développement
-        </span>
-    <% } %>
-</td>
-                        <td>
                             <span class="status <%= getStatusClass(commande.status) %>">
-                                <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
                                 <%= translateStatus(commande.status) %>
                             </span>
-                        </td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="action-btn view" 
-                                        onclick="viewOrderDetails('<%= commande.id %>')"
-                                        title="Voir les détails">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="action-btn edit" 
-                                        onclick="editOrder('<%= commande.id %>')"
-                                        title="Modifier">
-                                    <i class="fas fa-edit"></i>
-                                </button>
+                        </div>
+                        
+                        <div class="order-card-body">
+                            <!-- Champs existants... -->
+                            <div class="order-card-field">
+                                <div class="order-card-label">Date</div>
+                                <div class="order-card-value"><%= commande.date %></div>
                             </div>
-                        </td>
-                    </tr>
+                            <div class="order-card-field">
+                                <div class="order-card-label">Client</div>
+                                <div class="order-card-value"><%= commande.customerName %></div>
+                            </div>
+                            <div class="order-card-field">
+                                <div class="order-card-label">Montant</div>
+                                <div class="order-card-value amount">
+                                    <%= (commande.amount || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
+                                    <% if (commande.discount_amount && commande.discount_amount > 0) { %>
+                                        <br><small class="discount-amount">-<%= commande.discount_amount.toFixed(2) %>€</small>
+                                    <% } %>
+                                </div>
+                            </div>
+                            <div class="order-card-field">
+                                <div class="order-card-label">Code Promo</div>
+                                <div class="order-card-value">
+                                    <% if (commande.promo_code) { %>
+                                        <span class="promo-info">
+                                            <%= commande.promo_code %>
+                                        </span>
+                                    <% } else { %>
+                                        <span style="color: var(--gray-medium);">Aucun</span>
+                                    <% } %>
+                                </div>
+                            </div>
+                            
+                            <!-- ✅ SECTION TAILLES AMÉLIORÉE POUR MOBILE -->
+                            <div class="order-card-field" style="grid-column: 1 / -1;">
+                                <div class="order-card-label">
+                                    <i class="fas fa-ruler"></i> Tailles commandées
+                                </div>
+                                <div class="order-card-value">
+                                    <% 
+                                    const mobileSizesInfo = commande.sizesInfo || getTaillesFromOrder(commande);
+                                    %>
+                                    
+                                    <% if (mobileSizesInfo && mobileSizesInfo.hasSizeInfo) { %>
+                                        <div class="sizes-card-info">
+                                            <div class="sizes-label">
+                                                <%= formatSizesDisplay(mobileSizesInfo) %>
+                                            </div>
+                                            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+                                                <% 
+                                                const mobileCoverage = mobileSizesInfo.sizesCoverage || 0;
+                                                let mobileCoverageClass = 'no-coverage';
+                                                if (mobileCoverage === 100) mobileCoverageClass = 'full-coverage';
+                                                else if (mobileCoverage > 50) mobileCoverageClass = 'partial-coverage';
+                                                else if (mobileCoverage > 0) mobileCoverageClass = 'limited-coverage';
+                                                %>
+                                                <span class="size-coverage <%= mobileCoverageClass %>">
+                                                    <%= mobileSizesInfo.itemsWithSizes %>/<%= mobileSizesInfo.totalItems %>
+                                                </span>
+                                                <span style="font-size: 0.7rem; opacity: 0.8;">
+                                                    <%= getSizesCoverageIndicator(mobileSizesInfo) %>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    <% } else { %>
+                                        <div class="development-indicator">
+                                            <i class="fas fa-question-circle"></i>
+                                            Gestion des tailles en cours de développement
+                                        </div>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="order-card-actions">
+                            <button class="action-btn view" 
+                                    onclick="viewOrderDetails('<%= commande.id %>')">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="action-btn edit" 
+                                    onclick="editOrder('<%= commande.id %>')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        </div>
+                    </div>
                 <% }) %>
             <% } else { %>
-                <tr id="no-data-row">
-                    <td colspan="8" class="empty-state"> <!-- ✅ COLSPAN MODIFIÉ POUR 8 COLONNES -->
-                        <i class="fas fa-inbox"></i>
-                        <div>Aucune commande trouvée</div>
-                    </td>
-                </tr>
+                <div class="empty-state">
+                    <i class="fas fa-inbox"></i>
+                    <div>Aucune commande trouvée</div>
+                </div>
             <% } %>
-        </tbody>
-    </table>
-</div>
-
-            <!-- Mobile Cards -->
-            <div class="mobile-cards" id="mobileCards">
-    <% if (commandes && commandes.length > 0) { %>
-        <% commandes.forEach(commande => { %>
-            <div class="order-card" 
-                 data-order-id="<%= commande.id %>" 
-                 data-status="<%= commande.status %>"
-                 data-promo="<%= commande.promo_code ? 'with-promo' : 'without-promo' %>"
-                 data-date="<%= commande.date %>">
-                <div class="order-card-header">
-                    <div class="order-number">
-                        <%= commande.numero_commande || 'CMD-' + commande.id %>
-                    </div>
-                    <span class="status <%= getStatusClass(commande.status) %>">
-                        <%= translateStatus(commande.status) %>
-                    </span>
-                </div>
-                <div class="order-card-body">
-                    <div class="order-card-field">
-                        <div class="order-card-label">Date</div>
-                        <div class="order-card-value"><%= commande.date %></div>
-                    </div>
-                    <div class="order-card-field">
-                        <div class="order-card-label">Client</div>
-                        <div class="order-card-value"><%= commande.customerName %></div>
-                    </div>
-                    <div class="order-card-field">
-                        <div class="order-card-label">Montant</div>
-                        <div class="order-card-value amount">
-                            <%= (commande.amount || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
-                            <% if (commande.discount_amount && commande.discount_amount > 0) { %>
-                                <br><small class="discount-amount">-<%= commande.discount_amount.toFixed(2) %>€</small>
-                            <% } %>
-                        </div>
-                    </div>
-                    <div class="order-card-field">
-                        <div class="order-card-label">Code Promo</div>
-                        <div class="order-card-value">
-                            <% if (commande.promo_code) { %>
-                                <span class="promo-info">
-                                    <%= commande.promo_code %>
-                                </span>
-                            <% } else { %>
-                                <span style="color: var(--gray-medium);">Aucun</span>
-                            <% } %>
-                        </div>
-                    </div>
-                    <!-- ✅ NOUVELLE SECTION TAILLES POUR MOBILE -->
-                    <div class="order-card-field" style="grid-column: 1 / -1;">
-                        <div class="order-card-label">
-                            <i class="fas fa-ruler"></i> Tailles commandées
-                        </div>
-                        <div class="order-card-value">
-                            <% if (commande.sizesInfo && commande.sizesInfo.hasSizeInfo) { %>
-                                <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-                                    <span style="font-size: 0.85rem;">
-                                        <%= helpers.formatSizes(commande.sizesInfo) %>
-                                    </span>
-                                    <span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; 
-                                          background: <%= commande.sizesInfo.sizesCoverage === 100 ? '#dcfce7' : commande.sizesInfo.sizesCoverage > 50 ? '#fef3c7' : '#fecaca' %>;
-                                          color: <%= commande.sizesInfo.sizesCoverage === 100 ? '#065f46' : commande.sizesInfo.sizesCoverage > 50 ? '#92400e' : '#991b1b' %>;">
-                                        <%= commande.sizesInfo.itemsWithSizes %>/<%= commande.sizesInfo.totalItems %>
-                                    </span>
-                                    <span style="font-size: 0.7rem; opacity: 0.8;">
-                                        <%= helpers.getSizesIndicator(commande.sizesInfo) %>
-                                    </span>
-                                </div>
-                            <% } else { %>
-                                <span style="color: var(--gray-medium); font-size: 0.8rem;">
-                                    <i class="fas fa-question-circle" style="opacity: 0.5;"></i>
-                                    Non spécifiées
-                                </span>
-                            <% } %>
-                        </div>
-                    </div>
-                </div>
-                <div class="order-card-actions">
-                    <button class="action-btn view" 
-                            onclick="viewOrderDetails('<%= commande.id %>')">
-                        <i class="fas fa-eye"></i>
-                    </button>
-                    <button class="action-btn edit" 
-                            onclick="editOrder('<%= commande.id %>')">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                </div>
-            </div>
-        <% }) %>
-    <% } else { %>
-        <div class="empty-state">
-            <i class="fas fa-inbox"></i>
-            <div>Aucune commande trouvée</div>
         </div>
-    <% } %>
-</div>
+    </div>
 
         </main>
     </div>
@@ -2671,82 +2889,98 @@ function displayOrderDetails(data) {
     <script>
 // ✅ FONCTIONS JAVASCRIPT POUR GÉRER LES TAILLES
 function initializeSizesDisplay() {
-    // Ajouter des tooltips pour les indicateurs de taille
-    document.querySelectorAll('.size-coverage').forEach(element => {
-        const [withSizes, total] = element.textContent.split('/').map(Number);
-        const coverage = total > 0 ? Math.round((withSizes / total) * 100) : 0;
-        
-        let tooltipText = '';
-        if (coverage === 100) {
-            tooltipText = '🎯 Toutes les tailles sont spécifiées';
-            element.classList.add('full-coverage');
-        } else if (coverage > 50) {
-            tooltipText = '📏 La plupart des tailles sont spécifiées';
-            element.classList.add('partial-coverage');
-        } else if (coverage > 0) {
-            tooltipText = '📐 Quelques tailles spécifiées';
-            element.classList.add('limited-coverage');
-        } else {
-            tooltipText = '❓ Aucune taille spécifiée';
+            // Ajouter des tooltips pour les indicateurs de taille
+            document.querySelectorAll('.size-coverage').forEach(element => {
+                const coverage = element.classList.contains('full-coverage') ? 100 :
+                               element.classList.contains('partial-coverage') ? 75 :
+                               element.classList.contains('limited-coverage') ? 25 : 0;
+                
+                let tooltipText = '';
+                if (coverage === 100) {
+                    tooltipText = '🎯 Toutes les tailles sont spécifiées';
+                } else if (coverage > 50) {
+                    tooltipText = '📏 La plupart des tailles sont spécifiées';
+                } else if (coverage > 0) {
+                    tooltipText = '📐 Quelques tailles spécifiées';
+                } else {
+                    tooltipText = '❓ Aucune taille spécifiée';
+                }
+                
+                element.title = tooltipText;
+            });
         }
-        
-        element.title = tooltipText;
-    });
-}
-
 // Fonction pour mettre à jour l'affichage des tailles après modification
 function updateSizesDisplay(orderId, sizesInfo) {
-    const row = document.querySelector(`tr[data-order-id="${orderId}"]`);
-    const card = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
-    
-    if (row) {
-        const sizesCell = row.querySelector('td:nth-child(6)');
-        if (sizesCell && sizesInfo) {
-            sizesCell.innerHTML = generateSizesCellContent(sizesInfo);
+            const row = document.querySelector(`tr[data-order-id="${orderId}"]`);
+            const card = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
+            
+            if (row) {
+                const sizesCell = row.querySelector('td:nth-child(6)');
+                if (sizesCell && sizesInfo) {
+                    sizesCell.innerHTML = generateSizesCellContent(sizesInfo);
+                }
+            }
+            
+            if (card) {
+                const sizesField = card.querySelector('.sizes-card-info');
+                if (sizesField && sizesInfo) {
+                    sizesField.innerHTML = generateSizesCardContent(sizesInfo);
+                }
+            }
         }
-    }
-    
-    if (card) {
-        const sizesField = card.querySelector('.order-card-field:last-of-type .order-card-value');
-        if (sizesField && sizesInfo) {
-            sizesField.innerHTML = generateSizesCardContent(sizesInfo);
-        }
-    }
-}
+
 
 // Générer le contenu HTML pour la cellule tailles
-function generateSizesCellContent(sizesInfo) {
-    if (!sizesInfo || !sizesInfo.hasSizeInfo) {
-        return `
-            <span style="color: var(--gray-medium); font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
-                <i class="fas fa-question-circle" style="opacity: 0.5;"></i>
-                Non spécifiées
-            </span>
-        `;
-    }
-    
-    const coverage = sizesInfo.sizesCoverage || 0;
-    const bgColor = coverage === 100 ? '#dcfce7' : coverage > 50 ? '#fef3c7' : '#fecaca';
-    const textColor = coverage === 100 ? '#065f46' : coverage > 50 ? '#92400e' : '#991b1b';
-    
-    return `
-        <div class="sizes-info">
-            <div class="sizes-summary" style="font-size: 0.85rem; margin-bottom: 4px;">
-                <i class="fas fa-ruler" style="color: var(--info); margin-right: 4px;"></i>
-                ${sizesInfo.sizesDisplay || 'Tailles standard'}
-            </div>
-            <div class="sizes-meta" style="display: flex; align-items: center; gap: 8px;">
-                <span class="size-coverage" style="font-size: 0.75rem; padding: 2px 6px; border-radius: 12px; 
-                      background: ${bgColor}; color: ${textColor};">
-                    ${sizesInfo.itemsWithSizes}/${sizesInfo.totalItems}
-                </span>
-                <span style="font-size: 0.7rem; opacity: 0.8;">
-                    ${getSizesIndicatorText(coverage)}
-                </span>
-            </div>
-        </div>
-    `;
-}
+
+  function generateSizesCellContent(sizesInfo) {
+            if (!sizesInfo || !sizesInfo.hasSizeInfo) {
+                return `
+                    <div class="development-indicator">
+                        <i class="fas fa-cog"></i>
+                        En développement
+                    </div>
+                `;
+            }
+            
+            const coverage = sizesInfo.sizesCoverage || 0;
+            let coverageClass = 'no-coverage';
+            if (coverage === 100) coverageClass = 'full-coverage';
+            else if (coverage > 50) coverageClass = 'partial-coverage';
+            else if (coverage > 0) coverageClass = 'limited-coverage';
+            
+            return `
+                <div class="sizes-info">
+                    <div class="sizes-summary">
+                        <i class="fas fa-ruler" style="color: var(--info); margin-right: 4px;"></i>
+                        ${sizesInfo.sizesDisplay || 'Tailles standard'}
+                    </div>
+                    <div class="sizes-meta">
+                        <span class="size-coverage ${coverageClass}">
+                            ${sizesInfo.itemsWithSizes}/${sizesInfo.totalItems}
+                        </span>
+                        <span style="font-size: 0.7rem; opacity: 0.8;">
+                            ${getSizesIndicatorText(coverage)}
+                        </span>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Obtenir le texte de l'indicateur de taille
+        function getSizesIndicatorText(coverage) {
+            if (coverage === 100) return '🎯 Complète';
+            if (coverage > 50) return '📏 Partielle';
+            if (coverage > 0) return '📐 Limitée';
+            return '❓ Aucune';
+        }
+
+        // Initialiser l'affichage des tailles au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeSizesDisplay();
+            
+            // Autres initialisations existantes...
+            console.log('✅ Page admin commandes avec tailles initialisée');
+        });
 
 // Générer le contenu HTML pour la carte mobile
 function generateSizesCardContent(sizesInfo) {
@@ -2779,13 +3013,6 @@ function generateSizesCardContent(sizesInfo) {
     `;
 }
 
-// Obtenir le texte de l'indicateur de taille
-function getSizesIndicatorText(coverage) {
-    if (coverage === 100) return '🎯 Complète';
-    if (coverage > 50) return '📏 Partielle';
-    if (coverage > 0) return '📐 Limitée';
-    return '❓ Aucune';
-}
 
 // Initialiser l'affichage des tailles au chargement
 document.addEventListener('DOMContentLoaded', function() {

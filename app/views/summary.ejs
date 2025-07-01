@@ -1159,12 +1159,62 @@
                                                 <% if (item.jewel.description) { %>
                                                     <span><%= item.jewel.description.substring(0, 30) %>...</span>
                                                 <% } %>
+
+                                                     <div class="item-specs">
+                                                <% if (item.jewel.matiere) { %>
+                                                    <div class="spec-item">
+                                                        <i class="fas fa-star"></i>
+                                                        <%= item.jewel.matiere %>
+                                                    </div>
+                                                <% } %>
+                                                
+                                                <% if (item.jewel.carat) { %>
+                                                    <div class="spec-item">
+                                                        <i class="fas fa-gem"></i>
+                                                        <%= item.jewel.carat %> carats
+                                                    </div>
+                                                <% } %>
+                                                
+                                                <!-- ✅ GESTION TAILLES IDENTIQUE -->
+                                                <% if (item.size) { %>
+                                                    <!-- TAILLE SPÉCIFIQUEMENT SÉLECTIONNÉE -->
+                                                    <div class="spec-item selected-size">
+                                                        <i class="fas fa-ruler"></i>
+                                                        <strong>Taille: <%= item.size %></strong>
+                                                    </div>
+                                                <% } else if (item.jewel.tailles && Array.isArray(item.jewel.tailles) && item.jewel.tailles.length > 0) { %>
+                                                    <!-- TAILLES DISPONIBLES (si aucune sélectionnée) -->
+                                                    <div class="spec-item available-sizes">
+                                                        <i class="fas fa-ruler"></i>
+                                                        Tailles: 
+                                                        <% 
+                                                        let taillesDisplay = item.jewel.tailles.map(t => {
+                                                            if (typeof t === 'object' && t !== null) {
+                                                                return t.taille || t.size || t.value || t.label || 'N/A';
+                                                            }
+                                                            return String(t);
+                                                        }).join(', ');
+                                                        %>
+                                                        <%= taillesDisplay %>
+                                                    </div>
+                                                <% } %>
+                                                
+                                                <% if (item.jewel.poids) { %>
+                                                    <div class="spec-item">
+                                                        <i class="fas fa-weight"></i>
+                                                        <%= item.jewel.poids %>g
+                                                    </div>
+                                                <% } %>
+                                            </div>
                                             </div>
                                         </div>
                                         <div class="item-price"><%= item.itemTotal.toFixed(2) %> €</div>
                                     </div>
+                                    
                                 <% }); %>
                             </div>
+
+                            
 
                             <div class="price-summary">
     <div class="price-row">
