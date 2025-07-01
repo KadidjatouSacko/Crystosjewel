@@ -1,5 +1,5 @@
 // SettingsController.js - VERSION SIMPLE ET ESSENTIELLE
-import { Setting } from '../models/settingModel.js';
+import Setting from '../models/SettingModel.js';
 
 export class SettingsController {
     
