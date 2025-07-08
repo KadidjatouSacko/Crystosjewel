@@ -117,6 +117,26 @@ app.use(express.static("./public"));
 app.use('/uploads', express.static('public/uploads'));
 app.use('/images', express.static(path.join(process.cwd(), 'public/images')));
 app.use('/images/categories', express.static('public/uploads/categories'));
+// Servir les fichiers statiques
+app.use('/uploads/jewels', express.static(path.join(process.cwd(), 'public/uploads/jewels')));
+app.use('/uploads/temp', express.static(path.join(process.cwd(), 'uploads/temp')));
+
+function createRequiredDirectories() {
+  const directories = [
+    path.join(process.cwd(), 'public/uploads/jewels'),
+    path.join(process.cwd(), 'uploads/temp')
+  ];
+
+  directories.forEach(dir => {
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+      console.log('📁 Dossier créé:', dir);
+    }
+  });
+}
+
+// Appeler au démarrage de l'application
+createRequiredDirectories();
 
 // Parsers - DANS L'ORDRE CORRECT
 app.use(cookieParser());

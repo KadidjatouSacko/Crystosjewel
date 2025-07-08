@@ -1302,34 +1302,133 @@
                 }
             }
 
-            showNotification(message, type = 'success') {
-                const notification = document.getElementById('notification');
-                if (notification) {
-                    notification.textContent = message;
-                    notification.className = 'notification show';
-                    
-                    if (type === 'error') {
-                        notification.style.background = 'var(--danger)';
-                    } else {
-                        notification.style.background = 'var(--success)';
-                    }
-                    
-                    setTimeout(() => {
-                        notification.classList.remove('show');
-                    }, 4000);
-                }
+            function initializeVisitorsSystem() {
+    // Désactiver l'ancien système aléatoire
+    if (window.visitorsInterval) {
+        clearInterval(window.visitorsInterval);
+    }
+    
+    // Nouveau système plus stable
+    const updateVisitors = () => {
+        const currentVisitorsEl = document.getElementById('currentVisitors');
+        if (!currentVisitorsEl) return;
+        
+        const currentValue = parseInt(currentVisitorsEl.textContent) || 8;
+        
+        // Changement plus subtil et réaliste
+        const probability = Math.random();
+        let newValue = currentValue;
+        
+        if (probability < 0.1) { // 10% de chance de changement
+            const change = Math.random() < 0.6 ? 1 : -1; // 60% chance d'augmentation
+            newValue = Math.max(1, Math.min(50, currentValue + change));
+            
+            // Animation si changement
+            if (newValue !== currentValue) {
+                currentVisitorsEl.style.transition = 'color 0.3s ease';
+                currentVisitorsEl.style.color = change > 0 ? '#28a745' : '#dc3545';
+                currentVisitorsEl.textContent = newValue;
+                
+                setTimeout(() => {
+                    currentVisitorsEl.style.color = '';
+                }, 1000);
             }
         }
+    };
+    
+    // Mise à jour toutes les 30 secondes (plus réaliste)
+    window.visitorsInterval = setInterval(updateVisitors, 30000);
+}
+
+
+        function showNotification(message, type = 'info') {
+    // Créer la notification
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 
+                       type === 'error' ? 'fa-exclamation-triangle' :
+                       type === 'warning' ? 'fa-exclamation-circle' :
+                       'fa-info-circle'}"></i>
+        <span>${message}</span>
+        <button onclick="this.parentElement.remove()" class="notification-close">
+            <i class="fas fa-times"></i>
+        </button>
+    `;
+    
+    // Styles inline si pas de CSS
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${type === 'success' ? '#28a745' : 
+                     type === 'error' ? '#dc3545' :
+                     type === 'warning' ? '#ffc107' : '#17a2b8'};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 5px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 300px;
+        animation: slideIn 0.3s ease;
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-suppression après 5 secondes
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.animation = 'slideOut 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 5000);
+}
+
 
         // ================================
         // FONCTIONS GLOBALES
         // ================================
         
         // Fonction pour voir une commande
-        function viewOrder(orderId) {
-            // Rediriger vers la page de détail de la commande
-            window.location.href = `/admin/orders/${orderId}`;
-        }
+    function viewOrder(orderId) {
+    console.log('👁️ Affichage commande:', orderId);
+    
+    if (!orderId) {
+        console.error('❌ ID commande manquant');
+        showNotification('Erreur: ID de commande manquant', 'error');
+        return;
+    }
+
+
+    
+    // Option 1: Ouvrir dans un nouvel onglet
+    const url = `/admin/commandes/${orderId}`;
+    window.open(url, '_blank');
+    
+    // Option 2: Alternative - redirection dans la même page
+    // window.location.href = url;
+    
+    // Option 3: Alternative - modal (si vous avez une modal)
+    /*
+    fetch(`/admin/api/commandes/${orderId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showOrderModal(data.order);
+            } else {
+                showNotification('Erreur: ' + data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showNotification('Erreur de connexion', 'error');
+        });
+    */
+}
+
 
         // ================================
         // INITIALISATION

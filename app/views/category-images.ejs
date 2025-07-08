@@ -4,1432 +4,1089 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %> - CrystosJewel</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
-    <!-- Cropper.js CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
  
     <style>
-
-        /* ========================================== */
-/* CSS COMPLET POUR LA GESTION DES CATÉGORIES */
-/* ========================================== */
-
-:root {
-    --rose-gold: #b76e79;
-    --rose-gold-light: #e8c2c8;
-    --rose-gold-dark: #7d4b53;
-    --cream: #fff8f0;
-    --dark-text: #3a3a3a;
-    --light-gray: #f5f5f5;
-    --box-shadow: 0 8px 20px rgba(183, 110, 121, 0.15);
-}
-
-/* ========================================== */
-/* BASE STYLES */
-/* ========================================== */
-
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body {
-    font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    padding: 20px;
-    background: linear-gradient(135deg, var(--cream) 0%, var(--rose-gold-light) 100%);
-    min-height: 100vh;
-    color: var(--dark-text);
-}
-
-/* ========================================== */
-/* CONTAINER PRINCIPAL */
-/* ========================================== */
-
-.container {
-    max-width: 1400px;
-    margin: 0 auto;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    padding: 40px;
-    border-radius: 20px;
-    box-shadow: var(--box-shadow);
-    border: 1px solid rgba(183, 110, 121, 0.1);
-}
-
-/* ========================================== */
-/* HEADER */
-/* ========================================== */
-
-.header {
-    text-align: center;
-    margin-bottom: 50px;
-    padding-bottom: 30px;
-    position: relative;
-}
-
-.header::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100px;
-    height: 4px;
-    background: linear-gradient(45deg, var(--rose-gold), var(--rose-gold-dark));
-    border-radius: 2px;
-}
-
-.header h1 {
-    color: var(--dark-text);
-    margin: 0 0 15px 0;
-    font-size: 2.5rem;
-    font-weight: 700;
-    background: linear-gradient(45deg, var(--rose-gold), var(--rose-gold-dark));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-}
-
-.header p {
-    color: var(--dark-text);
-    opacity: 0.7;
-    margin: 0;
-    font-size: 1.1rem;
-    font-weight: 400;
-}
-
-.back-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 30px;
-    color: var(--rose-gold);
-    text-decoration: none;
-    font-weight: 600;
-    padding: 12px 20px;
-    border-radius: 25px;
-    background: rgba(183, 110, 121, 0.1);
-    transition: all 0.3s ease;
-    border: 2px solid rgba(183, 110, 121, 0.2);
-}
-
-.back-link:hover {
-    color: white;
-    background: var(--rose-gold);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(183, 110, 121, 0.3);
-}
-
-/* ========================================== */
-/* BARRE DE STATISTIQUES */
-/* ========================================== */
-
-.stats-bar {
-    display: flex;
-    justify-content: center;
-    gap: 30px;
-    margin-bottom: 40px;
-    padding: 20px;
-    background: linear-gradient(135deg, var(--cream), var(--light-gray));
-    border-radius: 15px;
-    border: 1px solid rgba(183, 110, 121, 0.1);
-    box-shadow: var(--box-shadow);
-}
-
-.stat-item {
-    text-align: center;
-    padding: 10px 20px;
-}
-
-.stat-number {
-    font-size: 2rem;
-    font-weight: 700;
-    color: var(--rose-gold);
-    display: block;
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    color: var(--dark-text);
-    opacity: 0.7;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin-top: 5px;
-}
-
-/* ========================================== */
-/* GRILLE DES CATÉGORIES */
-/* ========================================== */
-
-.categories-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-    gap: 30px;
-}
-
-.category-card {
-    background: white;
-    border-radius: 20px;
-    padding: 25px;
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    box-shadow: var(--box-shadow);
-    border: 1px solid rgba(183, 110, 121, 0.1);
-    position: relative;
-    overflow: hidden;
-    animation: fadeInUp 0.6s ease forwards;
-}
-
-.category-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 4px;
-    background: linear-gradient(45deg, var(--rose-gold), var(--rose-gold-dark));
-}
-
-.category-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 20px 40px rgba(183, 110, 121, 0.2);
-}
-
-.category-card:nth-child(even) {
-    animation-delay: 0.1s;
-}
-
-.category-card:nth-child(3n) {
-    animation-delay: 0.2s;
-}
-
-/* ========================================== */
-/* NOM DE CATÉGORIE */
-/* ========================================== */
-
-.category-name {
-    font-size: 1.4rem;
-    font-weight: 700;
-    color: var(--dark-text);
-    margin-bottom: 20px;
-    text-align: center;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-}
-
-.category-name::before {
-    content: '💎';
-    font-size: 1.2rem;
-}
-
-/* ========================================== */
-/* PRÉVISUALISATION D'IMAGE */
-/* ========================================== */
-
-.image-preview {
-    width: 100%;
-    height: 220px;
-    border: 3px dashed var(--rose-gold-light);
-    border-radius: 15px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 20px;
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    position: relative;
-    overflow: hidden;
-    transition: all 0.3s ease;
-    cursor: pointer;
-}
-
-.image-preview.has-image {
-    border: 3px solid var(--rose-gold);
-    box-shadow: 0 5px 20px rgba(183, 110, 121, 0.2);
-}
-
-.image-preview.drag-over {
-    border-color: var(--rose-gold-dark);
-    background-color: rgba(183, 110, 121, 0.05);
-    transform: scale(1.02);
-}
-
-.image-preview .placeholder {
-    color: var(--rose-gold);
-    text-align: center;
-    transition: all 0.3s ease;
-}
-
-.image-preview:hover .placeholder {
-    color: var(--rose-gold-dark);
-    transform: scale(1.05);
-}
-
-.image-preview .placeholder i {
-    font-size: 3.5rem;
-    margin-bottom: 15px;
-    display: block;
-}
-
-.image-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(183, 110, 121, 0.8);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    border-radius: 12px;
-}
-
-.image-preview:hover .image-overlay {
-    opacity: 1;
-}
-
-.overlay-text {
-    color: white;
-    text-align: center;
-    font-weight: 600;
-}
-
-/* ========================================== */
-/* SECTION D'UPLOAD */
-/* ========================================== */
-
-.upload-section {
-    display: flex;
-    gap: 12px;
-    align-items: center;
-    margin-bottom: 15px;
-}
-
-.file-input-wrapper {
-    position: relative;
-    flex: 1;
-}
-
-.file-input {
-    display: none;
-}
-
-.file-label {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    padding: 12px 20px;
-    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-    color: white;
-    border-radius: 10px;
-    cursor: pointer;
-    text-align: center;
-    transition: all 0.3s ease;
-    font-weight: 600;
-    border: 2px solid transparent;
-}
-
-.file-label:hover {
-    background: linear-gradient(135deg, var(--rose-gold-dark), #6a3d44);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(183, 110, 121, 0.3);
-}
-
-/* ========================================== */
-/* BOUTONS D'ACTION */
-/* ========================================== */
-
-.upload-btn, .crop-btn {
-    padding: 12px 24px;
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 700;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 120px;
-    justify-content: center;
-}
-
-.upload-btn {
-    background: linear-gradient(135deg, #4a9d5f, #3e8350);
-}
-
-.upload-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #3e8350, #2d5f3a);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(74, 157, 95, 0.3);
-}
-
-.crop-btn {
-    background: linear-gradient(135deg, #d4af37, #b8941f);
-}
-
-.crop-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, #b8941f, #9a7a1a);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
-}
-
-.upload-btn:disabled, .crop-btn:disabled {
-    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-}
-
-.delete-btn {
-    padding: 10px 15px;
-    background: linear-gradient(135deg, #c0392b, #a93226);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-size: 0.9rem;
-    width: 100%;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-}
-
-.delete-btn:hover {
-    background: linear-gradient(135deg, #a93226, #8b281e);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(192, 57, 43, 0.3);
-}
-
-.action-buttons {
-    display: flex;
-    gap: 10px;
-    margin-top: 15px;
-}
-
-.btn-secondary {
-    flex: 1;
-    padding: 8px 12px;
-    background: linear-gradient(135deg, var(--rose-gold-light), var(--rose-gold));
-    color: var(--dark-text);
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 5px;
-}
-
-.btn-secondary:hover {
-    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-    color: white;
-    transform: translateY(-1px);
-}
-
-/* ========================================== */
-/* MODAL DE ROGNAGE COMPACTE */
-/* ========================================== */
-
-.crop-modal {
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.95);
-    z-index: 3000;
-    backdrop-filter: blur(15px);
-    overflow-y: auto;
-    padding: 15px;
-    box-sizing: border-box;
-}
-
-.crop-modal.show {
-    display: flex;
-    align-items: flex-start;
-    justify-content: center;
-    animation: fadeIn 0.3s ease;
-    padding-top: 20px;
-}
-
-.crop-container {
-    background: var(--cream);
-    border-radius: 20px;
-    padding: 25px;
-    max-width: 90vw;
-    max-height: 85vh;
-    width: 900px;
-    position: relative;
-    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
-    border: 2px solid var(--rose-gold);
-    overflow: hidden;
-    margin: auto;
-}
-
-.crop-header {
-    text-align: center;
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 2px solid var(--rose-gold-light);
-    position: relative;
-}
-
-.crop-header h3 {
-    color: var(--dark-text);
-    margin: 0 0 8px 0;
-    font-size: 1.6rem;
-    font-weight: 700;
-    background: linear-gradient(45deg, var(--rose-gold), var(--rose-gold-dark));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.crop-header p {
-    color: var(--dark-text);
-    opacity: 0.7;
-    margin: 0;
-    font-size: 0.9rem;
-}
-
-.crop-close-btn {
-    position: absolute;
-    top: -8px;
-    right: -8px;
-    background: linear-gradient(135deg, #e74c3c, #c0392b);
-    color: white;
-    border: none;
-    border-radius: 50%;
-    width: 35px;
-    height: 35px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.crop-close-btn:hover {
-    background: linear-gradient(135deg, #c0392b, #a93226);
-    transform: scale(1.1);
-}
-
-.crop-main-content {
-    display: flex;
-    gap: 20px;
-    align-items: flex-start;
-    max-height: calc(85vh - 160px);
-    overflow-y: auto;
-}
-
-.crop-image-section {
-    flex: 1.8;
-    min-width: 0;
-}
-
-.crop-image-container {
-    background: #000;
-    border-radius: 12px;
-    overflow: hidden;
-    position: relative;
-    max-height: 350px;
-    border: 2px solid var(--rose-gold);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-}
-
-.crop-image {
-    max-width: 100%;
-    max-height: 350px;
-    display: block;
-}
-
-.crop-controls-section {
-    flex: 1;
-    min-width: 220px;
-    max-height: 100%;
-    overflow-y: auto;
-}
-
-/* ========================================== */
-/* CONTRÔLES DE ROGNAGE */
-/* ========================================== */
-
-.crop-presets, .crop-quality, .crop-preview {
-    background: white;
-    border-radius: 12px;
-    padding: 15px;
-    margin-bottom: 15px;
-    border: 2px solid var(--rose-gold-light);
-    box-shadow: var(--box-shadow);
-}
-
-.crop-presets h4, .crop-quality h4, .crop-preview h4 {
-    color: var(--dark-text);
-    margin: 0 0 12px 0;
-    font-size: 1rem;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.ratio-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 8px;
-}
-
-.aspect-ratio-btn {
-    padding: 10px 6px;
-    background: var(--light-gray);
-    border: 2px solid var(--rose-gold-light);
-    border-radius: 8px;
-    cursor: pointer;
-    font-size: 0.8rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    color: var(--dark-text);
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.aspect-ratio-btn i {
-    display: block;
-    font-size: 1rem;
-    margin-bottom: 4px;
-}
-
-.aspect-ratio-btn.active {
-    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-    color: white;
-    border-color: var(--rose-gold);
-    transform: scale(1.05);
-    box-shadow: 0 4px 15px rgba(183, 110, 121, 0.3);
-}
-
-.aspect-ratio-btn:hover:not(.active) {
-    background: var(--rose-gold-light);
-    border-color: var(--rose-gold);
-    transform: translateY(-2px);
-}
-
-/* ========================================== */
-/* CONTRÔLES DE QUALITÉ */
-/* ========================================== */
-
-.quality-slider {
-    width: 100%;
-    margin: 8px 0;
-}
-
-.quality-input {
-    width: 100%;
-    height: 6px;
-    border-radius: 3px;
-    background: var(--light-gray);
-    outline: none;
-    -webkit-appearance: none;
-    transition: all 0.3s ease;
-}
-
-.quality-input::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    appearance: none;
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-    cursor: pointer;
-    box-shadow: 0 2px 8px rgba(183, 110, 121, 0.4);
-    transition: all 0.3s ease;
-}
-
-.quality-input::-webkit-slider-thumb:hover {
-    transform: scale(1.2);
-    box-shadow: 0 4px 15px rgba(183, 110, 121, 0.6);
-}
-
-.quality-input::-moz-range-thumb {
-    width: 16px;
-    height: 16px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-    cursor: pointer;
-    border: none;
-    box-shadow: 0 2px 8px rgba(183, 110, 121, 0.4);
-}
-
-.quality-labels {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.8rem;
-    color: var(--dark-text);
-    opacity: 0.7;
-}
-
-/* ========================================== */
-/* APERÇU */
-/* ========================================== */
-
-.crop-preview {
-    text-align: center;
-}
-
-.preview-container {
-    width: 120px;
-    height: 120px;
-    border: 2px solid var(--rose-gold-light);
-    border-radius: 8px;
-    margin: 0 auto 12px;
-    overflow: hidden;
-    background: var(--light-gray);
-    position: relative;
-}
-
-.preview-image {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: all 0.3s ease;
-}
-
-/* ========================================== */
-/* ACTIONS DE ROGNAGE */
-/* ========================================== */
-
-.crop-actions {
-    position: absolute;
-    bottom: 15px;
-    left: 15px;
-    right: 15px;
-    display: flex;
-    gap: 12px;
-    justify-content: center;
-    flex-wrap: wrap;
-}
-
-.crop-btn-large {
-    padding: 12px 20px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
-    font-weight: 700;
-    font-size: 0.9rem;
-    transition: all 0.3s ease;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    min-width: 120px;
-    justify-content: center;
-    position: relative;
-    overflow: hidden;
-}
-
-.crop-save-btn {
-    background: linear-gradient(135deg, #27ae60, #2ecc71);
-    color: white;
-    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
-}
-
-.crop-save-btn:hover {
-    background: linear-gradient(135deg, #229954, #27ae60);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
-}
-
-.crop-reset-btn {
-    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-    color: white;
-    box-shadow: 0 4px 15px rgba(183, 110, 121, 0.3);
-}
-
-.crop-reset-btn:hover {
-    background: linear-gradient(135deg, var(--rose-gold-dark), #6a3d44);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(183, 110, 121, 0.4);
-}
-
-.crop-cancel-btn {
-    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-    color: white;
-    box-shadow: 0 4px 15px rgba(149, 165, 166, 0.3);
-}
-
-.crop-cancel-btn:hover {
-    background: linear-gradient(135deg, #7f8c8d, #6c757d);
-    transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(149, 165, 166, 0.4);
-}
-
-/* ========================================== */
-/* SCROLL CUSTOMISÉ */
-/* ========================================== */
-
-.crop-controls-section::-webkit-scrollbar,
-.crop-main-content::-webkit-scrollbar {
-    width: 6px;
-}
-
-.crop-controls-section::-webkit-scrollbar-track,
-.crop-main-content::-webkit-scrollbar-track {
-    background: var(--light-gray);
-    border-radius: 3px;
-}
-
-.crop-controls-section::-webkit-scrollbar-thumb,
-.crop-main-content::-webkit-scrollbar-thumb {
-    background: var(--rose-gold);
-    border-radius: 3px;
-}
-
-.crop-controls-section::-webkit-scrollbar-thumb:hover,
-.crop-main-content::-webkit-scrollbar-thumb:hover {
-    background: var(--rose-gold-dark);
-}
-
-/* ========================================== */
-/* NOTIFICATIONS */
-/* ========================================== */
-
-.notification {
-    position: fixed;
-    top: 30px;
-    right: 30px;
-    padding: 20px 25px;
-    border-radius: 12px;
-    color: white;
-    font-weight: 600;
-    z-index: 1000;
-    transform: translateX(120%);
-    transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    box-shadow: var(--box-shadow);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    min-width: 300px;
-}
-
-.notification.show {
-    transform: translateX(0);
-}
-
-.notification.success {
-    background: linear-gradient(135deg, #4a9d5f, #3e8350);
-}
-
-.notification.error {
-    background: linear-gradient(135deg, #c0392b, #a93226);
-}
-
-.notification.info {
-    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-}
-
-/* ========================================== */
-/* INDICATEURS DE CHARGEMENT */
-/* ========================================== */
-
-.loading {
-    display: none;
-    text-align: center;
-    color: var(--rose-gold);
-    margin: 15px 0;
-    padding: 10px;
-    background: rgba(183, 110, 121, 0.1);
-    border-radius: 8px;
-}
-
-.loading i {
-    animation: spin 1s linear infinite;
-    margin-right: 8px;
-}
-
-.progress-bar {
-    width: 100%;
-    height: 6px;
-    background: var(--light-gray);
-    border-radius: 3px;
-    overflow: hidden;
-    margin: 10px 0;
-    display: none;
-}
-
-.progress-fill {
-    height: 100%;
-    background: linear-gradient(45deg, var(--rose-gold), var(--rose-gold-dark));
-    width: 0%;
-    transition: width 0.3s ease;
-}
-
-/* ========================================== */
-/* OUTILS ADMIN */
-/* ========================================== */
-
-.admin-tools {
-    position: fixed;
-    bottom: 30px;
-    right: 30px;
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    z-index: 100;
-}
-
-.admin-btn {
-    padding: 12px 15px;
-    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-    color: white;
-    border: none;
-    border-radius: 50px;
-    cursor: pointer;
-    font-weight: 600;
-    transition: all 0.3s ease;
-    box-shadow: var(--box-shadow);
-    min-width: 50px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.admin-btn:hover {
-    background: linear-gradient(135deg, var(--rose-gold-dark), #6a3d44);
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(183, 110, 121, 0.4);
-}
-
-/* ========================================== */
-/* ANIMATIONS */
-/* ========================================== */
-
-@keyframes fadeIn {
-    from { 
-        opacity: 0; 
-        transform: scale(0.95) translateY(-20px); 
-    }
-    to { 
-        opacity: 1; 
-        transform: scale(1) translateY(0); 
-    }
-}
-
-@keyframes fadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-@keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-.crop-container {
-    animation: fadeIn 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-}
-
-/* ========================================== */
-/* RESPONSIVE DESIGN */
-/* ========================================== */
-
-@media (max-width: 1024px) {
-    .crop-container {
-        width: 95vw;
-        max-height: 90vh;
-    }
-    
-    .crop-main-content {
-        flex-direction: column;
-        max-height: calc(90vh - 140px);
-    }
-    
-    .crop-controls-section {
-        min-width: 100%;
-        max-height: 200px;
-    }
-    
-    .ratio-grid {
-        grid-template-columns: repeat(3, 1fr);
-    }
-    
-    .crop-image-container {
-        max-height: 250px;
-    }
-    
-    .crop-image {
-        max-height: 250px;
-    }
-}
-
-@media (max-width: 768px) {
-    body {
-        padding: 10px;
-    }
-
-    .container {
-        padding: 20px;
-    }
-
-    .categories-grid {
-        grid-template-columns: 1fr;
-        gap: 20px;
-    }
-    
-    .upload-section {
-        flex-direction: column;
-    }
-    
-    .file-input-wrapper {
-        width: 100%;
-    }
-
-    .stats-bar {
-        flex-direction: column;
-        gap: 15px;
-    }
-
-    .header h1 {
-        font-size: 2rem;
-    }
-
-    .crop-modal {
-        padding: 10px;
-    }
-    
-    .crop-container {
-        margin: 0;
-        padding: 15px;
-        width: 100%;
-        max-height: 95vh;
-        border-radius: 15px;
-    }
-    
-    .crop-main-content {
-        gap: 15px;
-        max-height: calc(95vh - 120px);
-    }
-    
-    .crop-actions {
-        position: static;
-        margin-top: 15px;
-        flex-direction: column;
-        gap: 8px;
-    }
-    
-    .crop-btn-large {
-        width: 100%;
-        min-width: auto;
-    }
-    
-    .ratio-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-    
-    .crop-image-container {
-        max-height: 200px;
-    }
-    
-    .crop-image {
-        max-height: 200px;
-    }
-    
-    .preview-container {
-        width: 100px;
-        height: 100px;
-    }
-
-    .admin-tools {
-        bottom: 20px;
-        right: 20px;
-    }
-}
-
-@media (max-width: 480px) {
-    .categories-grid {
-        grid-template-columns: 1fr;
-    }
-
-    .category-card {
-        padding: 20px;
-    }
-
-    .image-preview {
-        height: 180px;
-    }
-    
-    .crop-container {
-        padding: 12px;
-    }
-    
-    .crop-header h3 {
-        font-size: 1.4rem;
-    }
-    
-    .crop-main-content {
-        gap: 12px;
-    }
-    
-    .crop-presets, .crop-quality, .crop-preview {
-        padding: 12px;
-        margin-bottom: 12px;
-    }
-    
-    .aspect-ratio-btn {
-        padding: 8px 4px;
-        font-size: 0.75rem;
-    }
-    
-    .aspect-ratio-btn i {
-        font-size: 0.9rem;
-        margin-bottom: 3px;
-    }
-}
-
-/* ========================================== */
-/* STYLES SPÉCIAUX POUR LES EFFETS */
-/* ========================================== */
-
-/* Effet de brillance sur les boutons */
-.crop-btn-large::before,
-.aspect-ratio-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
-    transition: left 0.6s ease;
-}
-
-.crop-btn-large:hover::before,
-.aspect-ratio-btn:hover::before {
-    left: 100%;
-}
-
-/* Effet de pulsation pour les éléments actifs */
-.aspect-ratio-btn.active {
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0% {
-        box-shadow: 0 4px 15px rgba(183, 110, 121, 0.3);
-    }
-    50% {
-        box-shadow: 0 4px 20px rgba(183, 110, 121, 0.5);
-    }
-    100% {
-        box-shadow: 0 4px 15px rgba(183, 110, 121, 0.3);
-    }
-}
-
-/* Effet de shimmer pour le placeholder */
-.image-preview .placeholder::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-    animation: shimmer 3s infinite;
-    pointer-events: none;
-}
-
-@keyframes shimmer {
-    0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-    100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
-}
-
-/* ========================================== */
-/* ÉTATS DE FOCUS POUR L'ACCESSIBILITÉ */
-/* ========================================== */
-
-.file-label:focus,
-.upload-btn:focus,
-.crop-btn:focus,
-.delete-btn:focus,
-.btn-secondary:focus,
-.aspect-ratio-btn:focus,
-.crop-btn-large:focus,
-.admin-btn:focus {
-    outline: 3px solid var(--rose-gold-light);
-    outline-offset: 2px;
-}
-
-.quality-input:focus {
-    outline: 2px solid var(--rose-gold);
-    outline-offset: 2px;
-}
-
-/* ========================================== */
-/* STYLES POUR LES ÉTATS DISABLED */
-/* ========================================== */
-
-.category-card.disabled {
-    opacity: 0.6;
-    pointer-events: none;
-}
-
-.crop-btn-large:disabled {
-    background: linear-gradient(135deg, #95a5a6, #7f8c8d) !important;
-    cursor: not-allowed !important;
-    transform: none !important;
-    box-shadow: none !important;
-}
-
-/* ========================================== */
-/* STYLES POUR LE MODE SOMBRE (OPTIONNEL) */
-/* ========================================== */
-
-@media (prefers-color-scheme: dark) {
-    :root {
-        --dark-text: #e0e0e0;
-        --light-gray: #2a2a2a;
-        --cream: #1a1a1a;
-    }
-    
-    .container {
-        background: rgba(42, 42, 42, 0.95);
-    }
-    
-    .category-card {
-        background: #2a2a2a;
-    }
-    
-    .crop-presets, .crop-quality, .crop-preview {
-        background: #2a2a2a;
-    }
-    
-    .crop-container {
-        background: #1a1a1a;
-    }
-}
-
-/* ========================================== */
-/* STYLES POUR L'IMPRESSION (OPTIONNEL) */
-/* ========================================== */
-
-@media print {
-    .crop-modal,
-    .notification,
-    .admin-tools,
-    .upload-section,
-    .action-buttons {
-        display: none !important;
-    }
-    
-    .category-card {
-        break-inside: avoid;
-        box-shadow: none;
-        border: 1px solid #ccc;
-    }
-    
-    .categories-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 20px;
-    }
-}
-
-/* ========================================== */
-/* STYLES POUR LES ANIMATIONS RÉDUITES */
-/* ========================================== */
-
-@media (prefers-reduced-motion: reduce) {
-    * {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        transition-duration: 0.01ms !important;
-    }
-    
-    .category-card:hover {
-        transform: none;
-    }
-    
-    .crop-btn-large:hover,
-    .upload-btn:hover,
-    .crop-btn:hover {
-        transform: none;
-    }
-}
-
-/* ========================================== */
-/* UTILITAIRES */
-/* ========================================== */
-
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
-.hidden {
-    display: none !important;
-}
-
-.invisible {
-    visibility: hidden !important;
-}
-
-.text-center {
-    text-align: center !important;
-}
-
-.text-left {
-    text-align: left !important;
-}
-
-.text-right {
-    text-align: right !important;
-}
-
-/* ========================================== */
-/* FIN DU CSS */
-/* ========================================== */
+        /* ==========================================
+           VARIABLES CSS ROSE-GOLD THEME
+           ========================================== */
+        :root {
+            --rose-gold: #b76e79;
+            --rose-gold-light: #f5e8ea;
+            --rose-gold-dark: #8c4a58;
+            --rose-gold-accent: #d4a5a9;
+            --cream: #fff8f0;
+            --ivory: #f8f4f0;
+            --dark-text: #2c2c2c;
+            --light-gray: #f7f7f7;
+            --white: #ffffff;
+            --success-green: #28a745;
+            --error-red: #dc3545;
+            --warning-orange: #ffc107;
+            --info-blue: #17a2b8;
+            
+            /* Ombres avec teinte rose-gold */
+            --shadow-sm: 0 2px 8px rgba(183, 110, 121, 0.08);
+            --shadow-md: 0 4px 16px rgba(183, 110, 121, 0.12);
+            --shadow-lg: 0 8px 32px rgba(183, 110, 121, 0.16);
+            --shadow-xl: 0 16px 48px rgba(183, 110, 121, 0.20);
+            
+            /* Rayons et transitions */
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* Gradients rose-gold */
+            --gradient-primary: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+            --gradient-secondary: linear-gradient(45deg, var(--cream) 0%, var(--ivory) 100%);
+            --gradient-accent: linear-gradient(135deg, var(--rose-gold-light) 0%, var(--rose-gold-accent) 100%);
+        }
+
+        /* ==========================================
+           STYLES GLOBAUX
+           ========================================== */
+        html, body {
+            width: 100%;
+            overflow-x: hidden;
+            font-family: 'Inter', sans-serif;
+            background: var(--gradient-secondary);
+            color: var(--dark-text);
+        }
+
+        .container {
+            max-width: 1400px;
+        }
+
+        /* ==========================================
+           CARTES ET INTERFACE PRINCIPALE
+           ========================================== */
+        .card {
+            border: none;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 24px;
+            overflow: hidden;
+            background: var(--white);
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+            border-bottom: none;
+            padding: 20px 24px;
+            font-weight: 600;
+        }
+
+        .card-header.bg-primary {
+            background: var(--gradient-primary) !important;
+        }
+
+        .card-body {
+            padding: 24px;
+        }
+
+        /* ==========================================
+           EN-TÊTE ET STATISTIQUES
+           ========================================== */
+        .stats-row {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin: 30px 0;
+            flex-wrap: wrap;
+        }
+
+        .stat-item {
+            text-align: center;
+            padding: 20px 30px;
+            background: var(--gradient-accent);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--rose-gold-light);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            min-width: 150px;
+        }
+
+        .stat-item:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .stat-number {
+            font-size: 2.2rem;
+            font-weight: 700;
+            color: var(--rose-gold-dark);
+            display: block;
+            font-family: 'Playfair Display', serif;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: var(--dark-text);
+            opacity: 0.8;
+            margin-top: 8px;
+        }
+
+        /* ==========================================
+           GRILLE DES CATÉGORIES
+           ========================================== */
+        .categories-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 24px;
+            margin-bottom: 50px;
+        }
+
+        .category-card {
+            background: var(--white);
+            border-radius: var(--radius-lg);
+            padding: 25px;
+            box-shadow: var(--shadow-md);
+            border: 1px solid var(--rose-gold-light);
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .category-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 4px;
+            background: var(--gradient-primary);
+            transition: left 0.6s ease;
+        }
+
+        .category-card:hover {
+            transform: translateY(-8px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--rose-gold);
+        }
+
+        .category-card:hover::before {
+            left: 0;
+        }
+
+        .category-name {
+            font-size: 1.4rem;
+            font-weight: 600;
+            color: var(--rose-gold-dark);
+            margin-bottom: 20px;
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--rose-gold-light);
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* ==========================================
+           GESTION D'IMAGES - STYLES PRINCIPAUX
+           ========================================== */
+        .image-preview-container {
+            position: relative;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 20px;
+            transition: var(--transition);
+            background: var(--white);
+            border: 2px solid transparent;
+            height: 220px;
+        }
+        
+        .image-preview-container:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--rose-gold-light);
+        }
+        
+        .image-preview-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .image-preview-container:hover img {
+            transform: scale(1.05);
+        }
+
+        /* Zone d'upload drag & drop */
+        .upload-zone {
+            border: 3px dashed var(--rose-gold-accent);
+            border-radius: var(--radius-lg);
+            padding: 40px 24px;
+            text-align: center;
+            background: var(--gradient-accent);
+            transition: var(--transition);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            height: 220px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .upload-zone::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(183, 110, 121, 0.2), transparent);
+            transition: left 0.8s ease;
+        }
+        
+        .upload-zone:hover {
+            border-color: var(--rose-gold);
+            background: var(--gradient-primary);
+            color: white;
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .upload-zone:hover::before {
+            left: 100%;
+        }
+        
+        .upload-zone.dragover {
+            border-color: var(--success-green);
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.2), rgba(32, 201, 151, 0.2));
+            transform: scale(1.02);
+        }
+
+        .upload-zone i {
+            color: var(--rose-gold);
+            margin-bottom: 16px;
+            transition: var(--transition);
+        }
+
+        .upload-zone:hover i {
+            color: white;
+            transform: scale(1.2);
+        }
+
+        .upload-zone:hover .text-muted {
+            color: rgba(255,255,255,0.8) !important;
+        }
+
+        /* Actions sur les images */
+        .image-actions {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            display: flex;
+            gap: 6px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .image-preview-container:hover .image-actions {
+            opacity: 1;
+        }
+        
+        .image-actions .btn {
+            padding: 8px 12px;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.95);
+            border: 1px solid rgba(183, 110, 121, 0.2);
+            border-radius: var(--radius-sm);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition-fast);
+        }
+
+        .image-actions .btn:hover {
+            transform: scale(1.1);
+            box-shadow: var(--shadow-md);
+        }
+
+        .image-actions .btn-info {
+            background: var(--gradient-primary);
+            color: white;
+            border-color: var(--rose-gold);
+        }
+
+        .image-actions .btn-danger {
+            background: linear-gradient(135deg, #dc3545, #c82333);
+            color: white;
+            border-color: #dc3545;
+        }
+
+        /* ==========================================
+           BOUTONS ET CONTRÔLES
+           ========================================== */
+        .btn {
+            border-radius: var(--radius-sm);
+            font-weight: 500;
+            transition: var(--transition);
+            text-transform: none;
+            letter-spacing: 0.3px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            transition: all 0.3s ease;
+            transform: translate(-50%, -50%);
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            border-color: var(--rose-gold);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, var(--rose-gold-dark), #6d3a44);
+            border-color: var(--rose-gold-dark);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6c757d, #545b62);
+            border-color: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: linear-gradient(135deg, #545b62, #495057);
+            border-color: #545b62;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-green), #20c997);
+        }
+
+        .btn-success:hover {
+            background: linear-gradient(135deg, #218838, #1e7e34);
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--error-red), #c82333);
+        }
+
+        .btn-danger:hover {
+            background: linear-gradient(135deg, #c82333, #bd2130);
+            transform: translateY(-2px);
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .upload-section {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+
+        /* ==========================================
+           MODAL DE CROP - STYLE IDENTIQUE
+           ========================================== */
+        .crop-modal .modal-dialog {
+            max-width: 95vw;
+            max-height: 95vh;
+        }
+
+        .crop-modal .modal-content {
+            border-radius: var(--radius-lg);
+            border: none;
+            box-shadow: var(--shadow-xl);
+        }
+
+        .crop-modal .modal-header {
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+            border-bottom: none;
+            padding: 20px 24px;
+        }
+
+        .crop-modal .modal-header .btn-close {
+            background: rgba(255,255,255,0.2);
+            border-radius: 50%;
+            opacity: 1;
+        }
+
+        .crop-modal .modal-header .btn-close:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.1);
+        }
+        
+        .crop-container {
+            max-height: 60vh;
+            overflow: hidden;
+            border-radius: var(--radius-md);
+            background: var(--light-gray);
+        }
+        
+        .crop-container img {
+            max-width: 100%;
+            display: block;
+        }
+
+        .crop-controls {
+            background: var(--gradient-secondary);
+            padding: 20px;
+            border-radius: var(--radius-md);
+            margin-bottom: 20px;
+            border: 1px solid var(--rose-gold-light);
+        }
+
+        .crop-preview {
+            width: 120px;
+            height: 120px;
+            overflow: hidden;
+            border: 2px solid var(--rose-gold);
+            border-radius: var(--radius-md);
+            background: var(--light-gray);
+            margin: 0 auto;
+            box-shadow: var(--shadow-sm);
+        }
+
+        /* ==========================================
+           SPINNER DE CHARGEMENT
+           ========================================== */
+        .spinner-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(44, 44, 44, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            backdrop-filter: blur(8px);
+        }
+
+        .spinner-content {
+            background: var(--white);
+            padding: 40px;
+            border-radius: var(--radius-lg);
+            text-align: center;
+            max-width: 320px;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--rose-gold-light);
+        }
+
+        .spinner-content .spinner-border {
+            color: var(--rose-gold);
+            width: 3rem;
+            height: 3rem;
+        }
+
+        #loadingMessage {
+            color: var(--dark-text);
+            font-weight: 500;
+            margin-top: 16px;
+        }
+
+        /* ==========================================
+           PROGRESS BAR
+           ========================================== */
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: var(--light-gray);
+            border-radius: 3px;
+            margin: 15px 0;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--gradient-primary);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: var(--rose-gold);
+            font-weight: 500;
+            padding: 15px;
+            background: var(--rose-gold-light);
+            border-radius: var(--radius-sm);
+            margin-top: 10px;
+        }
+
+        .loading i {
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* ==========================================
+           ACTIONS ET BOUTONS
+           ========================================== */
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+
+        .btn-preview {
+            background: var(--info-blue);
+            color: white;
+            border: none;
+        }
+
+        .btn-preview:hover {
+            background: #138496;
+            transform: translateY(-2px);
+        }
+
+        /* ==========================================
+           RESPONSIVE
+           ========================================== */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+
+            .categories-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .stats-row {
+                flex-direction: column;
+                gap: 10px;
+                align-items: center;
+                margin: 20px 0;
+            }
+
+            .stat-item {
+                min-width: 150px;
+                padding: 15px 20px;
+            }
+
+            .stat-number {
+                font-size: 1.8rem;
+            }
+
+            .crop-modal .modal-dialog {
+                margin: 5px;
+                max-width: calc(100vw - 10px);
+            }
+
+            .crop-modal .modal-content {
+                border-radius: var(--radius-md);
+            }
+
+            .crop-controls {
+                padding: 15px;
+            }
+
+            .crop-controls .row {
+                gap: 10px;
+            }
+
+            .crop-controls .col-md-3,
+            .crop-controls .col-md-6,
+            .crop-controls .col-md-4 {
+                margin-bottom: 15px;
+            }
+
+            .crop-container {
+                max-height: 50vh;
+            }
+
+            .spinner-content {
+                margin: 15px;
+                padding: 25px 15px;
+            }
+
+            .card-body {
+                padding: 15px;
+            }
+
+            .upload-zone {
+                padding: 25px 15px;
+                height: 160px;
+            }
+
+            .upload-zone i {
+                font-size: 2.5rem !important;
+            }
+
+            .upload-zone h6 {
+                font-size: 1rem;
+            }
+
+            .image-preview-container {
+                height: 160px;
+            }
+
+            .category-card {
+                padding: 20px 15px;
+            }
+
+            .category-name {
+                font-size: 1.2rem;
+            }
+
+            .upload-section {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .upload-section .btn {
+                width: 100%;
+                min-height: 44px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                gap: 8px;
+            }
+
+            .action-buttons .btn {
+                width: 100%;
+                min-height: 44px;
+            }
+
+            .image-actions {
+                top: 5px;
+                right: 5px;
+                gap: 4px;
+            }
+
+            .image-actions .btn {
+                padding: 10px;
+                min-width: 40px;
+                min-height: 40px;
+            }
+
+            /* Modal mobile optimizations */
+            .modal-header {
+                padding: 15px;
+            }
+
+            .modal-body {
+                padding: 15px;
+            }
+
+            .modal-footer {
+                padding: 15px;
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .modal-footer .btn {
+                width: 100%;
+                min-height: 44px;
+            }
+
+            /* Crop controls mobile */
+            .btn-group {
+                flex-direction: column;
+            }
+
+            .btn-group .btn {
+                border-radius: var(--radius-sm) !important;
+                margin-bottom: 5px;
+                min-height: 40px;
+            }
+
+            .crop-preview {
+                width: 100px;
+                height: 100px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .container {
+                padding: 5px;
+            }
+
+            .categories-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .upload-zone {
+                height: 140px;
+                padding: 15px 10px;
+            }
+
+            .upload-zone i {
+                font-size: 2rem !important;
+            }
+
+            .upload-zone h6 {
+                font-size: 0.9rem;
+                margin: 10px 0 5px 0;
+            }
+
+            .upload-zone p {
+                font-size: 0.8rem;
+            }
+
+            .image-preview-container {
+                height: 140px;
+            }
+
+            .category-card {
+                padding: 15px 10px;
+            }
+
+            .category-name {
+                font-size: 1.1rem;
+                margin-bottom: 15px;
+            }
+
+            .stat-item {
+                min-width: 130px;
+                padding: 12px 15px;
+            }
+
+            .stat-number {
+                font-size: 1.6rem;
+            }
+
+            .stat-label {
+                font-size: 0.9rem;
+            }
+
+            /* En-tête mobile */
+            .d-flex.justify-content-between {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+
+            .d-flex.gap-2 {
+                justify-content: center;
+            }
+
+            h2 {
+                font-size: 1.5rem;
+            }
+
+            h4 {
+                font-size: 1.1rem;
+            }
+
+            /* Modal très petit écran */
+            .crop-modal .modal-dialog {
+                margin: 0;
+                max-width: 100vw;
+                max-height: 100vh;
+            }
+
+            .crop-modal .modal-content {
+                border-radius: 0;
+                height: 100vh;
+            }
+
+            .crop-container {
+                max-height: 40vh;
+            }
+
+            .crop-controls .row {
+                flex-direction: column;
+            }
+
+            .form-label {
+                font-size: 0.9rem;
+            }
+
+            .form-select-sm {
+                font-size: 0.9rem;
+                padding: 8px;
+            }
+        }
+
+        /* ==========================================
+           AMÉLIORATION TOUCH MOBILE
+           ========================================== */
+        @media (hover: none) and (pointer: coarse) {
+            .btn {
+                min-height: 44px;
+                min-width: 44px;
+            }
+
+            .image-actions .btn {
+                min-height: 48px;
+                min-width: 48px;
+                padding: 12px;
+            }
+
+            .upload-zone {
+                min-height: 150px;
+            }
+
+            .category-card:hover::before,
+            .category-card:hover {
+                transform: none;
+            }
+
+            .image-preview-container:hover {
+                transform: none;
+            }
+
+            .image-actions {
+                opacity: 1;
+                background: rgba(0,0,0,0.7);
+                padding: 5px;
+                border-radius: var(--radius-sm);
+            }
+        }
+
+        /* ==========================================
+           ANIMATIONS
+           ========================================== */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .category-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .upload-zone:active {
+            animation: pulse 0.3s ease;
+        }
+
+        /* ==========================================
+           ALERTES ET NOTIFICATIONS
+           ========================================== */
+        .alert {
+            border: none;
+            border-radius: var(--radius-md);
+            border-left: 4px solid;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .alert-danger {
+            background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
+            border-left-color: var(--error-red);
+            color: #721c24;
+        }
+
+        .alert-success {
+            background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05));
+            border-left-color: var(--success-green);
+            color: #155724;
+        }
+
+        /* ==========================================
+           NOTIFICATIONS TOAST
+           ========================================== */
+        .toast {
+            border: none;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .toast-header {
+            border-bottom: none;
+        }
     </style>
-
 </head>
-<body>
+<body class="bg-light">
     <%- include('partials/navbarre.ejs') %>
-    
-    <div class="container">
-        <a href="/" class="back-link">
-            <i class="fas fa-arrow-left"></i>
-            Retour à l'accueil
-        </a>
-        
-        <div class="header">
-            <h1><i class="fas fa-images"></i> <%= title %></h1>
-            <p>Gérez et rognez les images qui s'affichent pour chaque catégorie sur la page d'accueil</p>
+
+    <!-- Overlay de chargement -->
+    <div class="spinner-overlay" id="loadingOverlay">
+        <div class="spinner-content">
+            <div class="spinner-border" role="status">
+                <span class="visually-hidden">Chargement...</span>
+            </div>
+            <div id="loadingMessage">Traitement en cours...</div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <!-- En-tête avec style rose-gold -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="mb-2">
+                    <i class="fas fa-images" style="color: var(--rose-gold);"></i> 
+                    <span style="color: var(--rose-gold-dark);">Gestion des Images</span>
+                </h2>
+                <h4 style="color: var(--rose-gold); font-weight: 300; font-family: 'Playfair Display', serif;">
+                    Images des Catégories
+                </h4>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="/admin/gestionnaire-bijoux" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Retour
+                </a>
+                <button class="btn btn-primary" onclick="refreshStats()">
+                    <i class="fas fa-sync-alt"></i> Actualiser
+                </button>
+            </div>
         </div>
 
-        <% if (stats) { %>
-        <div class="stats-bar">
+        <!-- Statistiques -->
+        <div class="stats-row">
             <div class="stat-item">
-                <span class="stat-number"><%= stats.total || categories.length %></span>
-                <div class="stat-label">Total Catégories</div>
+                <span class="stat-number"><%= stats.total %></span>
+                <span class="stat-label">Catégories Total</span>
             </div>
             <div class="stat-item">
-                <span class="stat-number"><%= stats.with_images || categories.filter(c => c.image).length %></span>
-                <div class="stat-label">Avec Images</div>
+                <span class="stat-number"><%= stats.with_images %></span>
+                <span class="stat-label">Avec Images</span>
             </div>
             <div class="stat-item">
-                <span class="stat-number"><%= stats.without_images || categories.filter(c => !c.image).length %></span>
-                <div class="stat-label">Sans Images</div>
+                <span class="stat-number"><%= stats.without_images %></span>
+                <span class="stat-label">Sans Images</span>
             </div>
         </div>
-        <% } %>
-        
+
+        <!-- Grille des catégories -->
         <div class="categories-grid">
-            <% categories.forEach(category => { %>
-                <div class="category-card" data-category-id="<%= category.id %>">
-                    <div class="category-name"><%= category.name %></div>
+            <% categories.forEach(function(category) { %>
+                <div class="category-card" style="animation-delay: <%= Math.random() * 0.5 %>s;">
+                    <h3 class="category-name">
+                        <i class="fas fa-gem" style="color: var(--rose-gold);"></i>
+                        <%= category.name %>
+                    </h3>
                     
-                    <div class="image-preview <%= category.image ? 'has-image' : '' %>" 
-                         id="preview-<%= category.id %>"
-                         ondrop="handleDrop(event, <%= category.id %>)"
-                         ondragover="handleDragOver(event)"
-                         ondragleave="handleDragLeave(event)"
-                         onclick="document.getElementById('file-<%= category.id %>').click()">
-                        <% if (category.image) { %>
-                            <div style="
-                                background-image: url('/images/categories/<%= category.image %>');
-                                background-size: cover;
-                                background-position: center;
-                                width: 100%;
-                                height: 100%;
-                                border-radius: 12px;
-                            "></div>
-                            <div class="image-overlay">
-                                <div class="overlay-text">
-                                    <i class="fas fa-edit"></i><br>
-                                    Cliquer pour changer
-                                </div>
+                    <!-- Zone d'affichage de l'image ou upload -->
+                    <% if (category.image) { %>
+                        <div class="image-preview-container" 
+                             id="preview-<%= category.id %>"
+                             ondrop="handleDrop(event, <%= category.id %>)"
+                             ondragover="handleDragOver(event)"
+                             ondragleave="handleDragLeave(event)">
+                            <img src="/images/categories/<%= category.image %>?t=<%= Date.now() %>" 
+                                 alt="<%= category.name %>"
+                                 onerror="this.src='/images/no-image.jpg'">
+                            
+                            <!-- Actions sur l'image -->
+                            <div class="image-actions">
+                                <button type="button" class="btn btn-info btn-sm" 
+                                        onclick="editImage('<%= category.id %>', '/images/categories/<%= category.image %>')"
+                                        title="Éditer/Recadrer">
+                                    <i class="fas fa-crop"></i>
+                                </button>
+                                
+                                <button type="button" class="btn btn-danger btn-sm" 
+                                        onclick="confirmDeleteImage(<%= category.id %>)"
+                                        title="Supprimer cette image">
+                                    <i class="fas fa-trash"></i>
+                                </button>
                             </div>
-                        <% } else { %>
-                            <div class="placeholder">
-                                <i class="fas fa-gem"></i>
-                                <div>Glissez une image ici<br>ou cliquez pour choisir</div>
-                            </div>
-                        <% } %>
-                    </div>
+                        </div>
+                    <% } else { %>
+                        <div class="upload-zone" 
+                             id="preview-<%= category.id %>"
+                             ondrop="handleDrop(event, <%= category.id %>)"
+                             ondragover="handleDragOver(event)"
+                             ondragleave="handleDragLeave(event)"
+                             onclick="document.getElementById('file-<%= category.id %>').click()">
+                            <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                            <h6 style="margin-top: 15px; margin-bottom: 10px;">Ajouter une image</h6>
+                            <p class="text-muted mb-0">
+                                Glissez une image ici<br>ou cliquez pour choisir
+                            </p>
+                        </div>
+                    <% } %>
                     
+                    <!-- Barre de progression -->
                     <div class="progress-bar" id="progress-<%= category.id %>">
                         <div class="progress-fill"></div>
                     </div>
                     
+                    <!-- Section upload -->
                     <div class="upload-section">
-                        <div class="file-input-wrapper">
-                            <input type="file" 
-                                   class="file-input" 
-                                   id="file-<%= category.id %>" 
-                                   accept="image/*"
-                                   onchange="handleFileSelect(<%= category.id %>, this)">
-                            <label for="file-<%= category.id %>" class="file-label">
-                                <i class="fas fa-gem"></i>
-                                Choisir
-                            </label>
-                        </div>
+                        <input type="file" 
+                               class="file-input" 
+                               id="file-<%= category.id %>" 
+                               accept="image/*"
+                               onchange="handleFileSelect(<%= category.id %>, this)">
                         
-                        <button class="crop-btn" 
+                        <button class="btn btn-primary btn-sm" 
+                                onclick="document.getElementById('file-<%= category.id %>').click()">
+                            <i class="fas fa-upload"></i> Choisir
+                        </button>
+                        
+                        <button class="btn btn-success btn-sm" 
                                 id="crop-<%= category.id %>" 
                                 onclick="openCropModal(<%= category.id %>)"
-                                disabled>
-                            <i class="fas fa-crop-alt"></i>
-                            Rogner
+                                style="display: none;">
+                            <i class="fas fa-crop-alt"></i> Rogner
                         </button>
 
-                        <button class="upload-btn" 
+                        <button class="btn btn-success btn-sm" 
                                 id="upload-<%= category.id %>" 
                                 onclick="uploadImage(<%= category.id %>)"
-                                disabled>
-                            <i class="fas fa-upload"></i>
-                            Upload
+                                style="display: none;">
+                            <i class="fas fa-save"></i> Sauvegarder
                         </button>
                     </div>
                     
+                    <!-- Zone de chargement -->
                     <div class="loading" id="loading-<%= category.id %>">
                         <i class="fas fa-spinner"></i>
                         Traitement en cours...
                     </div>
                     
+                    <!-- Boutons d'action pour les images existantes -->
                     <% if (category.image) { %>
                         <div class="action-buttons">
-                            <button class="btn-secondary" onclick="previewImage('<%= category.image %>')">
-                                <i class="fas fa-eye"></i>
-                                Aperçu
-                            </button>
-                            <button class="delete-btn" onclick="deleteImage(<%= category.id %>)">
-                                <i class="fas fa-trash"></i>
-                                Supprimer
+                            <button class="btn btn-preview btn-sm" onclick="previewImage('<%= category.image %>')">
+                                <i class="fas fa-eye"></i> Aperçu
                             </button>
                         </div>
                     <% } %>
@@ -1438,665 +1095,997 @@ body {
         </div>
     </div>
 
-    <div class="admin-tools">
-        <button class="admin-btn" onclick="cleanupImages()" title="Nettoyer les images orphelines">
-            <i class="fas fa-broom"></i>
-        </button>
-        <button class="admin-btn" onclick="refreshStats()" title="Actualiser les statistiques">
-            <i class="fas fa-sync-alt"></i>
-        </button>
-        <button class="admin-btn" onclick="exportData()" title="Exporter les données">
-            <i class="fas fa-download"></i>
-        </button>
+    <!-- Modal pour le crop d'image -->
+    <div class="modal fade crop-modal" id="cropModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-crop me-2"></i>Recadrer l'image
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    
+                    <!-- Contrôles de crop -->
+                    <div class="crop-controls">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-bold">Qualité</label>
+                                        <select class="form-select form-select-sm" id="imageQuality">
+                                            <option value="0.7">Économique</option>
+                                            <option value="0.8">Normale</option>
+                                            <option value="0.9" selected>Haute</option>
+                                            <option value="1">Maximum</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-bold">Actions rapides</label>
+                                        <div class="btn-group btn-group-sm w-100" role="group">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="resetCropper()" title="Remettre à zéro">
+                                                <i class="fas fa-undo"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="rotateCropper(90)" title="Rotation 90°">
+                                                <i class="fas fa-redo"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="flipCropper()" title="Miroir horizontal">
+                                                <i class="fas fa-arrows-alt-h"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="zoomCropper(0.1)" title="Zoom +">
+                                                <i class="fas fa-search-plus"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-outline-secondary" onclick="zoomCropper(-0.1)" title="Zoom -">
+                                                <i class="fas fa-search-minus"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">Aperçu</label>
+                                <div class="crop-preview" id="cropPreview">
+                                    <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                                        <i class="fas fa-image fa-2x"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Zone de crop -->
+                    <div class="crop-container">
+                        <img id="cropImage" style="max-width: 100%; display: block;">
+                    </div>
+                </div>
+                
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Annuler
+                    </button>
+                    <button type="button" class="btn btn-primary" id="saveCroppedImage">
+                        <i class="fas fa-crop me-2"></i>Appliquer et sauvegarder
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Modal pour l'aperçu des images -->
-    <div id="imageModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(58, 58, 58, 0.9); z-index: 2000; align-items: center; justify-content: center;" onclick="closeModal()">
-        <div style="max-width: 90%; max-height: 90%; position: relative;">
-            <img id="modalImage" style="max-width: 100%; max-height: 100%; border-radius: 10px; box-shadow: var(--box-shadow);">
-            <button onclick="closeModal()" style="position: absolute; top: -40px; right: 0; background: var(--rose-gold); border: none; border-radius: 50%; width: 35px; height: 35px; cursor: pointer; color: white; font-size: 18px; box-shadow: var(--box-shadow);">×</button>
-        </div>
-    </div>
-
-    <!-- Modal pour le rognage -->
-    <!-- Modal de rognage amélioré -->
-<div id="cropModal" class="crop-modal">
-    <div class="crop-container">
-        <button class="crop-close-btn" onclick="closeCropModal()">×</button>
-        
-        <div class="crop-header">
-            <h3><i class="fas fa-magic"></i> Rognage Intelligent</h3>
-            <p>Ajustez votre image avec des outils professionnels</p>
-        </div>
-        
-        <div class="crop-main-content">
-            <div class="crop-image-section">
-                <div class="crop-image-container">
-                    <img id="cropImage" class="crop-image" alt="Image à rogner">
+    <div class="modal fade" id="imageModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header" style="background: var(--gradient-primary); color: white;">
+                    <h5 class="modal-title">
+                        <i class="fas fa-eye me-2"></i>Aperçu de l'image
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-            </div>
-            
-            <div class="crop-controls-section">
-                <div class="crop-presets">
-                    <h4><i class="fas fa-crop-alt"></i> Formats prédéfinis</h4>
-                    <div class="ratio-grid">
-                        <button class="aspect-ratio-btn active" data-ratio="free">
-                            <i class="fas fa-expand-arrows-alt"></i>
-                            Libre
-                        </button>
-                        <button class="aspect-ratio-btn" data-ratio="1">
-                            <i class="fas fa-square"></i>
-                            Carré
-                        </button>
-                        <button class="aspect-ratio-btn" data-ratio="1.33">
-                            <i class="fas fa-tv"></i>
-                            4:3
-                        </button>
-                        <button class="aspect-ratio-btn" data-ratio="1.78">
-                            <i class="fas fa-desktop"></i>
-                            16:9
-                        </button>
-                        <button class="aspect-ratio-btn" data-ratio="0.75">
-                            <i class="fas fa-mobile-alt"></i>
-                            Portrait
-                        </button>
-                        <button class="aspect-ratio-btn" data-ratio="2.35">
-                            <i class="fas fa-film"></i>
-                            Cinéma
-                        </button>
-                    </div>
+                <div class="modal-body text-center">
+                    <img id="modalImage" class="img-fluid" style="max-height: 70vh; border-radius: var(--radius-md);">
                 </div>
-                
-                <div class="crop-quality">
-                    <h4><i class="fas fa-sliders-h"></i> Qualité d'export</h4>
-                    <div class="quality-slider">
-                        <input type="range" 
-                               id="qualitySlider" 
-                               class="quality-input" 
-                               min="0.1" 
-                               max="1" 
-                               step="0.1" 
-                               value="0.9"
-                               oninput="updateQualityDisplay(this.value)">
-                    </div>
-                    <div class="quality-labels">
-                        <span>Rapide</span>
-                        <span id="qualityValue">90%</span>
-                        <span>HD</span>
-                    </div>
-                </div>
-                
-                <div class="crop-preview">
-                    <h4><i class="fas fa-eye"></i> Aperçu</h4>
-                    <div class="preview-container">
-                        <canvas id="previewCanvas" class="preview-image"></canvas>
-                    </div>
-                    <small style="color: var(--dark-text); opacity: 0.7;">
-                        Aperçu en temps réel
-                    </small>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Fermer
+                    </button>
                 </div>
             </div>
         </div>
-        
-        <div class="crop-actions">
-            <button class="crop-btn-large crop-reset-btn" onclick="resetCrop()">
-                <i class="fas fa-undo"></i>
-                Réinitialiser
-            </button>
-            <button class="crop-btn-large crop-cancel-btn" onclick="closeCropModal()">
-                <i class="fas fa-times"></i>
-                Annuler
-            </button>
-            <button class="crop-btn-large crop-save-btn" onclick="applyCrop()">
-                <i class="fas fa-check"></i>
-                Appliquer et Uploader
-            </button>
+    </div>
+
+    <!-- Modal de confirmation de suppression -->
+    <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>Confirmer la suppression
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center">
+                        <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+                        <h6 class="mb-3">Êtes-vous sûr de vouloir supprimer cette image ?</h6>
+                        <p class="text-muted mb-0" id="deleteConfirmText">
+                            Cette action est irréversible.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-2"></i>Annuler
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="fas fa-trash me-2"></i>Supprimer définitivement
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-    
-    <div id="notification" class="notification"></div>
+    <!-- Toast notifications -->
+    <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+        <div id="toastContainer"></div>
+    </div>
 
-    <!-- Cropper.js JavaScript -->
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
     
-  // ✅ SCRIPT JAVASCRIPT CORRIGÉ
+    <script>
+        // ==========================================
+        // VARIABLES GLOBALES
+        // ==========================================
+        let cropperInstance = null;
+        let currentCategoryId = null;
+        let currentImageData = null;
+        let selectedFiles = {};
 
-<script>
-    // Variables globales
-    let selectedFiles = {};
-    let croppers = {};
-    let currentCropCategoryId = null;
-    let previewCanvas, previewCtx; // Variables pour l'aperçu
+        // ==========================================
+        // INITIALISATION
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎨 Gestionnaire d\'images des catégories initialisé');
+            
+            // Initialiser les fonctionnalités
+            initializeDragAndDrop();
+            
+            // Animations d'entrée
+            animateCards();
+            
+            console.log('✅ Interface prête');
+        });
 
-    // ==========================================
-    // FONCTIONS DRAG & DROP
-    // ==========================================
-    
-    function handleDragOver(e) {
-        e.preventDefault();
-        e.currentTarget.classList.add('drag-over');
-    }
+        // ==========================================
+        // GESTION DU DRAG & DROP
+        // ==========================================
+        function initializeDragAndDrop() {
+            // Prévenir les comportements par défaut globalement
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                document.body.addEventListener(eventName, preventDefaults, false);
+            });
 
-    function handleDragLeave(e) {
-        e.currentTarget.classList.remove('drag-over');
-    }
-
-    function handleDrop(e, categoryId) {
-        e.preventDefault();
-        e.currentTarget.classList.remove('drag-over');
-        
-        const files = e.dataTransfer.files;
-        if (files.length > 0) {
-            const file = files[0];
-            if (file.type.startsWith('image/')) {
-                const input = document.getElementById(`file-${categoryId}`);
-                const dataTransfer = new DataTransfer();
-                dataTransfer.items.add(file);
-                input.files = dataTransfer.files;
-                handleFileSelect(categoryId, input);
-            } else {
-                showNotification('Veuillez sélectionner un fichier image valide', 'error');
+            function preventDefaults(e) {
+                e.preventDefault();
+                e.stopPropagation();
             }
         }
-    }
-    
-    // ==========================================
-    // SÉLECTION DE FICHIERS
-    // ==========================================
-    
-    function handleFileSelect(categoryId, input) {
-        const file = input.files[0];
-        const uploadBtn = document.getElementById(`upload-${categoryId}`);
-        const cropBtn = document.getElementById(`crop-${categoryId}`);
-        const preview = document.getElementById(`preview-${categoryId}`);
-        
-        if (file) {
-            // Validation de la taille
-            if (file.size > 10 * 1024 * 1024) {
-                showNotification('La taille du fichier ne doit pas dépasser 10MB', 'error');
-                input.value = '';
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function handleDragLeave(event) {
+            event.currentTarget.classList.remove('dragover');
+        }
+
+        function handleDrop(event, categoryId) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                const input = document.getElementById(`file-${categoryId}`);
+                input.files = files;
+                handleFileSelect(categoryId, input);
+            }
+        }
+
+        // ==========================================
+        // GESTION DES FICHIERS
+        // ==========================================
+        function handleFileSelect(categoryId, input) {
+            const file = input.files[0];
+            
+            if (!file || !file.type.startsWith('image/')) {
+                showToast('Veuillez sélectionner une image valide', 'warning');
+                return;
+            }
+
+            if (file.size > 10 * 1024 * 1024) { // 10MB
+                showToast('Fichier trop volumineux (max 10MB)', 'danger');
                 return;
             }
 
             selectedFiles[categoryId] = file;
-            uploadBtn.disabled = false;
-            cropBtn.disabled = false;
             
-            // Prévisualisation
+            // Afficher l'aperçu
             const reader = new FileReader();
             reader.onload = function(e) {
-                preview.innerHTML = `
-                    <div style="
-                        background-image: url('${e.target.result}');
-                        background-size: cover;
-                        background-position: center;
-                        width: 100%;
-                        height: 100%;
-                        border-radius: 12px;
-                    "></div>
-                    <div class="image-overlay">
-                        <div class="overlay-text">
-                            <i class="fas fa-crop-alt"></i><br>
-                            Prêt à rogner
-                        </div>
-                    </div>
-                `;
-                preview.classList.add('has-image');
+                updatePreviewImage(categoryId, e.target.result);
+                showUploadButtons(categoryId);
             };
             reader.readAsDataURL(file);
             
-            showNotification(`💎 Image sélectionnée: ${file.name}`, 'info');
-        } else {
-            delete selectedFiles[categoryId];
-            uploadBtn.disabled = true;
-            cropBtn.disabled = true;
-        }
-    }
-
-    // ==========================================
-    // FONCTIONS DE ROGNAGE
-    // ==========================================
-    
-    function openCropModal(categoryId) {
-        const file = selectedFiles[categoryId];
-        if (!file) {
-            showNotification('Aucun fichier sélectionné', 'error');
-            return;
+            showToast(`Image sélectionnée: ${file.name}`, 'success');
         }
 
-        currentCropCategoryId = categoryId;
-        const modal = document.getElementById('cropModal');
-        const cropImage = document.getElementById('cropImage');
-
-        // Initialiser le canvas de prévisualisation
-        previewCanvas = document.getElementById('previewCanvas');
-        if (previewCanvas) {
-            previewCtx = previewCanvas.getContext('2d');
-            previewCanvas.width = 150;
-            previewCanvas.height = 150;
-        }
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            cropImage.src = e.target.result;
-            modal.classList.add('show');
+        function updatePreviewImage(categoryId, imageDataUrl) {
+            const preview = document.getElementById(`preview-${categoryId}`);
             
-            // Initialiser Cropper.js avec de meilleures options
-            setTimeout(() => {
-                if (croppers[categoryId]) {
-                    croppers[categoryId].destroy();
+            // Transformer en container d'image avec actions
+            preview.className = 'image-preview-container';
+            preview.innerHTML = `
+                <img src="${imageDataUrl}" alt="Aperçu" style="width: 100%; height: 100%; object-fit: cover;">
+                <div class="image-actions">
+                    <button type="button" class="btn btn-info btn-sm" 
+                            onclick="openCropModal(${categoryId})"
+                            title="Éditer/Recadrer">
+                        <i class="fas fa-crop"></i>
+                    </button>
+                </div>
+            `;
+            
+            // Retirer les événements de drag & drop
+            preview.removeAttribute('ondrop');
+            preview.removeAttribute('ondragover');
+            preview.removeAttribute('ondragleave');
+            preview.removeAttribute('onclick');
+        }
+
+        function showUploadButtons(categoryId) {
+            document.getElementById(`crop-${categoryId}`).style.display = 'inline-block';
+            document.getElementById(`upload-${categoryId}`).style.display = 'inline-block';
+        }
+
+        function hideUploadButtons(categoryId) {
+            document.getElementById(`crop-${categoryId}`).style.display = 'none';
+            document.getElementById(`upload-${categoryId}`).style.display = 'none';
+        }
+
+        // ==========================================
+        // MODAL DE CROP
+        // ==========================================
+        function openCropModal(categoryId, isEdit = false) {
+            console.log('🎯 Ouverture modal crop pour catégorie:', categoryId, 'isEdit:', isEdit);
+            
+            currentCategoryId = categoryId;
+            
+            const modal = new bootstrap.Modal(document.getElementById('cropModal'));
+            const cropImage = document.getElementById('cropImage');
+            
+            if (isEdit) {
+                // Pour éditer une image existante
+                const preview = document.getElementById(`preview-${categoryId}`);
+                const img = preview.querySelector('img');
+                if (!img) {
+                    showToast('Image non trouvée', 'danger');
+                    return;
+                }
+                cropImage.src = img.src;
+                console.log('📸 Source image pour édition:', img.src);
+            } else {
+                // Pour une nouvelle image
+                const file = selectedFiles[categoryId];
+                if (!file) {
+                    showToast('Aucun fichier sélectionné', 'danger');
+                    return;
                 }
                 
-                croppers[categoryId] = new Cropper(cropImage, {
-                    aspectRatio: NaN,
-                    viewMode: 1,
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    cropImage.src = e.target.result;
+                    console.log('📸 Image chargée depuis fichier');
+                };
+                reader.readAsDataURL(file);
+            }
+
+            // Initialiser le cropper quand l'image est chargée
+            cropImage.onload = function() {
+                console.log('🎨 Initialisation du cropper...');
+                
+                if (cropperInstance) {
+                    cropperInstance.destroy();
+                    console.log('🗑️ Ancien cropper détruit');
+                }
+
+                cropperInstance = new Cropper(cropImage, {
+                    aspectRatio: 1, // Carré par défaut
+                    viewMode: 2,
                     dragMode: 'move',
                     autoCropArea: 0.8,
-                    responsive: true,
+                    restore: false,
                     guides: true,
                     center: true,
                     highlight: false,
                     cropBoxMovable: true,
                     cropBoxResizable: true,
                     toggleDragModeOnDblclick: false,
-                    ready: function() {
-                        updatePreview();
+                    minContainerWidth: 300,
+                    minContainerHeight: 300,
+                    crop: function(event) {
+                        updateCropPreview();
                     },
-                    crop: function() {
-                        updatePreview();
+                    ready: function() {
+                        console.log('✅ Cropper prêt');
+                        updateCropPreview();
                     }
                 });
-            }, 100);
-        };
-        reader.readAsDataURL(file);
-    }
 
-    function closeCropModal() {
-        const modal = document.getElementById('cropModal');
-        modal.classList.remove('show');
-        
-        if (currentCropCategoryId && croppers[currentCropCategoryId]) {
-            croppers[currentCropCategoryId].destroy();
-            delete croppers[currentCropCategoryId];
-        }
-        
-        currentCropCategoryId = null;
-        
-        // Nettoyer le canvas de prévisualisation
-        if (previewCtx) {
-            previewCtx.clearRect(0, 0, 150, 150);
-        }
-    }
+                // Réinitialiser le bouton et ajouter l'event listener
+                initializeCropSaveButton();
+                
+                modal.show();
+                console.log('👁️ Modal affichée');
+            };
 
-    function resetCrop() {
-        if (currentCropCategoryId && croppers[currentCropCategoryId]) {
-            croppers[currentCropCategoryId].reset();
-            
-            // Réinitialiser les boutons de ratio
-            document.querySelectorAll('.aspect-ratio-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            const freeBtn = document.querySelector('.aspect-ratio-btn[data-ratio="free"]');
-            if (freeBtn) {
-                freeBtn.classList.add('active');
-            }
-            
-            // Réinitialiser la qualité
-            const qualitySlider = document.getElementById('qualitySlider');
-            if (qualitySlider) {
-                qualitySlider.value = 0.9;
-                updateQualityDisplay(0.9);
-            }
-            
-            setTimeout(() => {
-                updatePreview();
-            }, 200);
-            
-            showNotification('🔄 Image réinitialisée', 'info');
-        }
-    }
-
-    // ==========================================
-    // FONCTIONS D'APERÇU ET QUALITÉ
-    // ==========================================
-    
-    function updateQualityDisplay(value) {
-        const qualityValue = document.getElementById('qualityValue');
-        if (qualityValue) {
-            qualityValue.textContent = Math.round(value * 100) + '%';
-        }
-        updatePreview();
-    }
-
-    function updatePreview() {
-        if (!currentCropCategoryId || !croppers[currentCropCategoryId] || !previewCtx) {
-            return;
+            cropImage.onerror = function() {
+                console.error('❌ Erreur chargement image');
+                showToast('Erreur lors du chargement de l\'image', 'danger');
+            };
         }
 
-        const cropper = croppers[currentCropCategoryId];
-        const qualitySlider = document.getElementById('qualitySlider');
-        const quality = qualitySlider ? parseFloat(qualitySlider.value) : 0.9;
-        
-        // Obtenir les données de crop
-        const canvas = cropper.getCroppedCanvas({
-            width: 150,
-            height: 150,
-            imageSmoothingEnabled: true,
-            imageSmoothingQuality: quality > 0.7 ? 'high' : quality > 0.4 ? 'medium' : 'low',
-        });
-        
-        if (canvas) {
-            // Effacer le canvas de prévisualisation
-            previewCtx.clearRect(0, 0, 150, 150);
-            
-            // Dessiner l'image rognée
-            previewCtx.drawImage(canvas, 0, 0, 150, 150);
-        }
-    }
-
-    // ==========================================
-    // FONCTION APPLYCROP AMÉLIORÉE
-    // ==========================================
-    
-    async function applyCrop() {
-        if (!currentCropCategoryId || !croppers[currentCropCategoryId]) {
-            showNotification('Erreur lors du rognage', 'error');
-            return;
+        function editImage(categoryId, imageUrl) {
+            currentCategoryId = categoryId;
+            openCropModal(categoryId, true);
         }
 
-        const cropper = croppers[currentCropCategoryId];
-        const qualitySlider = document.getElementById('qualitySlider');
-        const quality = qualitySlider ? parseFloat(qualitySlider.value) : 0.9;
-        
-        // Afficher un indicateur de traitement
-        const saveBtn = document.querySelector('.crop-save-btn');
-        if (!saveBtn) {
-            showNotification('Bouton de sauvegarde non trouvé', 'error');
-            return;
-        }
-        
-        const originalText = saveBtn.innerHTML;
-        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Traitement...';
-        saveBtn.disabled = true;
+        // Mettre à jour l'aperçu du crop
+        function updateCropPreview() {
+            if (!cropperInstance) return;
 
-        try {
-            const canvas = cropper.getCroppedCanvas({
-                width: 800,
-                height: 600,
+            const canvas = cropperInstance.getCroppedCanvas({
+                width: 120,
+                height: 120,
                 imageSmoothingEnabled: true,
-                imageSmoothingQuality: quality > 0.7 ? 'high' : quality > 0.4 ? 'medium' : 'low',
+                imageSmoothingQuality: 'high'
             });
 
-            canvas.toBlob(async (blob) => {
-                if (blob) {
-                    // Créer le fichier rogné
-                    const originalFile = selectedFiles[currentCropCategoryId];
-                    const croppedFile = new File([blob], originalFile.name, {
-                        type: originalFile.type,
-                        lastModified: Date.now()
-                    });
-                    
-                    selectedFiles[currentCropCategoryId] = croppedFile;
-                    
-                    // Fermer le modal
-                    closeCropModal();
-                    
-                    // Uploader automatiquement
-                    showNotification('✨ Image rognée avec succès! Upload en cours...', 'success');
-                    
-                    // Attendre un peu pour que l'utilisateur voie le message
-                    setTimeout(async () => {
-                        try {
-                            await uploadImage(currentCropCategoryId);
-                        } catch (uploadError) {
-                            showNotification('Erreur lors de l\'upload: ' + uploadError.message, 'error');
-                        }
-                    }, 500);
-                    
-                } else {
+            const preview = document.getElementById('cropPreview');
+            preview.innerHTML = '';
+            preview.appendChild(canvas);
+        }
+
+        // Fonctions de contrôle du cropper
+        function resetCropper() {
+            if (cropperInstance) cropperInstance.reset();
+        }
+
+        function rotateCropper(degrees) {
+            if (cropperInstance) cropperInstance.rotate(degrees);
+        }
+
+        function flipCropper() {
+            if (cropperInstance) {
+                const data = cropperInstance.getData();
+                cropperInstance.scaleX(-data.scaleX || -1);
+            }
+        }
+
+        function zoomCropper(ratio) {
+            if (cropperInstance) cropperInstance.zoom(ratio);
+        }
+
+        // Changer le ratio d'aspect
+        document.getElementById('aspectRatio').addEventListener('change', function() {
+            if (!cropperInstance) return;
+
+            const value = this.value;
+            if (value === 'free') {
+                cropperInstance.setAspectRatio(NaN);
+            } else {
+                cropperInstance.setAspectRatio(parseFloat(value));
+            }
+        });
+
+        // ==========================================
+        // SAUVEGARDE DE L'IMAGE CROPPÉE - VERSION FINALE CORRIGÉE
+        // ==========================================
+        function initializeCropSaveButton() {
+            const saveBtn = document.getElementById('saveCroppedImage');
+            if (!saveBtn) {
+                console.error('❌ Bouton sauvegarder non trouvé');
+                return;
+            }
+
+            // Supprimer tous les anciens event listeners
+            const newSaveBtn = saveBtn.cloneNode(true);
+            saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+
+            // Ajouter le nouvel event listener
+            newSaveBtn.addEventListener('click', handleCropSave);
+            console.log('✅ Event listener ajouté au bouton sauvegarder');
+        }
+
+        async function handleCropSave(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            
+            console.log('🔄 DÉBUT handleCropSave');
+            console.log('📊 currentCategoryId:', currentCategoryId);
+            console.log('📊 cropperInstance:', !!cropperInstance);
+            
+            if (!cropperInstance) {
+                console.error('❌ Pas de cropper instance');
+                showToast('Erreur: Outil de rognage non initialisé', 'danger');
+                return;
+            }
+
+            if (!currentCategoryId) {
+                console.error('❌ Pas de categoryId');
+                showToast('Erreur: Catégorie non sélectionnée', 'danger');
+                return;
+            }
+
+            // Désactiver le bouton
+            const saveBtn = event.target;
+            const originalText = saveBtn.innerHTML;
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Sauvegarde...';
+
+            try {
+                showLoading('Traitement et sauvegarde...');
+
+                // Obtenir la qualité
+                const qualitySelect = document.getElementById('imageQuality');
+                const quality = qualitySelect ? parseFloat(qualitySelect.value) : 0.9;
+                console.log('📊 Qualité:', quality);
+
+                // Générer le canvas rogné
+                console.log('🎨 Génération du canvas...');
+                const canvas = cropperInstance.getCroppedCanvas({
+                    width: 800,
+                    height: 800,
+                    imageSmoothingEnabled: true,
+                    imageSmoothingQuality: quality > 0.7 ? 'high' : 'medium'
+                });
+
+                if (!canvas) {
                     throw new Error('Impossible de générer l\'image rognée');
                 }
-            }, 'image/jpeg', quality);
-            
-        } catch (error) {
-            console.error('Erreur rognage:', error);
-            showNotification('Erreur lors du rognage: ' + error.message, 'error');
-        } finally {
-            // Restaurer le bouton
-            saveBtn.innerHTML = originalText;
-            saveBtn.disabled = false;
-        }
-    }
 
-    // ==========================================
-    // FONCTION D'UPLOAD
-    // ==========================================
-    
-    async function uploadImage(categoryId) {
-        const file = selectedFiles[categoryId];
-        if (!file) {
-            showNotification('Aucun fichier sélectionné', 'error');
-            return;
+                console.log('✅ Canvas généré:', canvas.width, 'x', canvas.height);
+
+                // Convertir en blob
+                console.log('🔄 Conversion en blob...');
+                const blob = await new Promise((resolve, reject) => {
+                    canvas.toBlob((result) => {
+                        if (result) {
+                            console.log('✅ Blob créé, taille:', result.size, 'bytes');
+                            resolve(result);
+                        } else {
+                            reject(new Error('Échec de la conversion en blob'));
+                        }
+                    }, 'image/jpeg', quality);
+                });
+
+                // Créer FormData
+                const formData = new FormData();
+                const fileName = `category-${currentCategoryId}-${Date.now()}.jpg`;
+                formData.append('image', blob, fileName);
+                formData.append('categoryId', currentCategoryId.toString());
+
+                console.log('📤 Envoi au serveur...');
+                console.log('📋 Données:', {
+                    fileName: fileName,
+                    categoryId: currentCategoryId,
+                    blobSize: blob.size
+                });
+
+                // Envoyer au serveur
+                const response = await fetch('/admin/category-images/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log('📥 Réponse reçue:', response.status, response.statusText);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error('❌ Erreur serveur:', errorText);
+                    throw new Error(`Erreur serveur ${response.status}: ${errorText}`);
+                }
+
+                let result;
+                try {
+                    result = await response.json();
+                    console.log('📋 Résultat parsé:', result);
+                } catch (parseError) {
+                    console.error('❌ Erreur parsing JSON:', parseError);
+                    throw new Error('Réponse serveur invalide');
+                }
+
+                if (result.success) {
+                    console.log('✅ Succès!');
+                    hideLoading();
+                    
+                    // Fermer le modal
+                    const modal = bootstrap.Modal.getInstance(document.getElementById('cropModal'));
+                    if (modal) {
+                        modal.hide();
+                    }
+                    
+                    // Mettre à jour l'affichage
+                    await updateCategoryImageDisplay(currentCategoryId, result.imagePath);
+                    
+                    showToast('✅ Image sauvegardée avec succès!', 'success');
+                    
+                    // Nettoyage complet
+                    cleanupAfterSave();
+
+                } else {
+                    throw new Error(result.message || 'Erreur inconnue du serveur');
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur dans handleCropSave:', error);
+                hideLoading();
+                showToast(`❌ Erreur: ${error.message}`, 'danger');
+            } finally {
+                // Réactiver le bouton
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+            }
         }
-        
-        const uploadBtn = document.getElementById(`upload-${categoryId}`);
-        const loading = document.getElementById(`loading-${categoryId}`);
-        const progressBar = document.getElementById(`progress-${categoryId}`);
-        const progressFill = progressBar ? progressBar.querySelector('.progress-fill') : null;
-        
-        if (uploadBtn) uploadBtn.disabled = true;
-        if (loading) loading.style.display = 'block';
-        if (progressBar) progressBar.style.display = 'block';
-        
-        try {
-            const formData = new FormData();
-            formData.append('image', file);
-            formData.append('categoryId', categoryId);
+
+        function cleanupAfterSave() {
+            console.log('🧹 Nettoyage après sauvegarde...');
             
-            // Simulation de progression
-            let progress = 0;
-            const progressInterval = setInterval(() => {
-                progress += Math.random() * 30;
-                if (progress > 90) progress = 90;
-                if (progressFill) progressFill.style.width = progress + '%';
-            }, 200);
-            
-            const response = await fetch('/admin/category-images/upload', {
-                method: 'POST',
-                body: formData
-            });
-            
-            clearInterval(progressInterval);
-            if (progressFill) progressFill.style.width = '100%';
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                showNotification(`✨ Image mise à jour pour ${result.categoryName}`, 'success');
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                showNotification(result.message, 'error');
-                if (uploadBtn) uploadBtn.disabled = false;
+            // Détruire le cropper
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+                console.log('🗑️ Cropper détruit');
             }
             
-        } catch (error) {
-            showNotification('Erreur lors de l\'upload: ' + error.message, 'error');
-            if (uploadBtn) uploadBtn.disabled = false;
-        } finally {
-            if (loading) loading.style.display = 'none';
-            setTimeout(() => {
-                if (progressBar) progressBar.style.display = 'none';
-                if (progressFill) progressFill.style.width = '0%';
-            }, 1000);
-        }
-    }
-    
-    // ==========================================
-    // AUTRES FONCTIONS
-    // ==========================================
-    
-    async function deleteImage(categoryId) {
-        if (!confirm('🗑️ Êtes-vous sûr de vouloir supprimer cette image ?')) {
-            return;
-        }
-        
-        try {
-            const response = await fetch(`/admin/category-images/${categoryId}`, {
-                method: 'DELETE'
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                showNotification('🗑️ Image supprimée avec succès', 'success');
-                setTimeout(() => location.reload(), 1500);
-            } else {
-                showNotification(result.message, 'error');
+            // Nettoyer les fichiers sélectionnés
+            if (currentCategoryId && selectedFiles[currentCategoryId]) {
+                delete selectedFiles[currentCategoryId];
+                console.log('🗑️ Fichier sélectionné nettoyé');
             }
             
-        } catch (error) {
-            showNotification('Erreur lors de la suppression: ' + error.message, 'error');
-        }
-    }
-
-    function previewImage(imageName) {
-        const modal = document.getElementById('imageModal');
-        const modalImg = document.getElementById('modalImage');
-        if (modal && modalImg) {
-            modalImg.src = `/images/categories/${imageName}`;
-            modal.style.display = 'flex';
-        }
-    }
-
-    function closeModal() {
-        const modal = document.getElementById('imageModal');
-        if (modal) {
-            modal.style.display = 'none';
-        }
-    }
-
-    async function cleanupImages() {
-        if (!confirm('🧹 Nettoyer les images orphelines ?')) return;
-        
-        try {
-            const response = await fetch('/admin/category-images/cleanup', {
-                method: 'POST'
-            });
-            const result = await response.json();
-            
-            if (result.success) {
-                showNotification(`🧹 ${result.cleaned} images nettoyées`, 'success');
-            } else {
-                showNotification(result.message, 'error');
+            // Masquer les boutons d'upload
+            if (currentCategoryId) {
+                hideUploadButtons(currentCategoryId);
+                console.log('👁️ Boutons d\'upload masqués');
             }
-        } catch (error) {
-            showNotification('Erreur lors du nettoyage', 'error');
-        }
-    }
-
-    async function refreshStats() {
-        showNotification('🔄 Actualisation des statistiques...', 'info');
-        setTimeout(() => location.reload(), 1000);
-    }
-
-    function exportData() {
-        const data = {
-            categories: Array.from(document.querySelectorAll('.category-card')).map(card => ({
-                id: card.dataset.categoryId,
-                name: card.querySelector('.category-name').textContent.trim(),
-                hasImage: card.querySelector('.image-preview').classList.contains('has-image')
-            })),
-            timestamp: new Date().toISOString()
-        };
-        
-        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `categories-${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        showNotification('📄 Données exportées avec succès', 'success');
-    }
-    
-    function showNotification(message, type) {
-        const notification = document.getElementById('notification');
-        if (notification) {
-            notification.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-            notification.className = `notification ${type} show`;
             
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 4000);
+            // Reset de la catégorie courante
+            currentCategoryId = null;
+            console.log('🔄 categoryId reset');
         }
-    }
 
-    // ==========================================
-    // ÉVÉNEMENTS DOM
-    // ==========================================
-    
-    document.addEventListener('DOMContentLoaded', function() {
-        console.log('🚀 Initialisation de l\'interface...');
-        
-        // Animation des cartes
-        const cards = document.querySelectorAll('.category-card');
-        cards.forEach((card, index) => {
-            card.style.animationDelay = `${index * 0.1}s`;
-        });
-
-        // Gestion des ratios d'aspect
-        const aspectRatioButtons = document.querySelectorAll('.aspect-ratio-btn');
-        aspectRatioButtons.forEach(btn => {
-            btn.addEventListener('click', function() {
-                // Animation de transition
-                aspectRatioButtons.forEach(b => {
-                    b.classList.remove('active');
-                    b.style.transform = 'scale(1)';
+        // ==========================================
+        // UPLOAD SANS CROP
+        // ==========================================
+        async function uploadImage(categoryId) {
+            const file = selectedFiles[categoryId];
+            if (!file) {
+                showToast('Aucun fichier sélectionné', 'danger');
+                return;
+            }
+            
+            showLoading('Upload en cours...');
+            showProgress(categoryId, 0);
+            
+            try {
+                const formData = new FormData();
+                formData.append('image', file);
+                formData.append('categoryId', categoryId);
+                
+                const response = await fetch('/admin/category-images/upload', {
+                    method: 'POST',
+                    body: formData
                 });
                 
-                this.classList.add('active');
-                this.style.transform = 'scale(1.05)';
+                const result = await response.json();
                 
-                const ratio = this.dataset.ratio;
-                if (currentCropCategoryId && croppers[currentCropCategoryId]) {
-                    const aspectRatio = ratio === 'free' ? NaN : parseFloat(ratio);
-                    croppers[currentCropCategoryId].setAspectRatio(aspectRatio);
+                if (result.success) {
+                    hideLoading();
+                    hideProgress(categoryId);
                     
-                    // Petit délai pour l'animation puis mise à jour de l'aperçu
-                    setTimeout(() => {
-                        updatePreview();
-                    }, 200);
+                    updateCategoryImageDisplay(categoryId, result.imagePath);
+                    showToast(`Image uploadée pour ${result.categoryName}`, 'success');
+                    
+                    // Nettoyer
+                    delete selectedFiles[categoryId];
+                    hideUploadButtons(categoryId);
+                } else {
+                    hideLoading();
+                    hideProgress(categoryId);
+                    showToast(result.message, 'danger');
                 }
                 
-                // Feedback visuel
-                showNotification(`📐 Format ${this.textContent.trim()} sélectionné`, 'info');
-            });
-        });
-
-        // Raccourcis clavier
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeModal();
-                closeCropModal();
+            } catch (error) {
+                hideLoading();
+                hideProgress(categoryId);
+                showToast('Erreur lors de l\'upload', 'danger');
+                console.error('Erreur upload:', error);
             }
+        }
+
+        // ==========================================
+        // MISE À JOUR DE L'AFFICHAGE
+        // ==========================================
+        async function updateCategoryImageDisplay(categoryId, imagePath) {
+            console.log('🔄 Mise à jour affichage pour catégorie:', categoryId, 'path:', imagePath);
+            
+            const preview = document.getElementById(`preview-${categoryId}`);
+            if (!preview) {
+                console.error('❌ Preview non trouvé pour catégorie:', categoryId);
+                return;
+            }
+            
+            // Animation de transition
+            preview.style.transition = 'all 0.3s ease';
+            preview.style.opacity = '0.5';
+            
+            setTimeout(() => {
+                preview.className = 'image-preview-container';
+                preview.removeAttribute('ondrop');
+                preview.removeAttribute('ondragover');
+                preview.removeAttribute('ondragleave');
+                preview.removeAttribute('onclick');
+                
+                const timestamp = Date.now();
+                const imageUrl = `${imagePath}?t=${timestamp}`;
+                
+                preview.innerHTML = `
+                    <img src="${imageUrl}" alt="Image de catégorie" 
+                         style="width: 100%; height: 100%; object-fit: cover;"
+                         onload="this.style.opacity='1'" 
+                         style="opacity: 0; transition: opacity 0.3s ease;">
+                    <div class="image-actions">
+                        <button type="button" class="btn btn-info btn-sm" 
+                                onclick="editImage(${categoryId}, '${imageUrl}')"
+                                title="Éditer/Recadrer">
+                            <i class="fas fa-crop"></i>
+                        </button>
+                        <button type="button" class="btn btn-danger btn-sm" 
+                                onclick="confirmDeleteImage(${categoryId})"
+                                title="Supprimer cette image">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+                
+                // Restaurer l'opacité
+                preview.style.opacity = '1';
+                
+                // Ajouter les boutons d'action
+                const card = preview.closest('.category-card');
+                let actionButtons = card.querySelector('.action-buttons');
+                if (!actionButtons) {
+                    actionButtons = document.createElement('div');
+                    actionButtons.className = 'action-buttons';
+                    card.appendChild(actionButtons);
+                }
+                
+                const imageName = imagePath.split('/').pop();
+                actionButtons.innerHTML = `
+                    <button class="btn btn-preview btn-sm" onclick="previewImage('${imageName}')">
+                        <i class="fas fa-eye"></i> Aperçu
+                    </button>
+                `;
+                
+                console.log('✅ Affichage mis à jour avec succès');
+            }, 300);
+        }
+
+        // ==========================================
+        // SUPPRESSION D'IMAGE - VERSION CORRIGÉE
+        // ==========================================
+        function confirmDeleteImage(categoryId) {
+            console.log('🗑️ Demande de suppression pour catégorie:', categoryId);
+            
+            const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+            const confirmBtn = document.getElementById('confirmDeleteBtn');
+            
+            // Mise à jour du texte de confirmation
+            const confirmText = document.getElementById('deleteConfirmText');
+            confirmText.innerHTML = `
+                Vous allez supprimer l'image de cette catégorie.<br>
+                <strong>Cette action est irréversible.</strong>
+            `;
+            
+            // Gérer la confirmation
+            confirmBtn.onclick = () => {
+                console.log('✅ Suppression confirmée');
+                modal.hide();
+                deleteImageConfirmed(categoryId);
+            };
+            
+            modal.show();
+        }
+
+        async function deleteImageConfirmed(categoryId) {
+            console.log('🔄 Début suppression pour catégorie:', categoryId);
+            
+            try {
+                showLoading('Suppression en cours...');
+
+                const response = await fetch(`/admin/category-images/${categoryId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('📥 Réponse suppression, status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`Erreur serveur: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('📋 Résultat suppression:', result);
+
+                if (result.success) {
+                    hideLoading();
+                    
+                    // Remettre la zone d'upload avec animation
+                    resetToUploadZoneAnimated(categoryId);
+                    
+                    showToast('🗑️ Image supprimée avec succès!', 'success');
+                } else {
+                    throw new Error(result.message || 'Erreur lors de la suppression');
+                }
+
+            } catch (error) {
+                console.error('❌ Erreur suppression:', error);
+                hideLoading();
+                showToast(`❌ Erreur: ${error.message}`, 'danger');
+            }
+        }
+
+        function resetToUploadZoneAnimated(categoryId) {
+            const preview = document.getElementById(`preview-${categoryId}`);
+            
+            // Animation de sortie
+            preview.style.transition = 'all 0.4s ease';
+            preview.style.opacity = '0';
+            preview.style.transform = 'scale(0.9)';
+            
+            setTimeout(() => {
+                // Remettre la zone d'upload
+                preview.className = 'upload-zone';
+                preview.setAttribute('ondrop', `handleDrop(event, ${categoryId})`);
+                preview.setAttribute('ondragover', 'handleDragOver(event)');
+                preview.setAttribute('ondragleave', 'handleDragLeave(event)');
+                preview.setAttribute('onclick', `document.getElementById('file-${categoryId}').click()`);
+                
+                preview.innerHTML = `
+                    <i class="fas fa-cloud-upload-alt fa-3x"></i>
+                    <h6 style="margin-top: 15px; margin-bottom: 10px;">Ajouter une image</h6>
+                    <p class="text-muted mb-0">
+                        Glissez une image ici<br>ou cliquez pour choisir
+                    </p>
+                `;
+                
+                // Animation d'entrée
+                preview.style.opacity = '1';
+                preview.style.transform = 'scale(1)';
+                
+                // Supprimer les boutons d'action
+                const card = preview.closest('.category-card');
+                const actionButtons = card.querySelector('.action-buttons');
+                if (actionButtons) {
+                    actionButtons.style.opacity = '0';
+                    setTimeout(() => {
+                        actionButtons.remove();
+                    }, 300);
+                }
+            }, 400);
+        }
+
+        // Fonction legacy pour compatibilité (sera appelée par les boutons existants)
+        async function deleteImage(categoryId) {
+            confirmDeleteImage(categoryId);
+        }
+
+        // ==========================================
+        // APERÇU D'IMAGE
+        // ==========================================
+        function previewImage(imageName) {
+            const modal = new bootstrap.Modal(document.getElementById('imageModal'));
+            const modalImage = document.getElementById('modalImage');
+            
+            modalImage.src = `/images/categories/${imageName}`;
+            modal.show();
+        }
+
+        // ==========================================
+        // FONCTIONS UTILITAIRES
+        // ==========================================
+        function showLoading(message = 'Chargement...') {
+            const overlay = document.getElementById('loadingOverlay');
+            const messageEl = document.getElementById('loadingMessage');
+            
+            messageEl.textContent = message;
+            overlay.style.display = 'flex';
+            
+            requestAnimationFrame(() => {
+                overlay.style.opacity = '1';
+            });
+        }
+
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            
+            overlay.style.opacity = '0';
+            setTimeout(() => {
+                overlay.style.display = 'none';
+            }, 300);
+        }
+
+        function showProgress(categoryId, percent) {
+            const progressBar = document.getElementById(`progress-${categoryId}`);
+            const progressFill = progressBar.querySelector('.progress-fill');
+            const loading = document.getElementById(`loading-${categoryId}`);
+            
+            progressBar.style.display = 'block';
+            loading.style.display = 'block';
+            progressFill.style.width = percent + '%';
+        }
+
+        function hideProgress(categoryId) {
+            const progressBar = document.getElementById(`progress-${categoryId}`);
+            const loading = document.getElementById(`loading-${categoryId}`);
+            
+            progressBar.style.display = 'none';
+            loading.style.display = 'none';
+        }
+
+        function showToast(message, type = 'info', duration = 5000) {
+            const container = document.getElementById('toastContainer');
+            
+            const iconClasses = {
+                'success': 'fa-check-circle text-success',
+                'danger': 'fa-times-circle text-danger',
+                'warning': 'fa-exclamation-triangle text-warning',
+                'info': 'fa-info-circle text-info'
+            };
+
+            const bgClasses = {
+                'success': 'bg-success',
+                'danger': 'bg-danger',
+                'warning': 'bg-warning',
+                'info': 'bg-primary'
+            };
+
+            const toastId = 'toast_' + Date.now();
+            
+            const toastHTML = `
+                <div class="toast" id="${toastId}" role="alert" data-bs-autohide="true" data-bs-delay="${duration}">
+                    <div class="toast-header ${bgClasses[type]} text-white">
+                        <i class="fas ${iconClasses[type]} me-2"></i>
+                        <strong class="me-auto">Notification</strong>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+                    </div>
+                    <div class="toast-body">
+                        ${message}
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', toastHTML);
+            
+            const toast = new bootstrap.Toast(document.getElementById(toastId));
+            toast.show();
+            
+            document.getElementById(toastId).addEventListener('hidden.bs.toast', function() {
+                this.remove();
+            });
+        }
+
+        function animateCards() {
+            const cards = document.querySelectorAll('.category-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        }
+
+        function refreshStats() {
+            showLoading('Actualisation...');
+            setTimeout(() => {
+                window.location.reload();
+            }, 500);
+        }
+
+        // ==========================================
+        // NETTOYAGE DU MODAL - VERSION AMÉLIORÉE
+        // ==========================================
+        document.getElementById('cropModal').addEventListener('hidden.bs.modal', function() {
+            console.log('🎭 Fermeture du modal crop');
+            
+            // Détruire le cropper
+            if (cropperInstance) {
+                cropperInstance.destroy();
+                cropperInstance = null;
+                console.log('🗑️ Cropper instance détruite');
+            }
+            
+            // Reset des variables
+            currentCategoryId = null;
+            
+            // Reset des contrôles
+            const aspectRatio = document.getElementById('aspectRatio');
+            const imageQuality = document.getElementById('imageQuality');
+            
+            if (aspectRatio) aspectRatio.value = '1';
+            if (imageQuality) imageQuality.value = '0.9';
+            
+            // Reset du preview
+            const preview = document.getElementById('cropPreview');
+            if (preview) {
+                preview.innerHTML = `
+                    <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                        <i class="fas fa-image fa-2x"></i>
+                    </div>
+                `;
+            }
+            
+            // Reset du bouton sauvegarder
+            const saveBtn = document.getElementById('saveCroppedImage');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-crop me-2"></i>Appliquer et sauvegarder';
+            }
+            
+            console.log('✅ Modal nettoyé');
         });
 
-        // Message de bienvenue
-        setTimeout(() => {
-            showNotification('💎 Interface de gestion rose-gold chargée', 'success');
-        }, 500);
-
-        console.log('✅ Interface initialisée avec succès');
-    });
-</script>
+        // ==========================================
+        // INITIALISATION FINALE
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 === INITIALISATION GESTIONNAIRE CATÉGORIES ===');
+            
+            // Initialiser les fonctionnalités
+            initializeDragAndDrop();
+            
+            // Vérifier la présence des éléments critiques
+            const saveBtn = document.getElementById('saveCroppedImage');
+            const cropModal = document.getElementById('cropModal');
+            
+            if (!saveBtn) {
+                console.error('❌ Bouton sauvegarder non trouvé!');
+            } else {
+                console.log('✅ Bouton sauvegarder trouvé');
+            }
+            
+            if (!cropModal) {
+                console.error('❌ Modal crop non trouvé!');
+            } else {
+                console.log('✅ Modal crop trouvé');
+            }
+            
+            // Animations d'entrée
+            animateCards();
+            
+            console.log('✅ === INITIALISATION TERMINÉE ===');
+        });
+    </script>
 </body>
 </html>
+                                        

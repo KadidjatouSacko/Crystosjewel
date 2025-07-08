@@ -111,6 +111,16 @@
     </div>
 
     <script>
+
+        window.addEventListener('unhandledrejection', function(event) {
+    console.error('❌ Promesse rejetée:', event.reason);
+    showNotification('Une erreur inattendue s\'est produite', true);
+});
+
+window.addEventListener('error', function(event) {
+    console.error('❌ Erreur JavaScript:', event.error);
+});
+
         // Recherche en temps réel
         document.getElementById('search-input').addEventListener('input', function() {
             const searchTerm = this.value.toLowerCase();
@@ -149,41 +159,109 @@
         }
 
         // Retirer des coups de cœur
-        async function removeFromFeatured(jewelId) {
-            try {
-                const response = await fetch('/admin/featured/remove', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ jewelId })
-                });
+      async function removeFromFeatured(jewelId) {
+    try {
+        console.log('🔄 Suppression coup de cœur:', jewelId);
+        
+        // Afficher un loader
+        showNotification('Suppression en cours...', false);
+        
+        const response = await fetch('/admin/coups-de-coeur/retirer', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ jewelId: parseInt(jewelId) })
+        });
 
-                const data = await response.json();
-
-                if (data.success) {
-                    showNotification('Bijou retiré des coups de cœur');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showNotification(data.message, true);
-                }
-            } catch (error) {
-                showNotification('Erreur lors de la suppression', true);
-            }
+        // Vérifier si la réponse est OK
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP: ${response.status}`);
         }
+
+        const data = await response.json();
+        console.log('📥 Réponse serveur:', data);
+
+        if (data.success) {
+            showNotification('✅ Bijou retiré des coups de cœur avec succès !', false);
+            
+            // Mettre à jour l'interface immédiatement
+            updateUIAfterRemoval(jewelId);
+            
+            // Recharger après un délai pour synchroniser
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            throw new Error(data.message || 'Erreur inconnue');
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur frontend:', error);
+        showNotification(`❌ Erreur: ${error.message}`, true);
+        
+        // Ne pas recharger en cas d'erreur
+        // setTimeout(() => location.reload(), 1000); // ← SUPPRIMÉ
+    }
+}
+
+// Fonction pour mettre à jour l'interface immédiatement
+function updateUIAfterRemoval(jewelId) {
+    // Trouver et supprimer l'élément de la liste des coups de cœur
+    const featuredItem = document.querySelector(`[data-jewel-id="${jewelId}"]`);
+    if (featuredItem) {
+        featuredItem.style.opacity = '0.5';
+        featuredItem.style.pointerEvents = 'none';
+        
+        // Ajouter un indicateur visuel
+        const indicator = document.createElement('div');
+        indicator.innerHTML = '✅ Retiré';
+        indicator.style.cssText = `
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #4caf50;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            z-index: 1000;
+        `;
+        featuredItem.style.position = 'relative';
+        featuredItem.appendChild(indicator);
+    }
+    
+    // Mettre à jour le bouton dans la liste principale
+    const mainListButton = document.querySelector(`button[onclick*="${jewelId}"][onclick*="removeFromFeatured"]`);
+    if (mainListButton) {
+        mainListButton.textContent = '+ Ajouter';
+        mainListButton.className = mainListButton.className.replace('btn-danger', 'btn-success');
+        mainListButton.setAttribute('onclick', `addToFeatured(${jewelId}, 'Bijou')`);
+    }
+}
 
         // Afficher notification
-        function showNotification(message, isError = false) {
-            const notification = document.getElementById('notification');
-            const messageEl = document.getElementById('notification-message');
-            const icon = notification.querySelector('i');
-            
-            notification.className = `notification ${isError ? 'error' : ''} show`;
-            messageEl.textContent = message;
-            icon.className = isError ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
-            
-            setTimeout(() => {
-                notification.classList.remove('show');
-            }, 4000);
-        }
+       
+           function showNotification(message, isError = false) {
+    // Supprimer les anciennes notifications
+    const existingNotifications = document.querySelectorAll('.notification.show');
+    existingNotifications.forEach(notif => notif.classList.remove('show'));
+    
+    const notification = document.getElementById('notification');
+    const messageEl = document.getElementById('notification-message');
+    const icon = notification.querySelector('i');
+    
+    notification.className = `notification ${isError ? 'error' : 'success'} show`;
+    messageEl.textContent = message;
+    icon.className = isError ? 'fas fa-exclamation-triangle' : 'fas fa-check-circle';
+    
+    // Auto-masquer après 4 secondes
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, 4000);
+}
     </script>
 </body>
 </html>

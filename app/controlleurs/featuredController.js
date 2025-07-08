@@ -4,6 +4,7 @@ import { JewelImage } from '../models/jewelImage.js';
 import { Category } from '../models/categoryModel.js';
 import { Op } from 'sequelize'; // ← AJOUT MANQUANT
 
+
 export const featuredController = {
 
   // Afficher la page de gestion des coups de cœur
@@ -106,53 +107,71 @@ export const featuredController = {
     }
   },
   
-  removeFromFeatured: async (req, res) => {
+
+// Remplacez la méthode removeFromFeatured par ceci :
+removeFromFeatured: async (req, res) => {
     try {
-      const { jewelId } = req.body;
-      
-      const jewel = await Jewel.findByPk(jewelId);
-      if (!jewel || !jewel.is_featured) {
-        return res.status(400).json({
-          success: false,
-          message: 'Bijou non trouvé ou pas en coup de cœur'
+        const { jewelId } = req.body;
+        console.log('🎯 Retrait coup de cœur:', jewelId);
+
+        if (!jewelId) {
+            return res.status(400).json({
+                success: false,
+                message: 'ID du bijou requis'
+            });
+        }
+
+        const jewel = await Jewel.findByPk(jewelId);
+        if (!jewel) {
+            return res.status(404).json({
+                success: false,
+                message: 'Bijou non trouvé'
+            });
+        }
+
+        if (!jewel.is_featured) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ce bijou n\'est pas un coup de cœur'
+            });
+        }
+
+        const removedOrder = jewel.featured_order;
+
+        // Retirer des coups de cœur
+        await jewel.update({
+            is_featured: false,
+            featured_order: null
         });
-      }
-      
-      const removedOrder = jewel.featured_order;
-      
-      await jewel.update({
-        is_featured: false,
-        featured_order: null
-      });
-      
-      // Réorganiser les ordres
-      if (removedOrder) {
-        await Jewel.update(
-          {
-            featured_order: Jewel.sequelize.literal('featured_order - 1')
-          },
-          {
-            where: {
-              is_featured: true,
-              featured_order: { [Op.gt]: removedOrder }
-            }
-          }
-        );
-      }
-      
-      res.json({
-        success: true,
-        message: 'Bijou retiré des coups de cœur'
-      });
-      
+
+        // Réorganiser les ordres avec SQL direct (plus sûr)
+        if (removedOrder) {
+            await sequelize.query(`
+                UPDATE jewels 
+                SET featured_order = featured_order - 1 
+                WHERE is_featured = true 
+                AND featured_order > :removedOrder
+            `, {
+                replacements: { removedOrder: removedOrder },
+                type: sequelize.QueryTypes.UPDATE
+            });
+        }
+
+        console.log(`✅ Bijou ${jewelId} retiré des coups de cœur avec succès`);
+
+        res.json({
+            success: true,
+            message: 'Bijou retiré des coups de cœur'
+        });
+
     } catch (error) {
-      console.error('❌ Erreur retrait:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur serveur'
-      });
+        console.error('❌ Erreur retrait coup de cœur:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur serveur: ' + error.message
+        });
     }
-  },
+},
 
   // Récupérer tous les bijoux pour l'interface admin (AJAX)
   getAllJewelsForAdmin: async (req, res) => {

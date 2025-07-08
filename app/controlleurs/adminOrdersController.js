@@ -462,6 +462,50 @@ getPaymentMethodDisplay(paymentMethod) {
     return methods[paymentMethod] || 'Carte bancaire';
 },
 
+async getDashboardData(period = 'month') {
+    try {
+        console.log(`📊 Récupération données dashboard pour: ${period}`);
+        
+        const { startDate, endDate } = this.getDateRange(period);
+        
+        // Toutes les données en parallèle
+        const [
+            financialData,
+            siteStats,
+            inventoryStats,
+            recentOrders,
+            visitorsData
+        ] = await Promise.all([
+            this.getFinancialData(startDate, endDate),
+            this.getSiteStats(startDate, endDate),
+            this.getInventoryStats(),
+            this.getRecentOrders(10),
+            this.getVisitorsData()
+        ]);
+
+        // Traduire les status des commandes récentes
+        const translatedOrders = recentOrders.map(order => ({
+            ...order,
+            status: translateOrderStatus(order.status || 'waiting'),
+            statusClass: this.getStatusClass(order.status || 'waiting')
+        }));
+
+        return {
+            ...financialData,
+            siteStats,
+            inventoryStats,
+            recentOrders: translatedOrders,
+            visitorsData,
+            period,
+            lastUpdated: new Date().toISOString()
+        };
+    } catch (error) {
+        console.error('❌ Erreur getDashboardData:', error);
+        throw error;
+    }
+},
+
+
     // ========================================
     // 📊 DASHBOARD PRINCIPAL
     // ========================================

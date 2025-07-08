@@ -6,50 +6,167 @@
   <title>Modifier <%= jewel.name %> | Administration</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
   
   <style>
+    /* ==========================================
+       VARIABLES CSS ROSE-GOLD THEME
+       ========================================== */
+    :root {
+      --rose-gold: #b76e79;
+      --rose-gold-light: #f5e8ea;
+      --rose-gold-dark: #8c4a58;
+      --rose-gold-accent: #d4a5a9;
+      --cream: #fff8f0;
+      --ivory: #f8f4f0;
+      --dark-text: #2c2c2c;
+      --light-gray: #f7f7f7;
+      --white: #ffffff;
+      --success-green: #28a745;
+      --error-red: #dc3545;
+      --warning-orange: #ffc107;
+      --info-blue: #17a2b8;
+      
+      /* Ombres avec teinte rose-gold */
+      --shadow-sm: 0 2px 8px rgba(183, 110, 121, 0.08);
+      --shadow-md: 0 4px 16px rgba(183, 110, 121, 0.12);
+      --shadow-lg: 0 8px 32px rgba(183, 110, 121, 0.16);
+      --shadow-xl: 0 16px 48px rgba(183, 110, 121, 0.20);
+      
+      /* Rayons et transitions */
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --transition-fast: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+      
+      /* Gradients rose-gold */
+      --gradient-primary: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+      --gradient-secondary: linear-gradient(45deg, var(--cream) 0%, var(--ivory) 100%);
+      --gradient-accent: linear-gradient(135deg, var(--rose-gold-light) 0%, var(--rose-gold-accent) 100%);
+    }
+
+    /* ==========================================
+       STYLES GLOBAUX
+       ========================================== */
+    html, body {
+      width: 100%;
+      overflow-x: hidden;
+      font-family: 'Inter', sans-serif;
+      background: var(--gradient-secondary);
+      color: var(--dark-text);
+    }
+
+    .container {
+      max-width: 1400px;
+    }
+
+    /* ==========================================
+       GESTION D'IMAGES - STYLES PRINCIPAUX
+       ========================================== */
     .image-preview {
       position: relative;
-      border-radius: 8px;
+      border-radius: var(--radius-md);
       overflow: hidden;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      box-shadow: var(--shadow-md);
       margin-bottom: 15px;
+      transition: var(--transition);
+      background: var(--white);
+      border: 2px solid transparent;
+    }
+    
+    .image-preview:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: var(--rose-gold-light);
     }
     
     .image-preview img {
       width: 100%;
-      height: 200px;
+      height: 220px;
       object-fit: cover;
+      transition: var(--transition);
+    }
+
+    .image-preview:hover img {
+      transform: scale(1.02);
     }
     
+    /* Actions sur les images */
     .image-actions {
       position: absolute;
-      top: 5px;
-      right: 5px;
+      top: 8px;
+      right: 8px;
       display: flex;
-      gap: 5px;
+      gap: 6px;
+      opacity: 0;
+      transition: var(--transition);
+    }
+    
+    .image-preview:hover .image-actions {
+      opacity: 1;
     }
     
     .image-actions .btn {
-      padding: 4px 8px;
-      font-size: 12px;
+      padding: 6px 10px;
+      font-size: 11px;
+      backdrop-filter: blur(10px);
+      background: rgba(255,255,255,0.95);
+      border: 1px solid rgba(183, 110, 121, 0.2);
+      border-radius: var(--radius-sm);
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition-fast);
+    }
+
+    .image-actions .btn:hover {
+      transform: scale(1.05);
+      box-shadow: var(--shadow-md);
+    }
+
+    .image-actions .btn-warning {
+      background: linear-gradient(135deg, #ffc107, #ffb300);
+      color: var(--dark-text);
+      border-color: #ffc107;
+    }
+
+    .image-actions .btn-info {
+      background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+      color: white;
+      border-color: var(--rose-gold);
+    }
+
+    .image-actions .btn-danger {
+      background: linear-gradient(135deg, #dc3545, #c82333);
+      color: white;
+      border-color: #dc3545;
     }
     
+    /* Badge image principale */
     .main-image-badge {
       position: absolute;
-      top: 5px;
-      left: 5px;
-      background: #28a745;
+      top: 8px;
+      left: 8px;
+      background: var(--gradient-primary);
       color: white;
-      padding: 2px 6px;
-      border-radius: 4px;
+      padding: 6px 12px;
+      border-radius: 20px;
       font-size: 11px;
-      font-weight: bold;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(10px);
     }
     
+    /* Images marquées pour suppression */
     .marked-for-deletion {
       opacity: 0.5;
-      border: 2px solid #dc3545 !important;
+      border: 2px solid var(--error-red) !important;
+      filter: grayscale(80%);
+      position: relative;
     }
     
     .marked-for-deletion::after {
@@ -58,128 +175,475 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(220, 53, 69, 0.9);
+      background: rgba(220, 53, 69, 0.95);
       color: white;
-      padding: 5px 10px;
-      border-radius: 4px;
+      padding: 8px 16px;
+      border-radius: var(--radius-sm);
       font-weight: bold;
-      font-size: 14px;
-      z-index: 10;
-    }
-    
-    .discount-preview {
-      background: linear-gradient(135deg, #28a745, #20c997);
-      color: white;
-      padding: 15px;
-      border-radius: 8px;
-      margin: 15px 0;
-    }
-    
-    .price-comparison {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      margin-top: 10px;
-    }
-    
-    .price-original {
-      text-decoration: line-through;
-      color: #6c757d;
-      font-size: 18px;
-    }
-    
-    .price-final {
-      color: #28a745;
-      font-size: 22px;
-      font-weight: bold;
-    }
-    
-    .savings {
-      background: #dc3545;
-      color: white;
-      padding: 4px 8px;
-      border-radius: 15px;
       font-size: 12px;
-      font-weight: bold;
+      z-index: 10;
+      backdrop-filter: blur(5px);
     }
 
-    .image-container {
-      border: 2px dashed #ddd;
-      padding: 10px;
-      border-radius: 8px;
-      min-height: 120px;
+    /* ==========================================
+       ZONE D'UPLOAD DRAG & DROP
+       ========================================== */
+    .upload-zone {
+      border: 3px dashed var(--rose-gold-accent);
+      border-radius: var(--radius-lg);
+      padding: 48px 24px;
+      text-align: center;
+      background: linear-gradient(135deg, rgba(245, 232, 234, 0.3), rgba(212, 165, 169, 0.2));
+      transition: var(--transition);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .upload-zone::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(183, 110, 121, 0.1), transparent);
+      transition: left 0.6s ease;
+    }
+    
+    .upload-zone:hover {
+      border-color: var(--rose-gold);
+      background: linear-gradient(135deg, rgba(245, 232, 234, 0.5), rgba(212, 165, 169, 0.4));
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .upload-zone:hover::before {
+      left: 100%;
+    }
+    
+    .upload-zone.dragover {
+      border-color: var(--success-green);
+      background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(32, 201, 151, 0.1));
+      transform: scale(1.02);
+    }
+
+    .upload-zone i {
+      color: var(--rose-gold);
+      margin-bottom: 16px;
+      transition: var(--transition);
+    }
+
+    .upload-zone:hover i {
+      color: var(--rose-gold-dark);
+      transform: scale(1.1);
+    }
+
+    /* ==========================================
+       GRILLE D'IMAGES
+       ========================================== */
+    .image-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 20px;
+      margin-top: 24px;
+    }
+
+    .add-image-card {
+      border: 2px dashed var(--rose-gold);
+      border-radius: var(--radius-md);
+      height: 220px;
       display: flex;
       align-items: center;
       justify-content: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background: linear-gradient(135deg, rgba(183, 110, 121, 0.05), rgba(183, 110, 121, 0.02));
+      position: relative;
+      overflow: hidden;
     }
 
-    .no-images {
-      color: #6c757d;
-      font-style: italic;
-      text-align: center;
-    }
-
-    .add-new-btn {
-      background: linear-gradient(45deg, #007bff, #0056b3);
-      border: none;
-      color: white;
-      padding: 5px 10px;
-      border-radius: 5px;
-      font-size: 12px;
-      margin-left: 10px;
-    }
-
-    .add-new-btn:hover {
-      background: linear-gradient(45deg, #0056b3, #004085);
-      color: white;
-    }
-
-    /* Fix pour la navbar mobile */
-    .navbar-toggler {
-      border: none;
-      padding: 4px 8px;
+    .add-image-card::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(183, 110, 121, 0.1);
+      border-radius: 50%;
+      transition: all 0.4s ease;
+      transform: translate(-50%, -50%);
     }
     
-    .navbar-toggler:focus {
-      box-shadow: none;
-    }
-    
-    @media (max-width: 991.98px) {
-      .navbar-collapse {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 0 0 8px 8px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        z-index: 1000;
-      }
-      
-      .navbar-nav {
-        padding: 10px;
-      }
+    .add-image-card:hover {
+      background: linear-gradient(135deg, rgba(183, 110, 121, 0.1), rgba(183, 110, 121, 0.05));
+      border-color: var(--rose-gold-dark);
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
     }
 
+    .add-image-card:hover::before {
+      width: 200px;
+      height: 200px;
+    }
+
+    .add-image-card .text-primary {
+      color: var(--rose-gold) !important;
+      transition: var(--transition);
+      z-index: 1;
+      position: relative;
+    }
+
+    .add-image-card:hover .text-primary {
+      color: var(--rose-gold-dark) !important;
+      transform: scale(1.05);
+    }
+
+    /* ==========================================
+       MODAL DE CROP
+       ========================================== */
+    .crop-modal .modal-dialog {
+      max-width: 95vw;
+      max-height: 95vh;
+    }
+
+    .crop-modal .modal-content {
+      border-radius: var(--radius-lg);
+      border: none;
+      box-shadow: var(--shadow-xl);
+    }
+
+    .crop-modal .modal-header {
+      background: var(--gradient-primary);
+      color: white;
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+      border-bottom: none;
+      padding: 20px 24px;
+    }
+
+    .crop-modal .modal-header .btn-close {
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      opacity: 1;
+    }
+
+    .crop-modal .modal-header .btn-close:hover {
+      background: rgba(255,255,255,0.3);
+      transform: scale(1.1);
+    }
+    
+    .crop-container {
+      max-height: 60vh;
+      overflow: hidden;
+      border-radius: var(--radius-md);
+      background: var(--light-gray);
+    }
+    
+    .crop-container img {
+      max-width: 100%;
+      display: block;
+    }
+
+    .crop-controls {
+      background: var(--gradient-secondary);
+      padding: 20px;
+      border-radius: var(--radius-md);
+      margin-bottom: 20px;
+      border: 1px solid var(--rose-gold-light);
+    }
+
+    .crop-preview {
+      width: 120px;
+      height: 120px;
+      overflow: hidden;
+      border: 2px solid var(--rose-gold);
+      border-radius: var(--radius-md);
+      background: var(--light-gray);
+      margin: 0 auto;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ==========================================
+       SPINNER DE CHARGEMENT
+       ========================================== */
     .spinner-overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100%;
       height: 100%;
-      background: rgba(0,0,0,0.5);
+      background: rgba(44, 44, 44, 0.8);
       display: none;
       justify-content: center;
       align-items: center;
       z-index: 9999;
+      backdrop-filter: blur(8px);
     }
 
     .spinner-content {
-      background: white;
-      padding: 30px;
-      border-radius: 10px;
+      background: var(--white);
+      padding: 40px;
+      border-radius: var(--radius-lg);
       text-align: center;
+      max-width: 320px;
+      box-shadow: var(--shadow-xl);
+      border: 1px solid var(--rose-gold-light);
+    }
+
+    .spinner-content .spinner-border {
+      color: var(--rose-gold);
+      width: 3rem;
+      height: 3rem;
+    }
+
+    #loadingMessage {
+      color: var(--dark-text);
+      font-weight: 500;
+      margin-top: 16px;
+    }
+
+    /* ==========================================
+       FORMULAIRE ET CARTES
+       ========================================== */
+    .card {
+      border: none;
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-md);
+      margin-bottom: 24px;
+      overflow: hidden;
+      background: var(--white);
+      transition: var(--transition);
+    }
+
+    .card:hover {
+      box-shadow: var(--shadow-lg);
+      transform: translateY(-2px);
+    }
+
+    .card-header {
+      border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+      border-bottom: none;
+      padding: 20px 24px;
+      font-weight: 600;
+    }
+
+    .card-header.bg-primary {
+      background: var(--gradient-primary) !important;
+    }
+
+    .card-header.bg-success {
+      background: linear-gradient(135deg, var(--success-green), #20c997) !important;
+    }
+
+    .card-header.bg-warning {
+      background: linear-gradient(135deg, var(--warning-orange), #fd7e14) !important;
+      color: var(--dark-text) !important;
+    }
+
+    .card-header.bg-info {
+      background: linear-gradient(135deg, var(--info-blue), #138496) !important;
+    }
+
+    .card-header.bg-secondary {
+      background: linear-gradient(135deg, #6c757d, #545b62) !important;
+    }
+
+    .card-header.bg-dark {
+      background: linear-gradient(135deg, #343a40, #23272b) !important;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    /* ==========================================
+       BOUTONS ROSE-GOLD THEME
+       ========================================== */
+    .btn {
+      border-radius: var(--radius-sm);
+      font-weight: 500;
+      transition: var(--transition);
+      text-transform: none;
+      letter-spacing: 0.3px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      transform: translate(-50%, -50%);
+    }
+
+    .btn:hover::before {
+      width: 300px;
+      height: 300px;
+    }
+
+    .btn-primary {
+      background: var(--gradient-primary);
+      border-color: var(--rose-gold);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, var(--rose-gold-dark), #6d3a44);
+      border-color: var(--rose-gold-dark);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+    }
+
+    .btn-secondary {
+      background: var(--gradient-secondary);
+      border-color: var(--rose-gold-accent);
+      color: var(--rose-gold-dark);
+    }
+
+    .btn-secondary:hover {
+      background: var(--rose-gold-light);
+      border-color: var(--rose-gold);
+      color: var(--rose-gold-dark);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success-green), #20c997);
+    }
+
+    .btn-success:hover {
+      background: linear-gradient(135deg, #218838, #1e7e34);
+      transform: translateY(-2px);
+    }
+
+    .btn-lg {
+      padding: 12px 32px;
+      font-size: 1.1rem;
+      border-radius: var(--radius-md);
+    }
+
+    /* ==========================================
+       CONTRÔLES DE FORMULAIRE
+       ========================================== */
+    .form-control, .form-select {
+      border: 2px solid var(--rose-gold-light);
+      border-radius: var(--radius-sm);
+      padding: 12px 16px;
+      transition: var(--transition);
+      background: var(--white);
+    }
+
+    .form-control:focus, .form-select:focus {
+      border-color: var(--rose-gold);
+      box-shadow: 0 0 0 0.2rem rgba(183, 110, 121, 0.25);
+      background: var(--white);
+    }
+
+    .form-label {
+      font-weight: 500;
+      color: var(--dark-text);
+      margin-bottom: 8px;
+    }
+
+    .text-danger {
+      color: var(--error-red) !important;
+    }
+
+    /* ==========================================
+       ALERTES
+       ========================================== */
+    .alert {
+      border: none;
+      border-radius: var(--radius-md);
+      border-left: 4px solid;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .alert-danger {
+      background: linear-gradient(135deg, rgba(220, 53, 69, 0.1), rgba(220, 53, 69, 0.05));
+      border-left-color: var(--error-red);
+      color: #721c24;
+    }
+
+    .alert-success {
+      background: linear-gradient(135deg, rgba(40, 167, 69, 0.1), rgba(40, 167, 69, 0.05));
+      border-left-color: var(--success-green);
+      color: #155724;
+    }
+
+    /* ==========================================
+       ANIMATIONS
+       ========================================== */
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(30px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .image-preview {
+      animation: fadeInUp 0.6s ease forwards;
+    }
+
+    .upload-zone:active {
+      animation: pulse 0.3s ease;
+    }
+
+    /* ==========================================
+       RESPONSIVE
+       ========================================== */
+    @media (max-width: 768px) {
+      .image-grid {
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 16px;
+      }
+
+      .crop-modal .modal-dialog {
+        margin: 10px;
+      }
+
+      .spinner-content {
+        margin: 20px;
+        padding: 30px 20px;
+      }
+
+      .card-body {
+        padding: 20px 16px;
+      }
+
+      .upload-zone {
+        padding: 32px 16px;
+      }
+    }
+
+    @media (max-width: 576px) {
+      .image-grid {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      }
+
+      .image-preview img {
+        height: 180px;
+      }
+
+      .add-image-card {
+        height: 180px;
+      }
     }
   </style>
 </head>
@@ -190,459 +654,721 @@
   <!-- Overlay de chargement -->
   <div class="spinner-overlay" id="loadingOverlay">
     <div class="spinner-content">
-      <div class="spinner-border text-primary" role="status">
+      <div class="spinner-border" role="status">
         <span class="visually-hidden">Chargement...</span>
       </div>
-      <div class="mt-2">Mise à jour en cours...</div>
+      <div id="loadingMessage">Traitement en cours...</div>
     </div>
   </div>
 
   <div class="container mt-4">
-    <div class="row">
-      <div class="col-md-12">
+    <!-- En-tête avec style rose-gold -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="mb-2">
+          <i class="fas fa-edit" style="color: var(--rose-gold);"></i> 
+          <span style="color: var(--rose-gold-dark);">Modifier le bijou</span>
+        </h2>
+        <h4 style="color: var(--rose-gold); font-weight: 300; font-family: 'Playfair Display', serif;">
+          <%= jewel.name %>
+        </h4>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/admin/gestionnaire-bijoux" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i> Retour
+        </a>
+        <a href="/bijoux/<%= jewel.slug %>" class="btn btn-info" target="_blank">
+          <i class="fas fa-eye"></i> Voir
+        </a>
+      </div>
+    </div>
+
+    <!-- Messages d'état -->
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i><%= error %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% } %>
+    
+    <% if (typeof success !== 'undefined' && success) { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i><%= success %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% } %>
+
+    <!-- ==========================================
+         SECTION GESTION DES IMAGES - NOUVELLE
+         ========================================== -->
+  
+
+    <!-- ==========================================
+         FORMULAIRE PRINCIPAL - AMÉLIORÉ
+         ========================================== -->
+    <form id="jewelForm" action="/admin/bijoux/<%= jewel.slug %>/update" method="POST" enctype="multipart/form-data">
+      
+      <!-- Champs cachés pour la compatibilité -->
+      <input type="hidden" name="test_field" value="formulaire_fonctionne">
+      <input type="hidden" name="timestamp" value="<%= Date.now() %>">
+
+      <!-- Informations générales -->
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-info-circle me-2"></i>Informations générales
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="name" class="form-label">
+                  Nom du bijou <span class="text-danger">*</span>
+                </label>
+                <input type="text" class="form-control" id="name" name="name" 
+                       value="<%= jewel.name %>" required
+                       placeholder="Ex: Bague Élégance Rose Gold">
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="mb-3">
+                <label for="category_id" class="form-label">
+                  Catégorie <span class="text-danger">*</span>
+                </label>
+                <div class="d-flex">
+                  <select class="form-select" id="category_id" name="category_id" required>
+                    <option value="">-- Sélectionner une catégorie --</option>
+                    <% categories.forEach(category => { %>
+                      <option value="<%= category.id %>" <%= jewel.category_id == category.id ? 'selected' : '' %>>
+                        <%= category.name %>
+                      </option>
+                    <% }); %>
+                  </select>
+                  <button type="button" class="btn btn-success ms-2" onclick="addNewCategory()" title="Nouvelle catégorie">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="description" class="form-label">Description</label>
+            <textarea class="form-control" id="description" name="description" rows="4" 
+                      placeholder="Décrivez ce bijou, ses caractéristiques, son style..."><%= jewel.description || '' %></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- Caractéristiques techniques -->
+      <div class="card mb-4">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-gem me-2"></i>Caractéristiques techniques
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="poids" class="form-label">
+                  <i class="fas fa-weight-hanging me-1" style="color: var(--rose-gold);"></i>
+                  Poids (g)
+                </label>
+                <input type="number" class="form-control" id="poids" name="poids" 
+                       step="0.01" value="<%= jewel.poids || '' %>" 
+                       placeholder="Ex: 2.5">
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="matiere" class="form-label">
+                  Matière <span class="text-danger">*</span>
+                </label>
+                <div class="d-flex">
+                  <select class="form-select" id="matiere" name="matiere" required>
+                    <option value="">-- Sélectionner --</option>
+                    <% materials.forEach(material => { %>
+                      <option value="<%= material.name %>" <%= jewel.matiere === material.name ? 'selected' : '' %>>
+                        <%= material.name %>
+                      </option>
+                    <% }); %>
+                  </select>
+                  <button type="button" class="btn btn-success ms-2" onclick="addNewMaterial()" title="Nouveau matériau">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="type_id" class="form-label">Type</label>
+                <div class="d-flex">
+                  <select class="form-select" id="type_id" name="type_id">
+                    <option value="">-- Sélectionner --</option>
+                    <% types.forEach(type => { %>
+                      <option value="<%= type.id %>" <%= jewel.type_id == type.id ? 'selected' : '' %>>
+                        <%= type.name %>
+                      </option>
+                    <% }); %>
+                  </select>
+                  <button type="button" class="btn btn-success ms-2" onclick="addNewType()" title="Nouveau type">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="carat" class="form-label">
+                  <i class="fas fa-star me-1" style="color: var(--warning-orange);"></i>
+                  Carat
+                </label>
+                <select class="form-select" id="carat" name="carat">
+                  <option value="">-- Sélectionner --</option>
+                  <option value="9" <%= jewel.carat == 9 ? 'selected' : '' %>>9 carats</option>
+                  <option value="14" <%= jewel.carat == 14 ? 'selected' : '' %>>14 carats</option>
+                  <option value="18" <%= jewel.carat == 18 ? 'selected' : '' %>>18 carats</option>
+                  <option value="22" <%= jewel.carat == 22 ? 'selected' : '' %>>22 carats</option>
+                  <option value="24" <%= jewel.carat == 24 ? 'selected' : '' %>>24 carats</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+       <!-- Overlay de chargement -->
+  <div class="spinner-overlay" id="loadingOverlay">
+    <div class="spinner-content">
+      <div class="spinner-border" role="status">
+        <span class="visually-hidden">Chargement...</span>
+      </div>
+      <div id="loadingMessage">Traitement en cours...</div>
+    </div>
+  </div>
+
+  <div class="container mt-4">
+    <!-- En-tête avec style rose-gold -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <div>
+        <h2 class="mb-2">
+          <i class="fas fa-edit" style="color: var(--rose-gold);"></i> 
+          <span style="color: var(--rose-gold-dark);">Modifier le bijou</span>
+        </h2>
+        <h4 style="color: var(--rose-gold); font-weight: 300; font-family: 'Playfair Display', serif;">
+          <%= jewel.name %>
+        </h4>
+      </div>
+      <div class="d-flex gap-2">
+        <a href="/admin/gestionnaire-bijoux" class="btn btn-secondary">
+          <i class="fas fa-arrow-left"></i> Retour
+        </a>
+        <a href="/bijoux/<%= jewel.slug %>" class="btn btn-info" target="_blank">
+          <i class="fas fa-eye"></i> Voir
+        </a>
+      </div>
+    </div>
+
+    <!-- Messages d'état -->
+    <% if (typeof error !== 'undefined' && error) { %>
+      <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-triangle me-2"></i><%= error %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% } %>
+    
+    <% if (typeof success !== 'undefined' && success) { %>
+      <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i><%= success %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    <% } %>
+
+    <!-- ==========================================
+         SECTION GESTION DES IMAGES - NOUVELLE
+         ========================================== -->
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">
+          <i class="fas fa-images me-2"></i>Gestion des images
+          <small class="ms-3 opacity-75">Glissez-déposez ou cliquez pour ajouter</small>
+        </h5>
+      </div>
+      <div class="card-body">
         
-        <!-- En-tête -->
-        <div class="d-flex justify-content-between align-items-center mb-4">
-          <h2><i class="fas fa-edit text-primary"></i> Modifier le bijou : <%= jewel.name %></h2>
-          <div>
-            <a href="/gestionnaire-bijoux" class="btn btn-secondary">
-              <i class="fas fa-arrow-left"></i> Retour
-            </a>
-            <a href="/bijoux/<%= jewel.slug %>" class="btn btn-info" target="_blank">
-              <i class="fas fa-eye"></i> Voir
-            </a>
+        <!-- Zone d'upload avec drag & drop -->
+        <div class="upload-zone mb-4" id="uploadZone">
+          <i class="fas fa-cloud-upload-alt fa-4x mb-3"></i>
+          <h5 style="color: var(--rose-gold-dark); font-family: 'Playfair Display', serif;">
+            Ajouter de nouvelles images
+          </h5>
+          <p class="text-muted mb-3">
+            Glissez vos images ici ou cliquez pour sélectionner
+          </p>
+          <button type="button" class="btn btn-primary btn-lg" onclick="document.getElementById('fileInput').click()">
+            <i class="fas fa-plus me-2"></i>Choisir des images
+          </button>
+          <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+          <div class="mt-3">
+            <small class="text-muted">
+              <i class="fas fa-info-circle me-1"></i>
+              Formats acceptés: JPG, PNG, WebP • Taille max: 10MB par image
+            </small>
           </div>
         </div>
 
-        <!-- Messages -->
-        <% if (typeof error !== 'undefined' && error) { %>
-          <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="fas fa-exclamation-triangle"></i> <%= error %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        <% } %>
-        
-        <% if (typeof success !== 'undefined' && success) { %>
-          <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="fas fa-check-circle"></i> <%= success %>
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-          </div>
-        <% } %>
-
-        <!-- Formulaire principal - AVEC DEBUG -->
-        <form id="jewelForm" action="/admin/bijoux/<%= jewel.slug %>/update" method="POST" enctype="multipart/form-data">
+        <!-- Grille des images existantes et nouvelles -->
+        <div class="image-grid" id="imageGrid">
+          <!-- Images existantes -->
+          <% if (jewel.additionalImages && jewel.additionalImages.length > 0) { %>
+            <% jewel.additionalImages.forEach((image, index) => { %>
+              <div class="image-preview" 
+                   data-image="<%= image.image_url %>" 
+                   data-image-id="<%= image.id || '' %>" 
+                   data-is-main="<%= image.is_main || (image.image_url === jewel.image) ? 'true' : 'false' %>"
+                   style="animation-delay: <%= index * 0.1 %>s;">
+                
+                <img src="/uploads/jewels/<%= image.image_url %>" 
+                     alt="<%= image.is_main || (image.image_url === jewel.image) ? 'Image principale' : 'Image additionnelle' %>"
+                     onerror="this.src='/images/no-image.jpg'">
+                
+                <!-- Badge pour l'image principale -->
+                <% if (image.is_main || image.image_url === jewel.image) { %>
+                  <div class="main-image-badge">
+                    <i class="fas fa-star"></i> Image principale
+                  </div>
+                <% } %>
+                
+                <!-- Actions sur l'image -->
+                <div class="image-actions">
+                  <% if (!image.is_main && image.image_url !== jewel.image) { %>
+                    <button type="button" class="btn btn-warning btn-sm" 
+                            onclick="setAsMainImage('<%= image.image_url %>', '<%= image.id || '' %>')"
+                            title="Définir comme image principale">
+                      <i class="fas fa-star"></i>
+                    </button>
+                  <% } %>
+                  
+                  <button type="button" class="btn btn-info btn-sm" 
+                          onclick="editImage('<%= image.image_url %>', '<%= image.id || '' %>')"
+                          title="Éditer/Recadrer">
+                    <i class="fas fa-crop"></i>
+                  </button>
+                  
+                  <button type="button" class="btn btn-danger btn-sm" 
+                          onclick="markImageForDeletion(this, '<%= image.id || '' %>', '<%= image.image_url %>')"
+                          title="Supprimer cette image">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
+              </div>
+            <% }); %>
+          <% } %>
           
-          <!-- Champ de test caché pour vérifier que le formulaire envoie bien les données -->
-          <input type="hidden" name="test_field" value="formulaire_fonctionne">
-          <input type="hidden" name="timestamp" value="<%= Date.now() %>">
-
-          <!-- Informations générales -->
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              <h5 class="mb-0"><i class="fas fa-info-circle"></i> Informations générales</h5>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="name" class="form-label">Nom du bijou <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="name" name="name" 
-                           value="<%= jewel.name %>" required>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="category_id" class="form-label">Catégorie <span class="text-danger">*</span></label>
-                    <div class="d-flex">
-                      <select class="form-select" id="category_id" name="category_id" required>
-                        <option value="">-- Sélectionner --</option>
-                        <% categories.forEach(category => { %>
-                          <option value="<%= category.id %>" <%= jewel.category_id == category.id ? 'selected' : '' %>>
-                            <%= category.name %>
-                          </option>
-                        <% }); %>
-                      </select>
-                      <button type="button" class="add-new-btn" onclick="addNewCategory()">
-                        <i class="fas fa-plus"></i> Nouveau
-                      </button>
-                    </div>
-                  </div>
-                </div>
+          <!-- Carte pour ajouter une nouvelle image -->
+          <div class="add-image-card" onclick="document.getElementById('fileInput').click()">
+            <div class="text-center">
+              <i class="fas fa-plus fa-3x text-primary mb-3"></i>
+              <div class="text-primary fw-bold" style="font-family: 'Playfair Display', serif;">
+                Ajouter une image
               </div>
+              <small class="text-muted mt-1 d-block">Cliquez ou glissez-déposez</small>
+            </div>
+          </div>
+        </div>
+
+        <!-- Boutons d'actions rapides pour les images -->
+        <div class="row mt-4">
+          <div class="col-md-6">
+            <button type="button" class="btn btn-outline-primary" onclick="optimizeAllImages()">
+              <i class="fas fa-compress-alt me-2"></i>Optimiser toutes les images
+            </button>
+          </div>
+          <div class="col-md-6 text-end">
+            <button type="button" class="btn btn-outline-secondary" onclick="getImageStats()">
+              <i class="fas fa-chart-bar me-2"></i>Statistiques des images
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+      <!-- Tarification et Réductions -->
+      <div class="card mb-4">
+        <div class="card-header bg-warning text-dark">
+          <h5 class="mb-0">
+            <i class="fas fa-euro-sign me-2"></i>Tarification et Réductions
+          </h5>
+        </div>
+        <div class="card-body">
+          <!-- Prix de base -->
+          <div class="row mb-4">
+            <div class="col-md-4">
               <div class="mb-3">
-                <label for="description" class="form-label">Description</label>
-                <textarea class="form-control" id="description" name="description" rows="3"><%= jewel.description || '' %></textarea>
+                <label for="price_ttc" class="form-label">
+                  Prix TTC (€) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <span class="input-group-text" style="background: var(--rose-gold-light); border-color: var(--rose-gold-light);">€</span>
+                  <input type="number" class="form-control" id="price_ttc" name="price_ttc" 
+                         step="0.01" value="<%= jewel.price_ttc || '' %>" required 
+                         placeholder="299.99">
+                </div>
               </div>
             </div>
-          </div>
-
-          <!-- Caractéristiques -->
-          <div class="card mb-4">
-            <div class="card-header bg-success text-white">
-              <h5 class="mb-0"><i class="fas fa-gem"></i> Caractéristiques</h5>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label for="tva" class="form-label">
+                  TVA (%) <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="tva" name="tva" 
+                         step="0.1" value="<%= jewel.tva || 20 %>" required>
+                  <span class="input-group-text" style="background: var(--rose-gold-light); border-color: var(--rose-gold-light);">%</span>
+                </div>
+              </div>
             </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-3">
-                  <div class="mb-3">
-                    <label for="poids" class="form-label">Poids (g)</label>
-                    <input type="number" class="form-control" id="poids" name="poids" 
-                           step="0.01" value="<%= jewel.poids || '' %>" placeholder="Ex: 2.5">
-                  </div>
+            <div class="col-md-4">
+              <div class="mb-3">
+                <label for="price_ht" class="form-label">Prix HT (€)</label>
+                <div class="input-group">
+                  <span class="input-group-text" style="background: var(--light-gray); border-color: var(--rose-gold-light);">€</span>
+                  <input type="number" class="form-control" id="price_ht" name="price_ht" 
+                         step="0.01" value="<%= jewel.price_ht || '' %>" readonly 
+                         style="background: var(--light-gray);">
                 </div>
-                <div class="col-md-3">
-                  <div class="mb-3">
-                    <label for="matiere" class="form-label">Matière <span class="text-danger">*</span></label>
-                    <div class="d-flex">
-                      <select class="form-select" id="matiere" name="matiere" required>
-                        <option value="">-- Sélectionner --</option>
-                        <% materials.forEach(material => { %>
-                          <option value="<%= material.name %>" <%= jewel.matiere === material.name ? 'selected' : '' %>>
-                            <%= material.name %>
-                          </option>
-                        <% }); %>
-                      </select>
-                      <button type="button" class="add-new-btn" onclick="addNewMaterial()">
-                        <i class="fas fa-plus"></i> Nouveau
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="mb-3">
-                    <label for="type_id" class="form-label">Type</label>
-                    <div class="d-flex">
-                      <select class="form-select" id="type_id" name="type_id">
-                        <option value="">-- Sélectionner --</option>
-                        <% types.forEach(type => { %>
-                          <option value="<%= type.id %>" <%= jewel.type_id == type.id ? 'selected' : '' %>>
-                            <%= type.name %>
-                          </option>
-                        <% }); %>
-                      </select>
-                      <button type="button" class="add-new-btn" onclick="addNewType()">
-                        <i class="fas fa-plus"></i> Nouveau
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="mb-3">
-                    <label for="carat" class="form-label">Carat</label>
-                    <select class="form-select" id="carat" name="carat">
-                      <option value="">-- Sélectionner --</option>
-                      <option value="9" <%= jewel.carat == 9 ? 'selected' : '' %>>9 carats</option>
-                      <option value="14" <%= jewel.carat == 14 ? 'selected' : '' %>>14 carats</option>
-                      <option value="18" <%= jewel.carat == 18 ? 'selected' : '' %>>18 carats</option>
-                      <option value="22" <%= jewel.carat == 22 ? 'selected' : '' %>>22 carats</option>
-                      <option value="24" <%= jewel.carat == 24 ? 'selected' : '' %>>24 carats</option>
-                    </select>
-                  </div>
+                <div class="form-text">
+                  <i class="fas fa-calculator me-1"></i>Calculé automatiquement
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Tarification et Réductions -->
-          <div class="card mb-4">
-            <div class="card-header bg-warning text-dark">
-              <h5 class="mb-0"><i class="fas fa-euro-sign"></i> Tarification et Réductions</h5>
+          <hr style="border-color: var(--rose-gold-light);">
+
+          <!-- Section Réductions -->
+          <h6 class="mb-3" style="color: var(--rose-gold-dark);">
+            <i class="fas fa-percent text-danger me-2"></i>Gestion des réductions
+          </h6>
+          
+          <div class="row">
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="discount_percentage" class="form-label">Réduction (%)</label>
+                <div class="input-group">
+                  <input type="number" class="form-control" id="discount_percentage" name="discount_percentage" 
+                         min="0" max="90" step="1" value="<%= jewel.discount_percentage || 0 %>"
+                         placeholder="20">
+                  <span class="input-group-text" style="background: var(--rose-gold-light); border-color: var(--rose-gold-light);">%</span>
+                </div>
+                <div class="form-text">0 = aucune réduction</div>
+              </div>
             </div>
-            <div class="card-body">
-              <!-- Prix de base -->
-              <div class="row mb-4">
-                <div class="col-md-4">
-                  <div class="mb-3">
-                    <label for="price_ttc" class="form-label">Prix TTC (€) <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" id="price_ttc" name="price_ttc" 
-                           step="0.01" value="<%= jewel.price_ttc || '' %>" required placeholder="Ex: 299.99">
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="mb-3">
-                    <label for="tva" class="form-label">TVA (%) <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" id="tva" name="tva" 
-                           step="0.1" value="<%= jewel.tva || 20 %>" required>
-                  </div>
-                </div>
-                <div class="col-md-4">
-                  <div class="mb-3">
-                    <label for="price_ht" class="form-label">Prix HT (€)</label>
-                    <input type="number" class="form-control" id="price_ht" name="price_ht" 
-                           step="0.01" value="<%= jewel.price_ht || '' %>" readonly>
-                    <div class="form-text">Calculé automatiquement</div>
-                  </div>
-                </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="discount_start_date" class="form-label">
+                  <i class="fas fa-calendar-plus me-1"></i>Date de début
+                </label>
+                <input type="datetime-local" class="form-control" id="discount_start_date" name="discount_start_date"
+                       value="<%= jewel.discount_start_date ? new Date(jewel.discount_start_date).toISOString().slice(0,16) : '' %>">
+                <div class="form-text">Optionnel</div>
               </div>
-
-              <hr>
-
-              <!-- Section Réductions -->
-              <h6 class="mb-3"><i class="fas fa-percent text-danger"></i> Gestion des réductions</h6>
-              
-              <div class="row">
-                <div class="col-md-3">
-                  <div class="mb-3">
-                    <label for="discount_percentage" class="form-label">Réduction (%)</label>
-                    <input type="number" class="form-control" id="discount_percentage" name="discount_percentage" 
-                           min="0" max="90" step="1" value="<%= jewel.discount_percentage || 0 %>"
-                           placeholder="Ex: 20 pour -20%">
-                    <div class="form-text">0 = aucune réduction</div>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="mb-3">
-                    <label for="discount_start_date" class="form-label">Date de début</label>
-                    <input type="datetime-local" class="form-control" id="discount_start_date" name="discount_start_date"
-                           value="<%= jewel.discount_start_date ? new Date(jewel.discount_start_date).toISOString().slice(0,16) : '' %>">
-                    <div class="form-text">Optionnel</div>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="mb-3">
-                    <label for="discount_end_date" class="form-label">Date de fin</label>
-                    <input type="datetime-local" class="form-control" id="discount_end_date" name="discount_end_date"
-                           value="<%= jewel.discount_end_date ? new Date(jewel.discount_end_date).toISOString().slice(0,16) : '' %>">
-                    <div class="form-text">Optionnel</div>
-                  </div>
-                </div>
-                <div class="col-md-3">
-                  <div class="mb-3">
-                    <label class="form-label">Prix final (€)</label>
-                    <div class="form-control-plaintext bg-light border rounded p-2" id="final_price_display">
-                      <strong id="final_price_value">-</strong>
-                    </div>
-                    <div class="form-text">Avec réduction appliquée</div>
-                  </div>
-                </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label for="discount_end_date" class="form-label">
+                  <i class="fas fa-calendar-times me-1"></i>Date de fin
+                </label>
+                <input type="datetime-local" class="form-control" id="discount_end_date" name="discount_end_date"
+                       value="<%= jewel.discount_end_date ? new Date(jewel.discount_end_date).toISOString().slice(0,16) : '' %>">
+                <div class="form-text">Optionnel</div>
               </div>
-
-              <!-- Aperçu de la réduction -->
-              <div id="discount_preview" class="discount-preview d-none">
-                <div class="d-flex align-items-center gap-3">
-                  <i class="fas fa-percentage fa-2x"></i>
-                  <div>
-                    <div id="discount_preview_text" class="fw-bold"></div>
-                    <div class="price-comparison">
-                      <span class="price-original" id="original_price_display">-</span>
-                      <i class="fas fa-arrow-right"></i>
-                      <span class="price-final" id="discounted_price_display">-</span>
-                      <span class="savings" id="savings_display">-</span>
-                    </div>
-                  </div>
+            </div>
+            <div class="col-md-3">
+              <div class="mb-3">
+                <label class="form-label">
+                  <i class="fas fa-tags me-1"></i>Prix final (€)
+                </label>
+                <div class="form-control-plaintext border rounded p-3" 
+                     style="background: var(--gradient-accent); color: var(--rose-gold-dark); font-weight: 600;" 
+                     id="final_price_display">
+                  <strong id="final_price_value">-</strong>
                 </div>
+                <div class="form-text">Avec réduction appliquée</div>
               </div>
             </div>
           </div>
 
-          <!-- Tailles et Stock -->
-          <div class="card mb-4">
-            <div class="card-header bg-info text-white">
-              <h5 class="mb-0"><i class="fas fa-boxes"></i> Tailles et Stock</h5>
+          <!-- Aperçu de la réduction -->
+          <div id="discount_preview" class="d-none" 
+               style="background: var(--gradient-primary); color: white; padding: 20px; border-radius: var(--radius-md); margin-top: 20px;">
+            <div class="d-flex align-items-center gap-3">
+              <i class="fas fa-percentage fa-3x"></i>
+              <div>
+                <div id="discount_preview_text" class="fw-bold fs-5"></div>
+                <div class="price-comparison d-flex align-items-center gap-3 mt-2">
+                  <span class="text-decoration-line-through opacity-75" id="original_price_display">-</span>
+                  <i class="fas fa-arrow-right"></i>
+                  <span class="fs-4 fw-bold" id="discounted_price_display">-</span>
+                  <span class="badge bg-light text-dark fs-6" id="savings_display">-</span>
+                </div>
+              </div>
             </div>
-            <div class="card-body">
-              <div id="sizesContainer">
-                <% 
-                let tailles = [];
-                if (jewel.tailles) {
-                  if (Array.isArray(jewel.tailles)) {
-                    tailles = jewel.tailles;
-                  } else if (typeof jewel.tailles === 'string') {
-                    try {
-                      tailles = JSON.parse(jewel.tailles);
-                    } catch (e) {
-                      tailles = [];
-                    }
-                  }
+          </div>
+        </div>
+      </div>
+
+      <!-- Tailles et Stock -->
+      <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+          <h5 class="mb-0">
+            <i class="fas fa-boxes me-2"></i>Tailles et Stock
+          </h5>
+        </div>
+        <div class="card-body">
+          <div id="sizesContainer">
+            <% 
+            let tailles = [];
+            if (jewel.tailles) {
+              if (Array.isArray(jewel.tailles)) {
+                tailles = jewel.tailles;
+              } else if (typeof jewel.tailles === 'string') {
+                try {
+                  tailles = JSON.parse(jewel.tailles);
+                } catch (e) {
+                  tailles = [];
                 }
-                
-                if (tailles.length === 0) {
-                  tailles = [{ taille: '', stock: jewel.stock || 0 }];
-                }
-                %>
-                
-                <% tailles.forEach((taille, index) => { %>
-                  <div class="row mb-2 size-entry" data-index="<%= index %>">
-                    <div class="col-md-5">
-                      <input type="text" class="form-control" name="sizes[<%= index %>][taille]" 
-                             value="<%= taille.taille || '' %>" placeholder="Taille (ex: S, M, L ou 52, 54...)">
-                    </div>
-                    <div class="col-md-5">
-                      <input type="number" class="form-control" name="sizes[<%= index %>][stock]" 
-                             value="<%= taille.stock || 0 %>" min="0" placeholder="Quantité en stock">
-                    </div>
-                    <div class="col-md-2">
-                      <button type="button" class="btn btn-danger btn-sm" onclick="removeSizeEntry(<%= index %>)">
-                        <i class="fas fa-trash"></i>
-                      </button>
-                    </div>
+              }
+            }
+            
+            if (tailles.length === 0) {
+              tailles = [{ taille: '', stock: jewel.stock || 0 }];
+            }
+            %>
+            
+            <% tailles.forEach((taille, index) => { %>
+              <div class="row mb-3 size-entry" data-index="<%= index %>">
+                <div class="col-md-5">
+                  <div class="input-group">
+                    <span class="input-group-text" style="background: var(--rose-gold-light); border-color: var(--rose-gold-light);">
+                      <i class="fas fa-ruler"></i>
+                    </span>
+                    <input type="text" class="form-control" name="sizes[<%= index %>][taille]" 
+                           value="<%= taille.taille || '' %>" placeholder="Taille (ex: S, M, L ou 52, 54...)">
                   </div>
-                <% }); %>
+                </div>
+                <div class="col-md-5">
+                  <div class="input-group">
+                    <span class="input-group-text" style="background: var(--rose-gold-light); border-color: var(--rose-gold-light);">
+                      <i class="fas fa-cubes"></i>
+                    </span>
+                    <input type="number" class="form-control" name="sizes[<%= index %>][stock]" 
+                           value="<%= taille.stock || 0 %>" min="0" placeholder="Quantité en stock">
+                  </div>
+                </div>
+                <div class="col-md-2">
+                  <button type="button" class="btn btn-danger" onclick="removeSizeEntry(<%= index %>)">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </div>
               </div>
-              <button type="button" class="btn btn-outline-secondary btn-sm mt-2" onclick="addSizeEntry()">
-                <i class="fas fa-plus"></i> Ajouter une taille
+            <% }); %>
+          </div>
+          <button type="button" class="btn btn-outline-primary mt-2" onclick="addSizeEntry()">
+            <i class="fas fa-plus me-2"></i>Ajouter une taille
+          </button>
+        </div>
+      </div>
+
+      <!-- Options avancées -->
+      <div class="card mb-4">
+        <div class="card-header" style="background: var(--gradient-secondary); color: var(--rose-gold-dark);">
+          <h5 class="mb-0">
+            <i class="fas fa-cog me-2"></i>Options avancées
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured" value="1"
+                       <%= jewel.is_featured ? 'checked' : '' %> style="color: var(--rose-gold);">
+                <label class="form-check-label" for="is_featured">
+                  <i class="fas fa-star" style="color: var(--warning-orange);"></i> Bijou mis en avant
+                </label>
+                <div class="form-text">Apparaîtra dans les bijoux vedettes</div>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1"
+                       <%= jewel.is_active !== false ? 'checked' : '' %>>
+                <label class="form-check-label" for="is_active">
+                  <i class="fas fa-eye" style="color: var(--success-green);"></i> Bijou visible sur le site
+                </label>
+                <div class="form-text">Désactiver pour masquer temporairement</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Champs cachés pour la gestion des données -->
+      <input type="hidden" id="imagesToDelete" name="imagesToDelete" value="">
+      <input type="hidden" id="mainImage" name="mainImage" value="<%= jewel.image || '' %>">
+      <input type="hidden" id="taillesToSave" name="taillesToSave" value="">
+
+      <!-- Boutons d'action -->
+      <div class="card">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center">
+            <a href="/admin/gestionnaire-bijoux" class="btn btn-secondary btn-lg">
+              <i class="fas fa-times me-2"></i>Annuler
+            </a>
+            <div class="d-flex gap-2">
+              <button type="button" class="btn btn-info" onclick="previewChanges()">
+                <i class="fas fa-eye me-2"></i>Aperçu
+              </button>
+              <button type="submit" class="btn btn-success btn-lg">
+                <i class="fas fa-save me-2"></i>Mettre à jour
               </button>
             </div>
           </div>
+        </div>
+      </div>
 
-          <!-- Images actuelles -->
-          <div class="card mb-4">
-            <div class="card-header bg-secondary text-white">
-              <h5 class="mb-0"><i class="fas fa-images"></i> Images actuelles</h5>
-            </div>
-            <div class="card-body">
-              <% if (jewel.additionalImages && jewel.additionalImages.length > 0) { %>
-                <div class="row" id="current-images-container">
-                  <% jewel.additionalImages.forEach((image, index) => { %>
-                    <div class="col-md-3 mb-3">
-                      <div class="image-preview" data-image="<%= image.image_url %>" 
-                           data-image-id="<%= image.id || '' %>" 
-                           data-is-main="<%= image.is_main || (image.image_url === jewel.image) ? 'true' : 'false' %>">
-                        
-                        <img src="/uploads/jewels/<%= image.image_url %>" 
-                             alt="<%= image.is_main || (image.image_url === jewel.image) ? 'Image principale' : 'Image additionnelle' %>"
-                             onerror="this.src='/images/no-image.jpg'; this.alt='Image non trouvée'">
-                        
-                        <!-- Badge pour l'image principale -->
-                        <% if (image.is_main || image.image_url === jewel.image) { %>
-                          <div class="main-image-badge">Image principale</div>
-                        <% } %>
-                        
-                        <!-- Actions sur l'image -->
-                        <div class="image-actions">
-                          <% if (!image.is_main && image.image_url !== jewel.image) { %>
-                            <button type="button" class="btn btn-primary btn-sm" 
-                                    onclick="setAsMainImage(this, '<%= image.image_url %>')"
-                                    title="Définir comme image principale">
-                              <i class="fas fa-star"></i>
-                            </button>
-                          <% } %>
-                          
-                          <button type="button" class="btn btn-danger btn-sm" 
-                                  onclick="markImageForDeletion(this, '<%= image.id || '' %>', '<%= image.image_url %>')"
-                                  title="Supprimer cette image">
-                            <i class="fas fa-trash"></i>
-                          </button>
-                        </div>
-                      </div>
+    </form>
+  </div>
+
+  <!-- ==========================================
+       MODALES POUR LA GESTION
+       ========================================== -->
+
+  <!-- Modal pour le crop d'image -->
+  <div class="modal fade crop-modal" id="cropModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">
+            <i class="fas fa-crop me-2"></i>Recadrer l'image
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          
+          <!-- Contrôles de crop -->
+          <div class="crop-controls">
+            <div class="row align-items-center">
+              <div class="col-md-8">
+                <div class="row">
+                  <div class="col-md-3">
+                    <label class="form-label fw-bold">Ratio d'aspect</label>
+                    <select class="form-select form-select-sm" id="aspectRatio">
+                      <option value="free">Libre</option>
+                      <option value="1" selected>Carré (1:1)</option>
+                      <option value="1.33">Rectangle (4:3)</option>
+                      <option value="1.77">Panoramique (16:9)</option>
+                      <option value="0.75">Portrait (3:4)</option>
+                    </select>
+                  </div>
+                  <div class="col-md-3">
+                    <label class="form-label fw-bold">Qualité</label>
+                    <select class="form-select form-select-sm" id="imageQuality">
+                      <option value="0.7">Économique</option>
+                      <option value="0.8">Normale</option>
+                      <option value="0.9" selected>Haute</option>
+                      <option value="1">Maximum</option>
+                    </select>
+                  </div>
+                  <div class="col-md-6">
+                    <label class="form-label fw-bold">Actions rapides</label>
+                    <div class="btn-group btn-group-sm w-100" role="group">
+                      <button type="button" class="btn btn-outline-secondary" onclick="resetCropper()" title="Remettre à zéro">
+                        <i class="fas fa-undo"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary" onclick="rotateCropper(90)" title="Rotation 90°">
+                        <i class="fas fa-redo"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary" onclick="flipCropper()" title="Miroir horizontal">
+                        <i class="fas fa-arrows-alt-h"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary" onclick="zoomCropper(0.1)" title="Zoom +">
+                        <i class="fas fa-search-plus"></i>
+                      </button>
+                      <button type="button" class="btn btn-outline-secondary" onclick="zoomCropper(-0.1)" title="Zoom -">
+                        <i class="fas fa-search-minus"></i>
+                      </button>
                     </div>
-                  <% }); %>
-                </div>
-              <% } else { %>
-                <div class="image-container">
-                  <div class="no-images">
-                    <i class="fas fa-images fa-3x mb-2 text-muted"></i><br>
-                    <span class="text-muted">Aucune image actuellement. Utilisez la section ci-dessous pour ajouter des images.</span>
                   </div>
-                </div>
-              <% } %>
-            </div>
-          </div>
-
-          <!-- Nouvelles images -->
-          <div class="card mb-4">
-            <div class="card-header bg-dark text-white">
-              <h5 class="mb-0"><i class="fas fa-upload"></i> Ajouter de nouvelles images</h5>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="newMainImage" class="form-label">Nouvelle image principale</label>
-                    <input type="file" class="form-control" id="newMainImage" name="newMainImage" accept="image/*">
-                    <div class="form-text">Remplace l'image principale actuelle</div>
-                  </div>
-                  <div id="newMainImagePreview"></div>
-                </div>
-                <div class="col-md-6">
-                  <div class="mb-3">
-                    <label for="newImages" class="form-label">Images additionnelles</label>
-                    <input type="file" class="form-control" id="newImages" name="newImages" accept="image/*" multiple>
-                    <div class="form-text">Sélectionnez plusieurs images</div>
-                  </div>
-                  <div id="newImagesPreview" class="row"></div>
                 </div>
               </div>
-            </div>
-          </div>
-
-          <!-- Options avancées -->
-          <div class="card mb-4">
-            <div class="card-header bg-light">
-              <h5 class="mb-0"><i class="fas fa-cog"></i> Options avancées</h5>
-            </div>
-            <div class="card-body">
-              <div class="row">
-                <div class="col-md-6">
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="is_featured" name="is_featured" value="1"
-                           <%= jewel.is_featured ? 'checked' : '' %>>
-                    <label class="form-check-label" for="is_featured">
-                      <i class="fas fa-star text-warning"></i> Bijou mis en avant
-                    </label>
-                  </div>
-                </div>
-                <div class="col-md-6">
-                  <div class="form-check form-switch">
-                    <input class="form-check-input" type="checkbox" id="is_active" name="is_active" value="1"
-                           <%= jewel.is_active !== false ? 'checked' : '' %>>
-                    <label class="form-check-label" for="is_active">
-                      <i class="fas fa-eye text-success"></i> Bijou visible sur le site
-                    </label>
+              <div class="col-md-4">
+                <label class="form-label fw-bold">Aperçu</label>
+                <div class="crop-preview" id="cropPreview">
+                  <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+                    <i class="fas fa-image fa-2x"></i>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Champs cachés -->
-          <input type="hidden" id="imagesToDelete" name="imagesToDelete" value="">
-          <input type="hidden" id="mainImage" name="mainImage" value="<%= jewel.image || '' %>">
-          <input type="hidden" id="taillesToSave" name="taillesToSave" value="">
-
-          <!-- Boutons -->
-          <div class="card">
-            <div class="card-body">
-              <div class="d-flex justify-content-between align-items-center">
-                <a href="/gestionnaire-bijoux" class="btn btn-secondary">
-                  <i class="fas fa-times"></i> Annuler
-                </a>
-                <div>
-                  <button type="button" class="btn btn-info me-2" onclick="previewChanges()">
-                    <i class="fas fa-eye"></i> Aperçu
-                  </button>
-                  <button type="submit" class="btn btn-success btn-lg">
-                    <i class="fas fa-save"></i> Mettre à jour
-                  </button>
-                </div>
-              </div>
+          <!-- Zone de crop -->
+          <div class="crop-container">
+            <img id="cropImage" style="max-width: 100%; display: block;">
+          </div>
+        </div>
+        
+        <div class="modal-footer">
+          <div class="me-auto">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="setAsMainAfterCrop">
+              <label class="form-check-label fw-bold" for="setAsMainAfterCrop">
+                <i class="fas fa-star text-warning me-1"></i>
+                Définir comme image principale
+              </label>
             </div>
           </div>
-
-        </form>
-
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-2"></i>Annuler
+          </button>
+          <button type="button" class="btn btn-primary" id="saveCroppedImage">
+            <i class="fas fa-crop me-2"></i>Appliquer et sauvegarder
+          </button>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Modales pour ajouter nouveaux éléments -->
   <!-- Modal Nouvelle Catégorie -->
   <div class="modal fade" id="newCategoryModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Ajouter une nouvelle catégorie</h5>
+        <div class="modal-header" style="background: var(--gradient-primary); color: white;">
+          <h5 class="modal-title">
+            <i class="fas fa-plus-circle me-2"></i>Ajouter une nouvelle catégorie
+          </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label for="newCategoryName" class="form-label">Nom de la catégorie</label>
-            <input type="text" class="form-control" id="newCategoryName" placeholder="Ex: Bracelets">
+            <label for="newCategoryName" class="form-label fw-bold">Nom de la catégorie</label>
+            <input type="text" class="form-control" id="newCategoryName" 
+                   placeholder="Ex: Bracelets, Colliers, Bagues...">
+            <div class="form-text">
+              <i class="fas fa-info-circle me-1"></i>
+              Choisissez un nom descriptif et unique
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" onclick="saveNewCategory()">Ajouter</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-2"></i>Annuler
+          </button>
+          <button type="button" class="btn btn-primary" onclick="saveNewCategory()">
+            <i class="fas fa-plus me-2"></i>Ajouter
+          </button>
         </div>
       </div>
     </div>
@@ -652,19 +1378,30 @@
   <div class="modal fade" id="newMaterialModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Ajouter un nouveau matériau</h5>
+        <div class="modal-header" style="background: var(--gradient-primary); color: white;">
+          <h5 class="modal-title">
+            <i class="fas fa-plus-circle me-2"></i>Ajouter un nouveau matériau
+          </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label for="newMaterialName" class="form-label">Nom du matériau</label>
-            <input type="text" class="form-control" id="newMaterialName" placeholder="Ex: Or blanc 18k">
+            <label for="newMaterialName" class="form-label fw-bold">Nom du matériau</label>
+            <input type="text" class="form-control" id="newMaterialName" 
+                   placeholder="Ex: Or blanc 18k, Argent 925, Platine...">
+            <div class="form-text">
+              <i class="fas fa-info-circle me-1"></i>
+              Soyez précis sur la composition et la qualité
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" onclick="saveNewMaterial()">Ajouter</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-2"></i>Annuler
+          </button>
+          <button type="button" class="btn btn-primary" onclick="saveNewMaterial()">
+            <i class="fas fa-plus me-2"></i>Ajouter
+          </button>
         </div>
       </div>
     </div>
@@ -674,71 +1411,681 @@
   <div class="modal fade" id="newTypeModal" tabindex="-1">
     <div class="modal-dialog">
       <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">Ajouter un nouveau type</h5>
+        <div class="modal-header" style="background: var(--gradient-primary); color: white;">
+          <h5 class="modal-title">
+            <i class="fas fa-plus-circle me-2"></i>Ajouter un nouveau type
+          </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body">
           <div class="mb-3">
-            <label for="newTypeName" class="form-label">Nom du type</label>
-            <input type="text" class="form-control" id="newTypeName" placeholder="Ex: Alliance">
+            <label for="newTypeName" class="form-label fw-bold">Nom du type</label>
+            <input type="text" class="form-control" id="newTypeName" 
+                   placeholder="Ex: Alliance, Solitaire, Créoles...">
+            <div class="form-text">
+              <i class="fas fa-info-circle me-1"></i>
+              Le type précise le style ou la fonction du bijou
+            </div>
           </div>
           <div class="mb-3">
-            <label for="newTypeCategory" class="form-label">Catégorie</label>
+            <label for="newTypeCategory" class="form-label fw-bold">Catégorie</label>
             <select class="form-select" id="newTypeCategory">
-              <option value="">-- Sélectionner --</option>
+              <option value="">-- Sélectionner une catégorie --</option>
               <% categories.forEach(category => { %>
                 <option value="<%= category.id %>"><%= category.name %></option>
               <% }); %>
             </select>
+            <div class="form-text">
+              <i class="fas fa-info-circle me-1"></i>
+              À quelle catégorie appartient ce type ?
+            </div>
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-          <button type="button" class="btn btn-primary" onclick="saveNewType()">Ajouter</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-2"></i>Annuler
+          </button>
+          <button type="button" class="btn btn-primary" onclick="saveNewType()">
+            <i class="fas fa-plus me-2"></i>Ajouter
+          </button>
         </div>
       </div>
     </div>
   </div>
 
+  <!-- Modal de confirmation de suppression -->
+  <div class="modal fade" id="deleteConfirmModal" tabindex="-1">
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">
+            <i class="fas fa-exclamation-triangle me-2"></i>Confirmer la suppression
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div class="text-center">
+            <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+            <h6 class="mb-3">Êtes-vous sûr de vouloir supprimer cette image ?</h6>
+            <p class="text-muted mb-0" id="deleteConfirmText">
+              Cette action est irréversible.
+            </p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-2"></i>Annuler
+          </button>
+          <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+            <i class="fas fa-trash me-2"></i>Supprimer définitivement
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
 
+  <!-- Modal Statistiques des images -->
+  <div class="modal fade" id="imageStatsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header" style="background: var(--gradient-primary); color: white;">
+          <h5 class="modal-title">
+            <i class="fas fa-chart-bar me-2"></i>Statistiques des images
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="imageStatsContent">
+            <div class="text-center">
+              <div class="spinner-border" style="color: var(--rose-gold);" role="status">
+                <span class="visually-hidden">Chargement...</span>
+              </div>
+              <p class="mt-2">Calcul des statistiques...</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="fas fa-times me-2"></i>Fermer
+          </button>
+          <button type="button" class="btn btn-primary" onclick="optimizeAllImages()">
+            <i class="fas fa-compress-alt me-2"></i>Optimiser toutes les images
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast notifications -->
+  <div class="position-fixed top-0 end-0 p-3" style="z-index: 9999;">
+    <div id="toastContainer"></div>
+  </div>
+
+  <!-- Barre de progression pour upload multiple -->
+  <div id="uploadProgressBar" class="position-fixed top-0 start-0 w-100" style="z-index: 9998; display: none;">
+    <div class="progress" style="height: 6px; border-radius: 0;">
+      <div class="progress-bar progress-bar-striped progress-bar-animated" 
+           style="background: var(--gradient-primary);" 
+           role="progressbar" 
+           id="uploadProgressValue"></div>
+    </div>
+    <div class="text-center py-2" style="background: var(--rose-gold-light); color: var(--rose-gold-dark);">
+      <small id="uploadProgressText">
+        <i class="fas fa-cloud-upload-alt me-1"></i>
+        Upload en cours...
+      </small>
+    </div>
+  </div>
+
+  <!-- ==========================================
+       SCRIPTS - LIBRARIES
+       ========================================== -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.1/cropper.min.js"></script>
   <script>
-    // Variables globales
+    // ==========================================
+    // VARIABLES GLOBALES
+    // ==========================================
+    let cropperInstance = null;
+    let currentImageData = null;
     let imagesToDelete = [];
     let sizeCounter = <%= tailles.length %>;
+    const jewelSlug = '<%= jewel.slug %>';
 
-    // Fix pour la navbar mobile - fermeture automatique
+    // ==========================================
+    // INITIALISATION
+    // ==========================================
     document.addEventListener('DOMContentLoaded', function() {
-      const navbarToggler = document.querySelector('.navbar-toggler');
-      const navbarCollapse = document.querySelector('.navbar-collapse');
+      console.log('🎨 Gestionnaire d\'images rose-gold initialisé');
       
-      if (navbarToggler && navbarCollapse) {
-        // Fermer la navbar quand on clique sur un lien
-        const navLinks = navbarCollapse.querySelectorAll('a');
-        navLinks.forEach(link => {
-          link.addEventListener('click', () => {
-            if (navbarCollapse.classList.contains('show')) {
-              navbarToggler.click();
-            }
-          });
+      // Initialiser les fonctionnalités
+      initializeDragAndDrop();
+      initializeFormValidation();
+      calculatePrices();
+      
+      // Animations d'entrée pour les images existantes
+      animateExistingImages();
+      
+      // Focus sur le premier champ
+      document.getElementById('name').focus();
+    });
+
+    // ==========================================
+    // GESTION DU DRAG & DROP
+    // ==========================================
+    function initializeDragAndDrop() {
+      const uploadZone = document.getElementById('uploadZone');
+      const fileInput = document.getElementById('fileInput');
+
+      // Prévenir les comportements par défaut
+      ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, preventDefaults, false);
+        document.body.addEventListener(eventName, preventDefaults, false);
+      });
+
+      function preventDefaults(e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+
+      // Effets visuels lors du drag
+      ['dragenter', 'dragover'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, () => {
+          uploadZone.classList.add('dragover');
+          document.body.style.background = 'linear-gradient(135deg, rgba(183, 110, 121, 0.1), rgba(183, 110, 121, 0.05))';
         });
+      });
+
+      ['dragleave', 'drop'].forEach(eventName => {
+        uploadZone.addEventListener(eventName, () => {
+          uploadZone.classList.remove('dragover');
+          document.body.style.background = '';
+        });
+      });
+
+      // Gestion du drop
+      uploadZone.addEventListener('drop', handleDrop, false);
+      fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+
+      function handleDrop(e) {
+        const dt = e.dataTransfer;
+        const files = dt.files;
+        handleFiles(files);
+      }
+    }
+
+    // ==========================================
+    // TRAITEMENT DES FICHIERS
+    // ==========================================
+    function handleFiles(files) {
+      const validFiles = Array.from(files).filter(file => file.type.startsWith('image/'));
+      
+      if (validFiles.length === 0) {
+        showToast('Aucune image valide sélectionnée', 'warning');
+        return;
+      }
+
+      if (validFiles.length > 10) {
+        showToast('Maximum 10 images à la fois', 'warning');
+        return;
+      }
+
+      // Traitement séquentiel des fichiers
+      processFilesSequentially(validFiles);
+    }
+
+    async function processFilesSequentially(files) {
+      showUploadProgress(0, `Préparation de ${files.length} image(s)...`);
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const progress = ((i + 1) / files.length) * 100;
         
-        // Fermer la navbar quand on clique en dehors
-        document.addEventListener('click', (e) => {
-          if (!navbarCollapse.contains(e.target) && !navbarToggler.contains(e.target)) {
-            if (navbarCollapse.classList.contains('show')) {
-              navbarToggler.click();
-            }
+        showUploadProgress(progress, `Traitement: ${file.name}`);
+
+        try {
+          await uploadAndPreprocess(file);
+          await delay(300); // Délai entre les uploads
+        } catch (error) {
+          console.error(`❌ Erreur avec ${file.name}:`, error);
+          showToast(`Erreur avec ${file.name}: ${error.message}`, 'danger');
+        }
+      }
+
+      hideUploadProgress();
+      showToast(`${files.length} image(s) traitée(s) avec succès`, 'success');
+    }
+
+    async function uploadAndPreprocess(file) {
+      // Validation du fichier
+      if (file.size > 10 * 1024 * 1024) { // 10MB
+        throw new Error('Fichier trop volumineux (max 10MB)');
+      }
+
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('imageType', 'additional');
+
+      const response = await fetch(`/admin/bijoux/${jewelSlug}/upload-image`, {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+
+      if (result.success) {
+        // Ouvrir automatiquement le modal de crop
+        openCropModal(result.tempFile);
+      } else {
+        throw new Error(result.message);
+      }
+    }
+
+    // ==========================================
+    // MODAL DE CROP
+    // ==========================================
+    function openCropModal(imageData, isEdit = false) {
+      currentImageData = imageData;
+      
+      const modal = new bootstrap.Modal(document.getElementById('cropModal'));
+      const cropImage = document.getElementById('cropImage');
+      
+      // Charger l'image
+      if (isEdit) {
+        cropImage.src = `/uploads/jewels/${imageData.filename || imageData}`;
+      } else {
+        cropImage.src = imageData.path;
+      }
+
+      // Initialiser le cropper quand l'image est chargée
+      cropImage.onload = function() {
+        if (cropperInstance) {
+          cropperInstance.destroy();
+        }
+
+        cropperInstance = new Cropper(cropImage, {
+          aspectRatio: 1, // Carré par défaut
+          viewMode: 2,
+          dragMode: 'move',
+          autoCropArea: 0.8,
+          restore: false,
+          guides: true,
+          center: true,
+          highlight: false,
+          cropBoxMovable: true,
+          cropBoxResizable: true,
+          toggleDragModeOnDblclick: false,
+          minContainerWidth: 300,
+          minContainerHeight: 300,
+          crop: function(event) {
+            updateCropPreview();
           }
         });
+
+        modal.show();
+      };
+    }
+
+    // Mettre à jour l'aperçu du crop
+    function updateCropPreview() {
+      if (!cropperInstance) return;
+
+      const canvas = cropperInstance.getCroppedCanvas({
+        width: 120,
+        height: 120,
+        imageSmoothingEnabled: true,
+        imageSmoothingQuality: 'high'
+      });
+
+      const preview = document.getElementById('cropPreview');
+      preview.innerHTML = '';
+      preview.appendChild(canvas);
+    }
+
+    // Fonctions de contrôle du cropper
+    function resetCropper() {
+      if (cropperInstance) cropperInstance.reset();
+    }
+
+    function rotateCropper(degrees) {
+      if (cropperInstance) cropperInstance.rotate(degrees);
+    }
+
+    function flipCropper() {
+      if (cropperInstance) {
+        const data = cropperInstance.getData();
+        cropperInstance.scaleX(-data.scaleX || -1);
+      }
+    }
+
+    function zoomCropper(ratio) {
+      if (cropperInstance) cropperInstance.zoom(ratio);
+    }
+
+    // Changer le ratio d'aspect
+    document.getElementById('aspectRatio').addEventListener('change', function() {
+      if (!cropperInstance) return;
+
+      const value = this.value;
+      if (value === 'free') {
+        cropperInstance.setAspectRatio(NaN);
+      } else {
+        cropperInstance.setAspectRatio(parseFloat(value));
       }
     });
 
-    // Calcul automatique des prix
-    document.getElementById('price_ttc').addEventListener('input', calculatePrices);
-    document.getElementById('tva').addEventListener('input', calculatePrices);
-    document.getElementById('discount_percentage').addEventListener('input', calculatePrices);
+    // ==========================================
+    // SAUVEGARDE DE L'IMAGE CROPPÉE
+    // ==========================================
+    document.getElementById('saveCroppedImage').addEventListener('click', async function() {
+      if (!cropperInstance) return;
 
+      showLoading('Traitement de l\'image...');
+
+      try {
+        const quality = parseFloat(document.getElementById('imageQuality').value);
+        const setAsMain = document.getElementById('setAsMainAfterCrop').checked;
+
+        const canvas = cropperInstance.getCroppedCanvas({
+          width: 800,
+          height: 800,
+          imageSmoothingEnabled: true,
+          imageSmoothingQuality: 'high'
+        });
+
+        // Convertir en blob
+        const blob = await new Promise(resolve => {
+          canvas.toBlob(resolve, 'image/jpeg', quality);
+        });
+
+        // Préparer les données
+        const formData = new FormData();
+        formData.append('croppedImage', blob, 'cropped-image.jpg');
+        formData.append('tempFilename', currentImageData.filename);
+        formData.append('imageType', 'additional');
+        formData.append('setAsMain', setAsMain);
+
+        const response = await fetch(`/admin/bijoux/${jewelSlug}/crop-and-save`, {
+          method: 'POST',
+          body: formData
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          hideLoading();
+          
+          // Fermer le modal
+          bootstrap.Modal.getInstance(document.getElementById('cropModal')).hide();
+          
+          // Ajouter l'image à la grille
+          addImageToGrid(result.image);
+          
+          showToast('Image ajoutée avec succès', 'success');
+          
+          // Reset du cropper
+          if (cropperInstance) {
+            cropperInstance.destroy();
+            cropperInstance = null;
+          }
+
+        } else {
+          hideLoading();
+          showToast(result.message, 'danger');
+        }
+
+      } catch (error) {
+        hideLoading();
+        showToast('Erreur lors de la sauvegarde', 'danger');
+        console.error('Erreur sauvegarde:', error);
+      }
+    });
+
+    // ==========================================
+    // GESTION DE LA GRILLE D'IMAGES
+    // ==========================================
+    function addImageToGrid(imageData) {
+      const imageGrid = document.getElementById('imageGrid');
+      const addCard = imageGrid.querySelector('.add-image-card');
+      
+      const imageElement = document.createElement('div');
+      imageElement.className = 'image-preview';
+      imageElement.setAttribute('data-image', imageData.filename);
+      imageElement.setAttribute('data-image-id', imageData.id || '');
+      imageElement.setAttribute('data-is-main', imageData.type === 'main' ? 'true' : 'false');
+
+      imageElement.innerHTML = `
+        <img src="${imageData.url}" alt="Image du bijou" onerror="this.src='/images/no-image.jpg'">
+        
+        ${imageData.type === 'main' ? `
+          <div class="main-image-badge">
+            <i class="fas fa-star"></i> Image principale
+          </div>
+        ` : ''}
+        
+        <div class="image-actions">
+          ${imageData.type !== 'main' ? `
+            <button type="button" class="btn btn-warning btn-sm" 
+                    onclick="setAsMainImage('${imageData.filename}', '${imageData.id || ''}')"
+                    title="Définir comme image principale">
+              <i class="fas fa-star"></i>
+            </button>
+          ` : ''}
+          
+          <button type="button" class="btn btn-info btn-sm" 
+                  onclick="editImage('${imageData.filename}', '${imageData.id || ''}')"
+                  title="Éditer/Recadrer">
+            <i class="fas fa-crop"></i>
+          </button>
+          
+          <button type="button" class="btn btn-danger btn-sm" 
+                  onclick="markImageForDeletion(this, '${imageData.id || ''}', '${imageData.filename}')"
+                  title="Supprimer cette image">
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+      `;
+
+      // Animation d'apparition
+      imageElement.style.opacity = '0';
+      imageElement.style.transform = 'translateY(20px)';
+      
+      if (addCard) {
+        imageGrid.insertBefore(imageElement, addCard);
+      } else {
+        imageGrid.appendChild(imageElement);
+      }
+
+      // Animation
+      requestAnimationFrame(() => {
+        imageElement.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+        imageElement.style.opacity = '1';
+        imageElement.style.transform = 'translateY(0)';
+      });
+    }
+
+    // ==========================================
+    // ACTIONS SUR LES IMAGES
+    // ==========================================
+    async function setAsMainImage(imageUrl, imageId) {
+      try {
+        showLoading('Changement d\'image principale...');
+
+        const response = await fetch(`/admin/bijoux/${jewelSlug}/set-main-image`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            imageUrl: imageUrl,
+            imageId: imageId
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          hideLoading();
+          updateMainImageUI(imageUrl);
+          showToast('Image principale mise à jour', 'success');
+        } else {
+          hideLoading();
+          showToast(result.message, 'danger');
+        }
+
+      } catch (error) {
+        hideLoading();
+        showToast('Erreur lors du changement d\'image principale', 'danger');
+        console.error('Erreur:', error);
+      }
+    }
+
+    function updateMainImageUI(newMainImageUrl) {
+      // Retirer l'ancien badge principal
+      const oldMain = document.querySelector('[data-is-main="true"]');
+      if (oldMain) {
+        oldMain.setAttribute('data-is-main', 'false');
+        const badge = oldMain.querySelector('.main-image-badge');
+        if (badge) badge.remove();
+        
+        // Ajouter le bouton étoile
+        const actions = oldMain.querySelector('.image-actions');
+        const oldImageUrl = oldMain.getAttribute('data-image');
+        const oldImageId = oldMain.getAttribute('data-image-id');
+        
+        const starButton = document.createElement('button');
+        starButton.type = 'button';
+        starButton.className = 'btn btn-warning btn-sm';
+        starButton.onclick = () => setAsMainImage(oldImageUrl, oldImageId);
+        starButton.title = 'Définir comme image principale';
+        starButton.innerHTML = '<i class="fas fa-star"></i>';
+        
+        actions.insertBefore(starButton, actions.firstChild);
+      }
+      
+      // Marquer la nouvelle comme principale
+      const newMain = document.querySelector(`[data-image="${newMainImageUrl}"]`);
+      if (newMain) {
+        newMain.setAttribute('data-is-main', 'true');
+        
+        // Ajouter le badge avec animation
+        const badge = document.createElement('div');
+        badge.className = 'main-image-badge';
+        badge.innerHTML = '<i class="fas fa-star"></i> Image principale';
+        badge.style.opacity = '0';
+        badge.style.transform = 'scale(0.8)';
+        newMain.appendChild(badge);
+        
+        // Animation du badge
+        requestAnimationFrame(() => {
+          badge.style.transition = 'all 0.3s ease';
+          badge.style.opacity = '1';
+          badge.style.transform = 'scale(1)';
+        });
+        
+        // Retirer le bouton étoile
+        const starButton = newMain.querySelector('.btn-warning');
+        if (starButton) starButton.remove();
+      }
+    }
+
+    function editImage(imageUrl, imageId) {
+      const imageData = {
+        filename: imageUrl,
+        id: imageId
+      };
+      openCropModal(imageData, true);
+    }
+
+    async function markImageForDeletion(button, imageId, imageUrl) {
+      const preview = button.closest('.image-preview');
+      const isMain = preview.getAttribute('data-is-main') === 'true';
+      
+      if (preview.classList.contains('marked-for-deletion')) {
+        // Annuler la suppression
+        preview.classList.remove('marked-for-deletion');
+        button.innerHTML = '<i class="fas fa-trash"></i>';
+        button.className = 'btn btn-danger btn-sm';
+        button.title = 'Supprimer cette image';
+        return;
+      }
+
+      // Confirmer la suppression avec modal
+      showDeleteConfirmation(imageId, imageUrl, isMain, (confirmed) => {
+        if (confirmed) {
+          deleteImageConfirmed(imageId, imageUrl, isMain, preview);
+        }
+      });
+    }
+
+    function showDeleteConfirmation(imageId, imageUrl, isMain, callback) {
+      const modal = new bootstrap.Modal(document.getElementById('deleteConfirmModal'));
+      const confirmText = document.getElementById('deleteConfirmText');
+      const confirmBtn = document.getElementById('confirmDeleteBtn');
+      
+      if (isMain) {
+        confirmText.innerHTML = `
+          <strong>Attention :</strong> Vous allez supprimer l'image principale.<br>
+          Assurez-vous d'avoir d'autres images ou de définir une nouvelle image principale.
+        `;
+      } else {
+        confirmText.textContent = 'Cette action est irréversible.';
+      }
+      
+      confirmBtn.onclick = () => {
+        modal.hide();
+        callback(true);
+      };
+      
+      modal.show();
+    }
+
+    async function deleteImageConfirmed(imageId, imageUrl, isMain, preview) {
+      try {
+        showLoading('Suppression de l\'image...');
+
+        const response = await fetch(`/admin/bijoux/${jewelSlug}/delete-image`, {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            imageUrl: imageUrl,
+            imageId: imageId,
+            isMain: isMain
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          hideLoading();
+          
+          // Animation de suppression
+          preview.style.transition = 'all 0.4s ease';
+          preview.style.opacity = '0';
+          preview.style.transform = 'scale(0.8) translateY(-20px)';
+          
+          setTimeout(() => {
+            preview.remove();
+          }, 400);
+          
+          showToast('Image supprimée avec succès', 'success');
+        } else {
+          hideLoading();
+          showToast(result.message, 'danger');
+        }
+
+      } catch (error) {
+        hideLoading();
+        showToast('Erreur lors de la suppression', 'danger');
+        console.error('Erreur:', error);
+      }
+    }
+
+    // ==========================================
+    // CALCULS ET VALIDATIONS
+    // ==========================================
     function calculatePrices() {
       const priceTTC = parseFloat(document.getElementById('price_ttc').value) || 0;
       const tva = parseFloat(document.getElementById('tva').value) || 20;
@@ -760,205 +2107,132 @@
         finalPrice = priceTTC * (1 - discount / 100);
         const saving = priceTTC - finalPrice;
         
-        // Afficher l'aperçu
+        // Afficher l'aperçu avec animation
         document.getElementById('discount_preview_text').textContent = `Réduction de ${discount}% appliquée`;
         document.getElementById('original_price_display').textContent = `${priceTTC.toFixed(2)}€`;
         document.getElementById('discounted_price_display').textContent = `${finalPrice.toFixed(2)}€`;
         document.getElementById('savings_display').textContent = `-${saving.toFixed(2)}€`;
         
-        preview.classList.remove('d-none');
+        if (preview.classList.contains('d-none')) {
+          preview.classList.remove('d-none');
+          preview.style.opacity = '0';
+          preview.style.transform = 'translateY(20px)';
+          
+          requestAnimationFrame(() => {
+            preview.style.transition = 'all 0.4s ease';
+            preview.style.opacity = '1';
+            preview.style.transform = 'translateY(0)';
+          });
+        }
       } else {
-        preview.classList.add('d-none');
+        if (!preview.classList.contains('d-none')) {
+          preview.style.transition = 'all 0.4s ease';
+          preview.style.opacity = '0';
+          preview.style.transform = 'translateY(-20px)';
+          
+          setTimeout(() => {
+            preview.classList.add('d-none');
+          }, 400);
+        }
       }
 
       document.getElementById('final_price_value').textContent = 
         finalPrice > 0 ? finalPrice.toFixed(2) + '€' : '-';
     }
 
-    // Gestion des tailles
+    // Écouteurs pour les calculs automatiques
+    document.getElementById('price_ttc').addEventListener('input', calculatePrices);
+    document.getElementById('tva').addEventListener('input', calculatePrices);
+    document.getElementById('discount_percentage').addEventListener('input', calculatePrices);
+
+    // ==========================================
+    // GESTION DES TAILLES
+    // ==========================================
     function addSizeEntry() {
       const container = document.getElementById('sizesContainer');
       const newRow = document.createElement('div');
-      newRow.className = 'row mb-2 size-entry';
+      newRow.className = 'row mb-3 size-entry';
       newRow.setAttribute('data-index', sizeCounter);
       
       newRow.innerHTML = `
         <div class="col-md-5">
-          <input type="text" class="form-control" name="sizes[${sizeCounter}][taille]" placeholder="Taille (ex: S, M, L ou 52, 54...)">
+          <div class="input-group">
+            <span class="input-group-text" style="background: var(--rose-gold-light); border-color: var(--rose-gold-light);">
+              <i class="fas fa-ruler"></i>
+            </span>
+            <input type="text" class="form-control" name="sizes[${sizeCounter}][taille]" placeholder="Taille (ex: S, M, L ou 52, 54...)">
+          </div>
         </div>
         <div class="col-md-5">
-          <input type="number" class="form-control" name="sizes[${sizeCounter}][stock]" value="0" min="0" placeholder="Quantité en stock">
+          <div class="input-group">
+            <span class="input-group-text" style="background: var(--rose-gold-light); border-color: var(--rose-gold-light);">
+              <i class="fas fa-cubes"></i>
+            </span>
+            <input type="number" class="form-control" name="sizes[${sizeCounter}][stock]" value="0" min="0" placeholder="Quantité en stock">
+          </div>
         </div>
         <div class="col-md-2">
-          <button type="button" class="btn btn-danger btn-sm" onclick="removeSizeEntry(${sizeCounter})">
+          <button type="button" class="btn btn-danger" onclick="removeSizeEntry(${sizeCounter})">
             <i class="fas fa-trash"></i>
           </button>
         </div>
       `;
       
+      // Animation d'ajout
+      newRow.style.opacity = '0';
+      newRow.style.transform = 'translateX(-20px)';
       container.appendChild(newRow);
+      
+      requestAnimationFrame(() => {
+        newRow.style.transition = 'all 0.3s ease';
+        newRow.style.opacity = '1';
+        newRow.style.transform = 'translateX(0)';
+      });
+      
       sizeCounter++;
     }
 
     function removeSizeEntry(index) {
       const entry = document.querySelector(`[data-index="${index}"]`);
       if (entry && document.querySelectorAll('.size-entry').length > 1) {
-        entry.remove();
+        entry.style.transition = 'all 0.3s ease';
+        entry.style.opacity = '0';
+        entry.style.transform = 'translateX(20px)';
+        
+        setTimeout(() => {
+          entry.remove();
+        }, 300);
       } else {
-        showAlert('Au moins une taille est requise', 'warning');
+        showToast('Au moins une taille est requise', 'warning');
       }
     }
 
-    // Gestion des images
-    function markImageForDeletion(button, imageId, imageUrl) {
-      const preview = button.closest('.image-preview');
-      const isMain = preview.dataset.isMain === 'true';
-      
-      if (preview.classList.contains('marked-for-deletion')) {
-        // Annuler suppression
-        preview.classList.remove('marked-for-deletion');
-        button.innerHTML = '<i class="fas fa-trash"></i>';
-        button.className = 'btn btn-danger btn-sm';
-        button.title = 'Supprimer cette image';
-        
-        // Retirer de la liste
-        if (imageId && imageId !== '') {
-          imagesToDelete = imagesToDelete.filter(id => id !== imageId);
-        }
-      } else {
-        // Marquer pour suppression
-        if (isMain && !confirm('Supprimer l\'image principale ? Assurez-vous d\'ajouter une nouvelle image ou de définir une autre image comme principale.')) {
-          return;
-        }
-        
-        preview.classList.add('marked-for-deletion');
-        button.innerHTML = '<i class="fas fa-undo"></i>';
-        button.className = 'btn btn-success btn-sm';
-        button.title = 'Annuler la suppression';
-        
-        if (imageId && imageId !== '') {
-          imagesToDelete.push(imageId);
-        } else if (isMain) {
-          // Si c'est l'image principale sans ID, on la marque pour suppression
-          document.getElementById('mainImage').value = '';
-        }
-      }
-      
-      document.getElementById('imagesToDelete').value = JSON.stringify(imagesToDelete);
-    }
-
-    function setAsMainImage(button, imageUrl) {
-      // Retirer l'ancienne image principale
-      const oldMain = document.querySelector('[data-is-main="true"]');
-      if (oldMain) {
-        oldMain.dataset.isMain = 'false';
-        const badge = oldMain.querySelector('.main-image-badge');
-        if (badge) badge.remove();
-        
-        const actions = oldMain.querySelector('.image-actions');
-        const oldImageUrl = oldMain.dataset.image;
-        const oldImageId = oldMain.dataset.imageId;
-        
-        actions.innerHTML = `
-          <button type="button" class="btn btn-primary btn-sm" onclick="setAsMainImage(this, '${oldImageUrl}')" title="Définir comme image principale">
-            <i class="fas fa-star"></i>
-          </button>
-          <button type="button" class="btn btn-danger btn-sm" onclick="markImageForDeletion(this, '${oldImageId || ''}', '${oldImageUrl}')" title="Supprimer cette image">
-            <i class="fas fa-trash"></i>
-          </button>
-        `;
-      }
-      
-      // Marquer la nouvelle comme principale
-      const newMain = button.closest('.image-preview');
-      newMain.dataset.isMain = 'true';
-      
-      // Ajouter le badge d'image principale
-      const existingBadge = newMain.querySelector('.main-image-badge');
-      if (!existingBadge) {
-        const badge = document.createElement('div');
-        badge.className = 'main-image-badge';
-        badge.textContent = 'Image principale';
-        newMain.appendChild(badge);
-      }
-      
-      const actions = newMain.querySelector('.image-actions');
-      const newImageId = newMain.dataset.imageId;
-      
-      actions.innerHTML = `
-        <button type="button" class="btn btn-danger btn-sm" onclick="markImageForDeletion(this, '${newImageId || ''}', '${imageUrl}')" title="Supprimer cette image">
-          <i class="fas fa-trash"></i>
-        </button>
-      `;
-      
-      document.getElementById('mainImage').value = imageUrl;
-      
-      showAlert('Image principale mise à jour', 'success');
-    }
-
-    // Gestion des nouvelles images
-    document.getElementById('newImages').addEventListener('change', function(e) {
-      previewNewImages(e.target.files, 'newImagesPreview');
-    });
-
-    document.getElementById('newMainImage').addEventListener('change', function(e) {
-      previewNewImages(e.target.files, 'newMainImagePreview', true);
-    });
-
-    function previewNewImages(files, containerId, isMain = false) {
-      const container = document.getElementById(containerId);
-      
-      if (isMain) {
-        container.innerHTML = '';
-      }
-      
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i];
-        if (!file.type.startsWith('image/')) continue;
-        
-        const reader = new FileReader();
-        reader.onload = function(e) {
-          const col = document.createElement('div');
-          col.className = isMain ? 'col-12' : 'col-md-6 mb-2';
-          col.innerHTML = `
-            <div class="image-preview ${isMain ? 'border border-primary' : ''}">
-              <img src="${e.target.result}" style="height: 100px; object-fit: cover;">
-              <div class="image-actions">
-                <button type="button" class="btn btn-danger btn-sm" onclick="this.closest('.col-12, .col-md-6').remove()">
-                  <i class="fas fa-times"></i>
-                </button>
-              </div>
-              ${isMain ? '<div class="main-image-badge">Nouvelle image principale</div>' : ''}
-            </div>
-          `;
-          container.appendChild(col);
-        };
-        
-        reader.readAsDataURL(file);
-      }
-    }
-
-    // Fonctions pour ajouter de nouveaux éléments
+    // ==========================================
+    // MODALES POUR AJOUTS DYNAMIQUES
+    // ==========================================
     function addNewCategory() {
       const modal = new bootstrap.Modal(document.getElementById('newCategoryModal'));
       modal.show();
+      document.getElementById('newCategoryName').focus();
     }
 
     function addNewMaterial() {
       const modal = new bootstrap.Modal(document.getElementById('newMaterialModal'));
       modal.show();
+      document.getElementById('newMaterialName').focus();
     }
 
     function addNewType() {
       const modal = new bootstrap.Modal(document.getElementById('newTypeModal'));
       modal.show();
+      document.getElementById('newTypeName').focus();
     }
 
     async function saveNewCategory() {
       const name = document.getElementById('newCategoryName').value.trim();
       
       if (!name) {
-        showAlert('Veuillez saisir un nom de catégorie', 'warning');
+        showToast('Veuillez saisir un nom de catégorie', 'warning');
         return;
       }
 
@@ -986,12 +2260,12 @@
           bootstrap.Modal.getInstance(document.getElementById('newCategoryModal')).hide();
           document.getElementById('newCategoryName').value = '';
           
-          showAlert('Catégorie ajoutée avec succès', 'success');
+          showToast('Catégorie ajoutée avec succès', 'success');
         } else {
-          showAlert(data.message, 'danger');
+          showToast(data.message, 'danger');
         }
       } catch (error) {
-        showAlert('Erreur lors de l\'ajout de la catégorie', 'danger');
+        showToast('Erreur lors de l\'ajout de la catégorie', 'danger');
       }
     }
 
@@ -999,7 +2273,7 @@
       const name = document.getElementById('newMaterialName').value.trim();
       
       if (!name) {
-        showAlert('Veuillez saisir un nom de matériau', 'warning');
+        showToast('Veuillez saisir un nom de matériau', 'warning');
         return;
       }
 
@@ -1027,12 +2301,12 @@
           bootstrap.Modal.getInstance(document.getElementById('newMaterialModal')).hide();
           document.getElementById('newMaterialName').value = '';
           
-          showAlert('Matériau ajouté avec succès', 'success');
+          showToast('Matériau ajouté avec succès', 'success');
         } else {
-          showAlert(data.message, 'danger');
+          showToast(data.message, 'danger');
         }
       } catch (error) {
-        showAlert('Erreur lors de l\'ajout du matériau', 'danger');
+        showToast('Erreur lors de l\'ajout du matériau', 'danger');
       }
     }
 
@@ -1041,12 +2315,12 @@
       const categoryId = document.getElementById('newTypeCategory').value;
       
       if (!name) {
-        showAlert('Veuillez saisir un nom de type', 'warning');
+        showToast('Veuillez saisir un nom de type', 'warning');
         return;
       }
 
       if (!categoryId) {
-        showAlert('Veuillez sélectionner une catégorie', 'warning');
+        showToast('Veuillez sélectionner une catégorie', 'warning');
         return;
       }
 
@@ -1075,12 +2349,231 @@
           document.getElementById('newTypeName').value = '';
           document.getElementById('newTypeCategory').value = '';
           
-          showAlert('Type ajouté avec succès', 'success');
+          showToast('Type ajouté avec succès', 'success');
         } else {
-          showAlert(data.message, 'danger');
+          showToast(data.message, 'danger');
         }
       } catch (error) {
-        showAlert('Erreur lors de l\'ajout du type', 'danger');
+        showToast('Erreur lors de l\'ajout du type', 'danger');
+      }
+    }
+
+    // ==========================================
+    // FONCTIONS UTILITAIRES POUR LES IMAGES
+    // ==========================================
+    async function optimizeAllImages() {
+      try {
+        showLoading('Optimisation des images en cours...');
+
+        const response = await fetch(`/admin/bijoux/${jewelSlug}/optimize-images`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            quality: 0.85,
+            maxWidth: 1200,
+            maxHeight: 1200
+          })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+          hideLoading();
+          
+          const totalSavingsMB = result.results.totalSavingsMB || 0;
+          const optimizedCount = result.results.optimized || 0;
+          
+          showToast(`${optimizedCount} images optimisées - ${totalSavingsMB}MB économisés`, 'success');
+          
+          // Optionnel: recharger les images pour voir les changements
+          setTimeout(() => {
+            location.reload();
+          }, 2000);
+          
+        } else {
+          hideLoading();
+          showToast(result.message, 'danger');
+        }
+
+      } catch (error) {
+        hideLoading();
+        showToast('Erreur lors de l\'optimisation', 'danger');
+        console.error('Erreur optimisation:', error);
+      }
+    }
+
+    async function getImageStats() {
+      try {
+        const modal = new bootstrap.Modal(document.getElementById('imageStatsModal'));
+        modal.show();
+
+        const response = await fetch(`/admin/bijoux/${jewelSlug}/image-stats`);
+        const result = await response.json();
+
+        const content = document.getElementById('imageStatsContent');
+
+        if (result.success) {
+          const stats = result.stats;
+          
+          content.innerHTML = `
+            <div class="row">
+              <div class="col-md-6">
+                <div class="card border-0" style="background: var(--rose-gold-light);">
+                  <div class="card-body text-center">
+                    <h3 style="color: var(--rose-gold-dark);">${stats.totalImages}</h3>
+                    <p class="mb-0">Images total</p>
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="card border-0" style="background: var(--rose-gold-light);">
+                  <div class="card-body text-center">
+                    <h3 style="color: var(--rose-gold-dark);">${stats.totalSizeMB}MB</h3>
+                    <p class="mb-0">Espace utilisé</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <hr style="border-color: var(--rose-gold-light);">
+            <div class="row">
+              <div class="col-12">
+                <h6 style="color: var(--rose-gold-dark);">Détail des images :</h6>
+                <ul class="list-unstyled">
+                  ${stats.mainImage ? `<li><i class="fas fa-star text-warning me-2"></i>Image principale : ${stats.mainImage.filename}</li>` : ''}
+                  ${stats.additionalImages.map(img => `<li><i class="fas fa-image me-2" style="color: var(--rose-gold);"></i>${img.filename}</li>`).join('')}
+                </ul>
+              </div>
+            </div>
+          `;
+        } else {
+          content.innerHTML = `
+            <div class="text-center text-danger">
+              <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+              <p>Erreur lors du chargement des statistiques</p>
+            </div>
+          `;
+        }
+
+      } catch (error) {
+        console.error('Erreur stats images:', error);
+        document.getElementById('imageStatsContent').innerHTML = `
+          <div class="text-center text-danger">
+            <i class="fas fa-times-circle fa-3x mb-3"></i>
+            <p>Erreur de connexion</p>
+          </div>
+        `;
+      }
+    }
+
+    // ==========================================
+    // VALIDATION ET SOUMISSION DU FORMULAIRE
+    // ==========================================
+    function initializeFormValidation() {
+      const form = document.getElementById('jewelForm');
+      
+      // Validation en temps réel
+      const requiredFields = ['name', 'category_id', 'matiere', 'price_ttc', 'tva'];
+      
+      requiredFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+          field.addEventListener('blur', function() {
+            validateField(this);
+          });
+          
+          field.addEventListener('input', function() {
+            if (this.classList.contains('is-invalid')) {
+              validateField(this);
+            }
+          });
+        }
+      });
+
+      // Soumission du formulaire
+      form.addEventListener('submit', function(e) {
+        console.log('📝 === DÉBUT SOUMISSION FORMULAIRE ===');
+        
+        // Validation complète
+        let isValid = true;
+        requiredFields.forEach(fieldId => {
+          const field = document.getElementById(fieldId);
+          if (field && !validateField(field)) {
+            isValid = false;
+          }
+        });
+
+        if (!isValid) {
+          e.preventDefault();
+          showToast('Veuillez remplir tous les champs obligatoires', 'danger');
+          return;
+        }
+
+        // Validation des dates de réduction
+        const startDate = document.getElementById('discount_start_date').value;
+        const endDate = document.getElementById('discount_end_date').value;
+        
+        if (startDate && endDate && new Date(startDate) >= new Date(endDate)) {
+          e.preventDefault();
+          showToast('La date de fin de réduction doit être postérieure à la date de début', 'warning');
+          return;
+        }
+
+        // Collecter et valider les tailles
+        const sizes = [];
+        document.querySelectorAll('.size-entry').forEach(entry => {
+          const taille = entry.querySelector('input[name*="[taille]"]').value.trim();
+          const stock = entry.querySelector('input[name*="[stock]"]').value;
+          if (taille || stock > 0) {
+            sizes.push({ taille: taille || 'Standard', stock: parseInt(stock) || 0 });
+          }
+        });
+        
+        if (sizes.length === 0) {
+          e.preventDefault();
+          showToast('Au moins une taille doit être définie', 'warning');
+          return;
+        }
+        
+        // Mettre les tailles dans le champ caché
+        document.getElementById('taillesToSave').value = JSON.stringify(sizes);
+        
+        console.log('✅ Validation OK, soumission du formulaire');
+        
+        // Afficher le spinner
+        showLoading('Mise à jour en cours...');
+        
+        // Désactiver le bouton de soumission
+        const submitBtn = document.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Mise à jour...';
+        submitBtn.disabled = true;
+        
+        // Remettre le bouton en état après 15 secondes pour éviter les blocages
+        setTimeout(() => {
+          submitBtn.innerHTML = originalText;
+          submitBtn.disabled = false;
+          hideLoading();
+        }, 15000);
+      });
+    }
+
+    function validateField(field) {
+      const value = field.value.trim();
+      const isRequired = field.hasAttribute('required');
+      
+      if (isRequired && !value) {
+        field.classList.add('is-invalid');
+        field.classList.remove('is-valid');
+        return false;
+      } else if (value) {
+        field.classList.remove('is-invalid');
+        field.classList.add('is-valid');
+        return true;
+      } else {
+        field.classList.remove('is-invalid', 'is-valid');
+        return true;
       }
     }
 
@@ -1099,16 +2592,6 @@
         changes.push(`${imagesToDelete.length} image(s) seront supprimée(s)`);
       }
       
-      const newMainImage = document.getElementById('newMainImage').files.length;
-      const newImages = document.getElementById('newImages').files.length;
-      
-      if (newMainImage > 0) {
-        changes.push('Nouvelle image principale sera ajoutée');
-      }
-      if (newImages > 0) {
-        changes.push(`${newImages} nouvelle(s) image(s) additionnelle(s) seront ajoutée(s)`);
-      }
-      
       // Compter les tailles
       const sizes = document.querySelectorAll('.size-entry').length;
       changes.push(`${sizes} taille(s) configurée(s)`);
@@ -1117,161 +2600,152 @@
         changes.push('Aucune modification détectée');
       }
       
-      alert('Aperçu des modifications :\n\n• ' + changes.join('\n• '));
-    }
-
-    function showAlert(message, type = 'info') {
-      const alertDiv = document.createElement('div');
-      alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
-      alertDiv.style.top = '20px';
-      alertDiv.style.right = '20px';
-      alertDiv.style.zIndex = '9999';
-      alertDiv.style.maxWidth = '400px';
-      alertDiv.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'warning' ? 'exclamation-triangle' : type === 'danger' ? 'times-circle' : 'info-circle'}"></i> ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      `;
-      document.body.appendChild(alertDiv);
+      const changesList = changes.map(change => `• ${change}`).join('\n');
       
-      setTimeout(() => {
-        if (alertDiv.parentNode) alertDiv.remove();
-      }, 5000);
+      showToast(`Aperçu des modifications :\n\n${changesList}`, 'info');
     }
 
-    // Soumission du formulaire
-  document.getElementById('jewelForm').addEventListener('submit', function(e) {
-  console.log('📝 === DÉBUT SOUMISSION FORMULAIRE ===');
-  
-  // ✅ NE PAS FAIRE e.preventDefault() tout de suite
-  
-  // Validation
-  const required = ['name', 'category_id', 'matiere', 'price_ttc', 'tva'];
-  let valid = true;
-  
-  required.forEach(field => {
-    const element = document.getElementById(field);
-    if (!element.value.trim()) {
-      element.classList.add('is-invalid');
-      valid = false;
-      console.log('❌ Champ manquant:', field);
-    } else {
-      element.classList.remove('is-invalid');
-      element.classList.add('is-valid');
-    }
-  });
-  
-  if (!valid) {
-    e.preventDefault(); // ⚠️ Empêcher SEULEMENT si erreur de validation
-    showAlert('Veuillez remplir tous les champs obligatoires', 'danger');
-    return;
-  }
-
-  // Validation des dates de réduction
-  const startDate = document.getElementById('discount_start_date').value;
-  const endDate = document.getElementById('discount_end_date').value;
-  
-  if (startDate && endDate && new Date(startDate) >= new Date(endDate)) {
-    e.preventDefault(); // ⚠️ Empêcher SEULEMENT si erreur de validation
-    showAlert('La date de fin de réduction doit être postérieure à la date de début', 'warning');
-    return;
-  }
-
-  // Collecter les tailles
-  const sizes = [];
-  document.querySelectorAll('.size-entry').forEach(entry => {
-    const taille = entry.querySelector('input[name*="[taille]"]').value.trim();
-    const stock = entry.querySelector('input[name*="[stock]"]').value;
-    if (taille || stock > 0) {
-      sizes.push({ taille: taille || 'Standard', stock: parseInt(stock) || 0 });
-    }
-  });
-  
-  if (sizes.length === 0) {
-    e.preventDefault(); // ⚠️ Empêcher SEULEMENT si erreur de validation
-    showAlert('Au moins une taille doit être définie', 'warning');
-    return;
-  }
-  
-  // ✅ IMPORTANT: Mettre les tailles dans le champ caché AVANT la soumission
-  document.getElementById('taillesToSave').value = JSON.stringify(sizes);
-  
-  // DEBUG
-  console.log('✅ Validation OK, soumission normale du formulaire');
-  console.log('📤 Action:', this.action);
-  console.log('📤 Method:', this.method);
-  console.log('📤 Enctype:', this.enctype);
-  
-  // Afficher le spinner
-  document.getElementById('loadingOverlay').style.display = 'flex';
-  
-  // Désactiver le bouton
-  const submitBtn = document.querySelector('button[type="submit"]');
-  const originalText = submitBtn.innerHTML;
-  submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mise à jour...';
-  submitBtn.disabled = true;
-  
-  // ✅ LAISSER LA SOUMISSION NORMALE SE FAIRE (ne pas faire this.submit())
-  // Le formulaire va se soumettre naturellement et passer par parseJewelForm
-  
-  // Remettre le bouton en état après 15 secondes pour éviter les blocages
-  setTimeout(() => {
-    submitBtn.innerHTML = originalText;
-    submitBtn.disabled = false;
-    document.getElementById('loadingOverlay').style.display = 'none';
-  }, 15000);
-});
-
-    // Initialisation
-    document.addEventListener('DOMContentLoaded', function() {
-      calculatePrices();
+    // ==========================================
+    // FONCTIONS D'INTERFACE UTILISATEUR
+    // ==========================================
+    function showLoading(message = 'Chargement...') {
+      const overlay = document.getElementById('loadingOverlay');
+      const messageEl = document.getElementById('loadingMessage');
       
-      // Focus sur le premier champ
-      document.getElementById('name').focus();
+      messageEl.textContent = message;
+      overlay.style.display = 'flex';
       
-      // Validation en temps réel
-      const inputs = document.querySelectorAll('input[required], select[required]');
-      inputs.forEach(input => {
-        input.addEventListener('blur', function() {
-          if (this.value.trim()) {
-            this.classList.remove('is-invalid');
-            this.classList.add('is-valid');
-          } else {
-            this.classList.add('is-invalid');
-            this.classList.remove('is-valid');
-          }
-        });
+      // Animation d'apparition
+      requestAnimationFrame(() => {
+        overlay.style.opacity = '1';
       });
+    }
 
-      // Masquer les alertes automatiquement
+    function hideLoading() {
+      const overlay = document.getElementById('loadingOverlay');
+      
+      overlay.style.opacity = '0';
       setTimeout(() => {
-        document.querySelectorAll('.alert').forEach(alert => {
-          if (alert.querySelector('.btn-close')) {
-            alert.querySelector('.btn-close').click();
-          }
-        });
-      }, 8000);
+        overlay.style.display = 'none';
+      }, 300);
+    }
+
+    function showUploadProgress(percent, message) {
+      const progressBar = document.getElementById('uploadProgressBar');
+      const progressValue = document.getElementById('uploadProgressValue');
+      const progressText = document.getElementById('uploadProgressText');
+      
+      progressBar.style.display = 'block';
+      progressValue.style.width = percent + '%';
+      progressText.innerHTML = `<i class="fas fa-cloud-upload-alt me-1"></i>${message}`;
+    }
+
+    function hideUploadProgress() {
+      const progressBar = document.getElementById('uploadProgressBar');
+      
+      setTimeout(() => {
+        progressBar.style.display = 'none';
+      }, 1000);
+    }
+
+    function showToast(message, type = 'info', duration = 5000) {
+      const container = document.getElementById('toastContainer');
+      
+      const iconClasses = {
+        'success': 'fa-check-circle text-success',
+        'danger': 'fa-times-circle text-danger',
+        'warning': 'fa-exclamation-triangle text-warning',
+        'info': 'fa-info-circle text-info'
+      };
+
+      const bgClasses = {
+        'success': 'bg-success',
+        'danger': 'bg-danger',
+        'warning': 'bg-warning',
+        'info': 'bg-primary'
+      };
+
+      const toastId = 'toast_' + Date.now();
+      
+      const toastHTML = `
+        <div class="toast" id="${toastId}" role="alert" data-bs-autohide="true" data-bs-delay="${duration}">
+          <div class="toast-header ${bgClasses[type]} text-white">
+            <i class="fas ${iconClasses[type]} me-2"></i>
+            <strong class="me-auto">Notification</strong>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast"></button>
+          </div>
+          <div class="toast-body" style="white-space: pre-line;">
+            ${message}
+          </div>
+        </div>
+      `;
+      
+      container.insertAdjacentHTML('beforeend', toastHTML);
+      
+      const toast = new bootstrap.Toast(document.getElementById(toastId));
+      toast.show();
+      
+      // Nettoyer après la fermeture
+      document.getElementById(toastId).addEventListener('hidden.bs.toast', function() {
+        this.remove();
+      });
+    }
+
+    function animateExistingImages() {
+      const images = document.querySelectorAll('.image-preview');
+      images.forEach((img, index) => {
+        img.style.opacity = '0';
+        img.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+          img.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+          img.style.opacity = '1';
+          img.style.transform = 'translateY(0)';
+        }, index * 100);
+      });
+    }
+
+    // ==========================================
+    // NETTOYAGE ET FERMETURE DU MODAL
+    // ==========================================
+    document.getElementById('cropModal').addEventListener('hidden.bs.modal', function() {
+      if (cropperInstance) {
+        cropperInstance.destroy();
+        cropperInstance = null;
+      }
+      currentImageData = null;
+      document.getElementById('setAsMainAfterCrop').checked = false;
+      
+      // Reset des contrôles
+      document.getElementById('aspectRatio').value = '1';
+      document.getElementById('imageQuality').value = '0.9';
+      
+      const preview = document.getElementById('cropPreview');
+      preview.innerHTML = `
+        <div class="d-flex align-items-center justify-content-center h-100 text-muted">
+          <i class="fas fa-image fa-2x"></i>
+        </div>
+      `;
     });
 
-    // 🔧 FIX SIMPLE pour l'erreur timeOnPage - sans rien changer d'autre
-    // Override silencieux pour corriger automatiquement les données manquantes
-    if (window.fetch) {
-      const originalFetch = window.fetch;
-      window.fetch = function(url, options = {}) {
-        if (options.method === 'POST' && options.body && typeof options.body === 'string') {
-          try {
-            const data = JSON.parse(options.body);
-            if (data && typeof data === 'object' && data.timeOnPage === undefined) {
-              data.timeOnPage = 0; // Valeur par défaut
-              options.body = JSON.stringify(data);
-            }
-          } catch (e) {
-            // Si erreur de parsing, continuer normalement
-          }
-        }
-        return originalFetch.apply(this, arguments);
-      };
+    // ==========================================
+    // FONCTIONS UTILITAIRES
+    // ==========================================
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
     }
-  </script>
 
+    // Nettoyage automatique des fichiers temporaires au déchargement de la page
+    window.addEventListener('beforeunload', function() {
+      if (currentImageData && currentImageData.filename) {
+        // Tentative de nettoyage (peut ne pas fonctionner selon le navigateur)
+        navigator.sendBeacon('/admin/clean-temp-images', JSON.stringify({
+          tempFile: currentImageData.filename
+        }));
+      }
+    });
+
+    console.log('✅ Gestionnaire d\'images rose-gold complètement initialisé');
+  </script>
 </body>
 </html>

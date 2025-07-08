@@ -8,9 +8,13 @@ import { dirname } from 'path';
 import multer from "multer";
 import { Jewel } from "./models/jewelModel.js";
 import { Category } from "./models/categoryModel.js";
+import { Material } from "./models/MaterialModel.js";
+import express from "express";
+
 import { sequelize } from "./models/sequelize-client.js";
 import { Cart } from "./models/cartModel.js";
 import { Type } from "./models/TypeModel.js";
+import { JewelImage } from "./models/jewelImage.js";
 
 // Imports des contrôleurs EXISTANTS
 import { mainControlleur } from "./controlleurs/mainControlleur.js";
@@ -157,6 +161,48 @@ const updateJewelUpload = multer({
     } else {
       cb(new Error(`Type ${file.mimetype} non autorisé`), false);
     }
+  }
+});
+
+// Middleware pour le traitement d'images avec rognage
+const uploadImages = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      const uploadDir = path.join(process.cwd(), 'uploads', 'temp');
+      
+      // Créer le dossier s'il n'existe pas
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+        console.log('📁 Dossier temp créé:', uploadDir);
+      }
+      
+      cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      const filename = 'temp-' + uniqueSuffix + path.extname(file.originalname);
+      console.log('📝 Nom de fichier généré:', filename);
+      cb(null, filename);
+    }
+  }),
+  fileFilter: (req, file, cb) => {
+    console.log('🔍 Vérification fichier:', file.mimetype);
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Seules les images sont autorisées'), false);
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
+  }
+});
+
+// Configuration multer pour les images croppées (en mémoire)
+const uploadCropped = multer({
+  storage: multer.memoryStorage(),
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB
   }
 });
 
@@ -926,6 +972,734 @@ router.post('/bijoux/:slug/supprimer', isAdmin, jewelControlleur.deleteJewel);
 router.get('/admin/bijoux/:slug/edit', isAdmin, jewelControlleur.editJewel);
 
 
+// Route pour uploader une nouvelle image
+router.post('/admin/bijoux/:slug/upload-image', 
+  isAdmin, 
+  uploadImages.single('image'), 
+  async (req, res) => {
+    console.log('📸 === DÉBUT upload-image ===');
+    
+    try {
+      const { slug } = req.params;
+      const { imageType } = req.body;
+      
+      console.log('📋 Données reçues:', { slug, imageType, hasFile: !!req.file });
+      
+      if (!req.file) {
+        console.log('❌ Aucun fichier reçu');
+        return res.status(400).json({
+          success: false,
+          message: 'Aucun fichier reçu'
+        });
+      }
+
+      console.log('📁 Fichier reçu:', {
+        filename: req.file.filename,
+        size: req.file.size,
+        mimetype: req.file.mimetype,
+        path: req.file.path
+      });
+
+      // Vérifier que le bijou existe
+      const jewel = await Jewel.findOne({ where: { slug } });
+      if (!jewel) {
+        console.log('❌ Bijou non trouvé:', slug);
+        // Nettoyer le fichier temporaire
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+        return res.status(404).json({
+          success: false,
+          message: 'Bijou non trouvé'
+        });
+      }
+
+      console.log('✅ Bijou trouvé:', jewel.name);
+
+      // Retourner les informations du fichier temporaire
+      const result = {
+        success: true,
+        message: 'Fichier uploadé avec succès',
+        tempFile: {
+          filename: req.file.filename,
+          originalName: req.file.originalname,
+          path: `/uploads/temp/${req.file.filename}`,
+          size: req.file.size,
+          mimetype: req.file.mimetype
+        },
+        imageType: imageType || 'additional',
+        jewelInfo: {
+          id: jewel.id,
+          name: jewel.name,
+          slug: jewel.slug
+        }
+      };
+
+      console.log('✅ Réponse envoyée:', result);
+      res.json(result);
+
+    } catch (error) {
+      console.error('❌ Erreur upload-image:', error);
+      
+      // Nettoyer le fichier en cas d'erreur
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de l\'upload de l\'image',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Route pour traiter l'image croppée et la sauvegarder
+router.post('/admin/bijoux/:slug/crop-and-save', 
+  isAdmin, 
+  uploadCropped.single('croppedImage'),
+  async (req, res) => {
+    console.log('✂️ === DÉBUT crop-and-save ===');
+    
+    try {
+      const { slug } = req.params;
+      const { 
+        tempFilename, 
+        imageType = 'additional',
+        setAsMain = false 
+      } = req.body;
+
+      console.log('📋 Données reçues:', {
+        slug,
+        tempFilename,
+        imageType,
+        setAsMain,
+        hasFile: !!req.file
+      });
+
+      // Validation des données
+      if (!tempFilename) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nom du fichier temporaire manquant'
+        });
+      }
+
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'Image croppée manquante'
+        });
+      }
+
+      // Vérifier que le bijou existe
+      const jewel = await Jewel.findOne({ 
+        where: { slug },
+        include: [{
+          model: JewelImage,
+          as: 'additionalImages',
+          required: false
+        }]
+      });
+
+      if (!jewel) {
+        return res.status(404).json({
+          success: false,
+          message: 'Bijou non trouvé'
+        });
+      }
+
+      console.log('✅ Bijou trouvé:', jewel.name);
+
+      // Préparer le nom du fichier final
+      const timestamp = Date.now();
+      const randomId = Math.round(Math.random() * 1E9);
+      const fileExtension = '.jpg'; // Force JPEG pour la cohérence
+      const finalFilename = `${slug}-${imageType}-${timestamp}-${randomId}${fileExtension}`;
+      
+      // Dossiers
+      const finalDir = path.join(process.cwd(), 'public', 'uploads', 'jewels');
+      const tempDir = path.join(process.cwd(), 'uploads', 'temp');
+      
+      // Créer le dossier final s'il n'existe pas
+      if (!fs.existsSync(finalDir)) {
+        fs.mkdirSync(finalDir, { recursive: true });
+        console.log('📁 Dossier final créé:', finalDir);
+      }
+      
+      const finalPath = path.join(finalDir, finalFilename);
+      const tempPath = path.join(tempDir, tempFilename);
+
+      // Sauvegarder l'image croppée
+      fs.writeFileSync(finalPath, req.file.buffer);
+      console.log('💾 Image croppée sauvegardée:', finalFilename);
+
+      // Nettoyer le fichier temporaire
+      if (fs.existsSync(tempPath)) {
+        fs.unlinkSync(tempPath);
+        console.log('🗑️ Fichier temporaire supprimé');
+      }
+
+      let result = {};
+
+      // Déterminer le type d'action
+      const shouldSetAsMain = imageType === 'main' || setAsMain === 'true' || setAsMain === true;
+
+      if (shouldSetAsMain) {
+        console.log('⭐ Définition comme image principale...');
+        
+        // Sauvegarder l'ancienne image principale comme image additionnelle
+        if (jewel.image && jewel.image !== finalFilename) {
+          await JewelImage.create({
+            jewel_id: jewel.id,
+            image_url: jewel.image
+          });
+          console.log('📁 Ancienne image principale sauvegardée');
+        }
+
+        // Mettre à jour l'image principale
+        await jewel.update({ image: finalFilename });
+        
+        result = {
+          type: 'main',
+          filename: finalFilename,
+          url: `/uploads/jewels/${finalFilename}`,
+          isMain: true
+        };
+
+      } else {
+        console.log('📎 Ajout comme image additionnelle...');
+        
+        // Ajouter comme image additionnelle
+        const newImage = await JewelImage.create({
+          jewel_id: jewel.id,
+          image_url: finalFilename
+        });
+
+        result = {
+          type: 'additional',
+          id: newImage.id,
+          filename: finalFilename,
+          url: `/uploads/jewels/${finalFilename}`,
+          isMain: false
+        };
+      }
+
+      console.log('✅ Image traitée avec succès:', result);
+
+      res.json({
+        success: true,
+        message: 'Image traitée et sauvegardée avec succès',
+        image: result
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur crop-and-save:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors du traitement de l\'image',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Route pour définir une image comme principale
+router.post('/admin/bijoux/:slug/set-main-image', 
+  isAdmin, 
+  async (req, res) => {
+    console.log('⭐ === DÉBUT set-main-image ===');
+    
+    try {
+      const { slug } = req.params;
+      const { imageUrl, imageId } = req.body;
+
+      console.log('📋 Données reçues:', { slug, imageUrl, imageId });
+
+      if (!imageUrl) {
+        return res.status(400).json({
+          success: false,
+          message: 'URL de l\'image manquante'
+        });
+      }
+
+      // Vérifier que le bijou existe
+      const jewel = await Jewel.findOne({ 
+        where: { slug },
+        include: [{
+          model: JewelImage,
+          as: 'additionalImages',
+          required: false
+        }]
+      });
+
+      if (!jewel) {
+        return res.status(404).json({
+          success: false,
+          message: 'Bijou non trouvé'
+        });
+      }
+
+      console.log('✅ Bijou trouvé:', jewel.name);
+
+      // Sauvegarder l'ancienne image principale comme image additionnelle
+      if (jewel.image && jewel.image !== imageUrl) {
+        console.log('📁 Sauvegarde de l\'ancienne image principale...');
+        
+        await JewelImage.create({
+          jewel_id: jewel.id,
+          image_url: jewel.image
+        });
+      }
+
+      // Supprimer la nouvelle image principale de la table des images additionnelles
+      if (imageId) {
+        console.log('🗑️ Suppression de la table des images additionnelles...');
+        
+        await JewelImage.destroy({
+          where: { id: imageId }
+        });
+      }
+
+      // Mettre à jour l'image principale du bijou
+      await jewel.update({ image: imageUrl });
+
+      console.log('✅ Image principale mise à jour avec succès');
+
+      res.json({
+        success: true,
+        message: 'Image principale mise à jour avec succès',
+        newMainImage: imageUrl,
+        jewelName: jewel.name
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur set-main-image:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors du changement d\'image principale',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Route pour supprimer une image
+router.delete('/admin/bijoux/:slug/delete-image', 
+  isAdmin, 
+  async (req, res) => {
+    console.log('🗑️ === DÉBUT delete-image ===');
+    
+    try {
+      const { slug } = req.params;
+      const { imageUrl, imageId, isMain } = req.body;
+
+      console.log('📋 Données reçues:', { slug, imageUrl, imageId, isMain });
+
+      if (!imageUrl) {
+        return res.status(400).json({
+          success: false,
+          message: 'URL de l\'image manquante'
+        });
+      }
+
+      // Vérifier que le bijou existe
+      const jewel = await Jewel.findOne({ 
+        where: { slug },
+        include: [{
+          model: JewelImage,
+          as: 'additionalImages',
+          required: false
+        }]
+      });
+
+      if (!jewel) {
+        return res.status(404).json({
+          success: false,
+          message: 'Bijou non trouvé'
+        });
+      }
+
+      console.log('✅ Bijou trouvé:', jewel.name);
+
+      // Supprimer le fichier physique
+      const imagePath = path.join(process.cwd(), 'public', 'uploads', 'jewels', imageUrl);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath);
+        console.log('📁 Fichier image supprimé du disque');
+      } else {
+        console.log('⚠️ Fichier image non trouvé sur le disque');
+      }
+
+      // Actions selon le type d'image
+      if (isMain === true || isMain === 'true') {
+        console.log('⭐ Suppression de l\'image principale...');
+        
+        // Vider l'image principale
+        await jewel.update({ image: null });
+        
+        console.log('✅ Image principale supprimée');
+        
+      } else if (imageId) {
+        console.log('📎 Suppression d\'une image additionnelle...');
+        
+        // Supprimer de la table des images additionnelles
+        const deletedCount = await JewelImage.destroy({
+          where: { id: imageId }
+        });
+        
+        console.log(`✅ ${deletedCount} image additionnelle supprimée`);
+      }
+
+      res.json({
+        success: true,
+        message: 'Image supprimée avec succès',
+        deletedImage: imageUrl,
+        jewelName: jewel.name
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur delete-image:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la suppression de l\'image',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Route pour obtenir les statistiques des images d'un bijou
+router.get('/admin/bijoux/:slug/image-stats', 
+  isAdmin, 
+  async (req, res) => {
+    console.log('📊 === DÉBUT image-stats ===');
+    
+    try {
+      const { slug } = req.params;
+
+      const jewel = await Jewel.findOne({
+        where: { slug },
+        include: [{
+          model: JewelImage,
+          as: 'additionalImages',
+          required: false
+        }]
+      });
+
+      if (!jewel) {
+        return res.status(404).json({
+          success: false,
+          message: 'Bijou non trouvé'
+        });
+      }
+
+      // Calculer les statistiques
+      const stats = {
+        totalImages: 0,
+        mainImage: null,
+        additionalImages: [],
+        totalSizeBytes: 0,
+        totalSizeMB: 0
+      };
+
+      // Image principale
+      if (jewel.image) {
+        stats.totalImages++;
+        stats.mainImage = {
+          url: `/uploads/jewels/${jewel.image}`,
+          filename: jewel.image
+        };
+
+        // Taille du fichier principal
+        try {
+          const mainImagePath = path.join(process.cwd(), 'public', 'uploads', 'jewels', jewel.image);
+          if (fs.existsSync(mainImagePath)) {
+            const mainImageStats = fs.statSync(mainImagePath);
+            stats.totalSizeBytes += mainImageStats.size;
+          }
+        } catch (e) {
+          console.warn('Impossible de lire la taille de l\'image principale');
+        }
+      }
+
+      // Images additionnelles
+      if (jewel.additionalImages && jewel.additionalImages.length > 0) {
+        jewel.additionalImages.forEach(img => {
+          stats.totalImages++;
+          stats.additionalImages.push({
+            id: img.id,
+            url: `/uploads/jewels/${img.image_url}`,
+            filename: img.image_url
+          });
+
+          // Taille du fichier
+          try {
+            const imagePath = path.join(process.cwd(), 'public', 'uploads', 'jewels', img.image_url);
+            if (fs.existsSync(imagePath)) {
+              const imageStats = fs.statSync(imagePath);
+              stats.totalSizeBytes += imageStats.size;
+            }
+          } catch (e) {
+            console.warn(`Impossible de lire la taille de l'image ${img.image_url}`);
+          }
+        });
+      }
+
+      stats.totalSizeMB = (stats.totalSizeBytes / (1024 * 1024)).toFixed(2);
+
+      console.log('✅ Statistiques calculées:', stats);
+
+      res.json({
+        success: true,
+        jewelName: jewel.name,
+        stats
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur image-stats:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la récupération des statistiques',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Route pour optimiser toutes les images d'un bijou
+router.post('/admin/bijoux/:slug/optimize-images', 
+  isAdmin, 
+  async (req, res) => {
+    console.log('🔄 === DÉBUT optimize-images ===');
+    
+    try {
+      const { slug } = req.params;
+      const { quality = 0.85, maxWidth = 1200, maxHeight = 1200 } = req.body;
+
+      // Vérifier si Sharp est disponible
+      let sharp;
+      try {
+        sharp = await import('sharp');
+        sharp = sharp.default || sharp;
+      } catch (e) {
+        console.log('❌ Sharp non disponible:', e.message);
+        return res.status(500).json({
+          success: false,
+          message: 'Sharp n\'est pas installé. Installez-le avec: npm install sharp'
+        });
+      }
+
+      const jewel = await Jewel.findOne({
+        where: { slug },
+        include: [{
+          model: JewelImage,
+          as: 'additionalImages',
+          required: false
+        }]
+      });
+
+      if (!jewel) {
+        return res.status(404).json({
+          success: false,
+          message: 'Bijou non trouvé'
+        });
+      }
+
+      const results = {
+        optimized: 0,
+        errors: 0,
+        totalSavings: 0,
+        details: []
+      };
+
+      const optimizeImage = async (filename, type) => {
+        try {
+          const imagePath = path.join(process.cwd(), 'public', 'uploads', 'jewels', filename);
+          
+          if (!fs.existsSync(imagePath)) {
+            throw new Error(`Fichier non trouvé: ${filename}`);
+          }
+
+          // Taille originale
+          const originalStats = fs.statSync(imagePath);
+          const originalSize = originalStats.size;
+
+          // Créer un fichier temporaire optimisé
+          const tempPath = imagePath + '.temp';
+
+          await sharp(imagePath)
+            .resize(maxWidth, maxHeight, {
+              fit: 'inside',
+              withoutEnlargement: true
+            })
+            .jpeg({
+              quality: Math.round(quality * 100),
+              progressive: true
+            })
+            .toFile(tempPath);
+
+          // Vérifier la taille optimisée
+          const optimizedStats = fs.statSync(tempPath);
+          const optimizedSize = optimizedStats.size;
+
+          // Si l'optimisation réduit la taille, remplacer le fichier
+          if (optimizedSize < originalSize) {
+            fs.renameSync(tempPath, imagePath);
+            
+            const savings = originalSize - optimizedSize;
+            results.totalSavings += savings;
+            
+            results.details.push({
+              filename,
+              type,
+              originalSize,
+              optimizedSize,
+              savings,
+              savingsPercent: Math.round((savings / originalSize) * 100)
+            });
+            
+            console.log(`✅ ${filename} optimisé: ${Math.round(savings/1024)}KB économisés`);
+          } else {
+            // Supprimer le fichier temporaire si pas d'amélioration
+            fs.unlinkSync(tempPath);
+            
+            results.details.push({
+              filename,
+              type,
+              originalSize,
+              optimizedSize: originalSize,
+              savings: 0,
+              savingsPercent: 0,
+              note: 'Aucune amélioration'
+            });
+          }
+
+          results.optimized++;
+
+        } catch (error) {
+          console.error(`❌ Erreur optimisation ${filename}:`, error.message);
+          results.errors++;
+          
+          results.details.push({
+            filename,
+            type,
+            error: error.message
+          });
+        }
+      };
+
+      // Optimiser l'image principale
+      if (jewel.image) {
+        await optimizeImage(jewel.image, 'principale');
+      }
+
+      // Optimiser les images additionnelles
+      if (jewel.additionalImages && jewel.additionalImages.length > 0) {
+        for (const img of jewel.additionalImages) {
+          await optimizeImage(img.image_url, 'additionnelle');
+        }
+      }
+
+      const totalSavingsMB = (results.totalSavings / (1024 * 1024)).toFixed(2);
+
+      console.log(`✅ Optimisation terminée: ${results.optimized} images, ${totalSavingsMB}MB économisés`);
+
+      res.json({
+        success: true,
+        message: `${results.optimized} images optimisées avec succès`,
+        results: {
+          ...results,
+          totalSavingsMB: parseFloat(totalSavingsMB)
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur optimize-images:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de l\'optimisation des images',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Route pour nettoyer les fichiers temporaires
+router.post('/admin/clean-temp-images', 
+  isAdmin, 
+  async (req, res) => {
+    console.log('🧹 === DÉBUT clean-temp-images ===');
+    
+    try {
+      const tempDir = path.join(process.cwd(), 'uploads', 'temp');
+      
+      if (!fs.existsSync(tempDir)) {
+        console.log('📁 Dossier temporaire inexistant');
+        return res.json({
+          success: true,
+          message: 'Dossier temporaire inexistant',
+          deletedCount: 0
+        });
+      }
+
+      const files = fs.readdirSync(tempDir);
+      let deletedCount = 0;
+      let totalSize = 0;
+
+      // Supprimer les fichiers de plus d'1 heure
+      const oneHourAgo = Date.now() - (60 * 60 * 1000);
+
+      files.forEach(file => {
+        try {
+          const filePath = path.join(tempDir, file);
+          const stats = fs.statSync(filePath);
+          
+          if (stats.mtime.getTime() < oneHourAgo) {
+            totalSize += stats.size;
+            fs.unlinkSync(filePath);
+            deletedCount++;
+            console.log(`🗑️ Fichier temporaire supprimé: ${file}`);
+          }
+        } catch (fileError) {
+          console.error(`❌ Erreur suppression fichier ${file}:`, fileError.message);
+        }
+      });
+
+      const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+
+      console.log(`✅ Nettoyage terminé: ${deletedCount} fichiers supprimés (${totalSizeMB}MB)`);
+
+      res.json({
+        success: true,
+        message: `${deletedCount} fichier(s) temporaire(s) supprimé(s)`,
+        deletedCount,
+        totalSizeMB: parseFloat(totalSizeMB),
+        remainingFiles: files.length - deletedCount
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur clean-temp-images:', error);
+      
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors du nettoyage des fichiers temporaires',
+        error: error.message
+      });
+    }
+  }
+);
+
+// Servir les fichiers temporaires
+router.use('/uploads/temp', express.static(path.join(process.cwd(), 'uploads', 'temp')));
+
+
 
 // 🔧 ROUTES À AJOUTER pour l'ajout dynamique depuis le formulaire d'édition
 
@@ -1401,6 +2175,61 @@ router.get('/admin/bijoux/materiau/:materialName', isAdmin, (req, res) => {
 // ==========================================
 // DIAGNOSTIC ET MAINTENANCE
 // ==========================================
+
+router.get('/admin/commandes/:id', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        // Récupérer la commande avec tous les détails
+        const order = await Order.findByPk(id, {
+            include: [
+                {
+                    model: Customer,
+                    as: 'customer',
+                    attributes: ['firstname', 'lastname', 'email', 'phone']
+                },
+                {
+                    model: OrderItem,
+                    as: 'items',
+                    include: [
+                        {
+                            model: Jewel,
+                            as: 'jewel',
+                            attributes: ['name', 'price_ttc', 'image']
+                        }
+                    ]
+                }
+            ]
+        });
+
+        if (!order) {
+            return res.status(404).render('error', {
+                message: 'Commande non trouvée',
+                user: req.session?.user || null
+            });
+        }
+
+        // Traduire le status
+        const translatedOrder = {
+            ...order.toJSON(),
+            status: translateOrderStatus(order.status),
+            statusClass: getStatusClass(order.status)
+        };
+
+        res.render('admin/order-details', {
+            title: `Commande #${order.id}`,
+            order: translatedOrder,
+            user: req.session?.user || null
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur affichage commande:', error);
+        res.status(500).render('error', {
+            message: 'Erreur lors du chargement de la commande',
+            user: req.session?.user || null
+        });
+    }
+});
 
 // Diagnostic du module bijoux
 router.get('/api/bijoux/diagnostic', isAdmin, async (req, res) => {

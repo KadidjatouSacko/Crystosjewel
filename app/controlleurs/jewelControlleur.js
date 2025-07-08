@@ -3617,6 +3617,330 @@ async updateDiscount(req, res) {
   }
 },
 
+// À ajouter dans votre jewelControlleur.js
+
+// ==========================================
+// NOUVELLES MÉTHODES POUR LA GESTION D'IMAGES AVANCÉE
+// ==========================================
+
+/**
+ * 📸 Upload d'une image temporaire pour préparation au crop
+ */
+
+
+/**
+ * 🧹 Nettoie les fichiers temporaires (tâche de maintenance)
+ */
+async cleanTempImages(req, res) {
+  console.log('🧹 === DÉBUT cleanTempImages ===');
+  
+  try {
+    const tempDir = path.join(process.cwd(), 'uploads', 'temp');
+    
+    if (!fs.existsSync(tempDir)) {
+      console.log('📁 Dossier temporaire inexistant');
+      return res.json({
+        success: true,
+        message: 'Dossier temporaire inexistant',
+        deletedCount: 0
+      });
+    }
+
+    const files = fs.readdirSync(tempDir);
+    let deletedCount = 0;
+    let totalSize = 0;
+
+    // Supprimer les fichiers de plus d'1 heure
+    const oneHourAgo = Date.now() - (60 * 60 * 1000);
+
+    files.forEach(file => {
+      try {
+        const filePath = path.join(tempDir, file);
+        const stats = fs.statSync(filePath);
+        
+        if (stats.mtime.getTime() < oneHourAgo) {
+          totalSize += stats.size;
+          fs.unlinkSync(filePath);
+          deletedCount++;
+          console.log(`🗑️ Fichier temporaire supprimé: ${file}`);
+        }
+      } catch (fileError) {
+        console.error(`❌ Erreur suppression fichier ${file}:`, fileError.message);
+      }
+    });
+
+    const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+
+    console.log(`✅ Nettoyage terminé: ${deletedCount} fichiers supprimés (${totalSizeMB}MB)`);
+
+    res.json({
+      success: true,
+      message: `${deletedCount} fichier(s) temporaire(s) supprimé(s)`,
+      deletedCount,
+      totalSizeMB: parseFloat(totalSizeMB),
+      remainingFiles: files.length - deletedCount
+    });
+
+  } catch (error) {
+    console.error('❌ Erreur cleanTempImages:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors du nettoyage des fichiers temporaires',
+      error: error.message
+    });
+  }
+},
+
+/**
+ * 📊 Obtient les statistiques des images d'un bijou
+ */
+async getImageStats(req, res) {
+  try {
+    const { slug } = req.params;
+
+    const jewel = await Jewel.findOne({
+      where: { slug },
+      include: [{
+        model: JewelImage,
+        as: 'additionalImages',
+        required: false
+      }]
+    });
+
+    if (!jewel) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bijou non trouvé'
+      });
+    }
+
+    // Calculer les statistiques
+    const stats = {
+      totalImages: 0,
+      mainImage: null,
+      additionalImages: [],
+      totalSizeBytes: 0,
+      totalSizeMB: 0
+    };
+
+    // Image principale
+    if (jewel.image) {
+      stats.totalImages++;
+      stats.mainImage = {
+        url: `/uploads/jewels/${jewel.image}`,
+        filename: jewel.image
+      };
+
+      // Taille du fichier principal
+      try {
+        const mainImagePath = path.join(process.cwd(), 'public', 'uploads', 'jewels', jewel.image);
+        if (fs.existsSync(mainImagePath)) {
+          const mainImageStats = fs.statSync(mainImagePath);
+          stats.totalSizeBytes += mainImageStats.size;
+        }
+      } catch (e) {
+        console.warn('Impossible de lire la taille de l\'image principale');
+      }
+    }
+
+    // Images additionnelles
+    if (jewel.additionalImages && jewel.additionalImages.length > 0) {
+      jewel.additionalImages.forEach(img => {
+        stats.totalImages++;
+        stats.additionalImages.push({
+          id: img.id,
+          url: `/uploads/jewels/${img.image_url}`,
+          filename: img.image_url
+        });
+
+        // Taille du fichier
+        try {
+          const imagePath = path.join(process.cwd(), 'public', 'uploads', 'jewels', img.image_url);
+          if (fs.existsSync(imagePath)) {
+            const imageStats = fs.statSync(imagePath);
+            stats.totalSizeBytes += imageStats.size;
+          }
+        } catch (e) {
+          console.warn(`Impossible de lire la taille de l'image ${img.image_url}`);
+        }
+      });
+    }
+
+    stats.totalSizeMB = (stats.totalSizeBytes / (1024 * 1024)).toFixed(2);
+
+    res.json({
+      success: true,
+      jewelName: jewel.name,
+      stats
+    });
+
+  } catch (error) {
+    console.error('❌ Erreur getImageStats:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de la récupération des statistiques',
+      error: error.message
+    });
+  }
+},
+
+/**
+ * 🔄 Optimise toutes les images d'un bijou (redimensionne et compresse)
+ */
+async optimizeImages(req, res) {
+  try {
+    const { slug } = req.params;
+    const { quality = 0.85, maxWidth = 1200, maxHeight = 1200 } = req.body;
+
+    console.log('🔄 Optimisation des images pour:', slug);
+
+    // Vérifier si Sharp est disponible
+    let sharp;
+    try {
+      sharp = require('sharp');
+    } catch (e) {
+      return res.status(500).json({
+        success: false,
+        message: 'Sharp n\'est pas installé. Installez-le avec: npm install sharp'
+      });
+    }
+
+    const jewel = await Jewel.findOne({
+      where: { slug },
+      include: [{
+        model: JewelImage,
+        as: 'additionalImages',
+        required: false
+      }]
+    });
+
+    if (!jewel) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bijou non trouvé'
+      });
+    }
+
+    const results = {
+      optimized: 0,
+      errors: 0,
+      totalSavings: 0,
+      details: []
+    };
+
+    const optimizeImage = async (filename, type) => {
+      try {
+        const imagePath = path.join(process.cwd(), 'public', 'uploads', 'jewels', filename);
+        
+        if (!fs.existsSync(imagePath)) {
+          throw new Error(`Fichier non trouvé: ${filename}`);
+        }
+
+        // Taille originale
+        const originalStats = fs.statSync(imagePath);
+        const originalSize = originalStats.size;
+
+        // Créer un fichier temporaire optimisé
+        const tempPath = imagePath + '.temp';
+
+        await sharp(imagePath)
+          .resize(maxWidth, maxHeight, {
+            fit: 'inside',
+            withoutEnlargement: true
+          })
+          .jpeg({
+            quality: Math.round(quality * 100),
+            progressive: true
+          })
+          .toFile(tempPath);
+
+        // Vérifier la taille optimisée
+        const optimizedStats = fs.statSync(tempPath);
+        const optimizedSize = optimizedStats.size;
+
+        // Si l'optimisation réduit la taille, remplacer le fichier
+        if (optimizedSize < originalSize) {
+          fs.renameSync(tempPath, imagePath);
+          
+          const savings = originalSize - optimizedSize;
+          results.totalSavings += savings;
+          
+          results.details.push({
+            filename,
+            type,
+            originalSize,
+            optimizedSize,
+            savings,
+            savingsPercent: Math.round((savings / originalSize) * 100)
+          });
+          
+          console.log(`✅ ${filename} optimisé: ${Math.round(savings/1024)}KB économisés`);
+        } else {
+          // Supprimer le fichier temporaire si pas d'amélioration
+          fs.unlinkSync(tempPath);
+          
+          results.details.push({
+            filename,
+            type,
+            originalSize,
+            optimizedSize: originalSize,
+            savings: 0,
+            savingsPercent: 0,
+            note: 'Aucune amélioration'
+          });
+        }
+
+        results.optimized++;
+
+      } catch (error) {
+        console.error(`❌ Erreur optimisation ${filename}:`, error.message);
+        results.errors++;
+        
+        results.details.push({
+          filename,
+          type,
+          error: error.message
+        });
+      }
+    };
+
+    // Optimiser l'image principale
+    if (jewel.image) {
+      await optimizeImage(jewel.image, 'principale');
+    }
+
+    // Optimiser les images additionnelles
+    if (jewel.additionalImages && jewel.additionalImages.length > 0) {
+      for (const img of jewel.additionalImages) {
+        await optimizeImage(img.image_url, 'additionnelle');
+      }
+    }
+
+    const totalSavingsMB = (results.totalSavings / (1024 * 1024)).toFixed(2);
+
+    console.log(`✅ Optimisation terminée: ${results.optimized} images, ${totalSavingsMB}MB économisés`);
+
+    res.json({
+      success: true,
+      message: `${results.optimized} images optimisées avec succès`,
+      results: {
+        ...results,
+        totalSavingsMB: parseFloat(totalSavingsMB)
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Erreur optimizeImages:', error);
+    
+    res.status(500).json({
+      success: false,
+      message: 'Erreur lors de l\'optimisation des images',
+      error: error.message
+    });
+  }
+}
 
 }
 
