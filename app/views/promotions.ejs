@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --rose-gold: #b76e79;
+            --rose-gold-dark: #a05d68;
+            --rose-gold-light: #d4a5b0;
+            --cream: #faf8f5;
+            --light-gray: #f8f9fa;
+            --dark-text: #2c3e50;
+            --border-light: #e9ecef;
+            --shadow-soft: 0 2px 10px rgba(183, 110, 121, 0.1);
+            --shadow-medium: 0 8px 25px rgba(183, 110, 121, 0.15);
+            --transition: all 0.3s ease;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--light-gray);
+            color: var(--dark-text);
+        }
+
+        /* ===== HEADER BANNER ===== */
+        .page-banner {
+            background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+            color: white;
+            padding: 80px 0 60px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .page-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="20" cy="20" r="1" fill="white" opacity="0.1"/><circle cx="80" cy="80" r="1" fill="white" opacity="0.1"/><circle cx="40" cy="60" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .banner-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .banner-content h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .banner-subtitle {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            margin-bottom: 30px;
+        }
+
+        /* ===== STATISTIQUES PROMOTIONS ===== */
+        .promo-stats {
+            background: white;
+            margin: -40px auto 50px;
+            max-width: 1000px;
+            border-radius: 20px;
+            box-shadow: var(--shadow-medium);
+            padding: 30px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 30px;
+            text-align: center;
+        }
+
+        .stat-item {
+            padding: 20px;
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--rose-gold);
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            color: var(--dark-text);
+            opacity: 0.8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== FILTRES ===== */
+        .filters-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .filters-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--dark-text);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .filter-group label {
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: var(--dark-text);
+        }
+
+        .filter-input, .filter-select {
+            padding: 10px 15px;
+            border: 2px solid var(--border-light);
+            border-radius: 10px;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .filter-input:focus, .filter-select:focus {
+            outline: none;
+            border-color: var(--rose-gold);
+            box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.1);
+        }
+
+        .btn-filter {
+            background: var(--rose-gold);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .btn-filter:hover {
+            background: var(--rose-gold-dark);
+            transform: translateY(-2px);
+        }
+
+        /* ===== GRID PRODUITS ===== */
+        .products-section {
+            margin-bottom: 60px;
+        }
+
+        .products-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .products-count {
+            font-size: 1.1rem;
+            color: var(--dark-text);
+            opacity: 0.8;
+        }
+
+        .sort-dropdown {
+            position: relative;
+        }
+
+        .sort-btn {
+            background: white;
+            border: 2px solid var(--border-light);
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: var(--transition);
+        }
+
+        .sort-btn:hover {
+            border-color: var(--rose-gold);
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+        }
+
+        /* ===== CARTES PRODUITS ===== */
+        .product-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: var(--shadow-soft);
+            transition: var(--transition);
+            position: relative;
+            border: 1px solid var(--border-light);
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .product-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: #e74c3c;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            z-index: 2;
+            box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 250px;
+            background: var(--light-gray);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .product-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+
+        .product-card:hover .product-image img {
+            transform: scale(1.05);
+        }
+
+        .product-info {
+            padding: 20px;
+        }
+
+        .product-category {
+            font-size: 0.8rem;
+            color: var(--rose-gold);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .product-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--dark-text);
+        }
+
+        .product-description {
+            font-size: 0.9rem;
+            color: var(--dark-text);
+            opacity: 0.7;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+
+        .price-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .original-price {
+            font-size: 1rem;
+            color: #999;
+            text-decoration: line-through;
+        }
+
+        .final-price {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--rose-gold);
+        }
+
+        .savings {
+            font-size: 0.8rem;
+            color: #27ae60;
+            font-weight: 600;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            flex: 1;
+            background: var(--rose-gold);
+            border: none;
+            padding: 10px 15px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+
+        .btn-primary:hover {
+            background: var(--rose-gold-dark);
+        }
+
+        .btn-outline {
+            padding: 10px 15px;
+            border: 2px solid var(--rose-gold);
+            background: transparent;
+            color: var(--rose-gold);
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .btn-outline:hover {
+            background: var(--rose-gold);
+            color: white;
+        }
+
+        /* ===== PAGINATION ===== */
+        .pagination-wrapper {
+            display: flex;
+            justify-content: center;
+            margin-top: 50px;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .page-btn {
+            padding: 10px 15px;
+            border: 2px solid var(--border-light);
+            background: white;
+            color: var(--dark-text);
+            text-decoration: none;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .page-btn:hover, .page-btn.active {
+            border-color: var(--rose-gold);
+            background: var(--rose-gold);
+            color: white;
+        }
+
+        /* ===== MESSAGE VIDE ===== */
+        .empty-state {
+            text-align: center;
+            padding: 80px 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: var(--shadow-soft);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: var(--rose-gold);
+            margin-bottom: 20px;
+        }
+
+        .empty-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .empty-text {
+            color: var(--dark-text);
+            opacity: 0.7;
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
+            .banner-content h1 {
+                font-size: 2.5rem;
+            }
+            
+            .promo-stats {
+                margin: -30px 15px 30px;
+                padding: 20px;
+            }
+            
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+            
+            .filters-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .products-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: stretch;
+            }
+            
+            .products-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbarre.ejs') %>
+
+    <!-- Banner Principal -->
+    <section class="page-banner">
+        <div class="container">
+            <div class="banner-content">
+                <h1><i class="fas fa-tags"></i> <%= pageTitle %></h1>
+                <p class="banner-subtitle">
+                    Découvrez nos bijoux exceptionnels à prix réduits - Des créations uniques avec des réductions allant jusqu'à <%= stats.maxDiscount %>%
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <div class="container">
+        <!-- Statistiques des Promotions -->
+        <div class="promo-stats">
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <span class="stat-number"><%= stats.totalOnSale %></span>
+                    <div class="stat-label">Bijoux en Promo</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number"><%= stats.avgDiscount %>%</span>
+                    <div class="stat-label">Réduction Moyenne</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number"><%= stats.maxDiscount %>%</span>
+                    <div class="stat-label">Réduction Max</div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number"><%= new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(stats.totalSavings) %></span>
+                    <div class="stat-label">Économies Totales</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtres -->
+        <div class="filters-section">
+            <h3 class="filters-title"><i class="fas fa-filter"></i> Filtrer les promotions</h3>
+            <form method="GET" action="/on-sale">
+                <div class="filters-grid">
+                    <div class="filter-group">
+                        <label>Catégorie</label>
+                        <select name="category" class="filter-select">
+                            <option value="all" <%= filters.category === 'all' ? 'selected' : '' %>>Toutes les catégories</option>
+                            <% categories.forEach(category => { %>
+                                <option value="<%= category.name.toLowerCase() %>s" 
+                                        <%= filters.category === category.name.toLowerCase() + 's' ? 'selected' : '' %>>
+                                    <%= category.name %>s
+                                </option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Réduction minimale</label>
+                        <select name="min_discount" class="filter-select">
+                            <option value="0" <%= filters.min_discount === 0 ? 'selected' : '' %>>Toutes</option>
+                            <option value="10" <%= filters.min_discount === 10 ? 'selected' : '' %>>10% et plus</option>
+                            <option value="20" <%= filters.min_discount === 20 ? 'selected' : '' %>>20% et plus</option>
+                            <option value="30" <%= filters.min_discount === 30 ? 'selected' : '' %>>30% et plus</option>
+                            <option value="50" <%= filters.min_discount === 50 ? 'selected' : '' %>>50% et plus</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Matière</label>
+                        <select name="matiere" class="filter-select">
+                            <option value="">Toutes les matières</option>
+                            <% materials.forEach(material => { %>
+                                <option value="<%= material.name %>" 
+                                        <%= filters.matiere.includes(material.name) ? 'selected' : '' %>>
+                                    <%= material.name %> (<%= material.count %>)
+                                </option>
+                            <% }); %>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Prix maximum</label>
+                        <input type="number" name="prix_max" class="filter-input" 
+                               placeholder="Prix max" value="<%= filters.prix_max || '' %>">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <button type="submit" class="btn-filter">
+                            <i class="fas fa-search"></i> Filtrer
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Section Produits -->
+        <div class="products-section">
+            <div class="products-header">
+                <div class="products-count">
+                    <strong><%= pagination.totalJewels %></strong> bijou<%= pagination.totalJewels > 1 ? 'x' : '' %> en promotion
+                </div>
+                
+                <div class="sort-dropdown">
+                    <form method="GET" action="/on-sale" style="display: inline;">
+                        <!-- Garder les filtres actuels -->
+                        <input type="hidden" name="category" value="<%= filters.category %>">
+                        <input type="hidden" name="min_discount" value="<%= filters.min_discount %>">
+                        <input type="hidden" name="matiere" value="<%= filters.matiere.join(',') %>">
+                        <input type="hidden" name="prix_max" value="<%= filters.prix_max || '' %>">
+                        
+                        <select name="sort" class="filter-select" onchange="this.form.submit()">
+                            <option value="discount_desc" <%= filters.sort === 'discount_desc' ? 'selected' : '' %>>
+                                Réduction décroissante
+                            </option>
+                            <option value="discount_asc" <%= filters.sort === 'discount_asc' ? 'selected' : '' %>>
+                                Réduction croissante
+                            </option>
+                            <option value="price_asc" <%= filters.sort === 'price_asc' ? 'selected' : '' %>>
+                                Prix croissant
+                            </option>
+                            <option value="price_desc" <%= filters.sort === 'price_desc' ? 'selected' : '' %>>
+                                Prix décroissant
+                            </option>
+                            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>
+                                Plus récents
+                            </option>
+                        </select>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Grille des Produits -->
+            <% if (jewels && jewels.length > 0) { %>
+                <div class="products-grid">
+                    <% jewels.forEach(jewel => { %>
+                        <div class="product-card">
+                            <div class="product-badge">-<%= jewel.discount_percentage %>%</div>
+                            
+                            <div class="product-image">
+                                <img src="/uploads/jewels/<%= jewel.image %>" 
+                                     alt="<%= jewel.name %>"
+                                     onerror="this.src='/images/no-image.jpg'">
+                            </div>
+                            
+                            <div class="product-info">
+                                <div class="product-category">
+                                    <%= jewel.category ? jewel.category.name : 'Bijou' %>
+                                </div>
+                                
+                                <h4 class="product-name"><%= jewel.name %></h4>
+                                
+                                <% if (jewel.description) { %>
+                                    <p class="product-description">
+                                        <%= jewel.description.length > 80 ? jewel.description.substring(0, 80) + '...' : jewel.description %>
+                                    </p>
+                                <% } %>
+                                
+                                <div class="price-container">
+                                    <span class="original-price"><%= jewel.formattedOriginalPrice %></span>
+                                    <span class="final-price"><%= jewel.formattedFinalPrice %></span>
+                                </div>
+                                
+                                <div class="savings">
+                                    Économisez <%= jewel.formattedSavings %>
+                                </div>
+                                
+                                <div class="product-actions">
+                                    <a href="/bijoux/<%= jewel.slug || jewel.id %>" class="btn-primary">
+                                        <i class="fas fa-eye"></i> Voir le bijou
+                                    </a>
+                                    <button class="btn-outline" onclick="addToWishlist(<%= jewel.id %>)">
+                                        <i class="far fa-heart"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+                </div>
+            <% } else { %>
+                <!-- État vide -->
+                <div class="empty-state">
+                    <div class="empty-icon">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                    <h3 class="empty-title">Aucun bijou en promotion trouvé</h3>
+                    <p class="empty-text">
+                        Essayez de modifier vos filtres ou revenez plus tard pour découvrir nos nouvelles promotions.
+                    </p>
+                    <a href="/on-sale" class="btn-primary" style="margin-top: 20px; display: inline-block; text-decoration: none;">
+                        Voir toutes les promotions
+                    </a>
+                </div>
+            <% } %>
+            
+            <!-- Pagination -->
+            <% if (pagination.totalPages > 1) { %>
+                <div class="pagination-wrapper">
+                    <div class="pagination">
+                        <% if (pagination.hasPrevPage) { %>
+                            <a href="?page=<%= pagination.prevPage %>&category=<%= filters.category %>&min_discount=<%= filters.min_discount %>&sort=<%= filters.sort %>" 
+                               class="page-btn">
+                                <i class="fas fa-chevron-left"></i> Précédent
+                            </a>
+                        <% } %>
+                        
+                        <% for (let i = 1; i <= pagination.totalPages; i++) { %>
+                            <% if (i === pagination.currentPage) { %>
+                                <span class="page-btn active"><%= i %></span>
+                            <% } else if (i === 1 || i === pagination.totalPages || (i >= pagination.currentPage - 2 && i <= pagination.currentPage + 2)) { %>
+                                <a href="?page=<%= i %>&category=<%= filters.category %>&min_discount=<%= filters.min_discount %>&sort=<%= filters.sort %>" 
+                                   class="page-btn"><%= i %></a>
+                            <% } else if (i === pagination.currentPage - 3 || i === pagination.currentPage + 3) { %>
+                                <span class="page-btn">...</span>
+                            <% } %>
+                        <% } %>
+                        
+                        <% if (pagination.hasNextPage) { %>
+                            <a href="?page=<%= pagination.nextPage %>&category=<%= filters.category %>&min_discount=<%= filters.min_discount %>&sort=<%= filters.sort %>" 
+                               class="page-btn">
+                                Suivant <i class="fas fa-chevron-right"></i>
+                            </a>
+                        <% } %>
+                    </div>
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Newsletter Promotions -->
+    <section style="background: var(--rose-gold); color: white; padding: 60px 0; margin-top: 80px;">
+        <div class="container text-center">
+            <h3 style="font-family: 'Playfair Display', serif; font-size: 2.5rem; margin-bottom: 20px;">
+                🎁 Ne ratez aucune promotion !
+            </h3>
+            <p style="font-size: 1.2rem; margin-bottom: 30px; opacity: 0.9;">
+                Inscrivez-vous à notre newsletter et soyez les premiers informés de nos ventes flash et réductions exceptionnelles.
+            </p>
+            <form style="max-width: 400px; margin: 0 auto; display: flex; gap: 15px;">
+                <input type="email" placeholder="Votre adresse email" 
+                       style="flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 1rem;">
+                <button type="submit" 
+                        style="background: white; color: var(--rose-gold); border: none; padding: 15px 25px; border-radius: 10px; font-weight: 600; cursor: pointer;">
+                    S'inscrire
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <%- include('partials/footer.ejs') %>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Fonction pour ajouter aux favoris
+        function addToWishlist(jewelId) {
+            // Implémenter la logique d'ajout aux favoris
+            console.log('Ajout aux favoris:', jewelId);
+            // Vous pouvez ajouter ici votre logique AJAX
+        }
+
+        // Animation des cartes au scroll
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Observer toutes les cartes produits
+        document.querySelectorAll('.product-card').forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+
+        // Animation des stats au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            const statNumbers = document.querySelectorAll('.stat-number');
+            statNumbers.forEach(stat => {
+                const finalValue = stat.textContent;
+                stat.textContent = '0';
+                
+                let current = 0;
+                const increment = parseInt(finalValue) / 50;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= parseInt(finalValue)) {
+                        stat.textContent = finalValue;
+                        clearInterval(timer);
+                    } else {
+                        stat.textContent = Math.floor(current).toString() + (finalValue.includes('%') ? '%' : '');
+                    }
+                }, 30);
+            });
+        });
+    </script>
+</body>
+</html>

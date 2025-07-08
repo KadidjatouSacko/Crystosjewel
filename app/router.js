@@ -2156,6 +2156,36 @@ router.get('/admin/bijoux/en-promotion', isAdmin, (req, res) => {
     jewelryController.dashboard(req, res);
 });
 
+// Route pour la page des promotions
+router.get('/on-sale', promoAdminController.showPromotions);
+router.get('/promotions', promoAdminController.showPromotions); // Alias
+router.get('/bijoux/promotions', promoAdminController.showPromotions); // Ancien lien
+
+// Modification des routes de catégories pour gérer le paramètre ?promo=true
+router.get('/bijoux/bagues', (req, res) => {
+    if (req.query.promo === 'true') {
+        req.query.category = 'bagues';
+        return promoAdminController.showPromotions(req, res);
+    }
+    return baguesControlleur.showRings(req, res);
+});
+
+router.get('/bijoux/colliers', (req, res) => {
+    if (req.query.promo === 'true') {
+        req.query.category = 'colliers';
+        return promoAdminController.showPromotions(req, res);
+    }
+    return jewelControlleur.showNecklaces(req, res);
+});
+
+router.get('/bijoux/bracelets', (req, res) => {
+    if (req.query.promo === 'true') {
+        req.query.category = 'bracelets';
+        return promoAdminController.showPromotions(req, res);
+    }
+    return braceletsControlleur.showBracelets(req, res);
+});
+
 // ==========================================
 // FILTRES PAR CATÉGORIE/MATÉRIAU
 // ==========================================

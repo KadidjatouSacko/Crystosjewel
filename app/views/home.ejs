@@ -994,7 +994,7 @@
             <div class="categories-carousel">
                 <% if (categories && categories.length > 0) { %>
                     <% categories.forEach(function(category, index) { %>
-                        <a href="/<%= category.name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z]/g, '') %>s" class="category-circle animate-in">
+                        <a href="/bijoux/<%= category.name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z]/g, '') %>" class="category-circle animate-in">
                             <div class="circle-image" <% if (category.image) { %>style="background-image: url('/images/categories/<%= category.image %>');"<% } %>>
                                 <% if (!category.image) { %>
                                     <div class="diamond-icon">💎</div>
@@ -1130,10 +1130,7 @@
     </section>
 
     <footer>
-        <div class="container">
-            <p>&copy; 2025 CrystosJewel - Tous droits réservés</p>
-            <p>Bijoux précieux • Rose Gold • Élégance</p>
-        </div>
+       <%- include('partials/footer.ejs') %>
     </footer>
 
     <a href="#accueil" class="back-to-top" id="backToTop">
