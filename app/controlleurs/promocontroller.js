@@ -108,7 +108,7 @@ export const promoController = {
   /**
    * 🎫 Appliquer un code promo
    */
-  async applyPromoCode(req, res) {
+async applyPromoCode(req, res) {
     try {
       const { code } = req.body;
       const userId = req.session?.user?.id || req.session?.customerId;
@@ -127,49 +127,87 @@ export const promoController = {
         });
       }
 
-      // Rechercher le code promo
+      // ✅ RECHERCHER DANS LA NOUVELLE TABLE promo_codes
       const promoCode = await PromoCode.findOne({
         where: {
-          code: code.trim().toUpperCase()
+          code: code.trim().toUpperCase(),
+          is_active: true, // ✅ Vérifier que le code est actif
+          [Op.or]: [
+            { expires_at: null },
+            { expires_at: { [Op.gt]: new Date() } }
+          ]
         }
       });
 
       if (!promoCode) {
         return res.status(404).json({
           success: false,
-          message: 'Code promo invalide'
+          message: 'Code promo invalide ou expiré'
         });
       }
 
-      // Vérifier la date d'expiration
-      if (promoCode.expires_at && new Date() > new Date(promoCode.expires_at)) {
-        return res.status(400).json({
-          success: false,
-          message: 'Ce code promo a expiré'
-        });
-      }
-
-      // Vérifier la limite d'usage
-      if (promoCode.used_count >= promoCode.usage_limit) {
+      // ✅ VÉRIFIER LA LIMITE D'USAGE (nouvelle table)
+      if (promoCode.max_uses && promoCode.used_count >= promoCode.max_uses) {
         return res.status(400).json({
           success: false,
           message: 'Ce code promo a atteint sa limite d\'utilisation'
         });
       }
 
-      // Stocker le code promo dans la session
+      // ✅ VÉRIFIER LE MONTANT MINIMUM (nouvelle table)
+      const cartItems = await Cart.findAll({
+        where: { customer_id: userId },
+        include: [{ 
+          model: Jewel, 
+          as: 'jewel', 
+          required: true,
+          attributes: ['price_ttc']
+        }]
+      });
+
+      if (cartItems.length === 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Votre panier est vide. Ajoutez des articles avant d\'appliquer un code promo.'
+        });
+      }
+
+      const subtotal = cartItems.reduce((total, item) => 
+        total + (parseFloat(item.jewel.price_ttc) * item.quantity), 0);
+
+      if (promoCode.min_order_amount && subtotal < promoCode.min_order_amount) {
+        return res.status(400).json({
+          success: false,
+          message: `Montant minimum de ${promoCode.min_order_amount}€ requis pour ce code promo`
+        });
+      }
+
+      // ✅ ADAPTER LA STRUCTURE POUR LA SESSION (compatible avec l'ancienne logique)
       req.session.appliedPromo = {
+        id: promoCode.id,
         code: promoCode.code,
-        discountPercent: promoCode.discount_percent,
-        id: promoCode.id
+        // ✅ CONVERSION : discount_value → discountPercent
+        discountPercent: promoCode.discount_type === 'percentage' ? promoCode.discount_value : 0,
+        discountAmount: promoCode.discount_type === 'fixed' ? promoCode.discount_value : 0,
+        type: promoCode.discount_type,
+        minAmount: promoCode.min_order_amount || 0,
+        // ✅ Conserver les informations originales
+        originalData: {
+          discount_value: promoCode.discount_value,
+          discount_type: promoCode.discount_type,
+          min_order_amount: promoCode.min_order_amount,
+          max_uses: promoCode.max_uses,
+          used_count: promoCode.used_count
+        }
       };
 
-      console.log('✅ Code promo appliqué:', promoCode.code, promoCode.discount_percent + '%');
+      console.log('✅ Code promo appliqué:', promoCode.code, promoCode.discount_value + (promoCode.discount_type === 'percentage' ? '%' : '€'));
 
       res.json({
         success: true,
-        message: `Code appliqué ! Réduction de ${promoCode.discount_percent}%`,
-        discount: promoCode.discount_percent,
+        message: `Code appliqué ! Réduction de ${promoCode.discount_value}${promoCode.discount_type === 'percentage' ? '%' : '€'}`,
+        discount: promoCode.discount_value,
+        discountType: promoCode.discount_type,
         code: promoCode.code
       });
 
@@ -206,12 +244,21 @@ export const promoController = {
   /**
    * 💰 Calculer la réduction
    */
-  calculateDiscount(subtotal, discountPercent) {
-    if (!subtotal || !discountPercent || discountPercent <= 0) {
+   calculateDiscount(subtotal, appliedPromo) {
+    if (!subtotal || !appliedPromo) {
       return 0;
     }
     
-    return Math.round((subtotal * discountPercent / 100) * 100) / 100;
+    // ✅ GÉRER LES DEUX TYPES DE RÉDUCTION
+    if (appliedPromo.type === 'percentage') {
+      const percent = appliedPromo.discountPercent || appliedPromo.originalData?.discount_value || 0;
+      return Math.round((subtotal * percent / 100) * 100) / 100;
+    } else if (appliedPromo.type === 'fixed') {
+      const fixedAmount = appliedPromo.discountAmount || appliedPromo.originalData?.discount_value || 0;
+      return Math.min(fixedAmount, subtotal); // Ne pas dépasser le total
+    }
+    
+    return 0;
   },
 
   /**
@@ -221,11 +268,11 @@ export const promoController = {
     let discount = 0;
     let finalShipping = subtotal >= 100 ? 0 : shippingFee;
 
-    if (appliedPromo && appliedPromo.discountPercent) {
-      discount = this.calculateDiscount(subtotal, appliedPromo.discountPercent);
+    if (appliedPromo) {
+      discount = this.calculateDiscount(subtotal, appliedPromo);
     }
 
-    const discountedSubtotal = subtotal - discount;
+    const discountedSubtotal = Math.max(0, subtotal - discount);
     
     // Recalculer la livraison après réduction si nécessaire
     if (discountedSubtotal >= 100 && subtotal < 100) {
@@ -240,41 +287,44 @@ export const promoController = {
       discountedSubtotal,
       shipping: finalShipping,
       total: Math.max(0, total),
-      freeShipping: finalShipping === 0
+      freeShipping: finalShipping === 0,
+      appliedPromo
     };
   },
 
   /**
    * ✅ Valider et utiliser un code promo lors de la commande
    */
-  async usePromoCode(promoId) {
+   async usePromoCode(promoId) {
     try {
       if (!promoId) return { success: true };
 
+      // ✅ CHERCHER DANS LA NOUVELLE TABLE
       const promoCode = await PromoCode.findByPk(promoId);
       
       if (!promoCode) {
         throw new Error('Code promo non trouvé');
       }
 
-      // Vérifications de validité
+      // Vérifications de validité (nouvelle structure)
       if (promoCode.expires_at && new Date() > new Date(promoCode.expires_at)) {
         throw new Error('Code promo expiré');
       }
 
-      if (promoCode.used_count >= promoCode.usage_limit) {
+      if (promoCode.max_uses && promoCode.used_count >= promoCode.max_uses) {
         throw new Error('Code promo épuisé');
       }
 
-      // Incrémenter le compteur d'usage
+      // ✅ INCRÉMENTER LE COMPTEUR D'USAGE (nouvelle colonne)
       await promoCode.increment('used_count');
 
-      console.log(`✅ Code promo ${promoCode.code} utilisé. Utilisations: ${promoCode.used_count + 1}/${promoCode.usage_limit}`);
+      console.log(`✅ Code promo ${promoCode.code} utilisé. Utilisations: ${promoCode.used_count + 1}/${promoCode.max_uses || '∞'}`);
 
       return {
         success: true,
         code: promoCode.code,
-        discount: promoCode.discount_percent
+        discount: promoCode.discount_value,
+        discountType: promoCode.discount_type
       };
 
     } catch (error) {
@@ -291,7 +341,13 @@ export const promoController = {
    */
   async listPromoCodes(req, res) {
     try {
+      // ✅ RÉCUPÉRER DEPUIS LA NOUVELLE TABLE
       const promoCodes = await PromoCode.findAll({
+        attributes: [
+          'id', 'code', 'discount_type', 'discount_value', 
+          'min_order_amount', 'max_uses', 'used_count', 
+          'start_date', 'expires_at', 'is_active', 'created_at'
+        ],
         order: [['created_at', 'DESC']]
       });
 

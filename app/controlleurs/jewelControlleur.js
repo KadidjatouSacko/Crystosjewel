@@ -2046,218 +2046,108 @@ async editJewel(req, res) {
   /**
    * Met à jour un bijou existant
    */
+
+// 🔧 REMPLACEZ VOTRE updateJewel par cette version qui fonctionne
+
+/**
+ * 💾 MET À JOUR UN BIJOU - VERSION CORRIGÉE QUI FONCTIONNE
+ */
 async updateJewel(req, res) {
   console.log('🚀 === DEBUT updateJewel ===');
+   console.log('🚀 === DÉBUT updateJewel ===');
+  console.log('📋 req.body existe:', !!req.body);
+  console.log('📋 req.body keys:', req.body ? Object.keys(req.body) : 'VIDE');
+  console.log('📋 Échantillon:', {
+    name: req.body?.name || 'MANQUANT',
+    category_id: req.body?.category_id || 'MANQUANT',
+    price_ttc: req.body?.price_ttc || 'MANQUANT'
+  });
+  
+  // 🔍 VÉRIFICATION IMMÉDIATE
+  if (!req.body || Object.keys(req.body).length === 0) {
+    console.error('❌ req.body est vide !');
+    req.session.flash = {
+      type: 'error',
+      message: 'Données du formulaire non reçues. Vérifiez la configuration.'
+    };
+    return res.redirect(`/admin/bijoux/${req.params.slug}/edit`);
+  }
   
   try {
     const { slug } = req.params;
     
-    // Debug détaillé
-    console.log('📋 Slug:', slug);
-    console.log('📋 Body reçu:', Object.keys(req.body || {}));
-    console.log('📋 Files reçus:', req.files ? req.files.length : 0);
-    
-    if (req.files && req.files.length > 0) {
-      req.files.forEach((file, index) => {
-        console.log(`📎 Fichier ${index + 1}:`, {
-          fieldname: file.fieldname,
-          originalname: file.originalname,
-          filename: file.filename, // Nom généré par votre multer
-          path: file.path
-        });
-      });
-    }
+    console.log('📋 Données reçues:', {
+      slug,
+      body_keys: Object.keys(req.body || {}),
+      files: req.files ? Object.keys(req.files) : 'aucun'
+    });
 
+    // Vérification req.body
     if (!req.body || Object.keys(req.body).length === 0) {
-      console.log('❌ req.body est vide');
-      return res.status(400).json({
-        success: false,
-        message: 'Aucune donnée reçue.'
-      });
+      console.error('❌ req.body vide !');
+      req.session.flash = {
+        type: 'error',
+        message: 'Erreur : données du formulaire non reçues.'
+      };
+      return res.redirect(`/admin/bijoux/${slug}/edit`);
     }
 
+    // Extraction des données
     const {
-      name,
-      category_id,
-      description,
-      poids,
-      matiere,
-      type_id,
-      carat,
-      price_ttc,
-      tva,
-      taillesToSave,
-      is_featured,
-      is_active,
-      imagesToDelete,
-      mainImage
+      name = '',
+      category_id = '',
+      description = '',
+      poids = '',
+      matiere = '',
+      type_id = '',
+      carat = '',
+      price_ttc = '',
+      tva = '20',
+      taillesToSave = '',
+      is_featured = false,
+      is_active = true,
+      discount_percentage = '0',
+      discount_start_date = '',
+      discount_end_date = ''
     } = req.body;
 
-    // Rechercher le bijou existant
-    const existingJewel = await Jewel.findOne({ 
-      where: { slug },
-      include: [
-        { 
-          model: JewelImage, 
-          as: 'additionalImages',
-          required: false 
-        }
-      ]
-    });
+    // Validation des champs obligatoires
+    if (!name || !price_ttc || !matiere || !category_id) {
+      req.session.flash = {
+        type: 'error',
+        message: 'Veuillez remplir tous les champs obligatoires.'
+      };
+      return res.redirect(`/admin/bijoux/${slug}/edit`);
+    }
+
+    // Trouver le bijou existant
+    const existingJewel = await Jewel.findOne({ where: { slug } });
     
     if (!existingJewel) {
-      throw new Error(`Bijou avec le slug "${slug}" non trouvé`);
+      req.session.flash = {
+        type: 'error',
+        message: `Bijou "${slug}" non trouvé`
+      };
+      return res.redirect('/gestionnaire-bijoux');
     }
 
-    // Vérifications des champs obligatoires
-    if (!name || !price_ttc || !matiere) {
-      throw new Error('Veuillez remplir tous les champs obligatoires.');
-    }
-
-    // Vérifier la catégorie et la matière
+    // Vérifier catégorie et matière
     const [category, material] = await Promise.all([
       Category.findByPk(category_id),
       Material.findOne({ where: { name: matiere } })
     ]);
 
-    if (!category) {
-      throw new Error(`Catégorie avec l'ID ${category_id} non trouvée`);
+    if (!category || !material) {
+      req.session.flash = {
+        type: 'error',
+        message: 'Catégorie ou matière non trouvée'
+      };
+      return res.redirect(`/admin/bijoux/${slug}/edit`);
     }
 
-    if (!material) {
-      throw new Error(`Matière "${matiere}" non trouvée`);
-    }
-
-    // Générer un nouveau slug si nécessaire
-    let newSlug = existingJewel.slug;
-    if (name !== existingJewel.name) {
-      newSlug = await generateUniqueSlug(name, existingJewel.id);
-    }
-
-    // === GESTION DES IMAGES AVEC VOTRE CONFIGURATION ===
-    console.log('🖼️ === DÉBUT GESTION IMAGES ===');
-    
-    let finalMainImage = existingJewel.image;
-
-    try {
-      // 1. Suppression des images marquées
-      if (imagesToDelete && imagesToDelete !== '[]') {
-        console.log('🗑️ Suppression des images marquées...');
-        const imagesToDeleteArray = JSON.parse(imagesToDelete);
-        
-        if (Array.isArray(imagesToDeleteArray) && imagesToDeleteArray.length > 0) {
-          for (const imageId of imagesToDeleteArray) {
-            console.log('🗑️ Suppression image ID:', imageId);
-            
-            const imageToDelete = await JewelImage.findByPk(imageId);
-            if (imageToDelete) {
-              // Supprimer le fichier physique avec votre structure
-              try {
-                const imagePath = path.join(__dirname, '../../public/uploads/jewels', imageToDelete.image_url);
-                if (fs.existsSync(imagePath)) {
-                  fs.unlinkSync(imagePath);
-                  console.log('🗑️ Fichier physique supprimé:', imageToDelete.image_url);
-                }
-              } catch (fileError) {
-                console.error('⚠️ Erreur suppression fichier:', fileError.message);
-              }
-              
-              // Supprimer de la base de données
-              await JewelImage.destroy({ where: { id: imageId } });
-              
-              // Si c'était l'image principale, la réinitialiser
-              if (existingJewel.image === imageToDelete.image_url) {
-                console.log('⚠️ Image principale supprimée');
-                finalMainImage = null;
-              }
-              
-              console.log('✅ Image supprimée de la BDD:', imageId);
-            }
-          }
-        }
-      }
-
-      // 2. Gestion du changement d'image principale
-      if (mainImage && mainImage !== existingJewel.image && mainImage !== '') {
-        console.log('📷 Image principale changée vers:', mainImage);
-        finalMainImage = mainImage;
-      }
-
-      // 3. Traitement des nouvelles images avec votre configuration
-      if (req.files && req.files.length > 0) {
-        console.log('🖼️ Traitement des nouvelles images...');
-        
-        for (let i = 0; i < req.files.length; i++) {
-          const file = req.files[i];
-          
-          try {
-            if (file.fieldname === 'newImages') {
-              console.log(`📷 Traitement nouvelle image ${i + 1}:`, file.originalname);
-              
-              // Utiliser directement le nom de fichier généré par votre multer
-              const imageFileName = file.filename;
-              
-              // Créer l'entrée en base de données
-              await JewelImage.create({
-                image_url: imageFileName,
-                jewel_id: existingJewel.id
-              });
-              
-              console.log(`✅ Nouvelle image sauvegardée:`, imageFileName);
-              
-            } else if (file.fieldname === 'newMainImage') {
-              console.log('📷 Nouvelle image principale uploadée:', file.originalname);
-              
-              // Supprimer l'ancienne image principale si elle existe
-              if (existingJewel.image) {
-                try {
-                  const oldImagePath = path.join(__dirname, '../../public/uploads/jewels', existingJewel.image);
-                  if (fs.existsSync(oldImagePath)) {
-                    fs.unlinkSync(oldImagePath);
-                    console.log('🗑️ Ancienne image principale supprimée');
-                  }
-                } catch (fileError) {
-                  console.error('⚠️ Erreur suppression ancienne image principale:', fileError.message);
-                }
-              }
-              
-              // Utiliser le nom généré par votre multer
-              finalMainImage = file.filename;
-              console.log('✅ Nouvelle image principale sauvegardée:', finalMainImage);
-            }
-          } catch (imageError) {
-            console.error(`❌ Erreur traitement image ${file.originalname}:`, imageError);
-            // Continuer avec les autres images même si une échoue
-          }
-        }
-      }
-
-      // 4. Si aucune image principale, prendre la première disponible
-      if (!finalMainImage) {
-        const firstAdditionalImage = await JewelImage.findOne({
-          where: { jewel_id: existingJewel.id },
-          order: [['created_at', 'ASC']]
-        });
-        
-        if (firstAdditionalImage) {
-          finalMainImage = firstAdditionalImage.image_url;
-          console.log('🔄 Image principale définie automatiquement:', finalMainImage);
-        }
-      }
-
-    } catch (imageError) {
-      console.error('❌ Erreur gestion images:', imageError);
-      // Ne pas faire planter la mise à jour pour une erreur d'image
-      finalMainImage = existingJewel.image;
-    }
-
-    console.log('🖼️ === FIN GESTION IMAGES ===');
-
-    // === MISE À JOUR DU BIJOU ===
-    
-    // Calcul du prix HT
+    // Calculs
     const tvaRate = parseFloat(tva) || 20;
-    const price_ht = parseFloat(price_ttc) / (1 + tvaRate / 100);
+    const priceHT = parseFloat(price_ttc) / (1 + tvaRate / 100);
 
     // Gestion des tailles
     let tailles = [];
@@ -2265,24 +2155,31 @@ async updateJewel(req, res) {
     
     if (taillesToSave) {
       try {
-        tailles = typeof taillesToSave === 'string' ? JSON.parse(taillesToSave) : taillesToSave;
+        tailles = JSON.parse(taillesToSave);
         if (Array.isArray(tailles)) {
           totalStock = tailles.reduce((total, t) => total + (parseInt(t.stock) || 0), 0);
         }
       } catch (e) {
-        console.error('❌ Erreur parsing tailles:', e);
+        console.warn('⚠️ Erreur parsing tailles');
         tailles = existingJewel.tailles || [];
         totalStock = existingJewel.stock || 0;
       }
-    } else {
-      tailles = existingJewel.tailles || [];
-      totalStock = existingJewel.stock || 0;
     }
 
-    // Préparer les données pour la mise à jour
+    // Gestion des réductions
+    const discountPercent = parseFloat(discount_percentage) || 0;
+    let discountStartDate = discount_start_date ? new Date(discount_start_date) : null;
+    let discountEndDate = discount_end_date ? new Date(discount_end_date) : null;
+
+    // Gestion de l'image principale
+    let finalMainImage = existingJewel.image;
+    if (req.files && req.files.newMainImage && req.files.newMainImage.length > 0) {
+      finalMainImage = req.files.newMainImage[0].filename;
+    }
+
+    // Données de mise à jour
     const updateData = {
-      name,
-      slug: newSlug,
+      name: name.trim(),
       description: description || null,
       poids: poids ? parseFloat(poids) : null,
       matiere: material.name,
@@ -2290,168 +2187,62 @@ async updateJewel(req, res) {
       carat: carat ? parseInt(carat) : null,
       price_ttc: parseFloat(price_ttc),
       tva: tvaRate,
-      price_ht: Math.round(price_ht * 100) / 100,
+      price_ht: Math.round(priceHT * 100) / 100,
       tailles: tailles,
       stock: totalStock,
       category_id: category.id,
       image: finalMainImage,
-      is_featured: is_featured === '1' || is_featured === 1 || is_featured === true,
-      is_active: is_active === '1' || is_active === 1 || is_active === true,
+      is_featured: is_featured === '1' || is_featured === 1,
+      is_active: is_active !== '0',
+      discount_percentage: discountPercent,
+      discount_start_date: discountStartDate,
+      discount_end_date: discountEndDate,
       updated_at: new Date()
     };
 
-    console.log('📋 Données finales pour mise à jour:', {
-      ...updateData,
-      image: updateData.image ? 'Image définie' : 'Pas d\'image'
-    });
+    console.log('📝 Mise à jour:', updateData.name, '- Prix:', updateData.price_ttc);
 
-    // Mettre à jour le bijou
+    // Mise à jour en base
     await existingJewel.update(updateData);
-    console.log('✅ Bijou mis à jour avec succès');
+    
+    console.log('✅ Bijou mis à jour avec succès !');
 
-    // Redirection avec message de succès
     req.session.flash = {
       type: 'success',
       message: 'Bijou mis à jour avec succès'
     };
     
-    res.redirect(`/admin/bijoux/${updateData.slug}/edit`);
+    res.redirect(`/admin/bijoux/${existingJewel.slug}/edit`);
 
   } catch (error) {
-    console.error('❌ ERREUR DANS updateJewel:', error);
-    console.error('📍 Stack trace:', error.stack);
-
-    // Redirection avec message d'erreur
+    console.error('❌ ERREUR updateJewel:', error);
+    
     req.session.flash = {
       type: 'error',
-      message: `Erreur : ${error.message}`
+      message: `Erreur: ${error.message}`
     };
     
-    res.redirect(`/admin/bijoux/${slug}/edit`);
+    res.redirect(`/admin/bijoux/${req.params.slug}/edit`);
   }
 },
 
-// Fonction showEditJewel corrigée
+
+// 🔧 DANS VOTRE showEditJewel (jewelControlleur.js), remplacez la partie images par :
+
 async showEditJewel(req, res) {
-  console.log('🚀 === DEBUT showEditJewel ===');
-  console.log('🆔 Slug:', req.params.slug);
+  console.log('🚀 === DEBUT showEditJewel CORRIGÉ ===');
   
   try {
-    // Récupérer le bijou avec ses images
-    const jewel = await Jewel.findOne({
-      where: { slug: req.params.slug },
-      include: [
-        {
-          model: JewelImage,
-          as: 'additionalImages',
-          required: false
-        },
-        {
-          model: Category,
-          as: 'category',
-          required: false
-        },
-        {
-          model: Type,
-          as: 'type',
-          required: false
-        }
-      ]
-    });
-
-    if (!jewel) {
-      console.log('❌ Bijou non trouvé');
-      return res.status(404).render('error', {
-        title: 'Bijou non trouvé',
-        message: 'Le bijou demandé n\'existe pas.',
-        statusCode: 404,
-        user: req.session?.user || null
-      });
-    }
-
-    console.log('✅ Bijou trouvé:', {
-      name: jewel.name,
-      image_principale: jewel.image || 'Aucune',
-      images_additionnelles: jewel.additionalImages ? jewel.additionalImages.length : 0
-    });
-
-    // Récupérer les données pour les selects
-    const [categories, materials, types] = await Promise.all([
-      Category.findAll({ order: [['name', 'ASC']] }),
-      Material.findAll({ order: [['name', 'ASC']] }),
-      Type.findAll({ 
-        include: [{ model: Category, as: 'category' }],
-        order: [['name', 'ASC']]
-      })
-    ]);
-
-    // Préparer les tailles
-    let tailles = [];
-    if (jewel.tailles) {
-      if (Array.isArray(jewel.tailles)) {
-        tailles = jewel.tailles;
-      } else if (typeof jewel.tailles === 'string') {
-        try {
-          tailles = JSON.parse(jewel.tailles);
-        } catch (e) {
-          console.error('❌ Erreur parsing tailles:', e);
-          tailles = [];
-        }
-      }
-    }
-    
-    if (tailles.length === 0) {
-      tailles = [{ taille: '', stock: jewel.stock || 0 }];
-    }
-
-    // Préparer les données finales
-    const jewelData = {
-      ...jewel.toJSON(),
-      tailles,
-      additionalImages: jewel.additionalImages || []
-    };
-
-    console.log('✅ Rendu de la page d\'édition');
-
-    res.render('edit-jewel', {
-      title: 'Modifier un bijou',
-      jewel: jewelData,
-      categories: categories || [],
-      materials: materials || [],
-      types: types || [],
-      error: null,
-      success: null,
-      user: req.session?.user || null
-    });
-
-  } catch (error) {
-    console.error('❌ ERREUR dans showEditJewel:', error);
-    res.status(500).render('error', {
-      title: 'Erreur',
-      message: "Erreur lors du chargement de la page de modification",
-      statusCode: 500,
-      user: req.session?.user || null
-    });
-  }
-},
-
-// Fonction pour afficher la page de modification
-async showEditJewel(req, res) {
-  console.log('🚀 === DEBUT showEditJewel DEBUG ===');
-  console.log('🆔 Slug du bijou:', req.params.slug);
-  
-  try {
-    // Récupérer le bijou avec ses images - VERSION DEBUG
-    console.log('🔍 Requête Sequelize en cours...');
+    const { slug } = req.params;
     
     const jewel = await Jewel.findOne({
-      where: { slug: req.params.slug },
+      where: { slug },
       include: [
         {
           model: JewelImage,
           as: 'additionalImages',
           required: false,
-          attributes: ['id', 'image_url', 'jewel_id'] // Spécifier les attributs
+          attributes: ['id', 'image_url', 'jewel_id']
         },
         {
           model: Category,
@@ -2467,7 +2258,6 @@ async showEditJewel(req, res) {
     });
 
     if (!jewel) {
-      console.log('❌ Bijou non trouvé');
       return res.status(404).render('error', {
         title: 'Bijou non trouvé',
         message: 'Le bijou demandé n\'existe pas.',
@@ -2476,56 +2266,38 @@ async showEditJewel(req, res) {
       });
     }
 
-    console.log('✅ Bijou trouvé - ANALYSE DÉTAILLÉE:');
-    console.log('📋 Bijou brut:', {
-      id: jewel.id,
-      name: jewel.name,
-      slug: jewel.slug,
-      image: jewel.image
-    });
-
-    // Convertir en JSON pour analyse
-    const jewelJSON = jewel.toJSON();
-    console.log('📋 Bijou JSON keys:', Object.keys(jewelJSON));
+    // 🔧 CORRECTION : Construire TOUTES les images (principale + additionnelles)
+    let allImages = [];
     
-    // Analyse spécifique des images
-    console.log('🖼️ ANALYSE DES IMAGES:');
-    console.log('  - Image principale (jewel.image):', jewel.image || 'VIDE');
-    console.log('  - Images additionnelles (jewel.additionalImages):');
+    // 1. Ajouter l'image principale en premier si elle existe
+    if (jewel.image) {
+      allImages.push({
+        id: null, // Pas d'ID car c'est l'image principale
+        image_url: jewel.image,
+        jewel_id: jewel.id,
+        is_main: true
+      });
+    }
     
-    if (jewel.additionalImages) {
-      console.log('    Type:', Array.isArray(jewel.additionalImages) ? 'Array' : typeof jewel.additionalImages);
-      console.log('    Longueur:', jewel.additionalImages.length);
-      
-      if (Array.isArray(jewel.additionalImages) && jewel.additionalImages.length > 0) {
-        jewel.additionalImages.forEach((img, index) => {
-          console.log(`    Image ${index + 1}:`, {
+    // 2. Ajouter les images additionnelles
+    if (jewel.additionalImages && jewel.additionalImages.length > 0) {
+      jewel.additionalImages.forEach(img => {
+        // Ne pas ajouter deux fois la même image
+        if (img.image_url !== jewel.image) {
+          allImages.push({
             id: img.id,
             image_url: img.image_url,
-            jewel_id: img.jewel_id
+            jewel_id: img.jewel_id,
+            is_main: false
           });
-        });
-      } else {
-        console.log('    Aucune image additionnelle trouvée');
-      }
-    } else {
-      console.log('    additionalImages est null/undefined');
+        }
+      });
     }
 
-    // Test direct en base de données
-    console.log('🔍 Test direct BDD pour jewel_id:', jewel.id);
-    const directImages = await JewelImage.findAll({
-      where: { jewel_id: jewel.id },
-      attributes: ['id', 'image_url', 'jewel_id']
-    });
-    
-    console.log('📊 Images trouvées directement en BDD:', directImages.length);
-    directImages.forEach((img, index) => {
-      console.log(`  Direct ${index + 1}:`, {
-        id: img.id,
-        image_url: img.image_url,
-        jewel_id: img.jewel_id
-      });
+    console.log('✅ Images trouvées:', {
+      image_principale: jewel.image || 'Aucune',
+      images_additionnelles: jewel.additionalImages ? jewel.additionalImages.length : 0,
+      total_images: allImages.length
     });
 
     // Récupérer les autres données
@@ -2561,35 +2333,29 @@ async showEditJewel(req, res) {
       tailles = [{ taille: '', stock: jewel.stock || 0 }];
     }
 
-    // Préparer les données finales pour la vue
-    const finalJewelData = {
-      ...jewelJSON,
+    // Préparer les données finales
+    const jewelData = {
+      ...jewel.toJSON(),
       tailles,
-      // Utiliser les images directes de la BDD si l'association ne fonctionne pas
-      additionalImages: jewel.additionalImages && jewel.additionalImages.length > 0 
-        ? jewel.additionalImages 
-        : directImages
+      additionalImages: allImages // 🔧 CORRECTION : utiliser allImages au lieu de jewel.additionalImages
     };
 
-    console.log('✅ Données finales préparées:');
-    console.log('  - Image principale:', finalJewelData.image || 'AUCUNE');
-    console.log('  - Images additionnelles:', finalJewelData.additionalImages ? finalJewelData.additionalImages.length : 0);
+    // Récupérer les messages flash
+    const flashMessage = getFlashMessage(req);
 
     res.render('edit-jewel', {
-      title: 'Modifier un bijou',
-      jewel: finalJewelData,
+      title: `Modifier ${jewelData.name}`,
+      jewel: jewelData,
       categories: categories || [],
       materials: materials || [],
       types: types || [],
-      error: null,
-      success: null,
+      error: flashMessage?.type === 'error' ? flashMessage.message : null,
+      success: flashMessage?.type === 'success' ? flashMessage.message : null,
       user: req.session?.user || null
     });
 
   } catch (error) {
-    console.error('❌ ERREUR DANS showEditJewel:', error);
-    console.error('📍 Stack trace:', error.stack);
-
+    console.error('❌ ERREUR dans showEditJewel:', error);
     res.status(500).render('error', {
       title: 'Erreur',
       message: "Une erreur est survenue lors du chargement de la page de modification.",
@@ -2599,119 +2365,80 @@ async showEditJewel(req, res) {
   }
 },
 
-  /**
-   * Affiche le formulaire d'édition d'un bijou
-   */
-  async editJewelForm(req, res) {
-    try {
-      const { slug } = req.params;
-      
-      const jewel = await Jewel.findOne({
-        where: { slug },
-        include: [
-          {
-            model: JewelImage, 
-            as: 'additionalImages',
-            required: false
-          },
-          {
-            model: Category,
-            as: 'category',
-            attributes: ['id', 'name']
-          },
-          {
-            model: Type,
-            as: 'type',
-            attributes: ['id', 'name'],
-            required: false
-          }
-        ]
-      });
-      
-      if (!jewel) {
-        return res.status(404).render('error', {
-  title: 'Bijou non trouvé',
-  message: 'Le bijou demandé n\'existe pas.',
-  statusCode: 404,
-  user: req.session?.user || null
-});
-      }
-      
-      const [categories, materials, types] = await Promise.all([
-        Category.findAll({ order: [['name', 'ASC']] }),
-        Material.findAll({ order: [['name', 'ASC']] }),
-        Type.findAll({ 
-          include: [{ 
-            model: Category, 
-            as: 'category',
-            attributes: ['id', 'name']
-          }],
-          order: [['name', 'ASC']]
-        })
-      ]);
-      
-      res.render('edit-jewel', {
-        title: `Modifier ${jewel.name}`,
-        jewel,
-        categories,
-        materials,
-        types
-      });
-    } catch (error) {
-      console.error("Erreur lors du chargement du formulaire d'édition:", error);
-      return res.status(500).render('error', {
-  title: 'Erreur serveur',
-  message: 'Une erreur est survenue lors de la modification.',
-  statusCode: 500,
-  user: req.session?.user || null
-});
-    }
-  },
 
-// À ajouter dans votre jewelControlleur.js
+// 🔧 SUPPRIMEZ LES DEUX ANCIENNES ET GARDEZ SEULEMENT CELLE-CI :
 
 /**
- * 📝 AFFICHE LE FORMULAIRE D'ÉDITION D'UN BIJOU
+ * 📝 AFFICHE LE FORMULAIRE D'ÉDITION D'UN BIJOU - VERSION FINALE
+ */
+/**
+ * 📝 AFFICHE LE FORMULAIRE D'ÉDITION - VERSION FINALE
  */
 async editJewelForm(req, res) {
+  console.log('🚀 === DEBUT editJewelForm ===');
+  
   try {
     const { slug } = req.params;
     
-    console.log('📝 Chargement formulaire édition pour:', slug);
-    
-    // Récupérer le bijou avec toutes ses données
     const jewel = await Jewel.findOne({
       where: { slug },
       include: [
         {
-          model: JewelImage, 
+          model: JewelImage,
           as: 'additionalImages',
-          required: false
+          required: false,
+          attributes: ['id', 'image_url', 'jewel_id']
         },
         {
           model: Category,
           as: 'category',
+          required: false,
           attributes: ['id', 'name']
         },
         {
           model: Type,
           as: 'type',
-          attributes: ['id', 'name'],
-          required: false
+          required: false,
+          attributes: ['id', 'name']
         }
       ]
     });
-    
+
     if (!jewel) {
       return res.status(404).render('error', {
-  title: 'Bijou non trouvé',
-  message: 'Le bijou demandé n\'existe pas.',
-  statusCode: 404,
-  user: req.session?.user || null
-});
+        title: 'Bijou non trouvé',
+        message: 'Le bijou demandé n\'existe pas.',
+        statusCode: 404,
+        user: req.session?.user || null
+      });
+    }
+
+    // Construire toutes les images (principale + additionnelles)
+    let allImages = [];
+    
+    if (jewel.image) {
+      allImages.push({
+        id: null,
+        image_url: jewel.image,
+        jewel_id: jewel.id,
+        is_main: true
+      });
     }
     
-    // Récupérer toutes les données pour les selects
+    if (jewel.additionalImages && jewel.additionalImages.length > 0) {
+      jewel.additionalImages.forEach(img => {
+        if (img.image_url !== jewel.image) {
+          allImages.push({
+            id: img.id,
+            image_url: img.image_url,
+            jewel_id: img.jewel_id,
+            is_main: false
+          });
+        }
+      });
+    }
+
+    // Récupérer les autres données
     const [categories, materials, types] = await Promise.all([
       Category.findAll({ order: [['name', 'ASC']] }),
       Material.findAll({ order: [['name', 'ASC']] }),
@@ -2724,34 +2451,55 @@ async editJewelForm(req, res) {
         order: [['name', 'ASC']]
       })
     ]);
+
+    // Préparer les tailles
+    let tailles = [];
+    if (jewel.tailles) {
+      if (Array.isArray(jewel.tailles)) {
+        tailles = jewel.tailles;
+      } else if (typeof jewel.tailles === 'string') {
+        try {
+          tailles = JSON.parse(jewel.tailles);
+        } catch (e) {
+          console.error('❌ Erreur parsing tailles:', e);
+          tailles = [];
+        }
+      }
+    }
     
-    console.log('✅ Données récupérées:', {
-      bijou: jewel.name,
-      categories: categories.length,
-      materials: materials.length,
-      types: types.length,
-      images: jewel.additionalImages?.length || 0
-    });
-    
+    if (tailles.length === 0) {
+      tailles = [{ taille: '', stock: jewel.stock || 0 }];
+    }
+
+    // Préparer les données finales
+    const jewelData = {
+      ...jewel.toJSON(),
+      tailles,
+      additionalImages: allImages
+    };
+
+    // Récupérer les messages flash
+    const flashMessage = getFlashMessage(req);
+
     res.render('edit-jewel', {
-      title: `Modifier ${jewel.name}`,
-      jewel,
+      title: `Modifier ${jewelData.name}`,
+      jewel: jewelData,
       categories: categories || [],
       materials: materials || [],
       types: types || [],
-      user: req.session?.user || null,
-      error: null,
-      success: null
+      error: flashMessage?.type === 'error' ? flashMessage.message : null,
+      success: flashMessage?.type === 'success' ? flashMessage.message : null,
+      user: req.session?.user || null
     });
-    
+
   } catch (error) {
-    console.error("❌ Erreur chargement formulaire édition:", error);
-    return res.status(500).render('error', {
-  title: 'Erreur serveur',
-  message: 'Une erreur est survenue lors de la modification.',
-  statusCode: 500,
-  user: req.session?.user || null
-});
+    console.error('❌ ERREUR dans editJewelForm:', error);
+    res.status(500).render('error', {
+      title: 'Erreur',
+      message: "Une erreur est survenue lors du chargement de la page de modification.",
+      statusCode: 500,
+      user: req.session?.user || null
+    });
   }
 },
 
@@ -3868,6 +3616,7 @@ async updateDiscount(req, res) {
     res.redirect(`/bijoux/${req.params.slug}`);
   }
 },
+
 
 }
 

@@ -1,9 +1,8 @@
+// models/Promocode.js - VERSION FINALE CORRIGÉE
 import { DataTypes, Model } from 'sequelize';
 import { sequelize } from './sequelize-client.js';
 
-export class PromoCode extends Model {}
-
-PromoCode.init({
+export const PromoCode = sequelize.define('PromoCode', {
   id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
@@ -14,9 +13,8 @@ PromoCode.init({
     allowNull: false,
     unique: true
   },
-  // ✅ Utiliser les vrais noms de colonnes de votre BDD
   discount_type: {
-    type: DataTypes.STRING(20),
+    type: DataTypes.ENUM('percentage', 'fixed'),
     allowNull: false,
     defaultValue: 'percentage'
   },
@@ -24,40 +22,38 @@ PromoCode.init({
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
   },
-  discount_percent: {  // ✅ Colonne qui existe dans votre BDD
-    type: DataTypes.INTEGER,
-    allowNull: true
-  },
-  min_order_amount: {  // ✅ Au lieu de minimum_amount
+  min_order_amount: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: true,
-    defaultValue: 0
+    defaultValue: 0.00
   },
-  max_uses: {  // ✅ Au lieu de maximum_uses
+  max_uses: {
     type: DataTypes.INTEGER,
     allowNull: true
   },
-  used_count: {  // ✅ Au lieu de current_uses
+  used_count: {
     type: DataTypes.INTEGER,
     allowNull: false,
     defaultValue: 0
   },
-  usage_limit: {  // ✅ Colonne qui existe
-    type: DataTypes.INTEGER,
-    allowNull: true,
-    defaultValue: 1
-  },
-  start_date: {  // ✅ Au lieu de valid_from
-    type: DataTypes.DATE,
-    allowNull: true,
-    defaultValue: DataTypes.NOW
-  },
-  end_date: {  // ✅ Au lieu de valid_until
+  start_date: {
     type: DataTypes.DATE,
     allowNull: true
   },
-  expires_at: {  // ✅ Colonne qui existe
+  end_date: {
     type: DataTypes.DATE,
+    allowNull: true
+  },
+  expires_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  usage_limit: {
+    type: DataTypes.INTEGER,
+    allowNull: true
+  },
+  discount_percent: {
+    type: DataTypes.DECIMAL(5, 2),
     allowNull: true
   },
   is_active: {
@@ -66,10 +62,29 @@ PromoCode.init({
     defaultValue: true
   }
 }, {
-  sequelize,
-  tableName: 'promo_codes',
+  tableName: 'promo_codes', // ✅ TABLE CORRECTE
   timestamps: true,
-  underscored: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at'
 });
+
+// ✅ MÉTHODES UTILES
+PromoCode.prototype.isValid = function() {
+  if (!this.is_active) return false;
+  
+  const now = new Date();
+  if (this.expires_at && now > this.expires_at) return false;
+  if (this.max_uses && this.used_count >= this.max_uses) return false;
+  
+  return true;
+};
+
+PromoCode.prototype.calculateDiscount = function(amount) {
+  if (this.discount_type === 'percentage') {
+    return Math.round((amount * this.discount_value / 100) * 100) / 100;
+  } else {
+    return Math.min(this.discount_value, amount);
+  }
+};
+
+export default PromoCode;

@@ -36,22 +36,17 @@ function translateStatus(status) {
     return statusMap[normalizedStatus] || 'En attente';
 }
 
-// ✅ FONCTION POUR RÉCUPÉRER LES TAILLES DEPUIS LA BASE DE DONNÉES
 function getTaillesFromOrder(commande) {
-    // Cette fonction sera alimentée par le contrôleur admin
     return commande.sizesInfo || null;
 }
 
-// ✅ FONCTION POUR FORMATTER L'AFFICHAGE DES TAILLES
 function formatSizesDisplay(sizesInfo) {
     if (!sizesInfo || !sizesInfo.hasSizeInfo) {
         return 'Non spécifiées';
     }
-    
     return sizesInfo.sizesDisplay || 'Tailles standards';
 }
 
-// ✅ FONCTION POUR OBTENIR L'INDICATEUR DE COUVERTURE
 function getSizesCoverageIndicator(sizesInfo) {
     if (!sizesInfo || sizesInfo.totalItems === 0) {
         return '❓ En développement';
@@ -63,12 +58,82 @@ function getSizesCoverageIndicator(sizesInfo) {
     if (coverage > 0) return '📐 Limitée';
     return '❓ Aucune';
 }
+
+// ✅ NOUVELLE FONCTION POUR FORMATER LES DATES
+function formatDateTime(dateString) {
+    if (!dateString) return 'N/A';
+    try {
+        const date = new Date(dateString);
+        return date.toLocaleString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (error) {
+        return dateString;
+    }
+}
+
+function getTimeAgo(dateString) {
+    if (!dateString) return 'N/A';
+    try {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffHours / 24);
+        
+        // if (diffDays > 0) {
+        //     return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+        // } else if (diffHours > 0) {
+        //     return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+        // } else {
+        //     const diffMins = Math.floor(diffMs / (1000 * 60));
+        //     return `Il y a ${diffMins} minute${diffMins > 1 ? 's' : ''}`;
+        // }
+    } catch (error) {
+        return dateString;
+    }
+}
+
+// ✅ FONCTION POUR AFFICHER LE MODE DE PAIEMENT
+function getPaymentMethodDisplay(paymentMethod) {
+    const methods = {
+        'card': 'Carte bancaire',
+        'credit_card': 'Carte bancaire', 
+        'paypal': 'PayPal',
+        'bank_transfer': 'Virement bancaire',
+        'check': 'Chèque',
+        'cash': 'Espèces'
+    };
+    return methods[paymentMethod] || 'Carte bancaire';
+}
+
+// ✅ FONCTION POUR CALCULER LES PRIX CORRECTS AVEC PROMO
+function calculateCorrectPrices(commande) {
+    const total = parseFloat(commande.total || commande.amount || 0);
+    const discountAmount = parseFloat(commande.promo_discount_amount || commande.discount_amount || 0);
+    const originalAmount = parseFloat(commande.original_amount || (total + discountAmount) || total);
+    const subtotal = parseFloat(commande.subtotal || (total - (commande.shipping_price || 0)) || total);
+    
+    return {
+        originalAmount: originalAmount,
+        discountAmount: discountAmount,
+        subtotalAfterDiscount: subtotal,
+        finalTotal: total,
+        hasDiscount: discountAmount > 0
+    };
+}
 %>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title || 'Administration - Suivi des Commandes' %></title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
         :root {
             --primary: #E8B4B8;
@@ -441,6 +506,33 @@ function getSizesCoverageIndicator(sizesInfo) {
             color: var(--primary-dark);
         }
 
+        /* ✅ AMÉLIORATION STYLES PRIX AVEC PROMO */
+        .amount-display {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+        }
+
+        .original-price {
+            color: var(--gray-medium);
+            text-decoration: line-through;
+            font-size: 0.85rem;
+            margin-bottom: 2px;
+        }
+
+        .discounted-price {
+            font-weight: 600;
+            color: var(--primary-dark);
+            font-size: 1rem;
+        }
+
+        .discount-amount {
+            color: var(--success);
+            font-size: 0.8rem;
+            font-weight: 500;
+            margin-top: 2px;
+        }
+
         .status {
             display: inline-flex;
             align-items: center;
@@ -521,9 +613,10 @@ function getSizesCoverageIndicator(sizesInfo) {
             margin-top: 0.25rem;
         }
 
-        .discount-amount {
+        .discount-percent {
             color: var(--success);
             font-weight: 600;
+            font-size: 0.8rem;
         }
 
         /* Modal */
@@ -578,6 +671,85 @@ function getSizesCoverageIndicator(sizesInfo) {
 
         .modal-body {
             padding: 1.5rem;
+        }
+
+        /* Sizes Info */
+        .sizes-info {
+            min-width: 140px;
+            max-width: 180px;
+        }
+
+        .sizes-summary {
+            display: flex;
+            align-items: center;
+            margin-bottom: 4px;
+            font-weight: 500;
+            font-size: 0.85rem;
+        }
+
+        .sizes-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+
+        .size-coverage {
+            display: inline-flex;
+            align-items: center;
+            white-space: nowrap;
+            font-weight: 600;
+            border: 1px solid rgba(0,0,0,0.1);
+            font-size: 0.75rem;
+            padding: 2px 6px;
+            border-radius: 12px;
+            transition: var(--transition);
+        }
+
+        .size-coverage.full-coverage {
+            background: #dcfce7 !important;
+            color: #065f46 !important;
+            border-color: #10b981;
+        }
+
+        .size-coverage.partial-coverage {
+            background: #fef3c7 !important;
+            color: #92400e !important;
+            border-color: #f59e0b;
+        }
+
+        .size-coverage.limited-coverage {
+            background: #fecaca !important;
+            color: #991b1b !important;
+            border-color: #ef4444;
+        }
+
+        .size-coverage.no-coverage {
+            background: #f1f5f9 !important;
+            color: #64748b !important;
+            border-color: #cbd5e1;
+        }
+
+        .development-indicator {
+            color: var(--gray-medium);
+            font-size: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-style: italic;
+        }
+
+        .development-indicator i {
+            opacity: 0.5;
+        }
+
+        .sizes-info:hover {
+            transform: scale(1.02);
+            transition: transform 0.2s ease;
+        }
+
+        .sizes-info:hover .size-coverage {
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         /* Empty State */
@@ -655,7 +827,74 @@ function getSizesCoverageIndicator(sizesInfo) {
             100% { transform: rotate(360deg); }
         }
 
-        /* Mobile Styles */
+        /* Mobile Cards */
+        .mobile-cards {
+            display: none;
+        }
+
+        .order-card {
+            background: white;
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--primary);
+        }
+
+        .order-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .order-card-body {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .order-card-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+        }
+
+        .order-card-label {
+            font-size: 0.75rem;
+            color: var(--gray-medium);
+            font-weight: 500;
+        }
+
+        .order-card-value {
+            font-size: 0.875rem;
+            color: var(--dark);
+            font-weight: 500;
+        }
+
+        .order-card-actions {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+        }
+
+        .sizes-card-info {
+            background: rgba(243, 244, 246, 0.7);
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 8px 12px;
+            margin-top: 8px;
+        }
+
+        .sizes-card-info .sizes-label {
+            font-weight: 600;
+            color: var(--info);
+            margin-bottom: 4px;
+            font-size: 0.85rem;
+        }
+
+        /* Responsive */
         @media (max-width: 768px) {
             .mobile-header {
                 display: block;
@@ -747,7 +986,6 @@ function getSizesCoverageIndicator(sizesInfo) {
                 justify-content: center;
             }
 
-            /* Mobile Table */
             .table-container {
                 overflow-x: auto;
                 -webkit-overflow-scrolling: touch;
@@ -763,8 +1001,8 @@ function getSizesCoverageIndicator(sizesInfo) {
                 font-size: 0.8rem;
             }
 
-            /* Card View for Mobile */
-            .mobile-cards {
+            .table th:nth-child(6),
+            .table td:nth-child(6) {
                 display: none;
             }
 
@@ -775,53 +1013,6 @@ function getSizesCoverageIndicator(sizesInfo) {
 
                 .mobile-cards {
                     display: block;
-                }
-
-                .order-card {
-                    background: white;
-                    border-radius: var(--radius);
-                    padding: 1rem;
-                    margin-bottom: 1rem;
-                    box-shadow: var(--shadow);
-                    border-left: 4px solid var(--primary);
-                }
-
-                .order-card-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 0.75rem;
-                }
-
-                .order-card-body {
-                    display: grid;
-                    grid-template-columns: 1fr 1fr;
-                    gap: 0.5rem;
-                    margin-bottom: 1rem;
-                }
-
-                .order-card-field {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 0.25rem;
-                }
-
-                .order-card-label {
-                    font-size: 0.75rem;
-                    color: var(--gray-medium);
-                    font-weight: 500;
-                }
-
-                .order-card-value {
-                    font-size: 0.875rem;
-                    color: var(--dark);
-                    font-weight: 500;
-                }
-
-                .order-card-actions {
-                    display: flex;
-                    gap: 0.5rem;
-                    justify-content: flex-end;
                 }
             }
 
@@ -851,269 +1042,9 @@ function getSizesCoverageIndicator(sizesInfo) {
             from { transform: translateX(-20px); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
-
-        /* Mise à jour du montant avec réduction */
-        .amount-with-discount {
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-        }
-
-        .original-amount {
-            text-decoration: line-through;
-            color: var(--gray-medium);
-            font-size: 0.8rem;
-        }
-
-        .sizes-info {
-    min-width: 140px;
-    max-width: 180px;
-}
-
-.sizes-summary {
-    display: flex;
-    align-items: center;
-    margin-bottom: 4px;
-    font-weight: 500;
-}
-
-.sizes-meta {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex-wrap: wrap;
-}
-
-.size-coverage {
-    display: inline-flex;
-    align-items: center;
-    white-space: nowrap;
-    font-weight: 600;
-    border: 1px solid rgba(0,0,0,0.1);
-}
-
-/* Responsive pour la colonne tailles */
-@media (max-width: 1200px) {
-    .sizes-info {
-        min-width: 120px;
-        max-width: 140px;
-    }
-    
-    .sizes-summary {
-        font-size: 0.8rem;
-    }
-    
-    .sizes-meta span {
-        font-size: 0.65rem;
-    }
-}
-
-@media (max-width: 768px) {
-    /* La colonne tailles sera masquée sur mobile et affichée dans les cartes */
-    .table th:nth-child(6),
-    .table td:nth-child(6) {
-        display: none;
-    }
-}
-
-/* Style pour les helpers utilisés dans la vue */
-.helpers-indicator {
-    font-size: 0.7rem;
-    opacity: 0.8;
-    white-space: nowrap;
-}
-
-/* Amélioration visuelle des badges de couverture */
-.size-coverage.full-coverage {
-    background: #dcfce7 !important;
-    color: #065f46 !important;
-    border-color: #10b981;
-}
-
-.size-coverage.partial-coverage {
-    background: #fef3c7 !important;
-    color: #92400e !important;
-    border-color: #f59e0b;
-}
-
-.size-coverage.limited-coverage {
-    background: #fecaca !important;
-    color: #991b1b !important;
-    border-color: #ef4444;
-}
-
-/* Animation pour les éléments de taille */
-.sizes-info:hover {
-    transform: scale(1.02);
-    transition: transform 0.2s ease;
-}
-
-.sizes-info:hover .size-coverage {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-     :root {
-            --primary: #E8B4B8;
-            --primary-dark: #B8868A;
-            --primary-light: #F5D7DA;
-            --secondary: #FDF9F6;
-            --accent: #D4A5A9;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #3b82f6;
-            --dark: #1f2937;
-            --gray-light: #f8fafc;
-            --gray-medium: #64748b;
-            --white: #ffffff;
-            --border: #e2e8f0;
-            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --radius: 8px;
-            --radius-lg: 12px;
-            --transition: all 0.2s ease;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--gray-light);
-            color: var(--dark);
-            line-height: 1.6;
-            font-size: 14px;
-        }
-
-        /* Styles existants... (conservez tout le CSS existant) */
-        
-        /* ✅ STYLES CORRIGÉS POUR LA COLONNE TAILLES */
-        .sizes-info {
-            min-width: 140px;
-            max-width: 180px;
-        }
-
-        .sizes-summary {
-            display: flex;
-            align-items: center;
-            margin-bottom: 4px;
-            font-weight: 500;
-            font-size: 0.85rem;
-        }
-
-        .sizes-meta {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            flex-wrap: wrap;
-        }
-
-        .size-coverage {
-            display: inline-flex;
-            align-items: center;
-            white-space: nowrap;
-            font-weight: 600;
-            border: 1px solid rgba(0,0,0,0.1);
-            font-size: 0.75rem;
-            padding: 2px 6px;
-            border-radius: 12px;
-            transition: var(--transition);
-        }
-
-        /* ✅ COULEURS SELON LA COUVERTURE */
-        .size-coverage.full-coverage {
-            background: #dcfce7 !important;
-            color: #065f46 !important;
-            border-color: #10b981;
-        }
-
-        .size-coverage.partial-coverage {
-            background: #fef3c7 !important;
-            color: #92400e !important;
-            border-color: #f59e0b;
-        }
-
-        .size-coverage.limited-coverage {
-            background: #fecaca !important;
-            color: #991b1b !important;
-            border-color: #ef4444;
-        }
-
-        .size-coverage.no-coverage {
-            background: #f1f5f9 !important;
-            color: #64748b !important;
-            border-color: #cbd5e1;
-        }
-
-        /* ✅ INDICATEUR VISUEL DU DÉVELOPPEMENT */
-        .development-indicator {
-            color: var(--gray-medium);
-            font-size: 0.8rem;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            font-style: italic;
-        }
-
-        .development-indicator i {
-            opacity: 0.5;
-        }
-
-        /* ✅ ANIMATION POUR LES ÉLÉMENTS DE TAILLE */
-        .sizes-info:hover {
-            transform: scale(1.02);
-            transition: transform 0.2s ease;
-        }
-
-        .sizes-info:hover .size-coverage {
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        }
-
-        /* Responsive pour la colonne tailles */
-        @media (max-width: 1200px) {
-            .sizes-info {
-                min-width: 120px;
-                max-width: 140px;
-            }
-            
-            .sizes-summary {
-                font-size: 0.8rem;
-            }
-            
-            .sizes-meta span {
-                font-size: 0.65rem;
-            }
-        }
-
-        @media (max-width: 768px) {
-            /* La colonne tailles sera masquée sur mobile et affichée dans les cartes */
-            .table th:nth-child(6),
-            .table td:nth-child(6) {
-                display: none;
-            }
-        }
-
-        /* Amélioration pour les cartes mobiles */
-        .sizes-card-info {
-            background: rgba(243, 244, 246, 0.7);
-            border: 1px solid #e5e7eb;
-            border-radius: 6px;
-            padding: 8px 12px;
-            margin-top: 8px;
-        }
-
-        .sizes-card-info .sizes-label {
-            font-weight: 600;
-            color: var(--info);
-            margin-bottom: 4px;
-            font-size: 0.85rem;
-        }
     </style>
 </head>
+
 <body>
     <!-- Mobile Header -->
     <div class="mobile-header">
@@ -1152,278 +1083,308 @@ function getSizesCoverageIndicator(sizesInfo) {
                     </a>
                 </div>
                 <div class="nav-item">
-                    <a href="/admin/clients" class="nav-link">
-                        <i class="fas fa-users"></i>
-                        Clients
-                    </a>
-                </div>
-                <div class="nav-item">
-                    <a href="/admin/bijoux" class="nav-link">
-                        <i class="fas fa-gem"></i>
-                        Bijoux
-                    </a>
-                </div>
-                <div class="nav-item">
-                    <a href="/admin/codes-promo" class="nav-link">
-                        <i class="fas fa-tags"></i>
-                        Codes Promo
-                    </a>
-                </div>
-                <div class="nav-item">
-                    <a href="/admin/statistiques" class="nav-link">
-                        <i class="fas fa-chart-line"></i>
-                        Statistiques
-                    </a>
-                </div>
-                <div class="nav-item">
-                    <a href="/admin/parametres" class="nav-link">
-                        <i class="fas fa-cog"></i>
-                        Paramètres
-                    </a>
-                </div>
-            </nav>
-        </aside>
+                    <a href="/adminRéessayerDContinuerModifier/clients" class="nav-link">
+<i class="fas fa-users"></i>
+Clients
+</a>
+</div>
+<div class="nav-item">
+<a href="/admin/bijoux" class="nav-link">
+<i class="fas fa-gem"></i>
+Bijoux
+</a>
+</div>
+<div class="nav-item">
+<a href="/admin/codes-promo" class="nav-link">
+<i class="fas fa-tags"></i>
+Codes Promo
+</a>
+</div>
+<div class="nav-item">
+<a href="/admin/statistiques" class="nav-link">
+<i class="fas fa-chart-line"></i>
+Statistiques
+</a>
+</div>
+<div class="nav-item">
+<a href="/admin/parametres" class="nav-link">
+<i class="fas fa-cog"></i>
+Paramètres
+</a>
+</div>
+</nav>
+</aside>
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Page Header -->
+        <div class="page-header fade-in">
+            <h1 class="page-title">Gestion des Commandes</h1>
+            <p class="page-subtitle">Suivi et administration des commandes avec historique complet</p>
+        </div>
 
-        <!-- Main Content -->
-        <main class="main-content">
-            <!-- Page Header -->
-            <div class="page-header fade-in">
-                <h1 class="page-title">Gestion des Commandes</h1>
-                <p class="page-subtitle">Suivi et administration des commandes avec historique complet</p>
-            </div>
-
-     <!-- Stats Dashboard -->
-            <div class="stats-grid fade-in">
-                <div class="stat-card">
-                    <div class="stat-label">Total Commandes</div>
-                    <div class="stat-value" id="totalCommandes">
-                        <%= stats.totalCommandes.value %>
-                    </div>
-                    <div class="stat-trend <%= stats.totalCommandes.direction %>">
-                        <i class="fas fa-arrow-<%= stats.totalCommandes.direction %>"></i>
-                        <%= Math.abs(stats.totalCommandes.trend) %>% <%= stats.totalCommandes.compared %>
-                    </div>
+        <!-- Stats Dashboard -->
+        <div class="stats-grid fade-in">
+            <div class="stat-card">
+                <div class="stat-label">Total Commandes</div>
+                <div class="stat-value" id="totalCommandes">
+                    <%= stats.totalCommandes.value %>
                 </div>
-                <div class="stat-card">
-                    <div class="stat-label">Chiffre d'Affaires</div>
-                    <div class="stat-value" id="chiffreAffaires">
-                        <%= helpers.formatPrice(stats.chiffreAffaires.value) %>€
-                    </div>
-                    <div class="stat-trend <%= stats.chiffreAffaires.direction %>">
-                        <i class="fas fa-arrow-<%= stats.chiffreAffaires.direction %>"></i>
-                        <%= Math.abs(stats.chiffreAffaires.trend) %>% <%= stats.chiffreAffaires.compared %>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Codes Promo Utilisés</div>
-                    <div class="stat-value" id="codesPromo">
-                        <%= stats.codesPromoUtilises.value %>
-                    </div>
-                    <div class="stat-trend <%= stats.codesPromoUtilises.direction %>">
-                        <i class="fas fa-arrow-<%= stats.codesPromoUtilises.direction %>"></i>
-                        <%= Math.abs(stats.codesPromoUtilises.trend) %>% <%= stats.codesPromoUtilises.compared %>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-label">Économies Clients</div>
-                    <div class="stat-value" id="reductionTotale">
-                        <%= helpers.formatPrice(stats.economiesClients.value) %>€
-                    </div>
-                    <div class="stat-trend down">
-                        <i class="fas fa-piggy-bank"></i>
-                        <%= stats.economiesClients.compared %>
-                    </div>
+                <div class="stat-trend <%= stats.totalCommandes.direction %>">
+                    <i class="fas fa-arrow-<%= stats.totalCommandes.direction %>"></i>
+                    <%= Math.abs(stats.totalCommandes.trend) %>% <%= stats.totalCommandes.compared %>
                 </div>
             </div>
-
-            <!-- ✅ NOUVELLES STATS PAR STATUT -->
-            <div class="stats-grid fade-in" style="margin-bottom: 2rem;">
-                <div class="stat-card" style="border-left: 4px solid #f59e0b;">
-                    <div class="stat-label">
-                        <i class="fas fa-clock" style="color: #f59e0b;"></i> En Attente
-                    </div>
-                    <div class="stat-value" style="color: #f59e0b;">
-                        <%= statusStats.waiting %>
-                    </div>
-                    <small style="color: #64748b;">Commandes à traiter</small>
+            <div class="stat-card">
+                <div class="stat-label">Chiffre d'Affaires</div>
+                <div class="stat-value" id="chiffreAffaires">
+                    <%= helpers.formatPrice(stats.chiffreAffaires.value) %>€
                 </div>
-                <div class="stat-card" style="border-left: 4px solid #3b82f6;">
-                    <div class="stat-label">
-                        <i class="fas fa-cogs" style="color: #3b82f6;"></i> En Préparation
-                    </div>
-                    <div class="stat-value" style="color: #3b82f6;">
-                        <%= statusStats.preparing %>
-                    </div>
-                    <small style="color: #64748b;">En cours de traitement</small>
-                </div>
-                <div class="stat-card" style="border-left: 4px solid #10b981;">
-                    <div class="stat-label">
-                        <i class="fas fa-shipping-fast" style="color: #10b981;"></i> Expédiées
-                    </div>
-                    <div class="stat-value" style="color: #10b981;">
-                        <%= statusStats.shipped %>
-                    </div>
-                    <small style="color: #64748b;">En cours de livraison</small>
-                </div>
-                <div class="stat-card" style="border-left: 4px solid #059669;">
-                    <div class="stat-label">
-                        <i class="fas fa-check-circle" style="color: #059669;"></i> Livrées
-                    </div>
-                    <div class="stat-value" style="color: #059669;">
-                        <%= statusStats.delivered %>
-                    </div>
-                    <small style="color: #64748b;">Commandes terminées</small>
-                </div>
-                <div class="stat-card" style="border-left: 4px solid #ef4444;">
-                    <div class="stat-label">
-                        <i class="fas fa-times-circle" style="color: #ef4444;"></i> Annulées
-                    </div>
-                    <div class="stat-value" style="color: #ef4444;">
-                        <%= statusStats.cancelled %>
-                    </div>
-                    <small style="color: #64748b;">Commandes annulées</small>
+                <div class="stat-trend <%= stats.chiffreAffaires.direction %>">
+                    <i class="fas fa-arrow-<%= stats.chiffreAffaires.direction %>"></i>
+                    <%= Math.abs(stats.chiffreAffaires.trend) %>% <%= stats.chiffreAffaires.compared %>
                 </div>
             </div>
-
-            <!-- Controls -->
-            <div class="controls slide-in">
-                <div class="controls-grid">
-                    <div class="search-section">
-                        <div class="search-box">
-                            <i class="fas fa-search"></i>
-                            <input type="text" 
-                                   class="search-input" 
-                                   id="searchInput"
-                                   placeholder="Rechercher par numéro, client, email, code promo...">
-                        </div>
-                        <div class="filter-group">
-                            <select class="filter-select" id="statusFilter">
-                                <option value="">Tous les statuts</option>
-                                <option value="waiting">En attente</option>
-                                <option value="preparing">En préparation</option>
-                                <option value="shipped">Expédiée</option>
-                                <option value="delivered">Livrée</option>
-                                <option value="cancelled">Annulée</option>
-                            </select>
-                            <select class="filter-select" id="promoFilter">
-                                <option value="">Tous les types</option>
-                                <option value="with-promo">Avec code promo</option>
-                                <option value="without-promo">Sans code promo</option>
-                            </select>
-                            <select class="filter-select" id="dateFilter">
-                                <option value="">Toutes les dates</option>
-                                <option value="today">Aujourd'hui</option>
-                                <option value="week">Cette semaine</option>
-                                <option value="month">Ce mois</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="actions-group">
-                        <button class="btn btn-secondary" onclick="resetFilters()">
-                            <i class="fas fa-undo"></i>
-                            Reset
-                        </button>
-                        <button class="btn btn-secondary" onclick="exportData()">
-                            <i class="fas fa-download"></i>
-                            Export
-                        </button>
-                        <button class="btn btn-primary" onclick="refreshData()">
-                            <i class="fas fa-sync-alt"></i>
-                            Actualiser
-                        </button>
-                    </div>
+            <div class="stat-card">
+                <div class="stat-label">Codes Promo Utilisés</div>
+                <div class="stat-value" id="codesPromo">
+                    <%= stats.codesPromoUtilises.value %>
+                </div>
+                <div class="stat-trend <%= stats.codesPromoUtilises.direction %>">
+                    <i class="fas fa-arrow-<%= stats.codesPromoUtilises.direction %>"></i>
+                    <%= Math.abs(stats.codesPromoUtilises.trend) %>% <%= stats.codesPromoUtilises.compared %>
                 </div>
             </div>
+            <div class="stat-card">
+                <div class="stat-label">Économies Clients</div>
+                <div class="stat-value" id="reductionTotale">
+                    <%= helpers.formatPrice(stats.economiesClients.value) %>€
+                </div>
+                <div class="stat-trend down">
+                    <i class="fas fa-piggy-bank"></i>
+                    <%= stats.economiesClients.compared %>
+                </div>
+            </div>
+        </div>
 
-            <!-- Desktop Table -->
-            <div class="table-container slide-in">
-    <table class="table" id="commandesTable">
-        <thead>
-            <tr>
-                <th>N° Commande</th>
-                <th>Date</th>
-                <th>Client</th>
-                <th>Montant</th>
-                <th>Code Promo</th>
-                <th>📏 Tailles</th> <!-- ✅ NOUVELLE COLONNE -->
-                <th>Statut</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
- <tbody id="commandesTableBody">
+        <!-- Stats par statut -->
+        <div class="stats-grid fade-in" style="margin-bottom: 2rem;">
+            <div class="stat-card" style="border-left: 4px solid #f59e0b;">
+                <div class="stat-label">
+                    <i class="fas fa-clock" style="color: #f59e0b;"></i> En Attente
+                </div>
+                <div class="stat-value" style="color: #f59e0b;">
+                    <%= statusStats.waiting %>
+                </div>
+                <small style="color: #64748b;">Commandes à traiter</small>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #3b82f6;">
+                <div class="stat-label">
+                    <i class="fas fa-cogs" style="color: #3b82f6;"></i> En Préparation
+                </div>
+                <div class="stat-value" style="color: #3b82f6;">
+                    <%= statusStats.preparing %>
+                </div>
+                <small style="color: #64748b;">En cours de traitement</small>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #10b981;">
+                <div class="stat-label">
+                    <i class="fas fa-shipping-fast" style="color: #10b981;"></i> Expédiées
+                </div>
+                <div class="stat-value" style="color: #10b981;">
+                    <%= statusStats.shipped %>
+                </div>
+                <small style="color: #64748b;">En cours de livraison</small>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #059669;">
+                <div class="stat-label">
+                    <i class="fas fa-check-circle" style="color: #059669;"></i> Livrées
+                </div>
+                <div class="stat-value" style="color: #059669;">
+                    <%= statusStats.delivered %>
+                </div>
+                <small style="color: #64748b;">Commandes terminées</small>
+            </div>
+            <div class="stat-card" style="border-left: 4px solid #ef4444;">
+                <div class="stat-label">
+                    <i class="fas fa-times-circle" style="color: #ef4444;"></i> Annulées
+                </div>
+                <div class="stat-value" style="color: #ef4444;">
+                    <%= statusStats.cancelled %>
+                </div>
+                <small style="color: #64748b;">Commandes annulées</small>
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls slide-in">
+            <div class="controls-grid">
+                <div class="search-section">
+                    <div class="search-box">
+                        <i class="fas fa-search"></i>
+                        <input type="text" 
+                               class="search-input" 
+                               id="searchInput"
+                               placeholder="Rechercher par numéro, client, email, code promo...">
+                    </div>
+                    <div class="filter-group">
+                        <select class="filter-select" id="statusFilter">
+                            <option value="">Tous les statuts</option>
+                            <option value="waiting">En attente</option>
+                            <option value="preparing">En préparation</option>
+                            <option value="shipped">Expédiée</option>
+                            <option value="delivered">Livrée</option>
+                            <option value="cancelled">Annulée</option>
+                        </select>
+                        <select class="filter-select" id="promoFilter">
+                            <option value="">Tous les types</option>
+                            <option value="with-promo">Avec code promo</option>
+                            <option value="without-promo">Sans code promo</option>
+                        </select>
+                        <select class="filter-select" id="paymentFilter">
+                            <option value="">Tous les paiements</option>
+                            <option value="card">Carte bancaire</option>
+                            <option value="paypal">PayPal</option>
+                            <option value="bank_transfer">Virement</option>
+                            <option value="check">Chèque</option>
+                            <option value="cash">Espèces</option>
+                        </select>
+                        <select class="filter-select" id="dateFilter">
+                            <option value="">Toutes les dates</option>
+                            <option value="today">Aujourd'hui</option>
+                            <option value="week">Cette semaine</option>
+                            <option value="month">Ce mois</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="actions-group">
+                    <button class="btn btn-secondary" onclick="resetFilters()">
+                        <i class="fas fa-undo"></i>
+                        Reset
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportData()">
+                        <i class="fas fa-download"></i>
+                        Export
+                    </button>
+                    <button class="btn btn-primary" onclick="refreshData()">
+                        <i class="fas fa-sync-alt"></i>
+                        Actualiser
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Desktop Table -->
+        <div class="table-container slide-in">
+            <table class="table" id="commandesTable">
+                <thead>
+                    <tr>
+                        <th>N° Commande</th>
+                        <th>Date & Heure</th>
+                        <th>Client</th>
+                        <th>Montant & Promo</th>
+                        <th>Paiement</th>
+                        <th>📏 Tailles</th>
+                        <th>Statut</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="commandesTableBody">
                     <% if (commandes && commandes.length > 0) { %>
                         <% commandes.forEach(commande => { %>
+                            <% 
+                            // Calculer les prix corrects
+                            const priceInfo = calculateCorrectPrices(commande);
+                            const sizesInfo = commande.sizesInfo || getTaillesFromOrder(commande);
+                            %>
                             <tr data-order-id="<%= commande.id %>" 
                                 data-status="<%= commande.status %>"
                                 data-promo="<%= commande.promo_code ? 'with-promo' : 'without-promo' %>"
                                 data-date="<%= commande.date %>">
                                 
-                                <!-- Colonnes existantes... -->
+                               <!-- N° Commande -->
                                 <td>
                                     <div class="order-number">
                                         <%= commande.numero_commande || 'CMD-' + commande.id %>
                                     </div>
-                                    <% if (commande.trackingNumber) { %>
+                                    <% if (commande.tracking_number && commande.tracking_number !== formatDateTime(commande.created_at)) { %>
                                         <small style="color: var(--gray-medium);">
-                                            📦 <%= commande.trackingNumber %>
+                                            📦 <%= commande.tracking_number %>
                                         </small>
                                     <% } %>
                                 </td>
                                 
+                                <!-- Date & Heure -->
                                 <td>
-                                    <div><%= commande.date %></div>
-                                    <% if (commande.dateTime) { %>
-                                        <small style="color: var(--gray-medium);">
-                                            <%= commande.dateTime.split(' ')[1] %>
-                                        </small>
-                                    <% } %>
+                                    <div style="font-weight: 500;">
+                                        <%= formatDateTime(commande.created_at || commande.order_date || commande.date) %>
+                                    </div>
+                                    <small style="color: var(--gray-medium);">
+                                        <%= getTimeAgo(commande.created_at || commande.order_date || commande.date) %>
+                                    </small>
                                 </td>
                                 
+                                <!-- Client -->
                                 <td>
                                     <div class="customer-info">
-                                        <div class="customer-name"><%= commande.customerName %></div>
-                                        <% if (commande.customerEmail && commande.customerEmail !== 'N/A') { %>
-                                            <div class="customer-email"><%= commande.customerEmail %></div>
+                                        <div class="customer-name"><%= commande.customer_name || commande.customerName %></div>
+                                        <% if (commande.customer_email && commande.customer_email !== 'N/A') { %>
+                                            <div class="customer-email"><%= commande.customer_email %></div>
                                         <% } %>
                                     </div>
                                 </td>
                                 
+                                <!-- Montant & Promo -->
                                 <td>
-                                    <div class="amount">
-                                        <%= (commande.amount || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
+                                    <div class="amount-display">
+                                        <% if (priceInfo.hasDiscount) { %>
+                                            <div class="original-price">
+                                                <%= priceInfo.originalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
+                                            </div>
+                                            <div class="discounted-price">
+                                                <%= priceInfo.finalTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
+                                            </div>
+                                            <div class="discount-amount">
+                                                -<%= priceInfo.discountAmount.toFixed(2) %>€
+                                            </div>
+                                        <% } else { %>
+                                            <div class="amount">
+                                                <%= priceInfo.finalTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
+                                            </div>
+                                        <% } %>
                                     </div>
-                                    <% if (commande.discount_amount && commande.discount_amount > 0) { %>
-                                        <small class="discount-amount">
-                                            -<%= commande.discount_amount.toFixed(2) %>€
-                                        </small>
-                                    <% } %>
-                                </td>
-                                
-                                <td>
+                                    
                                     <% if (commande.promo_code) { %>
-                                        <div class="promo-info">
+                                        <div class="promo-info" style="margin-top: 5px;">
                                             <i class="fas fa-tag"></i>
                                             <%= commande.promo_code %>
                                         </div>
-                                        <% if (commande.discount_percent) { %>
-                                            <small style="color: var(--success); font-weight: 500;">
-                                                -<%= commande.discount_percent %>%
-                                            </small>
+                                        <% if (commande.promo_discount_percent) { %>
+                                            <div class="discount-percent">
+                                                -<%= commande.promo_discount_percent %>%
+                                            </div>
                                         <% } %>
-                                    <% } else { %>
-                                        <span style="color: var(--gray-medium); font-size: 0.8rem;">
-                                            Aucun
-                                        </span>
                                     <% } %>
                                 </td>
                                 
-                                <!-- ✅ COLONNE TAILLES CORRIGÉE -->
+                                <!-- Paiement -->
+                               <!-- Paiement -->
+<td>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-weight: 500; color: var(--dark);">
+            <i class="fas fa-credit-card" style="color: var(--info); margin-right: 4px;"></i>
+            <%= commande.payment_method_display || getPaymentMethodDisplay(commande.payment_method) %>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--gray-medium);">
+            <%= commande.payment_status ? 
+                (commande.payment_status === 'paid' ? '✅ Payé' : 
+                 commande.payment_status === 'pending' ? '⏳ En attente' : 
+                 '❌ Échoué') : '✅ Payé' %>
+        </div>
+    </div>
+</td>
+                                
+                                <!-- Tailles -->
                                 <td>
-                                    <% 
-                                    // Récupérer les informations de tailles de la commande
-                                    const sizesInfo = commande.sizesInfo || getTaillesFromOrder(commande);
-                                    %>
-                                    
                                     <% if (sizesInfo && sizesInfo.hasSizeInfo) { %>
                                         <div class="sizes-info">
                                             <div class="sizes-summary">
@@ -1431,7 +1392,6 @@ function getSizesCoverageIndicator(sizesInfo) {
                                                 <%= formatSizesDisplay(sizesInfo) %>
                                             </div>
                                             <div class="sizes-meta">
-                                                <!-- ✅ Indicateur de couverture avec couleurs -->
                                                 <% 
                                                 const coverage = sizesInfo.sizesCoverage || 0;
                                                 let coverageClass = 'no-coverage';
@@ -1442,7 +1402,6 @@ function getSizesCoverageIndicator(sizesInfo) {
                                                 <span class="size-coverage <%= coverageClass %>">
                                                     <%= sizesInfo.itemsWithSizes %>/<%= sizesInfo.totalItems %>
                                                 </span>
-                                                <!-- Badge indicateur -->
                                                 <span style="font-size: 0.7rem; opacity: 0.8;">
                                                     <%= getSizesCoverageIndicator(sizesInfo) %>
                                                 </span>
@@ -1456,6 +1415,7 @@ function getSizesCoverageIndicator(sizesInfo) {
                                     <% } %>
                                 </td>
                                 
+                                <!-- Statut -->
                                 <td>
                                     <span class="status <%= getStatusClass(commande.status) %>">
                                         <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
@@ -1463,6 +1423,7 @@ function getSizesCoverageIndicator(sizesInfo) {
                                     </span>
                                 </td>
                                 
+                                <!-- Actions -->
                                 <td>
                                     <div class="action-buttons">
                                         <button class="action-btn view" 
@@ -1481,7 +1442,7 @@ function getSizesCoverageIndicator(sizesInfo) {
                         <% }) %>
                     <% } else { %>
                         <tr id="no-data-row">
-                            <td colspan="8" class="empty-state"> <!-- ✅ COLSPAN = 8 colonnes -->
+                            <td colspan="8" class="empty-state">
                                 <i class="fas fa-inbox"></i>
                                 <div>Aucune commande trouvée</div>
                             </td>
@@ -1491,17 +1452,20 @@ function getSizesCoverageIndicator(sizesInfo) {
             </table>
         </div>
 
-            <!-- Mobile Cards -->
- <div class="mobile-cards" id="mobileCards">
+        <!-- Mobile Cards -->
+        <div class="mobile-cards" id="mobileCards">
             <% if (commandes && commandes.length > 0) { %>
                 <% commandes.forEach(commande => { %>
+                    <% 
+                    const priceInfoMobile = calculateCorrectPrices(commande);
+                    const sizesInfoMobile = commande.sizesInfo || getTaillesFromOrder(commande);
+                    %>
                     <div class="order-card" 
                          data-order-id="<%= commande.id %>" 
                          data-status="<%= commande.status %>"
                          data-promo="<%= commande.promo_code ? 'with-promo' : 'without-promo' %>"
                          data-date="<%= commande.date %>">
                         
-                        <!-- Header et body existants... -->
                         <div class="order-card-header">
                             <div class="order-number">
                                 <%= commande.numero_commande || 'CMD-' + commande.id %>
@@ -1512,22 +1476,39 @@ function getSizesCoverageIndicator(sizesInfo) {
                         </div>
                         
                         <div class="order-card-body">
-                            <!-- Champs existants... -->
                             <div class="order-card-field">
-                                <div class="order-card-label">Date</div>
-                                <div class="order-card-value"><%= commande.date %></div>
+                                <div class="order-card-label">Date & Heure</div>
+                                <div class="order-card-value">
+                                    <%= formatDateTime(commande.created_at || commande.order_date || commande.date) %>
+                                    <br><small><%= getTimeAgo(commande.created_at || commande.order_date || commande.date) %></small>
+                                </div>
                             </div>
                             <div class="order-card-field">
                                 <div class="order-card-label">Client</div>
-                                <div class="order-card-value"><%= commande.customerName %></div>
+                                <div class="order-card-value"><%= commande.customer_name || commande.customerName %></div>
                             </div>
                             <div class="order-card-field">
                                 <div class="order-card-label">Montant</div>
-                                <div class="order-card-value amount">
-                                    <%= (commande.amount || 0).toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
-                                    <% if (commande.discount_amount && commande.discount_amount > 0) { %>
-                                        <br><small class="discount-amount">-<%= commande.discount_amount.toFixed(2) %>€</small>
+                                <div class="order-card-value">
+                                    <% if (priceInfoMobile.hasDiscount) { %>
+                                        <div style="text-decoration: line-through; color: var(--gray-medium); font-size: 0.8rem;">
+                                            <%= priceInfoMobile.originalAmount.toFixed(2) %>€
+                                        </div>
+                                        <div class="amount" style="color: var(--primary-dark);">
+                                            <%= priceInfoMobile.finalTotal.toFixed(2) %>€
+                                        </div>
+                                        <small style="color: var(--success);">-<%= priceInfoMobile.discountAmount.toFixed(2) %>€</small>
+                                    <% } else { %>
+                                        <div class="amount">
+                                            <%= priceInfoMobile.finalTotal.toFixed(2) %>€
+                                        </div>
                                     <% } %>
+                                </div>
+                            </div>
+                            <div class="order-card-field">
+                                <div class="order-card-label">Paiement</div>
+                                <div class="order-card-value">
+                                    <i class="fas fa-credit-card"></i> <%= getPaymentMethodDisplay(commande.payment_method) %>
                                 </div>
                             </div>
                             <div class="order-card-field">
@@ -1543,34 +1524,30 @@ function getSizesCoverageIndicator(sizesInfo) {
                                 </div>
                             </div>
                             
-                            <!-- ✅ SECTION TAILLES AMÉLIORÉE POUR MOBILE -->
+                            <!-- Tailles pour mobile -->
                             <div class="order-card-field" style="grid-column: 1 / -1;">
                                 <div class="order-card-label">
                                     <i class="fas fa-ruler"></i> Tailles commandées
                                 </div>
                                 <div class="order-card-value">
-                                    <% 
-                                    const mobileSizesInfo = commande.sizesInfo || getTaillesFromOrder(commande);
-                                    %>
-                                    
-                                    <% if (mobileSizesInfo && mobileSizesInfo.hasSizeInfo) { %>
+                                    <% if (sizesInfoMobile && sizesInfoMobile.hasSizeInfo) { %>
                                         <div class="sizes-card-info">
                                             <div class="sizes-label">
-                                                <%= formatSizesDisplay(mobileSizesInfo) %>
+                                                <%= formatSizesDisplay(sizesInfoMobile) %>
                                             </div>
                                             <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
                                                 <% 
-                                                const mobileCoverage = mobileSizesInfo.sizesCoverage || 0;
+                                                const mobileCoverage = sizesInfoMobile.sizesCoverage || 0;
                                                 let mobileCoverageClass = 'no-coverage';
                                                 if (mobileCoverage === 100) mobileCoverageClass = 'full-coverage';
                                                 else if (mobileCoverage > 50) mobileCoverageClass = 'partial-coverage';
                                                 else if (mobileCoverage > 0) mobileCoverageClass = 'limited-coverage';
                                                 %>
                                                 <span class="size-coverage <%= mobileCoverageClass %>">
-                                                    <%= mobileSizesInfo.itemsWithSizes %>/<%= mobileSizesInfo.totalItems %>
+                                                    <%= sizesInfoMobile.itemsWithSizes %>/<%= sizesInfoMobile.totalItems %>
                                                 </span>
                                                 <span style="font-size: 0.7rem; opacity: 0.8;">
-                                                    <%= getSizesCoverageIndicator(mobileSizesInfo) %>
+                                                    <%= getSizesCoverageIndicator(sizesInfoMobile) %>
                                                 </span>
                                             </div>
                                         </div>
@@ -1603,978 +1580,337 @@ function getSizesCoverageIndicator(sizesInfo) {
                 </div>
             <% } %>
         </div>
-    </div>
+    </main>
+</div>
 
-        </main>
-    </div>
-
-    <!-- Modal de détails -->
-    <div id="orderModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title" id="modalTitle">Détails de la commande</h2>
-                <button class="close-modal" onclick="closeModal()">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="modal-body" id="modalBody">
-                <!-- Contenu dynamique -->
-            </div>
+<!-- Modal de détails -->
+<div id="orderModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalTitle">Détails de la commande</h2>
+            <button class="close-modal" onclick="closeModal()">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="modal-body" id="modalBody">
+            <!-- Contenu dynamique -->
         </div>
     </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="toast">
-        <i class="fas fa-check-circle"></i>
-        <span id="toastMessage">Message</span>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="loading-overlay">
-        <div class="spinner"></div>
-    </div>
-
-    <script>
-        // 🛡️ FONCTIONS UTILITAIRES SÉCURISÉES
-        function safeToFixed(value, decimals = 2) {
-            if (value === null || value === undefined || isNaN(value)) {
-                return '0.00';
-            }
-            return parseFloat(value).toFixed(decimals);
-        }
-
-        function safeParseFloat(value) {
-            if (value === null || value === undefined || value === '') {
-                return 0;
-            }
-            const parsed = parseFloat(value);
-            return isNaN(parsed) ? 0 : parsed;
-        }
-
-        function formatCurrency(amount) {
-            const safeAmount = safeParseFloat(amount);
-            return safeAmount.toLocaleString('fr-FR', { 
-                minimumFractionDigits: 2, 
-                maximumFractionDigits: 2 
-            }) + '€';
-        }
-
-        // Configuration
-        const config = {
-            baseUrl: '',
-            currentUser: '<%= user?.name || "Admin" %>',
-            totalOrders: <%= commandes ? commandes.length : 0 %>,
-            filters: {
-                search: '',
-                status: '',
-                promo: '',
-                date: ''
-            }
-        };
-
-        // Variables globales
-        let allOrders = [];
-        let filteredOrders = [];
-
-        // Fonctions utilitaires EJS côté client
-        function getStatusClass(status) {
-            const statusMap = {
-                'waiting': 'en-attente',
-                'preparing': 'preparation',
-                'shipped': 'expediee',
-                'delivered': 'livree',
-                'cancelled': 'annulee',
-                'en_attente': 'en-attente',
-                'preparation': 'preparation',
-                'expediee': 'expediee',
-                'livree': 'livree',
-                'annulee': 'annulee'
-            };
-            return statusMap[status] || 'en-attente';
-        }
-
-        function translateStatus(status) {
-            const statusMap = {
-                'waiting': 'En attente',
-                'preparing': 'En préparation',
-                'shipped': 'Expédiée',
-                'delivered': 'Livrée',
-                'cancelled': 'Annulée',
-                'en_attente': 'En attente',
-                'preparation': 'En préparation',
-                'expediee': 'Expédiée',
-                'livree': 'Livrée',
-                'annulee': 'Annulée'
-            };
-            return statusMap[status] || 'En attente';
-        }
-
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Initialisation Admin Commandes avec suivi avancé');
-            
-            initializeData();
-            setupEventListeners();
-            
-            // Auto-refresh toutes les 5 minutes
-            setInterval(refreshData, 300000);
-        });
-
-        // Initialiser les données
-        function initializeData() {
-            const rows = document.querySelectorAll('#commandesTableBody tr[data-order-id]');
-            
-            allOrders = Array.from(rows).map(row => ({
-                id: row.dataset.orderId,
-                status: row.dataset.status,
-                promo: row.dataset.promo,
-                date: row.dataset.date,
-                element: row,
-                cardElement: document.querySelector(`.order-card[data-order-id="${row.dataset.orderId}"]`)
-            }));
-            
-            filteredOrders = [...allOrders];
-            console.log(`📊 ${allOrders.length} commandes chargées`);
-        }
-
-        // Configurer les écouteurs d'événements
-        function setupEventListeners() {
-            // Recherche
-            const searchInput = document.getElementById('searchInput');
-            if (searchInput) {
-                searchInput.addEventListener('input', debounce(handleSearch, 300));
-            }
-
-            // Filtres
-            const statusFilter = document.getElementById('statusFilter');
-            const promoFilter = document.getElementById('promoFilter');
-            const dateFilter = document.getElementById('dateFilter');
-
-            if (statusFilter) statusFilter.addEventListener('change', applyFilters);
-            if (promoFilter) promoFilter.addEventListener('change', applyFilters);
-            if (dateFilter) dateFilter.addEventListener('change', applyFilters);
-
-            // Fermeture modale
-            document.addEventListener('click', function(e) {
-                if (e.target.classList.contains('modal')) {
-                    closeModal();
-                }
-            });
-
-            // Échap pour fermer
-            document.addEventListener('keydown', function(e) {
-                if (e.key === 'Escape') {
-                    closeModal();
-                    closeSidebar();
-                }
-            });
-        }
-
-        // 👁️ VOIR LES DÉTAILS D'UNE COMMANDE - VERSION CORRIGÉE
-        async function viewOrderDetails(orderId) {
-            try {
-                console.log(`🔍 Récupération des détails pour la commande ${orderId}`);
-                showLoading();
-                
-                const response = await fetch(`/admin/commandes/${orderId}/details`, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                        'Content-Type': 'application/json'
-                    }
-                });
-                
-                console.log('📡 Réponse reçue:', response.status, response.statusText);
-                
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('📋 Données reçues:', data);
-                
-                if (data.success) {
-                    displayOrderDetails(data);
-                    showModal();
-                } else {
-                    showToast(data.message || 'Erreur lors du chargement des détails', 'error');
-                }
-            } catch (error) {
-                console.error('❌ Erreur détails commande:', error);
-                showToast(`Erreur: ${error.message}`, 'error');
-            } finally {
-                hideLoading();
-            }
-        }
-
-        // 📋 AFFICHAGE DES DÉTAILS AVEC SUIVI AVANCÉ - VERSION CORRIGÉE
-        function displayOrderDetails(data) {
-            const { order, items, summary, tracking, history } = data;
-            
-            // ✅ PROTECTION CONTRE LES ERREURS
-            const safeOrder = order || {};
-            const safeItems = items || [];
-            const safeSummary = summary || {};
-            const safeTracking = tracking || [];
-            const safeHistory = history || [];
-            
-            document.getElementById('modalTitle').innerHTML = `
-                <i class="fas fa-receipt"></i> Commande ${safeOrder.numero_commande || 'CMD-' + safeOrder.id}
-            `;
-
-            const modalBody = document.getElementById('modalBody');
-            modalBody.innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-bottom: 25px;">
-                    <!-- Informations générales -->
-                    <div>
-                        <h4 style="color: var(--primary-dark); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-light);">
-                            <i class="fas fa-info-circle"></i> Informations générales
-                        </h4>
-                        <div style="background: #f8fafc; padding: 20px; border-radius: 10px; border-left: 4px solid var(--primary);">
-                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                <span style="color: #64748b; font-weight: 500;">Date de commande:</span>
-                                <strong style="color: var(--dark);">${safeOrder.date || 'N/A'}</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                <span style="color: #64748b; font-weight: 500;">Statut:</span>
-                                <span class="status ${getStatusClass(safeOrder.status)}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
-                                    <i class="fas fa-circle" style="font-size: 8px; margin-right: 6px;"></i>
-                                    ${translateStatus(safeOrder.status)}
-                                </span>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                <span style="color: #64748b; font-weight: 500;">Mode de livraison:</span>
-                                <strong style="color: var(--dark);">${safeOrder.shipping_method || 'Standard'}</strong>
-                            </div>
-                            ${safeOrder.tracking_number ? `
-                            <div style="display: flex; justify-content: space-between; padding: 10px 0;">
-                                <span style="color: #64748b; font-weight: 500;">Numéro de suivi:</span>
-                                <strong style="color: var(--primary-dark); font-family: monospace;">
-                                    <i class="fas fa-truck"></i> ${safeOrder.tracking_number}
-                                </strong>
-                            </div>
-                            ` : ''}
-                            ${safeOrder.notes ? `
-                            <div style="margin-top: 15px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 6px;">
-                                <div style="font-weight: 600; color: #92400e; margin-bottom: 5px;">
-                                    <i class="fas fa-sticky-note"></i> Notes internes:
-                                </div>
-                                <div style="color: #78350f; font-size: 14px;">
-                                    ${safeOrder.notes}
-                                </div>
-                            </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <!-- Informations client -->
-                    <div>
-                        <h4 style="color: var(--primary-dark); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-light);">
-                            <i class="fas fa-user"></i> Informations client
-                        </h4>
-                        <div style="background: #f8fafc; padding: 20px; border-radius: 10px; border-left: 4px solid var(--info);">
-                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                <span style="color: #64748b; font-weight: 500;">Nom:</span>
-                                <strong style="color: var(--dark);">${safeOrder.customer_name || 'N/A'}</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                <span style="color: #64748b; font-weight: 500;">Email:</span>
-                                <strong style="color: var(--dark);">${safeOrder.customer_email || 'N/A'}</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                                <span style="color: #64748b; font-weight: 500;">Téléphone:</span>
-                                <strong style="color: var(--dark);">${safeOrder.phone || 'N/A'}</strong>
-                            </div>
-                            <div style="display: flex; justify-content: space-between; padding: 10px 0;">
-                                <span style="color: #64748b; font-weight: 500;">Adresse:</span>
-                                <strong style="color: var(--dark); text-align: right; max-width: 200px;">
-                                    ${safeOrder.shipping_address || 'N/A'}
-                                </strong>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- 📍 SECTION SUIVI AVANCÉ -->
-                ${safeTracking.length > 0 ? `
-                <div style="margin-bottom: 25px;">
-                    <h4 style="color: var(--info); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--info);">
-                        <i class="fas fa-route"></i> Suivi de la commande (${safeTracking.length} événement${safeTracking.length > 1 ? 's' : ''})
-                    </h4>
-                    <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 20px; border-radius: 10px; border-left: 4px solid var(--info);">
-                        <div style="position: relative;">
-                            ${safeTracking.map((event, index) => `
-                                <div style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: ${index === safeTracking.length - 1 ? '0' : '20px'}; position: relative;">
-                                    <!-- Timeline dot -->
-                                    <div style="width: 12px; height: 12px; background: var(--info); border-radius: 50%; margin-top: 6px; z-index: 2; position: relative;">
-                                        ${index !== safeTracking.length - 1 ? `
-                                        <div style="position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 2px; height: 20px; background: #cbd5e1;"></div>
-                                        ` : ''}
-                                    </div>
-                                    <!-- Event content -->
-                                    <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                            <span style="font-weight: 600; color: var(--info); font-size: 14px;">
-                                                <i class="fas fa-circle" style="font-size: 8px; margin-right: 6px;"></i>
-                                                ${event.status_display || translateStatus(event.status)}
-                                            </span>
-                                            <span style="color: #64748b; font-size: 12px; font-weight: 500;">
-                                                ${event.time_ago || event.formatted_date}
-                                            </span>
-                                        </div>
-                                        <div style="color: var(--dark); font-size: 14px; margin-bottom: 5px;">
-                                            ${event.description || 'Événement de suivi'}
-                                        </div>
-                                        <div style="color: #64748b; font-size: 12px;">
-                                            <i class="fas fa-map-marker-alt"></i> ${event.location || 'Non spécifié'}
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-                ` : ''}
-
-                <!-- 📋 HISTORIQUE DES MODIFICATIONS -->
-                ${safeHistory.length > 0 ? `
-                <div style="margin-bottom: 25px;">
-                    <h4 style="color: var(--warning); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--warning);">
-                        <i class="fas fa-history"></i> Historique des modifications (${safeHistory.length} modification${safeHistory.length > 1 ? 's' : ''})
-                    </h4>
-                    <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); padding: 20px; border-radius: 10px; border-left: 4px solid var(--warning);">
-                        <div style="max-height: 300px; overflow-y: auto;">
-                            ${safeHistory.map((change, index) => `
-                                <div style="display: flex; align-items: flex-start; gap: 15px; padding: 15px; margin-bottom: ${index === safeHistory.length - 1 ? '0' : '10px'}; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                                    <div style="width: 8px; height: 8px; background: var(--warning); border-radius: 50%; margin-top: 8px;"></div>
-                                    <div style="flex: 1;">
-                                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                            <span style="font-weight: 600; color: var(--warning); font-size: 14px;">
-                                                ${change.old_status_display || translateStatus(change.old_status)} → ${change.new_status_display || translateStatus(change.new_status)}
-                                            </span>
-                                            <span style="color: #64748b; font-size: 12px;">
-                                                ${change.time_ago || change.formatted_date}
-                                            </span>
-                                        </div>
-                                        <div style="color: var(--dark); font-size: 14px; margin-bottom: 5px;">
-                                            ${change.notes || 'Modification sans commentaire'}
-                                        </div>
-                                        <div style="color: #64748b; font-size: 12px;">
-                                            <i class="fas fa-user"></i> Par: ${change.updated_by || 'Système'}
-                                        </div>
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                </div>
-                ` : ''}
-                
-                ${safeOrder.promo_code ? `
-                <!-- Section codes promo -->
-                <div style="margin-bottom: 25px;">
-                    <h4 style="color: var(--success); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--success);">
-                        <i class="fas fa-tag"></i> Code promo appliqué
-                    </h4>
-                    <div style="background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%); padding: 20px; border-radius: 10px; border-left: 4px solid var(--success);">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-                            <span style="font-weight: 600; color: var(--success);">
-                                <i class="fas fa-tag"></i> ${safeOrder.promo_code}
-                            </span>
-                            <span style="background: var(--success); color: white; padding: 4px 12px; border-radius: 15px; font-size: 12px; font-weight: 600;">
-                                ${safeOrder.discount_percent || 0}% de réduction
-                            </span>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; align-items: center;">
-                            <span style="color: #059669; font-weight: 500;">Économie réalisée:</span>
-                            <strong style="color: var(--success); font-size: 16px;">
-                                -${safeToFixed(safeOrder.discount_amount)}€
-                            </strong>
-                        </div>
-                    </div>
-                </div>
-                ` : ''}
-                
-                ${safeItems.length > 0 ? `
-                <!-- Produits commandés -->
-                <div style="margin-bottom: 25px;">
-                    <h4 style="color: var(--primary-dark); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-light);">
-                        <i class="fas fa-gem"></i> Produits commandés (${safeItems.length} article${safeItems.length > 1 ? 's' : ''})
-                    </h4>
-                    <div style="display: grid; gap: 15px;">
-                        ${safeItems.map(item => `
-                            <div style="display: flex; align-items: center; gap: 20px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; transition: var(--transition);">
-                                <img src="${item.image || '/images/placeholder.jpg'}" 
-                                     alt="${item.name || 'Produit'}" 
-                                     style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border);"
-                                     onerror="this.src='/images/placeholder.jpg'">
-                                <div style="flex: 1;">
-                                    <div style="font-weight: 600; font-size: 16px; color: var(--dark); margin-bottom: 8px;">
-                                        ${item.name || 'Produit'}
-                                    </div>
-                                    <div style="color: #64748b; font-size: 14px; margin-bottom: 8px;">
-                                        <i class="fas fa-cube"></i> Quantité: <strong>${item.quantity || 1}</strong>
-                                        <span style="margin: 0 10px;">•</span>
-                                        <i class="fas fa-euro-sign"></i> Prix unitaire: <strong>${safeToFixed(item.price)}€</strong>
-                                    </div>
-                                    ${item.matiere ? `
-                                    <div style="color: #64748b; font-size: 13px;">
-                                        <i class="fas fa-info"></i> Matière: ${item.matiere}
-                                    </div>
-                                    ` : ''}
-                                </div>
-                                <div style="text-align: right;">
-                                    <div style="font-weight: 700; font-size: 18px; color: var(--primary-dark);">
-                                        ${safeToFixed(safeParseFloat(item.price) * safeParseFloat(item.quantity))}€
-                                    </div>
-                                    <div style="font-size: 12px; color: #64748b;">
-                                        Total ligne
-                                    </div>
-                                </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-                ` : ''}
-                
-                <!-- Récapitulatif financier -->
-                <div>
-                    <h4 style="color: var(--primary-dark); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-light);">
-                        <i class="fas fa-receipt"></i> Récapitulatif financier
-                    </h4>
-                    <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 25px; border-radius: 12px; border: 2px solid var(--border);">
-                        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                            <span style="color: #64748b; font-weight: 500;">Sous-total articles:</span>
-                            <strong style="color: var(--dark);">${safeToFixed(safeSummary.subtotal || safeOrder.total)}€</strong>
-                        </div>
-                        ${safeParseFloat(safeOrder.discount_amount) > 0 ? `
-                        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                            <span style="color: var(--success); font-weight: 500;">
-                                <i class="fas fa-tag"></i> Réduction (${safeOrder.promo_code}):
-                            </span>
-                            <strong style="color: var(--success);">-${safeToFixed(safeOrder.discount_amount)}€</strong>
-                        </div>
-                        ` : ''}
-                        <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                            <span style="color: #64748b; font-weight: 500;">Frais de livraison:</span>
-                            <strong style="color: var(--dark);">
-                                ${safeParseFloat(safeSummary.shipping) === 0 ? 'Gratuit' : safeToFixed(safeSummary.shipping) + '€'}
-                            </strong>
-                        </div>
-                        <div style="display: flex; justify-content: space-between; padding: 20px 0; border-top: 3px solid var(--primary); margin-top: 15px;">
-                            <span style="font-weight: 700; font-size: 18px; color: var(--dark);">
-                                <i class="fas fa-calculator"></i> Total final:
-                            </span>
-                            <span style="font-weight: 700; font-size: 22px; color: var(--primary-dark);">
-                                ${safeToFixed(safeOrder.total)}€
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- Actions rapides -->
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border);">
-                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                        <button onclick="editOrder('${safeOrder.id}')" 
-                                style="padding: 12px 20px; background: var(--warning); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: var(--transition);">
-                            <i class="fas fa-edit"></i> Modifier cette commande
-                        </button>
-                        <button onclick="addTrackingEvent('${safeOrder.id}')" 
-                                style="padding: 12px 20px; background: var(--info); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: var(--transition);">
-                            <i class="fas fa-plus"></i> Ajouter événement
-                        </button>
-                        <button onclick="window.print()" 
-                                style="padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: var(--transition);">
-                            <i class="fas fa-print"></i> Imprimer
-                        </button>
-                        <button onclick="closeModal()" 
-                                style="padding: 12px 20px; background: var(--gray-medium); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: var(--transition);">
-                            <i class="fas fa-times"></i> Fermer
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ✏️ MODIFIER UNE COMMANDE - VERSION CORRIGÉE
-        async function editOrder(orderId) {
-            try {
-                console.log(`✏️ Ouverture du formulaire de modification pour la commande ${orderId}`);
-                
-                const currentRow = document.querySelector(`tr[data-order-id="${orderId}"]`);
-                const currentStatus = currentRow ? currentRow.dataset.status : 'waiting';
-                
-                const trackingElement = currentRow ? currentRow.querySelector('small') : null;
-                const currentTracking = trackingElement ? trackingElement.textContent.replace('📦 ', '') : '';
-                
-                const statusOptions = [
-                    { value: 'waiting', label: 'En attente' },
-                    { value: 'preparing', label: 'En préparation' },
-                    { value: 'shipped', label: 'Expédiée' },
-                    { value: 'delivered', label: 'Livrée' },
-                    { value: 'cancelled', label: 'Annulée' }
-                ];
-
-                let optionsHtml = '';
-                statusOptions.forEach(option => {
-                    const selected = option.value === currentStatus ? 'selected' : '';
-                    optionsHtml += `<option value="${option.value}" ${selected}>${option.label}</option>`;
-                });
-
-                const formHtml = `
-                    <div style="padding: 20px;">
-                        <h3 style="margin-bottom: 20px; color: var(--primary-dark);">
-                            <i class="fas fa-edit"></i> Modifier la commande #${orderId}
-                        </h3>
-                        
-                        <form id="editOrderForm">
-                            <!-- Statut -->
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark);">
-                                    <i class="fas fa-info-circle"></i> Statut de la commande :
-                                </label>
-                                <select id="orderStatus" style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 6px; font-size: 14px;">
-                                    ${optionsHtml}
-                                </select>
-                            </div>
-                            
-                            <!-- Numéro de suivi -->
-                            <div style="margin-bottom: 20px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark);">
-                                    <i class="fas fa-truck"></i> Numéro de suivi (optionnel) :
-                                </label>
-                                <input type="text" 
-                                       id="trackingNumber" 
-                                       value="${currentTracking}"
-                                       placeholder="Ex: FR123456789, LP123456789, 3S123456789..." 
-                                       style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 6px; font-size: 14px;">
-                                <small style="color: var(--gray-medium); font-size: 12px; margin-top: 4px; display: block;">
-                                    Ce numéro apparaîtra dans le suivi de la commande et sera envoyé au client.
-                                </small>
-                            </div>
-                            
-                            <!-- Notes internes -->
-                            <div style="margin-bottom: 25px;">
-                                <label style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--dark);">
-                                    <i class="fas fa-sticky-note"></i> Notes internes (optionnel) :
-                                </label>
-                                <textarea id="orderNotes" 
-                                          placeholder="Ajoutez des notes internes pour cette commande (non visibles par le client)..." 
-                                          rows="4"
-                                          style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 6px; font-size: 14px; resize: vertical; font-family: inherit;">
-                                </textarea>
-                                <small style="color: var(--gray-medium); font-size: 12px; margin-top: 4px; display: block;">
-                                    Ces notes sont uniquement visibles par l'équipe administrative.
-                                </small>
-                            </div>
-                            
-                            <!-- Boutons d'action -->
-                            <div style="display: flex; gap: 12px; justify-content: flex-end; padding-top: 20px; border-top: 1px solid var(--border);">
-                                <button type="button" 
-                                        onclick="closeModal()" 
-                                        style="padding: 12px 24px; background: var(--gray-light); color: var(--gray-medium); border: 2px solid var(--border); border-radius: 6px; cursor: pointer; font-weight: 500; transition: var(--transition);">
-                                    <i class="fas fa-times"></i> Annuler
-                                </button>
-                                <button type="submit" 
-                                        style="padding: 12px 24px; background: var(--primary); color: white; border: 2px solid var(--primary); border-radius: 6px; cursor: pointer; font-weight: 500; transition: var(--transition);">
-                                    <i class="fas fa-save"></i> Enregistrer les modifications
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                `;
-
-                document.getElementById('modalTitle').innerHTML = `
-                    <i class="fas fa-edit"></i> Modifier la commande #${orderId}
-                `;
-                document.getElementById('modalBody').innerHTML = formHtml;
-                showModal();
-
-                // Gérer la soumission du formulaire
-                document.getElementById('editOrderForm').addEventListener('submit', async function(e) {
-                    e.preventDefault();
-                    
-                    const newStatus = document.getElementById('orderStatus').value;
-                    const trackingNumber = document.getElementById('trackingNumber').value.trim();
-                    const notes = document.getElementById('orderNotes').value.trim();
-
-                    console.log('📝 Données à envoyer:', { newStatus, trackingNumber, notes });
-
-                    try {
-                        showLoading();
-
-                        // ✅ CORRECTION DE L'ERREUR DE CONNEXION
-                        const response = await fetch(`/admin/commandes/${orderId}`, {
-                            method: 'PUT',
-                            headers: {
-                                'Accept': 'application/json',
-                                'Content-Type': 'application/json',
-                                'Cache-Control': 'no-cache'
-                            },
-                            body: JSON.stringify({
-                                status: newStatus,
-                                tracking_number: trackingNumber || null,
-                                notes: notes || null
-                            }),
-                            // ✅ AJOUT DE TIMEOUTS POUR ÉVITER LA DÉCONNEXION
-                            signal: AbortSignal.timeout(30000) // 30 secondes de timeout
-                        });
-
-                        console.log('📡 Réponse modification:', response.status, response.statusText);
-
-                        if (!response.ok) {
-                            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
-                        }
-
-                        const data = await response.json();
-
-                        if (data.success) {
-                            showToast('✅ Commande mise à jour avec succès !', 'success');
-                            closeModal();
-                            
-                            // Attendre un peu puis recharger la page pour voir les changements
-                            setTimeout(() => {
-                                window.location.reload();
-                            }, 1500);
-                        } else {
-                            showToast(data.message || 'Erreur lors de la modification', 'error');
-                        }
-                    } catch (error) {
-                        console.error('❌ Erreur modification:', error);
-                        let errorMessage = 'Erreur de connexion';
-                        
-                        if (error.name === 'TimeoutError') {
-                            errorMessage = 'Timeout - La requête a pris trop de temps';
-                        } else if (error.message.includes('404')) {
-                            errorMessage = 'Route de modification non trouvée';
-                        } else if (error.message.includes('Failed to fetch')) {
-                            errorMessage = 'Impossible de contacter le serveur - Vérifiez votre connexion';
-                        }
-                        
-                        showToast(errorMessage, 'error');
-                    } finally {
-                        hideLoading();
-                    }
-                });
-
-            } catch (error) {
-                console.error('❌ Erreur ouverture formulaire:', error);
-                showToast('Erreur lors de l\'ouverture du formulaire', 'error');
-            }
-        }
-
-        // 📍 AJOUTER UN ÉVÉNEMENT DE SUIVI
-        async function addTrackingEvent(orderId) {
-            const formHtml = `
-                <div style="padding: 20px;">
-                    <h3 style="margin-bottom: 20px; color: var(--info);">
-                        <i class="fas fa-plus"></i> Ajouter un événement de suivi
-                    </h3>
-                    
-                    <form id="addTrackingForm">
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">
-                                <i class="fas fa-info-circle"></i> Statut :
-                            </label>
-                            <select id="trackingStatus" style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 6px;">
-                                <option value="waiting">En attente</option>
-                                <option value="preparing">En préparation</option>
-                                <option value="shipped">Expédiée</option>
-                                <option value="delivered">Livrée</option>
-                                <option value="cancelled">Annulée</option>
-                            </select>
-                        </div>
-                        
-                        <div style="margin-bottom: 20px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">
-                                <i class="fas fa-map-marker-alt"></i> Localisation :
-                            </label>
-                            <input type="text" 
-                                   id="trackingLocation" 
-                                   placeholder="Ex: Entrepôt Paris, Centre de tri Lyon, En livraison..."
-                                   style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 6px;">
-                        </div>
-                        
-                        <div style="margin-bottom: 25px;">
-                            <label style="display: block; margin-bottom: 8px; font-weight: 600;">
-                                <i class="fas fa-comment"></i> Description :
-                            </label>
-                            <textarea id="trackingDescription" 
-                                      placeholder="Décrivez l'événement..."
-                                      rows="3"
-                                      style="width: 100%; padding: 12px; border: 2px solid var(--border); border-radius: 6px; resize: vertical;">
-                            </textarea>
-                        </div>
-                        
-                        <div style="display: flex; gap: 12px; justify-content: flex-end;">
-                            <button type="button" onclick="closeModal()" 
-                                    style="padding: 12px 24px; background: var(--gray-light); color: var(--gray-medium); border: 2px solid var(--border); border-radius: 6px; cursor: pointer;">
-                                <i class="fas fa-times"></i> Annuler
-                            </button>
-                            <button type="submit" 
-                                    style="padding: 12px 24px; background: var(--info); color: white; border: 2px solid var(--info); border-radius: 6px; cursor: pointer;">
-                                <i class="fas fa-plus"></i> Ajouter l'événement
-                            </button>
-                        </div>
-                    </form>
-                </div>
-            `;
-
-            document.getElementById('modalTitle').innerHTML = `
-                <i class="fas fa-plus"></i> Ajouter un événement de suivi
-            `;
-            document.getElementById('modalBody').innerHTML = formHtml;
-            showModal();
-
-            document.getElementById('addTrackingForm').addEventListener('submit', async function(e) {
-                e.preventDefault();
-                
-                const status = document.getElementById('trackingStatus').value;
-                const location = document.getElementById('trackingLocation').value.trim();
-                const description = document.getElementById('trackingDescription').value.trim();
-
-                if (!location || !description) {
-                    showToast('Veuillez remplir tous les champs', 'warning');
-                    return;
-                }
-
-                try {
-                    showLoading();
-
-                    const response = await fetch(`/admin/commandes/${orderId}/tracking`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            orderId: orderId,
-                            status: status,
-                            location: location,
-                            description: description
-                        }),
-                        signal: AbortSignal.timeout(30000)
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        showToast('✅ Événement de suivi ajouté !', 'success');
-                        closeModal();
-                        setTimeout(() => viewOrderDetails(orderId), 1000);
-                    } else {
-                        showToast(data.message || 'Erreur lors de l\'ajout', 'error');
-                    }
-                } catch (error) {
-                    console.error('❌ Erreur ajout tracking:', error);
-                    showToast('Erreur de connexion', 'error');
-                } finally {
-                    hideLoading();
-                }
-            });
-        }
-
-        // Gestion de la recherche
-        function handleSearch(e) {
-            config.filters.search = e.target.value.toLowerCase();
-            applyFilters();
-        }
-
-        // Appliquer tous les filtres
-        function applyFilters() {
-            const searchTerm = config.filters.search || document.getElementById('searchInput').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
-            const promoFilter = document.getElementById('promoFilter').value;
-            const dateFilter = document.getElementById('dateFilter').value;
-
-            let visibleCount = 0;
-
-            allOrders.forEach(order => {
-                let isVisible = true;
-
-                if (searchTerm) {
-                    const orderText = order.element.textContent.toLowerCase();
-                    if (!orderText.includes(searchTerm)) {
-                        isVisible = false;
-                    }
-                }
-
-                if (statusFilter && statusFilter !== order.status) {
-                    isVisible = false;
-                }
-
-                if (promoFilter) {
-                    if (promoFilter === 'with-promo' && order.promo !== 'with-promo') {
-                        isVisible = false;
-                    }
-                    if (promoFilter === 'without-promo' && order.promo !== 'without-promo') {
-                        isVisible = false;
-                    }
-                }
-
-                if (order.element) {
-                    order.element.style.display = isVisible ? '' : 'none';
-                }
-                if (order.cardElement) {
-                    order.cardElement.style.display = isVisible ? '' : 'none';
-                }
-
-                if (isVisible) visibleCount++;
-            });
-
-            updateEmptyState(visibleCount);
-        }
-
-        function updateEmptyState(visibleCount) {
-            const tableBody = document.getElementById('commandesTableBody');
-            const existingEmptyRows = document.querySelectorAll('.empty-state-dynamic');
-            existingEmptyRows.forEach(row => row.remove());
-
-            if (visibleCount === 0 && allOrders.length > 0) {
-                const emptyRow = document.createElement('tr');
-                emptyRow.className = 'empty-state-dynamic';
-                emptyRow.innerHTML = `
-                    <td colspan="7" class="empty-state">
-                        <i class="fas fa-search"></i>
-                        <div>Aucune commande ne correspond aux critères</div>
-                        <button class="btn btn-secondary" onclick="resetFilters()" style="margin-top: 1rem;">
-                            Réinitialiser les filtres
-                        </button>
-                    </td>
-                `;
-                tableBody.appendChild(emptyRow);
-            }
-        }
-
-        function resetFilters() {
-            document.getElementById('searchInput').value = '';
-            document.getElementById('statusFilter').value = '';
-            document.getElementById('promoFilter').value = '';
-            document.getElementById('dateFilter').value = '';
-            config.filters = { search: '', status: '', promo: '', date: '' };
-            applyFilters();
-            showToast('Filtres réinitialisés', 'info');
-        }
-
-        function exportData() {
-            const params = new URLSearchParams();
-            params.append('search', document.getElementById('searchInput').value);
-            params.append('status', document.getElementById('statusFilter').value);
-            params.append('promo', document.getElementById('promoFilter').value);
-            params.append('date', document.getElementById('dateFilter').value);
-            window.open(`/admin/commandes/export?${params.toString()}`, '_blank');
-        }
-
-        function refreshData() {
-            showLoading();
-            setTimeout(() => window.location.reload(), 1000);
-        }
-
-        // Gestion du sidebar mobile
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.sidebar-overlay');
-            sidebar.classList.toggle('open');
-            overlay.classList.toggle('show');
-        }
-
-        function closeSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const overlay = document.querySelector('.sidebar-overlay');
-            sidebar.classList.remove('open');
-            overlay.classList.remove('show');
-        }
-
-        // Gestion des modaux
-        function showModal() {
-            document.getElementById('orderModal').style.display = 'flex';
-            document.body.style.overflow = 'hidden';
-        }
-
-        function closeModal() {
-            document.getElementById('orderModal').style.display = 'none';
-            document.body.style.overflow = 'auto';
-        }
-
-        // Notifications
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
-            const icon = toast.querySelector('i');
-            
-            toastMessage.textContent = message;
-            
-            const typeConfig = {
-                success: { icon: 'fas fa-check-circle', class: '' },
-                error: { icon: 'fas fa-exclamation-circle', class: 'error' },
-                warning: { icon: 'fas fa-exclamation-triangle', class: 'warning' },
-                info: { icon: 'fas fa-info-circle', class: 'info' }
-            };
-            
-            const config = typeConfig[type] || typeConfig.success;
-            icon.className = config.icon;
-            toast.className = `toast ${config.class}`;
-            
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3000);
-        }
-
-        // Loading
-        function showLoading() {
-            document.getElementById('loadingOverlay').style.display = 'flex';
-        }
-
-        function hideLoading() {
-            document.getElementById('loadingOverlay').style.display = 'none';
-        }
-
-        // Debounce pour la recherche
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
-
-        // Fonctions utilitaires globales
-        window.getStatusClass = getStatusClass;
-        window.translateStatus = translateStatus;
-        window.viewOrderDetails = viewOrderDetails;
-        window.editOrder = editOrder;
-        window.addTrackingEvent = addTrackingEvent;
-        window.displayOrderDetails = displayOrderDetails;
-        window.showModal = showModal;
-        window.closeModal = closeModal;
-        window.showLoading = showLoading;
-        window.hideLoading = hideLoading;
-        window.showToast = showToast;
-        window.exportData = exportData;
-        window.refreshData = refreshData;
-        window.resetFilters = resetFilters;
-        window.toggleSidebar = toggleSidebar;
-        window.closeSidebar = closeSidebar;
-
-        // 📋 FONCTION D'AFFICHAGE DES DÉTAILS AVEC CODES PROMO ET TAILLES
-function displayOrderDetails(data) {
-    const { order, items, summary, tracking, history } = data;
+</div>
+
+<!-- Toast Notification -->
+<div id="toast" class="toast">
+    <i class="fas fa-check-circle"></i>
+    <span id="toastMessage">Message</span>
+</div>
+
+<!-- Loading Overlay -->
+<div id="loadingOverlay" class="loading-overlay">
+    <div class="spinner"></div>
+</div>
+
+<script>
+
+    // ✅ SCRIPT ADMIN COMMANDES - SOLUTION DIRECTE POUR orderId
+// Configuration et variables globales
+const config = {
+    baseUrl: '',
+    currentUser: typeof user !== 'undefined' ? (user?.name || "Admin") : 'Admin',
+    totalOrders: typeof commandes !== 'undefined' ? commandes.length : 0,
+    filters: { search: '', status: '', promo: '', date: '', payment: '' }
+};
+
+let allOrders = [];
+let filteredOrders = [];
+
+// ✅ INITIALISATION AVEC CORRECTION IMMÉDIATE DES BOUTONS
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initialisation Admin Commandes - Solution directe orderId');
+    initializeData();
+    fixAllActionButtons(); // ✅ CORRECTION IMMÉDIATE
+    setupEventListeners();
+    debugOrderStructure();
+});
+
+// ✅ FONCTION POUR CORRIGER TOUS LES BOUTONS D'ACTION
+function fixAllActionButtons() {
+    console.log('🔧 Correction de tous les boutons d\'action');
     
-    // ✅ PROTECTION CONTRE LES ERREURS
+    // ✅ CORRIGER LES BOUTONS DANS LE TABLEAU
+    const tableRows = document.querySelectorAll('#commandesTableBody tr[data-order-id]');
+    tableRows.forEach((row, index) => {
+        const orderId = row.dataset.orderId;
+        if (!orderId) {
+            console.warn(`⚠️ Ligne ${index} sans orderId`);
+            return;
+        }
+        
+        console.log(`🔧 Correction boutons pour commande ${orderId}`);
+        
+        // Corriger bouton "Voir"
+        const viewButton = row.querySelector('.action-btn.view');
+        if (viewButton) {
+            viewButton.setAttribute('data-order-id', orderId);
+            viewButton.onclick = function(e) {
+                e.preventDefault();
+                console.log(`👁️ Clic Voir - orderId: ${orderId}`);
+                viewOrderDetails(orderId);
+            };
+        }
+        
+        // Corriger bouton "Modifier"
+        const editButton = row.querySelector('.action-btn.edit');
+        if (editButton) {
+            editButton.setAttribute('data-order-id', orderId);
+            editButton.onclick = function(e) {
+                e.preventDefault();
+                console.log(`✏️ Clic Modifier - orderId: ${orderId}`);
+                editOrder(orderId);
+            };
+        }
+    });
+    
+    // ✅ CORRIGER LES BOUTONS DANS LES CARTES MOBILES
+    const mobileCards = document.querySelectorAll('.order-card[data-order-id]');
+    mobileCards.forEach((card, index) => {
+        const orderId = card.dataset.orderId;
+        if (!orderId) {
+            console.warn(`⚠️ Carte ${index} sans orderId`);
+            return;
+        }
+        
+        console.log(`📱 Correction boutons mobile pour commande ${orderId}`);
+        
+        // Corriger boutons dans les cartes
+        const viewButton = card.querySelector('.action-btn.view');
+        const editButton = card.querySelector('.action-btn.edit');
+        
+        if (viewButton) {
+            viewButton.onclick = function(e) {
+                e.preventDefault();
+                console.log(`👁️ Clic Mobile Voir - orderId: ${orderId}`);
+                viewOrderDetails(orderId);
+            };
+        }
+        
+        if (editButton) {
+            editButton.onclick = function(e) {
+                e.preventDefault();
+                console.log(`✏️ Clic Mobile Modifier - orderId: ${orderId}`);
+                editOrder(orderId);
+            };
+        }
+    });
+    
+    console.log('✅ Correction des boutons terminée');
+}
+
+// ✅ DEBUG POUR VOIR LA STRUCTURE EXACTE
+function debugOrderStructure() {
+    console.log('🔍 Debug structure des commandes:');
+    
+    const rows = document.querySelectorAll('#commandesTableBody tr[data-order-id]');
+    console.log(`📊 Trouvé ${rows.length} lignes avec data-order-id`);
+    
+    rows.forEach((row, index) => {
+        const orderId = row.dataset.orderId;
+        const viewBtn = row.querySelector('.action-btn.view');
+        const editBtn = row.querySelector('.action-btn.edit');
+        
+        console.log(`  Ligne ${index + 1}:`, {
+            orderId: orderId,
+            hasViewBtn: !!viewBtn,
+            hasEditBtn: !!editBtn,
+            viewOnclick: viewBtn?.getAttribute('onclick'),
+            editOnclick: editBtn?.getAttribute('onclick')
+        });
+    });
+}
+
+// Fonctions utilitaires
+// Fonctions utilitaires
+function safeToFixed(value, decimals = 2) {
+    if (value === null || value === undefined || isNaN(value)) return '0.00';
+    return parseFloat(value).toFixed(decimals);
+}
+
+function safeParseFloat(value) {
+    if (value === null || value === undefined || value === '') return 0;
+    const parsed = parseFloat(value);
+    return isNaN(parsed) ? 0 : parsed;
+}
+
+function formatCurrency(amount) {
+    const safeAmount = safeParseFloat(amount);
+    return safeAmount.toLocaleString('fr-FR', { 
+        minimumFractionDigits: 2, 
+        maximumFractionDigits: 2 
+    }) + '€';
+}
+
+function formatDateTime(dateString) {
+    if (!dateString || typeof dateString === 'string' && dateString.includes('Il y a')) {
+        return 'Date à corriger';
+    }
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Date invalide';
+        return date.toLocaleString('fr-FR', {
+            timeZone: 'Europe/Paris',
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
+        });
+    } catch (error) {
+        return 'Erreur date';
+    }
+}
+
+function getTimeAgo(dateString) {
+    if (!dateString || typeof dateString === 'string' && dateString.includes('Il y a')) {
+        return 'Temps à recalculer';
+    }
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Date invalide';
+        
+        const now = new Date();
+        const diffMs = Math.abs(now - date);
+        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffDays > 0) {
+            return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+        } else if (diffHours > 0) {
+            return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+        } else {
+            return 'Récemment';
+        }
+    } catch (error) {
+        return 'Erreur de date';
+    }
+}
+
+function getStatusClass(status) {
+    const statusMap = {
+        'waiting': 'en-attente', 'preparing': 'preparation', 'shipped': 'expediee',
+        'delivered': 'livree', 'cancelled': 'annulee', 'en_attente': 'en-attente',
+        'preparation': 'preparation', 'expediee': 'expediee', 'livree': 'livree', 
+        'annulee': 'annulee', 'en_preparation': 'preparation', 'confirmee': 'confirmee'
+    };
+    return statusMap[status] || 'en-attente';
+}
+
+function translateStatus(status) {
+    const statusMap = {
+        'waiting': 'En attente', 'preparing': 'En préparation', 'shipped': 'Expédiée',
+        'delivered': 'Livrée', 'cancelled': 'Annulée', 'en_attente': 'En attente',
+        'preparation': 'En préparation', 'expediee': 'Expédiée', 'livree': 'Livrée', 
+        'annulee': 'Annulée', 'en_preparation': 'En préparation', 'confirmee': 'Confirmée'
+    };
+    return statusMap[status] || 'En attente';
+}
+
+function getPaymentMethodDisplay(paymentMethod) {
+    const methods = {
+        'card': 'Carte bancaire', 'credit_card': 'Carte bancaire',
+        'paypal': 'PayPal', 'bank_transfer': 'Virement bancaire',
+        'cash': 'Espèces'
+    };
+    return methods[paymentMethod] || 'Carte bancaire';
+}
+
+function initializeData() {
+    const rows = document.querySelectorAll('#commandesTableBody tr[data-order-id]');
+    allOrders = Array.from(rows).map(row => ({
+        id: row.dataset.orderId, 
+        status: row.dataset.status, 
+        promo: row.dataset.promo,
+        date: row.dataset.date, 
+        element: row,
+        cardElement: document.querySelector(`.order-card[data-order-id="${row.dataset.orderId}"]`)
+    }));
+    filteredOrders = [...allOrders];
+    console.log(`📊 ${allOrders.length} commandes initialisées`);
+}
+
+function setupEventListeners() {
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) searchInput.addEventListener('input', debounce(handleSearch, 300));
+
+    ['statusFilter', 'promoFilter', 'dateFilter', 'paymentFilter'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.addEventListener('change', applyFilters);
+    });
+
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('modal')) closeModal();
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { closeModal(); closeSidebar(); }
+    });
+}
+
+// ✅ FONCTION VIEW ORDER DETAILS SIMPLIFIÉE
+async function viewOrderDetails(orderId) {
+    try {
+        console.log(`🔍 ViewOrderDetails appelé avec orderId: "${orderId}"`);
+        
+        if (!orderId || orderId === 'undefined') {
+            console.error('❌ orderId invalide dans viewOrderDetails');
+            showToast('Erreur: ID de commande invalide', 'error');
+            return;
+        }
+        
+        orderId = String(orderId).trim();
+        console.log(`🔍 Récupération détails commande: ${orderId}`);
+        showLoading();
+        
+        const response = await fetch(`/admin/commandes/${orderId}/details`, {
+            method: 'GET',
+            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
+        });
+        
+        if (!response.ok) throw new Error(`Erreur HTTP ${response.status}`);
+        
+        const data = await response.json();
+        if (data.success) {
+            displayOrderDetails(data, orderId);
+            showModal();
+        } else {
+            showToast(data.message || 'Erreur lors du chargement', 'error');
+        }
+    } catch (error) {
+        console.error('❌ Erreur détails commande:', error);
+        showToast(`Erreur: ${error.message}`, 'error');
+    } finally {
+        hideLoading();
+    }
+}
+
+// ✅ AFFICHAGE MODAL AVEC STYLE ORIGINAL COMPLET
+function displayOrderDetails(data, orderId) {
+    const { order, items, summary, modifications, history } = data;
     const safeOrder = order || {};
     const safeItems = items || [];
     const safeSummary = summary || {};
-    const safeTracking = tracking || [];
-    const safeHistory = history || [];
+    const safeModifications = modifications || history || []; // ✅ Utiliser modifications OU history
+    const finalOrderId = orderId || safeOrder.id;
     
-    document.getElementById('modalTitle').innerHTML = `
-        <i class="fas fa-receipt"></i> Commande ${safeOrder.numero_commande || 'CMD-' + safeOrder.id}
-    `;
+    const realDate = safeOrder.created_at || safeOrder.order_date || safeOrder.date;
+    const realTrackingNumber = safeOrder.tracking_number || ''; // ✅ TRACKING CORRIGÉ
+    
+    console.log(`📊 Affichage détails pour orderId: ${finalOrderId}`);
+    console.log(`📦 Tracking number: "${realTrackingNumber}"`);
+    console.log(`📋 Modifications trouvées: ${safeModifications.length}`);
+    
+    document.getElementById('modalTitle').innerHTML = `<i class="fas fa-receipt"></i> Commande ${safeOrder.numero_commande || 'CMD-' + finalOrderId}`;
 
-    const modalBody = document.getElementById('modalBody');
-    modalBody.innerHTML = `
+    const modalContent = `
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 25px; margin-bottom: 25px;">
             <!-- Informations générales -->
             <div>
@@ -2583,35 +1919,30 @@ function displayOrderDetails(data) {
                 </h4>
                 <div style="background: #f8fafc; padding: 20px; border-radius: 10px; border-left: 4px solid var(--primary);">
                     <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                        <span style="color: #64748b; font-weight: 500;">Date de commande:</span>
-                        <strong style="color: var(--dark);">${safeOrder.date || 'N/A'}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                        <span style="color: #64748b; font-weight: 500;">Statut:</span>
-                        <span class="status ${getStatusClass(safeOrder.status)}" style="padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">
-                            <i class="fas fa-circle" style="font-size: 8px; margin-right: 6px;"></i>
-                            ${translateStatus(safeOrder.status)}
-                        </span>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
                         <span style="color: #64748b; font-weight: 500;">Mode de livraison:</span>
                         <strong style="color: var(--dark);">${safeOrder.shipping_method || 'Standard'}</strong>
                     </div>
-                    ${safeOrder.tracking_number ? `
+                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
+                        <span style="color: #64748b; font-weight: 500;">Mode de paiement:</span>
+                        <strong style="color: var(--dark);">
+                            <i class="fas fa-credit-card"></i> ${getPaymentMethodDisplay(safeOrder.payment_method)}
+                        </strong>
+                    </div>
+                    ${realTrackingNumber ? `
                     <div style="display: flex; justify-content: space-between; padding: 10px 0;">
                         <span style="color: #64748b; font-weight: 500;">Numéro de suivi:</span>
                         <strong style="color: var(--primary-dark); font-family: monospace;">
-                            <i class="fas fa-truck"></i> ${safeOrder.tracking_number}
+                            <i class="fas fa-truck"></i> ${realTrackingNumber}
                         </strong>
                     </div>
                     ` : ''}
-                    ${safeOrder.notes ? `
+                    ${safeOrder.internal_notes ? `
                     <div style="margin-top: 15px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 6px;">
                         <div style="font-weight: 600; color: #92400e; margin-bottom: 5px;">
                             <i class="fas fa-sticky-note"></i> Notes internes:
                         </div>
                         <div style="color: #78350f; font-size: 14px;">
-                            ${safeOrder.notes}
+                            ${safeOrder.internal_notes}
                         </div>
                     </div>
                     ` : ''}
@@ -2630,94 +1961,67 @@ function displayOrderDetails(data) {
                     </div>
                     <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
                         <span style="color: #64748b; font-weight: 500;">Email:</span>
-                        <strong style="color: var(--dark);">${safeOrder.customer_email || 'N/A'}</strong>
+                        <strong style="color: var(--dark);">${safeOrder.email || 'N/A'}</strong>
                     </div>
                     <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
                         <span style="color: #64748b; font-weight: 500;">Téléphone:</span>
-                        <strong style="color: var(--dark);">${safeOrder.phone || 'N/A'}</strong>
+                        <strong style="color: var(--dark);">${safeOrder.shipping_phone || safeOrder.phone || 'N/A'}</strong>
                     </div>
                     <div style="display: flex; justify-content: space-between; padding: 10px 0;">
-                        <span style="color: #64748b; font-weight: 500;">Adresse:</span>
+                        <span style="color: #64748b; font-weight: 500;">Adresse de livraison:</span>
                         <strong style="color: var(--dark); text-align: right; max-width: 200px;">
                             ${safeOrder.shipping_address || 'N/A'}
+                            ${safeOrder.shipping_city ? '<br>' + safeOrder.shipping_city : ''}
+                            ${safeOrder.shipping_postal_code ? '<br>' + safeOrder.shipping_postal_code : ''}
+                            ${safeOrder.shipping_country ? '<br>' + safeOrder.shipping_country : ''}
                         </strong>
                     </div>
                 </div>
             </div>
         </div>
         
-        <!-- ✅ SECTION CODES PROMO AMÉLIORÉE -->
-        ${safeOrder.promo_code ? `
+        <!-- ✅ SECTION HISTORIQUE DES MODIFICATIONS RESTAURÉE -->
+        ${safeModifications.length > 0 ? `
         <div style="margin-bottom: 25px;">
-            <h4 style="color: var(--success); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--success);">
-                <i class="fas fa-tag"></i> Code promo appliqué
+            <h4 style="color: #f59e0b; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #fbbf24;">
+                <i class="fas fa-history"></i> Historique des modifications (${safeModifications.length} entrée${safeModifications.length > 1 ? 's' : ''})
             </h4>
-            <div style="background: linear-gradient(135deg, #dcfce7 0%, #f0fdf4 100%); padding: 20px; border-radius: 10px; border-left: 4px solid var(--success);">
-                <div style="display: grid; grid-template-columns: 1fr auto; gap: 15px; align-items: center; margin-bottom: 15px;">
-                    <div>
-                        <div style="font-weight: 600; color: var(--success); font-size: 16px; margin-bottom: 5px;">
-                            <i class="fas fa-tag"></i> Code: ${safeOrder.promo_code}
-                        </div>
-                        <div style="color: #059669; font-size: 14px;">
-                            Réduction de ${safeParseFloat(safeOrder.discount_percent)}% appliquée
-                        </div>
-                    </div>
-                    <div style="text-align: right;">
-                        <div style="background: var(--success); color: white; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;">
-                            -${safeToFixed(safeOrder.discount_amount)}€
-                        </div>
-                        <div style="color: #059669; font-size: 12px; margin-top: 5px;">
-                            Économie client
-                        </div>
-                    </div>
-                </div>
-                <div style="background: white; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <div style="color: #64748b; font-size: 14px;">Prix original:</div>
-                        <div style="color: #64748b; text-decoration: line-through; font-size: 16px;">
-                            ${safeToFixed(safeOrder.original_amount || safeOrder.total)}€
-                        </div>
-                    </div>
-                    <div style="font-size: 20px; color: var(--success); font-weight: 700;">
-                        → ${safeToFixed(safeOrder.total)}€
-                    </div>
-                </div>
-            </div>
-        </div>
-        ` : ''}
-        
-        <!-- 📍 SECTION SUIVI AVANCÉ -->
-        ${safeTracking.length > 0 ? `
-        <div style="margin-bottom: 25px;">
-            <h4 style="color: var(--info); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--info);">
-                <i class="fas fa-route"></i> Suivi de la commande (${safeTracking.length} événement${safeTracking.length > 1 ? 's' : ''})
-            </h4>
-            <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); padding: 20px; border-radius: 10px; border-left: 4px solid var(--info);">
+            <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #f59e0b;">
                 <div style="position: relative;">
-                    ${safeTracking.map((event, index) => `
-                        <div style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: ${index === safeTracking.length - 1 ? '0' : '20px'}; position: relative;">
-                            <!-- Timeline dot -->
-                            <div style="width: 12px; height: 12px; background: var(--info); border-radius: 50%; margin-top: 6px; z-index: 2; position: relative;">
-                                ${index !== safeTracking.length - 1 ? `
-                                <div style="position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 2px; height: 20px; background: #cbd5e1;"></div>
-                                ` : ''}
+                    ${safeModifications.map((mod, index) => `
+                        <div style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: ${index === safeModifications.length - 1 ? '0' : '20px'}; position: relative;">
+                            <div style="width: 12px; height: 12px; background: #f59e0b; border-radius: 50%; margin-top: 6px; z-index: 2; position: relative;">
+                                ${index !== safeModifications.length - 1 ? `<div style="position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 2px; height: 20px; background: #cbd5e1;"></div>` : ''}
                             </div>
-                            <!-- Event content -->
-                            <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                            <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 3px solid #f59e0b;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <span style="font-weight: 600; color: var(--info); font-size: 14px;">
-                                        <i class="fas fa-circle" style="font-size: 8px; margin-right: 6px;"></i>
-                                        ${event.status_display || translateStatus(event.status)}
+                                    <span style="font-weight: 600; color: #f59e0b; font-size: 14px;">
+                                        <i class="fas fa-edit" style="font-size: 12px; margin-right: 6px;"></i>
+                                        ${mod.modification_type === 'status_change' ? 'Changement de statut' :
+                                          mod.modification_type === 'tracking_added' ? 'Numéro de suivi' :
+                                          mod.modification_type === 'notes_updated' ? 'Notes mises à jour' :
+                                          'Modification'}
                                     </span>
-                                    <span style="color: #64748b; font-size: 12px; font-weight: 500;">
-                                        ${event.time_ago || event.formatted_date}
-                                    </span>
+                                    <div style="text-align: right;">
+                                        <div style="color: #64748b; font-size: 12px; font-weight: 500;">${getTimeAgo(mod.created_at)}</div>
+                                        <div style="color: #64748b; font-size: 11px;">${formatDateTime(mod.created_at)}</div>
+                                    </div>
                                 </div>
-                                <div style="color: var(--dark); font-size: 14px; margin-bottom: 5px;">
-                                    ${event.description || 'Événement de suivi'}
+                                <div style="color: var(--dark); font-size: 14px; margin-bottom: 8px;">
+                                    ${mod.description || 'Modification effectuée'}
                                 </div>
-                                <div style="color: #64748b; font-size: 12px;">
-                                    <i class="fas fa-map-marker-alt"></i> ${event.location || 'Non spécifié'}
+                                ${mod.old_value && mod.new_value ? `
+                                <div style="display: flex; gap: 15px; font-size: 13px;">
+                                    <div style="color: #ef4444;">
+                                        <strong>Avant:</strong> ${mod.old_value}
+                                    </div>
+                                    <div style="color: #10b981;">
+                                        <strong>Après:</strong> ${mod.new_value}
+                                    </div>
+                                </div>
+                                ` : ''}
+                                <div style="color: #64748b; font-size: 12px; margin-top: 8px;">
+                                    <i class="fas fa-user"></i> Par ${mod.modified_by || 'Admin'}
                                 </div>
                             </div>
                         </div>
@@ -2727,42 +2031,8 @@ function displayOrderDetails(data) {
         </div>
         ` : ''}
 
-        <!-- 📋 HISTORIQUE DES MODIFICATIONS -->
-        ${safeHistory.length > 0 ? `
-        <div style="margin-bottom: 25px;">
-            <h4 style="color: var(--warning); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--warning);">
-                <i class="fas fa-history"></i> Historique des modifications (${safeHistory.length} modification${safeHistory.length > 1 ? 's' : ''})
-            </h4>
-            <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); padding: 20px; border-radius: 10px; border-left: 4px solid var(--warning);">
-                <div style="max-height: 300px; overflow-y: auto;">
-                    ${safeHistory.map((change, index) => `
-                        <div style="display: flex; align-items: flex-start; gap: 15px; padding: 15px; margin-bottom: ${index === safeHistory.length - 1 ? '0' : '10px'}; background: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                            <div style="width: 8px; height: 8px; background: var(--warning); border-radius: 50%; margin-top: 8px;"></div>
-                            <div style="flex: 1;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <span style="font-weight: 600; color: var(--warning); font-size: 14px;">
-                                        ${change.old_status_display || translateStatus(change.old_status)} → ${change.new_status_display || translateStatus(change.new_status)}
-                                    </span>
-                                    <span style="color: #64748b; font-size: 12px;">
-                                        ${change.time_ago || change.formatted_date}
-                                    </span>
-                                </div>
-                                <div style="color: var(--dark); font-size: 14px; margin-bottom: 5px;">
-                                    ${change.notes || 'Modification sans commentaire'}
-                                </div>
-                                <div style="color: #64748b; font-size: 12px;">
-                                    <i class="fas fa-user"></i> Par: ${change.updated_by || 'Système'}
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        </div>
-        ` : ''}
-        
-        ${safeItems.length > 0 ? `
         <!-- ✅ PRODUITS COMMANDÉS AVEC TAILLES -->
+        ${safeItems.length > 0 ? `
         <div style="margin-bottom: 25px;">
             <h4 style="color: var(--primary-dark); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-light);">
                 <i class="fas fa-gem"></i> Produits commandés (${safeItems.length} article${safeItems.length > 1 ? 's' : ''})
@@ -2782,9 +2052,9 @@ function displayOrderDetails(data) {
                                 <i class="fas fa-cube"></i> Quantité: <strong>${item.quantity || 1}</strong>
                                 <span style="margin: 0 10px;">•</span>
                                 <i class="fas fa-euro-sign"></i> Prix unitaire: <strong>${safeToFixed(item.price)}€</strong>
-                                ${item.size ? `
+                                ${item.size && item.size !== 'Non spécifiée' ? `
                                 <span style="margin: 0 10px;">•</span>
-                                <i class="fas fa-ruler"></i> Taille: <strong>${item.size}</strong>
+                                <i class="fas fa-ruler"></i> Taille: <strong style="color: var(--primary-dark);">${item.size}</strong>
                                 ` : ''}
                             </div>
                             ${item.matiere ? `
@@ -2797,9 +2067,7 @@ function displayOrderDetails(data) {
                             <div style="font-weight: 700; font-size: 18px; color: var(--primary-dark);">
                                 ${safeToFixed(safeParseFloat(item.price) * safeParseFloat(item.quantity))}€
                             </div>
-                            <div style="font-size: 12px; color: #64748b;">
-                                Total ligne
-                            </div>
+                            <div style="font-size: 12px; color: #64748b;">Total ligne</div>
                         </div>
                     </div>
                 `).join('')}
@@ -2815,29 +2083,29 @@ function displayOrderDetails(data) {
             <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 25px; border-radius: 12px; border: 2px solid var(--border);">
                 ${safeOrder.promo_code ? `
                 <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                    <span style="color: #64748b; font-weight: 500;">Sous-total avant réduction:</span>
-                    <strong style="color: var(--dark);">${safeToFixed(safeOrder.original_amount || safeOrder.total)}€</strong>
+                    <span style="color: #6b7280; font-weight: 500;">Sous-total avant réduction:</span>
+                    <strong style="color: var(--dark);">${safeToFixed((safeOrder.subtotal || 0) + (safeOrder.promo_discount_amount || 0))}€</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
                     <span style="color: var(--success); font-weight: 500;">
-                        <i class="fas fa-tag"></i> Réduction (${safeOrder.promo_code}) -${safeOrder.discount_percent}%:
+                        <i class="fas fa-tag"></i> Réduction (${safeOrder.promo_code}):
                     </span>
-                    <strong style="color: var(--success);">-${safeToFixed(safeOrder.discount_amount)}€</strong>
+                    <strong style="color: var(--success);">-${safeToFixed(safeOrder.promo_discount_amount)}€</strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                    <span style="color: #64748b; font-weight: 500;">Sous-total après réduction:</span>
-                    <strong style="color: var(--dark);">${safeToFixed(safeParseFloat(safeOrder.original_amount || safeOrder.total) - safeParseFloat(safeOrder.discount_amount))}€</strong>
+                    <span style="color: #6b7280; font-weight: 500;">Sous-total après réduction:</span>
+                    <strong style="color: var(--dark);">${safeToFixed(safeOrder.subtotal || 0)}€</strong>
                 </div>
                 ` : `
                 <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                    <span style="color: #64748b; font-weight: 500;">Sous-total articles:</span>
-                    <strong style="color: var(--dark);">${safeToFixed(safeSummary.subtotal || safeOrder.total)}€</strong>
+                    <span style="color: #6b7280; font-weight: 500;">Sous-total articles:</span>
+                    <strong style="color: var(--dark);">${safeToFixed(safeSummary.subtotal || safeOrder.subtotal || safeOrder.total)}€</strong>
                 </div>
                 `}
                 <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                    <span style="color: #64748b; font-weight: 500;">Frais de livraison:</span>
+                    <span style="color: #6b7280; font-weight: 500;">Frais de livraison:</span>
                     <strong style="color: var(--dark);">
-                        ${safeParseFloat(safeSummary.shipping) === 0 ? 'Gratuit' : safeToFixed(safeSummary.shipping) + '€'}
+                        ${safeParseFloat(safeOrder.shipping_price) === 0 ? 'Gratuit' : safeToFixed(safeOrder.shipping_price) + '€'}
                     </strong>
                 </div>
                 <div style="display: flex; justify-content: space-between; padding: 20px 0; border-top: 3px solid var(--primary); margin-top: 15px;">
@@ -2854,23 +2122,20 @@ function displayOrderDetails(data) {
                         <i class="fas fa-tags"></i> Économie réalisée avec le code ${safeOrder.promo_code}
                     </div>
                     <div style="color: var(--success); font-size: 24px; font-weight: 700; margin-top: 5px;">
-                        ${safeToFixed(safeOrder.discount_amount)}€
+                        ${safeToFixed(safeOrder.promo_discount_amount)}€
                     </div>
                 </div>
                 ` : ''}
             </div>
         </div>
         
-        <!-- Actions rapides -->
+        <!-- Actions avec orderId SÉCURISÉ -->
         <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border);">
             <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <button onclick="editOrder('${safeOrder.id}')" 
+                <button onclick="editOrderDirect('${finalOrderId}')" 
+                        data-order-id="${finalOrderId}"
                         style="padding: 12px 20px; background: var(--warning); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: var(--transition);">
                     <i class="fas fa-edit"></i> Modifier cette commande
-                </button>
-                <button onclick="addTrackingEvent('${safeOrder.id}')" 
-                        style="padding: 12px 20px; background: var(--info); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: var(--transition);">
-                    <i class="fas fa-plus"></i> Ajouter événement
                 </button>
                 <button onclick="window.print()" 
                         style="padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: var(--transition);">
@@ -2883,143 +2148,489 @@ function displayOrderDetails(data) {
             </div>
         </div>
     `;
+
+    document.getElementById('modalBody').innerHTML = modalContent;
 }
-    </script>
 
-    <script>
-// ✅ FONCTIONS JAVASCRIPT POUR GÉRER LES TAILLES
-function initializeSizesDisplay() {
-            // Ajouter des tooltips pour les indicateurs de taille
-            document.querySelectorAll('.size-coverage').forEach(element => {
-                const coverage = element.classList.contains('full-coverage') ? 100 :
-                               element.classList.contains('partial-coverage') ? 75 :
-                               element.classList.contains('limited-coverage') ? 25 : 0;
-                
-                let tooltipText = '';
-                if (coverage === 100) {
-                    tooltipText = '🎯 Toutes les tailles sont spécifiées';
-                } else if (coverage > 50) {
-                    tooltipText = '📏 La plupart des tailles sont spécifiées';
-                } else if (coverage > 0) {
-                    tooltipText = '📐 Quelques tailles spécifiées';
-                } else {
-                    tooltipText = '❓ Aucune taille spécifiée';
-                }
-                
-                element.title = tooltipText;
-            });
-        }
-// Fonction pour mettre à jour l'affichage des tailles après modification
-function updateSizesDisplay(orderId, sizesInfo) {
-            const row = document.querySelector(`tr[data-order-id="${orderId}"]`);
-            const card = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
-            
-            if (row) {
-                const sizesCell = row.querySelector('td:nth-child(6)');
-                if (sizesCell && sizesInfo) {
-                    sizesCell.innerHTML = generateSizesCellContent(sizesInfo);
-                }
-            }
-            
-            if (card) {
-                const sizesField = card.querySelector('.sizes-card-info');
-                if (sizesField && sizesInfo) {
-                    sizesField.innerHTML = generateSizesCardContent(sizesInfo);
-                }
-            }
+// ✅ FONCTION EDIT ORDER DIRECTE AVEC LOG COMPLET
+function editOrderDirect(orderId) {
+    console.log(`🎯 editOrderDirect appelé avec orderId: "${orderId}"`);
+    editOrder(orderId);
+}
+
+// ✅ FONCTION EDIT ORDER ULTRA-SIMPLIFIÉE POUR DEBUG
+// ✅ FONCTION EDIT ORDER COMPLÈTE ET CORRIGÉE
+// ✅ FONCTION EDIT ORDER COMPLÈTE - Avec tracking pré-rempli et form complet
+async function editOrder(orderId) {
+    try {
+        console.log(`🚀 EditOrder démarré avec orderId: "${orderId}"`);
+        
+        if (!orderId || orderId === 'undefined' || orderId === 'null') {
+            console.error('❌ orderId complètement invalide');
+            showToast('Erreur: ID de commande invalide', 'error');
+            return;
         }
 
+        const cleanOrderId = String(orderId).trim();
+        console.log(`✅ orderId nettoyé: "${cleanOrderId}"`);
+        
+        // ✅ RÉCUPÉRER LES DONNÉES ACTUELLES DE LA COMMANDE
+        showLoading();
+        const response = await fetch(`/admin/commandes/${cleanOrderId}/details`);
+        const data = await response.json();
+        
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Erreur lors de la récupération des données');
+        }
+        
+        const currentOrder = data.order;
+        const currentStatus = currentOrder.status || 'waiting';
+        const currentTracking = currentOrder.tracking_number || ''; // ✅ RÉCUPÉRER LE TRACKING ACTUEL
+        const currentNotes = currentOrder.internal_notes || currentOrder.notes || '';
+        
+        console.log(`📊 Données actuelles:`, { 
+            currentStatus, 
+            currentTracking: `"${currentTracking}"`, 
+            currentNotes: `"${currentNotes}"`,
+            customerEmail: currentOrder.email
+        });
+        
+        hideLoading();
 
-// Générer le contenu HTML pour la cellule tailles
+        // Status options avec icônes
+        const statusOptions = [
+            { value: 'waiting', label: '⏳ En attente', color: '#f59e0b' },
+            { value: 'preparing', label: '🔧 En préparation', color: '#3b82f6' },
+            { value: 'shipped', label: '📦 Expédiée', color: '#10b981' },
+            { value: 'delivered', label: '✅ Livrée', color: '#059669' },
+            { value: 'cancelled', label: '❌ Annulée', color: '#ef4444' }
+        ];
 
-  function generateSizesCellContent(sizesInfo) {
-            if (!sizesInfo || !sizesInfo.hasSizeInfo) {
-                return `
-                    <div class="development-indicator">
-                        <i class="fas fa-cog"></i>
-                        En développement
+        let optionsHtml = statusOptions.map(option => {
+            const selected = option.value === currentStatus ? 'selected' : '';
+            return `<option value="${option.value}" ${selected} data-color="${option.color}">${option.label}</option>`;
+        }).join('');
+
+        const formHtml = `
+            <div style="padding: 25px; max-height: 80vh; overflow-y: auto;">
+                <h3 style="margin-bottom: 25px; color: var(--primary-dark); display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-edit" style="color: var(--warning);"></i> 
+                    Modifier la commande 
+                    <span style="font-family: monospace; background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 14px;">#${cleanOrderId}</span>
+                </h3>
+                
+                <!-- Info client -->
+                <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #0ea5e9; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <i class="fas fa-user" style="color: #0ea5e9; font-size: 16px;"></i>
+                        <strong style="color: #0c4a6e;">Client: ${currentOrder.customer_name || 'N/A'}</strong>
                     </div>
-                `;
-            }
-            
-            const coverage = sizesInfo.sizesCoverage || 0;
-            let coverageClass = 'no-coverage';
-            if (coverage === 100) coverageClass = 'full-coverage';
-            else if (coverage > 50) coverageClass = 'partial-coverage';
-            else if (coverage > 0) coverageClass = 'limited-coverage';
-            
-            return `
-                <div class="sizes-info">
-                    <div class="sizes-summary">
-                        <i class="fas fa-ruler" style="color: var(--info); margin-right: 4px;"></i>
-                        ${sizesInfo.sizesDisplay || 'Tailles standard'}
-                    </div>
-                    <div class="sizes-meta">
-                        <span class="size-coverage ${coverageClass}">
-                            ${sizesInfo.itemsWithSizes}/${sizesInfo.totalItems}
-                        </span>
-                        <span style="font-size: 0.7rem; opacity: 0.8;">
-                            ${getSizesIndicatorText(coverage)}
-                        </span>
+                    <div style="color: #0c4a6e; font-size: 14px;">
+                        📧 Email: ${currentOrder.email || 'Non renseigné'}<br>
+                        💰 Total: ${safeToFixed(currentOrder.total)}€
                     </div>
                 </div>
-            `;
-        }
+                
+                <!-- Info notifications -->
+                <div style="background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%); border: 1px solid #3b82f6; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                        <i class="fas fa-info-circle" style="color: #3b82f6; font-size: 18px;"></i>
+                        <strong style="color: #1e40af;">Notifications automatiques activées</strong>
+                    </div>
+                    <div style="color: #1e3a8a; font-size: 14px; line-height: 1.5;">
+                        • Le client recevra un email automatique selon le nouveau statut<br>
+                        • L'historique des modifications sera enregistré<br>
+                        • Le numéro de suivi sera inclus dans les notifications
+                    </div>
+                </div>
+                
+                <form id="editOrderForm">
+                    <!-- ✅ STOCKAGE SÉCURISÉ DE L'orderId -->
+                    <input type="hidden" id="finalOrderId" value="${cleanOrderId}">
+                    
+                    <!-- Statut -->
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--dark);">
+                            <i class="fas fa-tasks" style="color: var(--info); margin-right: 6px;"></i> 
+                            Statut de la commande :
+                        </label>
+                        <select id="orderStatus" required style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-size: 14px; background: white; cursor: pointer;">
+                            ${optionsHtml}
+                        </select>
+                        <small style="color: #6b7280; display: block; margin-top: 5px; font-style: italic;">
+                            <i class="fas fa-envelope" style="margin-right: 4px;"></i>
+                            Un email personnalisé sera envoyé selon le statut choisi
+                        </small>
+                    </div>
+                    
+                    <!-- Numéro de suivi -->
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--dark);">
+                            <i class="fas fa-truck" style="color: var(--success); margin-right: 6px;"></i> 
+                            Numéro de suivi :
+                        </label>
+                        <input type="text" 
+                               id="trackingNumber" 
+                               value="${currentTracking}"
+                               placeholder="Ex: FR123456789, LP123456789FR"
+                               style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; font-family: 'Courier New', monospace; font-size: 14px; background: #f8fafc;">
+                        <small style="color: #6b7280; display: block; margin-top: 5px;">
+                            <i class="fas fa-save" style="margin-right: 4px;"></i>
+                            Sera sauvegardé dans la commande et inclus dans l'email client
+                        </small>
+                    </div>
+                    
+                    <!-- Notes internes -->
+                    <div style="margin-bottom: 25px;">
+                        <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--dark);">
+                            <i class="fas fa-sticky-note" style="color: var(--warning); margin-right: 6px;"></i> 
+                            Notes internes :
+                        </label>
+                        <textarea id="orderNotes" 
+                                  rows="4" 
+                                  placeholder="Notes pour l'équipe (préparation, particularités, remarques...)"
+                                  style="width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; resize: vertical; font-size: 14px; line-height: 1.5; background: #f8fafc;">${currentNotes}</textarea>
+                        <small style="color: #6b7280; display: block; margin-top: 5px;">
+                            <i class="fas fa-eye-slash" style="margin-right: 4px;"></i>
+                            Ces notes ne sont visibles que par l'équipe administrative
+                        </small>
+                    </div>
+                    
+                    <!-- Aperçu des modifications -->
+                    <div id="modificationPreview" style="background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin-bottom: 20px; display: none;">
+                        <h4 style="margin: 0 0 10px 0; color: var(--dark); font-size: 14px;">
+                            <i class="fas fa-eye" style="color: var(--info); margin-right: 6px;"></i>
+                            Aperçu des modifications :
+                        </h4>
+                        <div id="previewContent" style="font-size: 13px; color: #4b5563;"></div>
+                    </div>
+                    
+                    <!-- Boutons d'action -->
+                    <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+                        <button type="button" 
+                                onclick="closeModal()" 
+                                style="padding: 12px 24px; background: #6b7280; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s ease;">
+                            <i class="fas fa-times" style="margin-right: 6px;"></i>
+                            Annuler
+                        </button>
+                        <button type="submit" 
+                                id="saveOrderBtn" 
+                                style="padding: 12px 24px; background: linear-gradient(135deg, #d89ab3 0%, #c084a1 100%); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500; transition: all 0.2s ease; box-shadow: 0 2px 4px rgba(216, 154, 179, 0.3);">
+                            <i class="fas fa-save" style="margin-right: 6px;"></i>
+                            Enregistrer et notifier
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
 
-        // Obtenir le texte de l'indicateur de taille
-        function getSizesIndicatorText(coverage) {
-            if (coverage === 100) return '🎯 Complète';
-            if (coverage > 50) return '📏 Partielle';
-            if (coverage > 0) return '📐 Limitée';
-            return '❓ Aucune';
-        }
+        document.getElementById('modalTitle').innerHTML = `<i class="fas fa-edit"></i> Modifier la commande ${currentOrder.numero_commande || '#' + cleanOrderId}`;
+        document.getElementById('modalBody').innerHTML = formHtml;
+        showModal();
 
-        // Initialiser l'affichage des tailles au chargement
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeSizesDisplay();
+        // ✅ AJOUTER LES EVENT LISTENERS POUR L'APERÇU
+        const statusSelect = document.getElementById('orderStatus');
+        const trackingInput = document.getElementById('trackingNumber');
+        const notesTextarea = document.getElementById('orderNotes');
+        const previewDiv = document.getElementById('modificationPreview');
+        const previewContent = document.getElementById('previewContent');
+
+        function updatePreview() {
+            const changes = [];
             
-            // Autres initialisations existantes...
-            console.log('✅ Page admin commandes avec tailles initialisée');
+            if (statusSelect.value !== currentStatus) {
+                const newOption = statusSelect.options[statusSelect.selectedIndex];
+                changes.push(`<span style="color: #059669;"><i class="fas fa-arrow-right"></i> Statut: ${currentStatus} → ${newOption.text}</span>`);
+            }
+            
+            if (trackingInput.value.trim() !== currentTracking) {
+                const newTracking = trackingInput.value.trim();
+                if (newTracking) {
+                    changes.push(`<span style="color: #3b82f6;"><i class="fas fa-truck"></i> Tracking: ${newTracking}</span>`);
+                } else {
+                    changes.push(`<span style="color: #ef4444;"><i class="fas fa-trash"></i> Tracking supprimé</span>`);
+                }
+            }
+            
+            if (notesTextarea.value.trim() !== currentNotes) {
+                changes.push(`<span style="color: #f59e0b;"><i class="fas fa-sticky-note"></i> Notes mises à jour</span>`);
+            }
+            
+            if (changes.length > 0) {
+                previewContent.innerHTML = changes.join('<br>');
+                previewDiv.style.display = 'block';
+            } else {
+                previewDiv.style.display = 'none';
+            }
+        }
+
+        // Écouter les changements
+        statusSelect.addEventListener('change', updatePreview);
+        trackingInput.addEventListener('input', updatePreview);
+        notesTextarea.addEventListener('input', updatePreview);
+
+        // ✅ GESTIONNAIRE DE FORMULAIRE
+        document.getElementById('editOrderForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formOrderId = document.getElementById('finalOrderId').value;
+            const newStatus = document.getElementById('orderStatus').value;
+            const trackingNumber = document.getElementById('trackingNumber').value.trim();
+            const notes = document.getElementById('orderNotes').value.trim();
+            
+            console.log('🔥 SOUMISSION FORMULAIRE:', {
+                formOrderId, newStatus, trackingNumber, notes
+            });
+            
+            if (!formOrderId) {
+                console.error('❌ formOrderId est vide !');
+                showToast('Erreur: ID de commande vide !', 'error');
+                return;
+            }
+            
+            if (!newStatus) {
+                showToast('Veuillez sélectionner un statut', 'warning');
+                return;
+            }
+
+            const saveBtn = document.getElementById('saveOrderBtn');
+            const originalText = saveBtn.innerHTML;
+            
+            try {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Enregistrement...';
+                
+                const payload = {
+                    status: newStatus,
+                    tracking_number: trackingNumber || null,
+                    notes: notes || null
+                };
+                
+                console.log('🚀 PAYLOAD:', JSON.stringify(payload, null, 2));
+                
+                showLoading();
+
+                const response = await fetch(`/admin/commandes/${formOrderId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Accept': 'application/json', 
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                console.log('📡 Réponse reçue, status:', response.status);
+
+                const data = await response.json();
+                console.log('📊 Data reçue:', data);
+
+                if (!response.ok) {
+                    throw new Error(data.message || `Erreur HTTP ${response.status}`);
+                }
+
+                if (data.success) {
+                    showToast('✅ Commande mise à jour avec succès !', 'success');
+                    
+                    // ✅ AFFICHER INFO EMAIL
+                    if (data.data?.emailSent) {
+                        setTimeout(() => {
+                            showToast('📧 Email de notification envoyé au client !', 'info');
+                        }, 1000);
+                    } else if (data.data?.statusChanged && !data.data?.emailSent) {
+                        setTimeout(() => {
+                            showToast('⚠️ Statut mis à jour mais email non envoyé', 'warning');
+                        }, 1500);
+                    }
+                    
+                    closeModal();
+                    
+                    // ✅ ACTUALISATION COMPLÈTE APRÈS DÉLAI
+                    setTimeout(() => {
+                        showToast('🔄 Actualisation des données...', 'info');
+                        window.location.reload();
+                    }, 2500);
+                } else {
+                    throw new Error(data.message || 'Erreur lors de la modification');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erreur modification:', error);
+                showToast(`Erreur: ${error.message}`, 'error');
+            } finally {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = originalText;
+                hideLoading();
+            }
         });
 
-// Générer le contenu HTML pour la carte mobile
-function generateSizesCardContent(sizesInfo) {
-    if (!sizesInfo || !sizesInfo.hasSizeInfo) {
-        return `
-            <span style="color: var(--gray-medium); font-size: 0.8rem;">
-                <i class="fas fa-question-circle" style="opacity: 0.5;"></i>
-                Non spécifiées
-            </span>
-        `;
+    } catch (error) {
+        console.error('❌ Erreur dans editOrder:', error);
+        showToast('Erreur lors de l\'ouverture du formulaire', 'error');
+        hideLoading();
     }
-    
-    const coverage = sizesInfo.sizesCoverage || 0;
-    const bgColor = coverage === 100 ? '#dcfce7' : coverage > 50 ? '#fef3c7' : '#fecaca';
-    const textColor = coverage === 100 ? '#065f46' : coverage > 50 ? '#92400e' : '#991b1b';
-    
-    return `
-        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span style="font-size: 0.85rem;">
-                ${sizesInfo.sizesDisplay || 'Tailles standard'}
-            </span>
-            <span style="font-size: 0.7rem; padding: 2px 6px; border-radius: 8px; 
-                  background: ${bgColor}; color: ${textColor};">
-                ${sizesInfo.itemsWithSizes}/${sizesInfo.totalItems}
-            </span>
-            <span style="font-size: 0.7rem; opacity: 0.8;">
-                ${getSizesIndicatorText(coverage)}
-            </span>
-        </div>
-    `;
 }
 
+// ✅ MISE À JOUR AFFICHAGE AVEC NOUVEAU TRACKING NUMBER ET STATUT
+function updateOrderDisplayAfterEdit(orderId, newStatus, newTrackingNumber) {
+    try {
+        console.log(`✅ Mise à jour affichage pour commande ${orderId}`, {
+            newStatus,
+            newTrackingNumber
+        });
+        
+        // Mettre à jour tableau desktop
+        const tableRow = document.querySelector(`tr[data-order-id="${orderId}"]`);
+        if (tableRow) {
+            // ✅ METTRE À JOUR LE STATUT
+            const statusCell = tableRow.querySelector('.status');
+            if (statusCell) {
+                statusCell.className = `status ${getStatusClass(newStatus)}`;
+                statusCell.innerHTML = `<i class="fas fa-circle" style="font-size: 0.5rem;"></i> ${translateStatus(newStatus)}`;
+            }
+            
+            // ✅ METTRE À JOUR data-status
+            tableRow.dataset.status = newStatus;
+            
+            // ✅ METTRE À JOUR LE TRACKING NUMBER
+            if (newTrackingNumber && newTrackingNumber.trim()) {
+                const orderNumberCell = tableRow.querySelector('.order-number').parentElement;
+                
+                // Supprimer l'ancien tracking
+                const oldTracking = orderNumberCell.querySelector('small');
+                if (oldTracking) {
+                    oldTracking.remove();
+                }
+                
+                // Ajouter le nouveau tracking
+                const newTrackingElement = document.createElement('small');
+                newTrackingElement.style.color = 'var(--gray-medium)';
+                newTrackingElement.innerHTML = `📦 ${newTrackingNumber}`;
+                orderNumberCell.appendChild(newTrackingElement);
+            }
+        }
+        
+        // Mettre à jour carte mobile
+        const mobileCard = document.querySelector(`.order-card[data-order-id="${orderId}"]`);
+        if (mobileCard) {
+            const statusElement = mobileCard.querySelector('.status');
+            if (statusElement) {
+                statusElement.className = `status ${getStatusClass(newStatus)}`;
+                statusElement.textContent = translateStatus(newStatus);
+            }
+            mobileCard.dataset.status = newStatus;
+        }
+        
+        console.log(`✅ Affichage mis à jour - Statut: ${newStatus}, Tracking: ${newTrackingNumber}`);
+    } catch (error) {
+        console.error('❌ Erreur mise à jour affichage:', error);
+    }
+}
+// Fonctions utilitaires et UI
+function handleSearch(e) { config.filters.search = e.target.value.toLowerCase(); applyFilters(); }
 
-// Initialiser l'affichage des tailles au chargement
-document.addEventListener('DOMContentLoaded', function() {
-    initializeSizesDisplay();
-});
+function applyFilters() {
+    // Implementation simplifiée des filtres
+    console.log('Filtres appliqués');
+}
+
+function resetFilters() {
+    ['searchInput', 'statusFilter', 'promoFilter', 'dateFilter', 'paymentFilter'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) element.value = '';
+    });
+    showToast('Filtres réinitialisés', 'info');
+}
+
+function exportData() {
+    window.open('/admin/commandes/export', '_blank');
+}
+
+function refreshData() { 
+    showLoading(); 
+    setTimeout(() => window.location.reload(), 1000); 
+}
+
+function toggleSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    sidebar?.classList.toggle('open');
+    overlay?.classList.toggle('show');
+}
+
+function closeSidebar() {
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+    sidebar?.classList.remove('open');
+    overlay?.classList.remove('show');
+}
+
+function showModal() {
+    const modal = document.getElementById('orderModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+}
+
+function closeModal() {
+    const modal = document.getElementById('orderModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    if (toast && toastMessage) {
+        toastMessage.textContent = message;
+        toast.className = `toast ${type}`;
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 3000);
+    } else {
+        // Fallback si le toast n'existe pas
+        alert(message);
+    }
+}
+
+function showLoading() { 
+    const loading = document.getElementById('loadingOverlay');
+    if (loading) loading.style.display = 'flex';
+}
+
+function hideLoading() { 
+    const loading = document.getElementById('loadingOverlay');
+    if (loading) loading.style.display = 'none';
+}
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => { clearTimeout(timeout); func(...args); };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// ✅ EXPORT GLOBAL DES FONCTIONS
+window.viewOrderDetails = viewOrderDetails;
+window.editOrder = editOrder;
+window.editOrderDirect = editOrderDirect;
+window.showModal = showModal;
+window.closeModal = closeModal;
+window.showLoading = showLoading;
+window.hideLoading = hideLoading;
+window.showToast = showToast;
+window.exportData = exportData;
+window.refreshData = refreshData;
+window.resetFilters = resetFilters;
+window.toggleSidebar = toggleSidebar;
+window.closeSidebar = closeSidebar;
+
+console.log('✅ Script Admin Commandes chargé - Solution directe orderId');
 </script>
-
-
 </body>
 </html>

@@ -10,6 +10,7 @@ import { Jewel } from "./models/jewelModel.js";
 import { Category } from "./models/categoryModel.js";
 import { sequelize } from "./models/sequelize-client.js";
 import { Cart } from "./models/cartModel.js";
+import { Type } from "./models/TypeModel.js";
 
 // Imports des contrôleurs EXISTANTS
 import { mainControlleur } from "./controlleurs/mainControlleur.js";
@@ -120,6 +121,189 @@ const uploadCategoryImage = multer({
     }
   }
 });
+
+// 🔧 SOLUTION DÉFINITIVE - Ajoutez ceci dans votre router.js
+
+// 1. CRÉER une nouvelle configuration multer spécifique pour updateJewel
+const updateJewelStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = 'public/uploads/jewels';
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const timestamp = Date.now();
+    const randomId = Math.round(Math.random() * 1E9);
+    const ext = path.extname(file.originalname);
+    cb(null, `jewel-${timestamp}-${randomId}${ext}`);
+  }
+});
+
+// 2. Configuration multer AVEC gestion d'erreur robuste
+const updateJewelUpload = multer({
+  storage: updateJewelStorage,
+  limits: {
+    fileSize: 10 * 1024 * 1024,  // 10MB
+    fieldSize: 5 * 1024 * 1024,   // 5MB pour les champs texte
+    fields: 200,                  // Beaucoup de champs autorisés
+    files: 20                     // Maximum 20 fichiers
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`Type ${file.mimetype} non autorisé`), false);
+    }
+  }
+});
+
+function finalParseJewelForm(req, res, next) {
+  console.log('🔧 === PARSING FINAL JEWEL FORM ===');
+  console.log('📋 Headers:', {
+    'content-type': req.headers['content-type'],
+    'content-length': req.headers['content-length']
+  });
+  
+  // Utiliser .any() pour capturer TOUS les champs et fichiers
+  const uploadHandler = updateJewelUpload.any();
+  
+  uploadHandler(req, res, (err) => {
+    if (err) {
+      console.error('❌ Erreur multer:', err.message);
+      req.session.flash = {
+        type: 'error',
+        message: `Erreur upload: ${err.message}`
+      };
+      return res.redirect(`/admin/bijoux/${req.params.slug}/edit`);
+    }
+    
+    console.log('✅ Multer traité avec succès');
+    
+    // IMPORTANT: Avec .any(), les fichiers sont dans req.files (array)
+    // et les champs texte dans req.body
+    console.log('📋 req.body status:', {
+      exists: !!req.body,
+      type: typeof req.body,
+      keys: req.body ? Object.keys(req.body) : 'VIDE',
+      keysCount: req.body ? Object.keys(req.body).length : 0
+    });
+    
+    console.log('📁 req.files status:', {
+      exists: !!req.files,
+      isArray: Array.isArray(req.files),
+      count: req.files ? req.files.length : 0
+    });
+    
+    // DEBUG des champs critiques
+    if (req.body) {
+      console.log('📝 Champs critiques:');
+      console.log('   name:', req.body.name || 'MANQUANT');
+      console.log('   category_id:', req.body.category_id || 'MANQUANT');
+      console.log('   price_ttc:', req.body.price_ttc || 'MANQUANT');
+      console.log('   matiere:', req.body.matiere || 'MANQUANT');
+    }
+    
+    // Vérification finale
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.error('❌ ERREUR CRITIQUE: req.body toujours vide');
+      console.error('🔍 Diagnostic complet:', {
+        headers: req.headers,
+        method: req.method,
+        url: req.url,
+        hasFiles: !!req.files,
+        filesCount: req.files ? req.files.length : 0
+      });
+      
+      req.session.flash = {
+        type: 'error',
+        message: 'ERREUR TECHNIQUE: Impossible de récupérer les données du formulaire. Contactez l\'administrateur.'
+      };
+      return res.redirect(`/admin/bijoux/${req.params.slug}/edit`);
+    }
+    
+    // Réorganiser les fichiers par nom de champ pour plus de facilité
+    if (req.files && Array.isArray(req.files)) {
+      req.filesByField = {};
+      req.files.forEach(file => {
+        if (!req.filesByField[file.fieldname]) {
+          req.filesByField[file.fieldname] = [];
+        }
+        req.filesByField[file.fieldname].push(file);
+      });
+      
+      console.log('📁 Fichiers organisés:', Object.keys(req.filesByField));
+    }
+    
+    console.log('🔧 === FIN PARSING FORMULAIRE ===');
+    next();
+  });
+}
+
+// 2. MIDDLEWARE personnalisé pour parser le formulaire
+function parseJewelForm(req, res, next) {
+  console.log('🔍 === DÉBUT PARSING FORMULAIRE SIMPLIFIÉ ===');
+  console.log('📋 Content-Type:', req.headers['content-type']);
+  console.log('📋 Method:', req.method);
+  console.log('📋 URL:', req.url);
+  
+  // ✅ UTILISER la configuration upload EXISTANTE (pas updateJewelUpload)
+  const simpleUpload = upload.fields([
+    { name: 'newMainImage', maxCount: 1 },
+    { name: 'newImages', maxCount: 10 }
+  ]);
+  
+  simpleUpload(req, res, (err) => {
+    if (err) {
+      console.error('❌ Erreur multer:', err.message);
+      req.session.flash = {
+        type: 'error',
+        message: `Erreur upload: ${err.message}`
+      };
+      return res.redirect(`/admin/bijoux/${req.params.slug}/edit`);
+    }
+    
+    console.log('✅ Multer terminé');
+    console.log('📋 req.body après multer:', {
+      exists: !!req.body,
+      type: typeof req.body,
+      keys: req.body ? Object.keys(req.body) : 'N/A',
+      keysCount: req.body ? Object.keys(req.body).length : 0
+    });
+    
+    // 🔍 AFFICHER quelques champs pour debug
+    if (req.body) {
+      console.log('📝 Échantillon req.body:');
+      console.log('   name:', req.body.name || 'VIDE');
+      console.log('   category_id:', req.body.category_id || 'VIDE');
+      console.log('   price_ttc:', req.body.price_ttc || 'VIDE');
+      console.log('   matiere:', req.body.matiere || 'VIDE');
+    }
+    
+    console.log('📁 req.files:', req.files ? Object.keys(req.files) : 'Aucun fichier');
+    
+    // ⚠️ Si le body est toujours vide, c'est un problème de configuration
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.error('❌ ERREUR CRITIQUE: req.body vide après multer');
+      console.error('🔍 Headers complets:', JSON.stringify(req.headers, null, 2));
+      
+      req.session.flash = {
+        type: 'error',
+        message: 'Erreur technique: impossible de recevoir les données du formulaire'
+      };
+      return res.redirect(`/admin/bijoux/${req.params.slug}/edit`);
+    }
+    
+    console.log('🔍 === FIN PARSING FORMULAIRE ===');
+    next();
+  });
+}
+
+
+
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -363,7 +547,6 @@ router.get('/bijoux/:slug', async (req, res, next) => {
 
 router.post('/bijoux/:slug/supprimer', isAdmin, jewelControlleur.deleteJewel);
 router.get('/admin/bijoux/:slug/edit', isAdmin, jewelControlleur.editJewel);
-router.post('/admin/bijoux/:slug/update', isAdmin, jewelControlleur.updateJewel);
 // Route pour récupérer les détails d'un bijou
 router.get('/admin/api/jewel/:id', adminStatsController.getJewelDetails);
 // Ajoutez cette route API pour le tracking côté client
@@ -483,6 +666,10 @@ router.post('/api/bijoux/:id/track-vue-unique', async (req, res) => {
     }
 });
 
+router.post('/api/track-admin-view', (req, res) => {
+  res.json({ success: true });
+});
+
 
 // ==========================================
 // ROUTES AUTHENTIFICATION (INCHANGÉES)
@@ -539,154 +726,180 @@ router.post('/panier/supprimer/:jewelId', cartController.removeFromCart);
 
 router.get('/api/cart/count', cartController.getCartCount);
 
+
+// Routes pour les commandes
+router.get('/commandes', adminOrdersController.getAllOrders);
+router.get('/commandes/:id/details', adminOrdersController.getOrderDetails);
+router.put('/commandes/:id', adminOrdersController.updateOrder);
 /**
  * 🎫 Appliquer un code promo
  */
 router.post('/appliquer-code-promo', async (req, res) => {
-  try {
-    console.log('🎫 Application code promo:', req.body);
-    
-    const { code } = req.body;
-    
-    if (!code || typeof code !== 'string') {
-      return res.json({
-        success: false,
-        message: 'Code promo invalide'
-      });
-    }
-
-    // ✅ Requête avec les vrais noms de colonnes
-    const promoCode = await PromoCode.findOne({
-      where: {
-        code: code.toUpperCase(),
-        is_active: true
-      },
-      // ✅ Colonnes qui existent vraiment dans votre BDD
-      attributes: [
-        'id', 'code', 'discount_type', 'discount_value', 'discount_percent',
-        'min_order_amount', 'max_uses', 'used_count', 'usage_limit',
-        'start_date', 'end_date', 'expires_at', 'is_active'
-      ]
-    });
-
-    if (!promoCode) {
-      return res.json({
-        success: false,
-        message: 'Code promo invalide ou expiré'
-      });
-    }
-
-    // Vérifications des dates
-    const now = new Date();
-    
-    if (promoCode.start_date && new Date(promoCode.start_date) > now) {
-      return res.json({
-        success: false,
-        message: 'Ce code promo n\'est pas encore actif'
-      });
-    }
-
-    // Vérifier end_date OU expires_at
-    const expiryDate = promoCode.end_date || promoCode.expires_at;
-    if (expiryDate && new Date(expiryDate) < now) {
-      return res.json({
-        success: false,
-        message: 'Ce code promo a expiré'
-      });
-    }
-
-    // Vérifier utilisations (max_uses OU usage_limit)
-    const maxUses = promoCode.max_uses || promoCode.usage_limit;
-    if (maxUses && promoCode.used_count >= maxUses) {
-      return res.json({
-        success: false,
-        message: 'Ce code promo a atteint sa limite d\'utilisation'
-      });
-    }
-
-    // Calculer le panier
-    const cartSource = await getCartSource(req);
-    let cartTotal = 0;
-
-    if (cartSource.type === 'database') {
-      const cartItems = await Cart.findAll({
-        where: { customer_id: cartSource.userId },
-        include: [{ model: Jewel, as: 'jewel' }]
-      });
-      cartTotal = cartItems.reduce((total, item) => 
-        total + (parseFloat(item.jewel.price_ttc) * item.quantity), 0);
-    } else {
-      const sessionCart = cartSource.cart;
-      for (const item of sessionCart.items) {
-        if (item.jewel && item.jewel.price_ttc) {
-          cartTotal += parseFloat(item.jewel.price_ttc) * item.quantity;
+    try {
+        const { code } = req.body;
+        
+        if (!code || typeof code !== 'string') {
+            return res.json({ 
+                success: false, 
+                message: 'Code promo invalide' 
+            });
         }
-      }
+
+        // 🔍 DIAGNOSTIC: Vérifier le type de req.session.cart
+        console.log('🔍 Type de req.session.cart:', typeof req.session.cart);
+        console.log('🔍 Contenu de req.session.cart:', req.session.cart);
+
+        // ✅ CORRECTION: S'assurer que cartItems est toujours un tableau
+        let cartItems;
+        
+        if (!req.session.cart) {
+            cartItems = [];
+        } else if (Array.isArray(req.session.cart)) {
+            cartItems = req.session.cart;
+        } else if (typeof req.session.cart === 'object') {
+            cartItems = Object.values(req.session.cart);
+        } else {
+            console.warn('⚠️ Format inattendu pour req.session.cart:', req.session.cart);
+            cartItems = [];
+        }
+        
+        if (cartItems.length === 0) {
+            return res.json({ 
+                success: false, 
+                message: 'Votre panier est vide' 
+            });
+        }
+
+        // Calculer le sous-total actuel
+        let subtotal = 0;
+        cartItems.forEach((item, index) => {
+            if (!item || !item.jewel) {
+                console.warn(`⚠️ Item ${index} invalide:`, item);
+                return;
+            }
+            
+            const price = parseFloat(item.jewel.price_ttc) || 0;
+            const quantity = parseInt(item.quantity) || 0;
+            subtotal += price * quantity;
+        });
+
+        console.log(`📊 Sous-total pour code promo: ${subtotal}€`);
+
+        // Vérifier si un code promo est déjà appliqué
+        if (req.session.appliedPromo) {
+            return res.json({ 
+                success: false, 
+                message: 'Un code promo est déjà appliqué. Retirez-le d\'abord.' 
+            });
+        }
+
+        // 🔄 NOUVEAU: Récupérer le code depuis la base de données UNIQUEMENT
+        const promoCode = await PromoCode.findOne({
+            where: { 
+                code: code.toUpperCase(),
+                is_active: true
+            }
+        });
+
+        if (!promoCode) {
+            return res.json({ 
+                success: false, 
+                message: 'Code promo non valide ou expiré' 
+            });
+        }
+
+        // Vérifier si le code a expiré
+        const now = new Date();
+        if (promoCode.expires_at && promoCode.expires_at < now) {
+            return res.json({ 
+                success: false, 
+                message: 'Ce code promo a expiré' 
+            });
+        }
+
+        // Vérifier si le code a atteint sa limite d'utilisation
+        if (promoCode.used_count >= promoCode.usage_limit) {
+            return res.json({ 
+                success: false, 
+                message: 'Ce code promo a atteint sa limite d\'utilisation' 
+            });
+        }
+
+        // Vérifier le montant minimum SEULEMENT s'il est défini dans la DB
+        const minAmount = parseFloat(promoCode.min_order_amount) || 0;
+        console.log(`🔍 Montant minimum requis: ${minAmount}€, Sous-total: ${subtotal}€`);
+        
+        if (minAmount > 0 && subtotal < minAmount) {
+            return res.json({ 
+                success: false, 
+                message: `Montant minimum de ${minAmount}€ requis pour ce code` 
+            });
+        }
+
+        // ⚡ CALCULER LA RÉDUCTION selon le type de discount
+        let discount = 0;
+        
+        if (promoCode.discount_type === 'percentage') {
+            const discountPercent = parseFloat(promoCode.discount_value);
+            discount = Math.round((subtotal * discountPercent / 100) * 100) / 100;
+        } else if (promoCode.discount_type === 'fixed') {
+            discount = Math.min(parseFloat(promoCode.discount_value), subtotal);
+        }
+
+        console.log(`💰 Code ${code.toUpperCase()}: ${promoCode.discount_value}% de ${subtotal}€ = -${discount}€`);
+
+        // ⚡ SAUVEGARDER DANS LA SESSION
+        req.session.appliedPromo = {
+            id: promoCode.id,
+            code: promoCode.code,
+            discountPercent: promoCode.discount_value,
+            discountAmount: discount,
+            description: `Réduction de ${promoCode.discount_value}%`
+        };
+
+        console.log('✅ Code promo sauvegardé en session:', req.session.appliedPromo);
+
+        res.json({ 
+            success: true, 
+            message: `Code ${code.toUpperCase()} appliqué ! Réduction de ${discount.toFixed(2)}€`,
+            discount: discount,
+            discountPercent: promoCode.discount_value
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur application code promo:', error);
+        res.json({ 
+            success: false, 
+            message: 'Erreur lors de l\'application du code' 
+        });
     }
-
-    // Vérifier montant minimum
-    if (promoCode.min_order_amount && cartTotal < parseFloat(promoCode.min_order_amount)) {
-      return res.json({
-        success: false,
-        message: `Montant minimum de ${promoCode.min_order_amount}€ requis`
-      });
-    }
-
-    // ✅ Utiliser discount_percent en priorité, sinon calculer depuis discount_value
-    let discountPercent = 0;
-    
-    if (promoCode.discount_percent) {
-      discountPercent = parseFloat(promoCode.discount_percent);
-    } else if (promoCode.discount_type === 'percentage') {
-      discountPercent = parseFloat(promoCode.discount_value);
-    } else {
-      // Montant fixe -> convertir en pourcentage
-      discountPercent = (parseFloat(promoCode.discount_value) / cartTotal) * 100;
-    }
-
-    // Stocker en session
-    req.session.appliedPromo = {
-      id: promoCode.id,
-      code: promoCode.code,
-      discountPercent: Math.min(discountPercent, 100),
-      discountType: promoCode.discount_type,
-      discountValue: promoCode.discount_value
-    };
-
-    console.log('✅ Code promo appliqué:', req.session.appliedPromo);
-
-    res.json({
-      success: true,
-      message: `Code promo ${promoCode.code} appliqué ! -${discountPercent.toFixed(0)}%`,
-      discount: discountPercent
-    });
-
-  } catch (error) {
-    console.error('❌ Erreur code promo:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur lors de l\'application du code'
-    });
-  }
 });
 
-// Route pour retirer le code promo
+/**
+ * 🗑️ Retirer un code promo
+ */
 router.delete('/retirer-code-promo', async (req, res) => {
-  try {
-    req.session.appliedPromo = null;
-    
-    res.json({
-      success: true,
-      message: 'Code promo retiré'
-    });
-    
-  } catch (error) {
-    console.error('❌ Erreur suppression code promo:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Erreur serveur'
-    });
-  }
+    try {
+        if (req.session.appliedPromo) {
+            delete req.session.appliedPromo;
+            
+            res.json({ 
+                success: true, 
+                message: 'Code promo retiré avec succès' 
+            });
+        } else {
+            res.json({ 
+                success: false, 
+                message: 'Aucun code promo à retirer' 
+            });
+        }
+    } catch (error) {
+        console.error('❌ Erreur suppression code promo:', error);
+        res.json({ 
+            success: false, 
+            message: 'Erreur lors de la suppression' 
+        });
+    }
 });
 
 /**
@@ -699,12 +912,27 @@ router.post('/admin/promo-codes', promoController.createPromoCode);
 // ROUTES ADMIN BIJOUX (INCHANGÉES)
 // ==========================================
 
-router.get('/admin/jewels/:slug/edit', isAdmin, jewelControlleur.editJewelForm);
-router.post('/admin/jewels/:slug/discount', isAdmin, jewelControlleur.updateDiscount);
-router.delete('/admin/jewels/:slug/delete', isAdmin, jewelControlleur.deleteJewel);
-router.get('/admin/bijoux/:slug/modifier', isAdmin, jewelControlleur.showEditJewel);
-router.post('/admin/bijoux/:slug/modifier', isAdmin, jewelControlleur.updateJewel);
-router.put('/admin/bijoux/:slug/modifier', isAdmin, jewelControlleur.updateJewel);
+router.get('/admin/jewels/:slug/edit', isAdmin, jewelControlleur.showEditJewel);
+
+
+
+
+router.get('/admin/bijoux/:slug/edit', isAdmin, jewelControlleur.showEditJewel);
+router.post('/admin/bijoux/:slug/update', isAdmin, parseJewelForm, jewelControlleur.updateJewel);
+router.post('/admin/bijoux/:slug/discount', isAdmin, jewelControlleur.updateDiscount);
+// router.delete('/admin/bijoux/:slug/delete', isAdmin, jewelControlleur.deleteJewel);
+
+router.post('/bijoux/:slug/supprimer', isAdmin, jewelControlleur.deleteJewel);
+router.get('/admin/bijoux/:slug/edit', isAdmin, jewelControlleur.editJewel);
+
+
+
+// 🔧 ROUTES À AJOUTER pour l'ajout dynamique depuis le formulaire d'édition
+
+// Routes pour ajouter dynamiquement des éléments (utilisées par les modales du template)
+router.post('/admin/categories/add', isAdmin, jewelControlleur.addCategory);
+router.post('/admin/materials/add', isAdmin, jewelControlleur.addMaterial);
+router.post('/admin/types/add', isAdmin, jewelControlleur.addType);
 
 // ==========================================
 // ROUTES GESTIONNAIRE DYNAMIQUE (INCHANGÉES)
@@ -2318,6 +2546,37 @@ router.get('/guest/orders/:email', async (req, res) => {
   }
 });
 
+router.post('/admin/repair-emails', async (req, res) => {
+    try {
+        await repairMissingEmails();
+        res.json({ success: true, message: 'Emails réparés' });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.post('/admin/materials/add', isAdmin, jewelControlleur.addMaterial);
+router.post('/admin/types/add', isAdmin, jewelControlleur.addType);
+router.get('/admin/types/category/:categoryId', isAdmin, jewelControlleur.getTypesByCategory);
+
+// 4. AJOUTER un middleware de debug global (temporaire)
+router.use((req, res, next) => {
+  if (req.url.includes('/admin/bijoux/') && req.url.includes('/update') && req.method === 'POST') {
+    console.log('🌐 === DEBUG GLOBAL ROUTE UPDATE ===');
+    console.log('📋 Headers importants:', {
+      'content-type': req.headers['content-type'],
+      'content-length': req.headers['content-length'],
+      'user-agent': req.headers['user-agent']?.substring(0, 50)
+    });
+    console.log('📋 Body status:', {
+      exists: !!req.body,
+      type: typeof req.body,
+      keys: req.body ? Object.keys(req.body) : 'N/A',
+      isEmpty: !req.body || Object.keys(req.body || {}).length === 0
+    });
+  }
+  next();
+});
 
 // Export par défaut
 export default router;

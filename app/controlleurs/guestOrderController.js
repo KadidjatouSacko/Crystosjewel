@@ -273,6 +273,7 @@ export const guestOrderController = {
         payment_method: paymentMethod,
         payment_status: 'pending',
         
+        
         // Statut
         status: 'confirmed',
         is_guest_order: isGuest,

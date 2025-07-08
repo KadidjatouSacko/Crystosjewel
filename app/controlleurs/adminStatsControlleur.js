@@ -1605,76 +1605,92 @@ async ShowPageOrdersAdmin(req, res) {
 // Nouvelle fonction pour récupérer les détails d'une commande (pour l'AJAX)
 async getOrderDetails(req, res) {
     try {
-        const orderId = req.params.id;
-        
-        const commande = await Order.findByPk(orderId, {
-            include: [
-                {
-                    model: Customer,
-                    as: 'customer',
-                    attributes: ['id', 'first_name', 'last_name', 'email', 'phone', 'address']
-                },
-                {
-                    model: OrderItem,
-                    as: 'items',
-                    include: [
-                        {
-                            model: Jewel,
-                            as: 'jewel',
-                            attributes: ['id', 'name', 'price_ttc', 'image', 'description']
-                        }
-                    ]
-                },
-                {
-                    model: Payment,
-                    as: 'payment',
-                    attributes: ['id', 'amount', 'method', 'status', 'transaction_id']
-                }
-            ]
-        });
+        const { id } = req.params;
+        console.log(`🔍 Récupération détails commande #${id} avec tailles et paiement`);
 
-        if (!commande) {
-            return res.status(404).json({ error: 'Commande non trouvée' });
+        // Détails de la commande AVEC payment_method
+        const orderQuery = `
+            SELECT 
+                o.*,
+                COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu') as customer_name,
+                COALESCE(o.customer_email, c.email, 'N/A') as customer_email,
+                c.phone,
+                COALESCE(o.shipping_address, c.address) as shipping_address,
+                COALESCE(o.status, o.status_suivi, 'waiting') as current_status,
+                COALESCE(o.payment_method, 'card') as payment_method,  -- ✅ AJOUT
+                COALESCE(o.payment_status, 'pending') as payment_status  -- ✅ AJOUT
+            FROM orders o
+            LEFT JOIN customer c ON o.customer_id = c.id
+            WHERE o.id = $1
+        `;
+
+        const [orderResult] = await sequelize.query(orderQuery, { bind: [id] });
+        
+        if (orderResult.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Commande non trouvée'
+            });
         }
 
-        // Formatage des données pour l'affichage
-        const orderDetails = {
-            id: commande.id,
-            created_at: commande.created_at,
-            status: commande.status,
-            status_text: getStatusText(commande.status),
-            total: parseFloat(commande.total || 0).toFixed(2),
-            delivery_mode: commande.delivery_mode || 'Standard',
-            customer: {
-                first_name: commande.customer?.first_name || '',
-                last_name: commande.customer?.last_name || '',
-                email: commande.customer?.email || '',
-                phone: commande.customer?.phone || '',
-                address: commande.customer?.address || ''
+        const order = orderResult[0];
+
+        // ... reste de votre code pour items, history, tracking ...
+
+        // Réponse avec les informations de paiement
+        const response = {
+            success: true,
+            order: {
+                ...order,
+                status: adminOrdersController.normalizeStatus(order.current_status),
+                date: new Date(order.created_at).toLocaleDateString('fr-FR'),
+                dateTime: new Date(order.created_at).toLocaleString('fr-FR'),
+                hasDiscount: discountAmount > 0 || order.promo_code,
+                // ✅ AJOUT DES INFOS PAIEMENT
+                payment_method: order.payment_method,
+                payment_status: order.payment_status,
+                payment_method_display: this.getPaymentMethodDisplay(order.payment_method)
             },
-            items: commande.items?.map(item => ({
-                id: item.id,
-                quantity: item.quantity,
-                price: item.price,
-                jewel: {
-                    name: item.jewel?.name || '',
-                    image: item.jewel?.image || '',
-                    description: item.jewel?.description || ''
-                }
-            })) || [],
-            payment: commande.payment ? {
-                method: commande.payment.method,
-                status: commande.payment.status,
-                transaction_id: commande.payment.transaction_id
-            } : null
+            items: processedItems,
+            tracking: tracking,
+            history: history,
+            summary: {
+                originalSubtotal: originalAmount,
+                discount: discountAmount,
+                subtotal: originalAmount - discountAmount,
+                shipping: shipping,
+                total: finalTotal
+            }
         };
 
-        res.json(orderDetails);
+        console.log(`✅ Détails commande #${id} récupérés avec paiement: ${order.payment_method}`);
+        res.json(response);
 
     } catch (error) {
-        console.error('Erreur lors de la récupération des détails:', error);
-        res.status(500).json({ error: 'Erreur serveur' });
+        console.error('❌ Erreur détails commande:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la récupération des détails: ' + error.message
+        });
     }
+},
+
+// ✅ AJOUT DE LA FONCTION HELPER DANS LE CONTROLLER
+getPaymentMethodDisplay(paymentMethod) {
+    const methods = {
+        'card': 'Carte bancaire',
+        'credit_card': 'Carte bancaire',
+        'debit_card': 'Carte de débit',
+        'paypal': 'PayPal',
+        'bank_transfer': 'Virement bancaire',
+        'check': 'Chèque',
+        'cash': 'Espèces',
+        'apple_pay': 'Apple Pay',
+        'google_pay': 'Google Pay',
+        'stripe': 'Stripe',
+        'klarna': 'Klarna'
+    };
+    return methods[paymentMethod] || 'Carte bancaire';
 },
 
 // Nouvelle fonction pour mettre à jour le statut d'une commande
