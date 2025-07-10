@@ -200,6 +200,264 @@
             }
         }
     </style>
+
+    <style>
+/* ===== FILTRES AVANCÉS ===== */
+.filters-section {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 2px 10px rgba(183, 110, 121, 0.1);
+    border: 1px solid #e9ecef;
+}
+
+.filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f8f9fa;
+}
+
+.filters-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin: 0;
+}
+
+.results-count {
+    font-size: 1rem;
+    color: #b76e79;
+    font-weight: 500;
+}
+
+.filters-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-label {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: #2c3e50;
+    font-size: 0.9rem;
+}
+
+.filter-select, .filter-input {
+    padding: 10px 12px;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+    background: white;
+}
+
+.filter-select:focus, .filter-input:focus {
+    outline: none;
+    border-color: #b76e79;
+    box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.1);
+}
+
+.checkbox-group {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    background: #f8f9fa;
+    padding: 6px 10px;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    font-size: 0.85rem;
+}
+
+.checkbox-item:hover {
+    background: #d4a5b0;
+    border-color: #b76e79;
+}
+
+.checkbox-item.active {
+    background: #b76e79;
+    color: white;
+    border-color: #a05d68;
+}
+
+.checkbox-item input {
+    margin-right: 6px;
+    accent-color: #b76e79;
+}
+
+.price-range {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.price-input {
+    flex: 1;
+    padding: 8px;
+    border: 2px solid #e9ecef;
+    border-radius: 6px;
+    text-align: center;
+}
+
+.filters-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    padding-top: 15px;
+    border-top: 1px solid #e9ecef;
+}
+
+.btn-filter {
+    background: #b76e79;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-filter:hover {
+    background: #a05d68;
+    transform: translateY(-2px);
+}
+
+.btn-reset {
+    background: transparent;
+    color: #2c3e50;
+    border: 2px solid #e9ecef;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    text-decoration: none;
+}
+
+.btn-reset:hover {
+    border-color: #b76e79;
+    color: #b76e79;
+}
+
+/* ===== BADGES DYNAMIQUES ===== */
+.product-badge {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    z-index: 2;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+}
+
+.badge-promotion {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    animation: pulse-promotion 2s infinite;
+}
+
+.badge-nouveau {
+    background: linear-gradient(135deg, #27ae60, #229954);
+    color: white;
+}
+
+.badge-bestseller {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    color: white;
+}
+
+.badge-stock-limite {
+    background: linear-gradient(135deg, #e67e22, #d68910);
+    color: white;
+    animation: pulse-urgent 1.5s infinite;
+}
+
+.badge-populaire {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    color: white;
+}
+
+@keyframes pulse-promotion {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+}
+
+@keyframes pulse-urgent {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+}
+
+/* ===== PRIX AVEC RÉDUCTIONS ===== */
+.price-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.original-price {
+    font-size: 0.9rem;
+    color: #999;
+    text-decoration: line-through;
+}
+
+.final-price {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #b76e79;
+}
+
+.savings {
+    font-size: 0.75rem;
+    color: #27ae60;
+    font-weight: 600;
+    background: rgba(39, 174, 96, 0.1);
+    padding: 2px 6px;
+    border-radius: 10px;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .filters-grid {
+        grid-template-columns: 1fr;
+        gap: 15px;
+    }
+    
+    .filters-actions {
+        flex-direction: column;
+    }
+    
+    .checkbox-group {
+        justify-content: center;
+    }
+}
+</style>
+
 </head>
 <body>
     <!-- Bannière promotionnelle globale -->
@@ -228,64 +486,7 @@
                 <p>Découvrez notre collection de bagues en rose gold et or, ornées de pierres précieuses soigneusement sélectionnées. Chaque pièce est conçue pour magnifier votre style et apporter une touche d'éclat à vos tenues quotidiennes ou vos occasions spéciales.</p>
             </div>
            
-            <section class="filter-controls">
-                <form method="GET" action="/bagues">
-                    <div class="filter-dropdown">
-                        <button type="button" class="filter-btn">Filtrer <i class="fas fa-chevron-down"></i></button>
-                        <form method="GET" action="/bagues">
-                            <div class="filter-options">
-                          
-                              <!-- Matériau -->
-                              <div class="filter-group">
-                                <h4>Matériau</h4>
-                                <% materials.forEach(mat => { %>
-                                  <label>
-                                    <input type="checkbox" name="matiere" value="<%= mat.id %>" 
-                                      <% if ((Array.isArray(filters.matiere) && filters.matiere.includes(mat.id.toString())) || filters.matiere == mat.id) { %>checked<% } %>>
-                                    <%= mat.name %>
-                                  </label>
-                                <% }) %>
-                              </div>
-                          
-                              <!-- Type -->
-                              <div class="filter-group">
-                                <h4>Style</h4>
-                                <% types.forEach(t => { %>
-                                  <label>
-                                    <input type="checkbox" name="type" value="<%= t.id %>" 
-                                      <% if ((Array.isArray(filters.type) && filters.type.includes(t.id.toString())) || filters.type == t.id) { %>checked<% } %>>
-                                    <%= t.name %>
-                                  </label>
-                                <% }) %>
-                              </div>
-                          
-                              <!-- Prix -->
-                              <div class="filter-group">
-                                <h4>Prix</h4>
-                                <% ['0-100', '100-200', '200-500', '500+'].forEach(range => { %>
-                                  <label>
-                                    <input type="checkbox" name="prix" value="<%= range %>" 
-                                      <% if ((Array.isArray(filters.prix) && filters.prix.includes(range)) || filters.prix === range) { %>checked<% } %>>
-                                    <% if (range === '500+') { %>Plus de 500€<% } else { %><%= range %> €<% } %>
-                                  </label>
-                                <% }) %>
-                              </div>
-
-                            </div>
-                    <div class="sort-dropdown">
-                        <button type="button" class="sort-btn">Trier par <i class="fas fa-chevron-down"></i></button>
-                        <div class="sort-options">
-                            <a href="?sort=popularity" class="sort-option <% if (filters.sort === 'popularity') { %>active<% } %>">Popularité</a>
-                            <a href="?sort=price_asc" class="sort-option <% if (filters.sort === 'price_asc') { %>active<% } %>">Prix croissant</a>
-                            <a href="?sort=price_desc" class="sort-option <% if (filters.sort === 'price_desc') { %>active<% } %>">Prix décroissant</a>
-                            <a href="?sort=newest" class="sort-option <% if (filters.sort === 'newest') { %>active<% } %>">Nouveautés</a>
-                        </div>
-                    </div>
-                    <button type="submit" class="filter-submit">Appliquer les filtres</button>
-                    <button type="reset">Réinitialiser les filtres</button>
-
-                </form>
-            </section>
+            
             
     <section class="featured-collection">
         <div class="container">
@@ -403,7 +604,7 @@
     </section>
 
     <!-- Modal de confirmation de suppression -->
-    <div id="deleteModal" class="modal" style="display: none;">
+    <!-- <div id="deleteModal" class="modal" style="display: none;">
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Confirmer la suppression</h3>
@@ -420,10 +621,10 @@
                 </button>
             </div>
         </div>
-    </div>
+    </div> -->
 
     <!-- Notification système -->
-    <div class="notification" id="notification">
+    <!-- <div class="notification" id="notification">
         <i class="fas fa-check-circle notification-icon"></i>
         <div class="notification-content">
             <div class="notification-title">Succès</div>
@@ -432,7 +633,7 @@
         <div class="notification-close" id="notification-close">
             <i class="fas fa-times"></i>
         </div>
-    </div>
+    </div> -->
 
     <section class="testimonials">
         <div class="container">
