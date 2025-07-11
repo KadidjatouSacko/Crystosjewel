@@ -511,6 +511,102 @@
         </div>
     </section>
 
+ <form id="filterForm" method="GET" action="/bagues" class="filters-form">
+  <fieldset>
+    <legend>Matières</legend>
+    <% if (materials && materials.length > 0) { %>
+      <% materials.forEach(matiere => { %>
+        <label>
+          <input type="checkbox" name="matiere" value="<%= matiere %>"
+            <%= filters.matiere.includes(matiere) ? 'checked' : '' %> />
+          <%= matiere %>
+        </label>
+      <% }) %>
+    <% } else { %>
+      <p class="empty-message">Aucune matière disponible</p>
+    <% } %>
+  </fieldset>
+
+  <fieldset>
+    <legend>Types</legend>
+    <% if (types && types.length > 0) { %>
+      <% types.forEach(type => { %>
+        <label>
+          <input type="checkbox" name="type" value="<%= type.id %>"
+            <%= filters.type.includes(type.id.toString()) ? 'checked' : '' %> />
+          <%= type.name %>
+        </label>
+      <% }) %>
+    <% } else { %>
+      <p class="empty-message">Aucun type disponible</p>
+    <% } %>
+  </fieldset>
+
+  <fieldset>
+    <legend>Tailles</legend>
+    <% if (availableFilters.sizes && availableFilters.sizes.length > 0) { %>
+      <% availableFilters.sizes.forEach(taille => { %>
+        <label>
+          <input type="checkbox" name="taille" value="<%= taille %>"
+            <%= filters.taille.includes(taille.toString()) ? 'checked' : '' %> />
+          <%= taille %>
+        </label>
+      <% }) %>
+    <% } else { %>
+      <p class="empty-message">Aucune taille disponible</p>
+    <% } %>
+  </fieldset>
+
+  <fieldset>
+    <legend>Carats</legend>
+    <% if (carats && carats.length > 0) { %>
+      <% carats.forEach(carat => { %>
+        <label>
+          <input type="checkbox" name="carat" value="<%= carat %>"
+            <%= filters.carat.includes(carat.toString()) ? 'checked' : '' %> />
+          <%= carat %>K
+        </label>
+      <% }) %>
+    <% } else { %>
+      <p class="empty-message">Aucun carat disponible</p>
+    <% } %>
+  </fieldset>
+
+  <fieldset class="price-range">
+    <legend>Prix</legend>
+    <label>Min : <input type="number" name="prix_min" min="0" step="1" value="<%= filters.prix_min || '' %>" /></label>
+    <label>Max : <input type="number" name="prix_max" min="0" step="1" value="<%= filters.prix_max || '' %>" /></label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Disponibilité</legend>
+    <label><input type="radio" name="disponibilite" value="" <%= !filters.disponibilite ? 'checked' : '' %> /> Toutes</label>
+    <label><input type="radio" name="disponibilite" value="en_stock" <%= filters.disponibilite === 'en_stock' ? 'checked' : '' %> /> En stock</label>
+    <label><input type="radio" name="disponibilite" value="en_promo" <%= filters.disponibilite === 'en_promo' ? 'checked' : '' %> /> En promo</label>
+    <label><input type="radio" name="disponibilite" value="nouveau" <%= filters.disponibilite === 'nouveau' ? 'checked' : '' %> /> Nouveautés</label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Tri</legend>
+    <select name="sort" id="sortSelect">
+      <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Nouveautés</option>
+      <option value="price_asc" <%= filters.sort === 'price_asc' ? 'selected' : '' %>>Prix croissant</option>
+      <option value="price_desc" <%= filters.sort === 'price_desc' ? 'selected' : '' %>>Prix décroissant</option>
+      <option value="name_asc" <%= filters.sort === 'name_asc' ? 'selected' : '' %>>Nom A → Z</option>
+      <option value="name_desc" <%= filters.sort === 'name_desc' ? 'selected' : '' %>>Nom Z → A</option>
+      <option value="popular" <%= filters.sort === 'popular' ? 'selected' : '' %>>Popularité</option>
+      <option value="bestseller" <%= filters.sort === 'bestseller' ? 'selected' : '' %>>Meilleures ventes</option>
+    </select>
+  </fieldset>
+
+  <div class="buttons">
+    <button type="submit" class="btn btn-primary">Appliquer les filtres</button>
+    <button type="button" id="resetFilters" class="btn btn-secondary">Réinitialiser</button>
+  </div>
+</form>
+
+
+
     <section class="products">
 
         <p>Nombre de bagues : <%= jewels.length %></p>
