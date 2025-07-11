@@ -582,7 +582,7 @@ router.post('/admin/materials/add', isAdmin, jewelControlleur.addMaterial);
 
 router.get('/bijoux/colliers', jewelControlleur.showNecklaces);
 router.get('/bijoux/bracelets', braceletsControlleur.showBracelets);
-router.get('/bijoux/bagues', baguesControlleur.showRings);
+router.get('/bijoux/bagues', baguesFilterMiddleware, baguesControlleur.showRings);
 router.get('/bijoux/:slug', async (req, res, next) => {
     try {
         // SEULEMENT afficher la page, AUCUN tracking automatique
