@@ -11,7 +11,7 @@ import { Category } from "./models/categoryModel.js";
 import { Material } from "./models/MaterialModel.js";
 import express from "express";
 
-
+import { baguesFilterMiddleware } from './middleware/filtersMiddleware.js'
 import { sequelize } from "./models/sequelize-client.js";
 import { Cart } from "./models/cartModel.js";
 import { Type } from "./models/TypeModel.js";
