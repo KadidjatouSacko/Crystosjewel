@@ -234,3 +234,71 @@ export async function getAvailableFilters(categoryId = null) {
         };
     }
 }
+
+
+/**
+ * Génère des données de test pour les carats si pas dans la BDD
+ */
+export function getDefaultCarats() {
+    return [8, 14, 18, 24];
+}
+
+/**
+ * Génère des données de test pour les tailles si pas dans la BDD
+ */
+export function getDefaultSizes() {
+    return ['48', '50', '52', '54', '56', '58', '60', '62'];
+}
+
+/**
+ * Formate un bijou avec toutes les informations nécessaires
+ */
+export function formatJewelForDisplay(jewelData) {
+    const priceInfo = calculateFinalPrice(jewelData);
+    const badge = determineBadges(jewelData);
+    
+    return {
+        ...jewelData,
+        ...priceInfo,
+        badge,
+        formattedPrice: new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+        }).format(priceInfo.finalPrice),
+        formattedOriginalPrice: priceInfo.hasDiscount ? new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+        }).format(priceInfo.originalPrice) : null,
+        formattedSalePrice: priceInfo.hasDiscount ? new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+        }).format(priceInfo.finalPrice) : null,
+        formattedSavings: priceInfo.hasDiscount ? new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+        }).format(priceInfo.savings) : null,
+        image: jewelData.image || 'no-image.jpg'
+    };
+}
+
+/**
+ * Validation des filtres
+ */
+export function validateFilters(filters) {
+    const validated = { ...filters };
+    
+    // Valider les prix
+    if (validated.prix_min) {
+        validated.prix_min = Math.max(0, parseFloat(validated.prix_min) || 0);
+    }
+    if (validated.prix_max) {
+        validated.prix_max = Math.max(0, parseFloat(validated.prix_max) || 0);
+    }
+    
+    // S'assurer que prix_min <= prix_max
+    if (validated.prix_min && validated.prix_max && validated.prix_min > validated.prix_max) {
+        [validated.prix_min, validated.prix_max] = [validated.prix_max, validated.prix_min];
+    }
+    
+    return validated;
+}

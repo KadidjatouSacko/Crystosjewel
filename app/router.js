@@ -11,7 +11,6 @@ import { Category } from "./models/categoryModel.js";
 import { Material } from "./models/MaterialModel.js";
 import express from "express";
 
-import { baguesFilterMiddleware } from './middleware/filtersMiddleware.js'
 import { sequelize } from "./models/sequelize-client.js";
 import { Cart } from "./models/cartModel.js";
 import { Type } from "./models/TypeModel.js";
@@ -591,6 +590,8 @@ router.get('/bijoux/:slug', async (req, res, next) => {
         next(error);
     }
 });
+
+
 
 router.post('/bijoux/:slug/supprimer', isAdmin, jewelControlleur.deleteJewel);
 router.get('/admin/bijoux/:slug/edit', isAdmin, jewelControlleur.editJewel);
@@ -1732,6 +1733,39 @@ router.post('/commande/informations', guestOrderMiddleware, orderController.save
 router.get('/commande/paiement', orderController.renderPaymentPage); 
 router.get('/commande/confirmation', orderController.renderConfirmation);
 router.post('/commande/valider', orderController.validateOrderAndSave);
+
+router.put('/api/admin/commandes/:orderId/status', isAdmin, adminOrdersController.updateOrderStatus);
+
+// 🆕 NOUVELLES ROUTES POUR GESTION SMS
+router.post('/api/admin/sms/test', isAdmin, adminOrdersController.testSMSConfiguration);
+router.get('/api/admin/notifications/status', isAdmin, adminOrdersController.getNotificationStatus);
+router.post('/api/admin/commandes/:orderId/resend-notifications', isAdmin, adminOrdersController.resendNotifications);
+
+// ==========================================
+// ROUTES API POUR LE DASHBOARD ADMIN
+// ==========================================
+
+// Route pour obtenir les statistiques des notifications
+router.get('/api/admin/notifications/stats', isAdmin, async (req, res) => {
+  try {
+    const { checkSMSConfiguration } = await import('./services/smsService.js');
+    const smsConfig = checkSMSConfiguration();
+    
+    // Vous pouvez ajouter ici des statistiques depuis votre DB
+    // Par exemple, compter les emails/SMS envoyés aujourd'hui
+    
+    res.json({
+      success: true,
+      data: {
+        smsConfigured: smsConfig.isConfigured,
+        emailConfigured: !!(process.env.MAIL_USER && process.env.MAIL_PASS),
+        // notifications24h: await getNotificationStats24h(), // À implémenter si besoin
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 router.get("/mescommandes", isAuthenticated, adminStatsController.showOrderPage);
 

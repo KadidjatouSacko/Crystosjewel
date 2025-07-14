@@ -1406,6 +1406,31 @@ async function sendMailWithTemplate(to, subject, templateName, variables) {
 //   }
 // };
 
+/**
+ * FONCTION UTILITAIRE - Calculer date de livraison
+ */
+function calculateDeliveryDate(daysToAdd = 3) {
+  let deliveryDate = new Date();
+  let addedDays = 0;
+  
+  while (addedDays < daysToAdd) {
+    deliveryDate.setDate(deliveryDate.getDate() + 1);
+    
+    // Exclure les dimanches
+    if (deliveryDate.getDay() !== 0) {
+      addedDays++;
+    }
+  }
+  
+  return deliveryDate.toLocaleDateString('fr-FR', {
+    timeZone: 'Europe/Paris',
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  });
+}
+
 // ✅ FONCTION PRINCIPALE - ENVOI SIMULTANÉ CLIENT + ADMIN AVEC RÉDUCTIONS
 // ✅ EMAIL CLIENT - Style CrystosJewel original amélioré
 export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData) => {
@@ -2477,30 +2502,30 @@ export const sendShippingNotificationEmail = async (userEmail, firstName, shippi
 };
 
 // ✅ FONCTION UTILITAIRE - Calcul date de livraison avec fuseau horaire français
-function calculateDeliveryDate(daysToAdd = 3) {
-    let deliveryDate = new Date();
-    let addedDays = 0;
+// function calculateDeliveryDate(daysToAdd = 3) {
+//     let deliveryDate = new Date();
+//     let addedDays = 0;
     
-    // Convertir en heure française
-    const options = { timeZone: 'Europe/Paris' };
+//     // Convertir en heure française
+//     const options = { timeZone: 'Europe/Paris' };
     
-    while (addedDays < daysToAdd) {
-        deliveryDate.setDate(deliveryDate.getDate() + 1);
+//     while (addedDays < daysToAdd) {
+//         deliveryDate.setDate(deliveryDate.getDate() + 1);
         
-        // Si ce n'est pas un dimanche (0 = dimanche)
-        if (deliveryDate.getDay() !== 0) {
-            addedDays++;
-        }
-    }
+//         // Si ce n'est pas un dimanche (0 = dimanche)
+//         if (deliveryDate.getDay() !== 0) {
+//             addedDays++;
+//         }
+//     }
     
-    return deliveryDate.toLocaleDateString('fr-FR', {
-        timeZone: 'Europe/Paris',
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
-}
+//     return deliveryDate.toLocaleDateString('fr-FR', {
+//         timeZone: 'Europe/Paris',
+//         weekday: 'long',
+//         year: 'numeric',
+//         month: 'long',
+//         day: 'numeric'
+//     });
+// }
 
 // 📧 SERVICE EMAIL AMÉLIORÉ - Envoi automatique selon statut
 // Ajouter ces nouvelles fonctions dans votre fichier mailService.js
@@ -2569,6 +2594,8 @@ export const sendStatusChangeEmail = async (orderData, statusChangeData, custome
         return { success: false, error: error.message };
     }
 };
+
+
 
 // ✅ FONCTION HELPER POUR TRADUCTION DES STATUTS
 function translateStatus(status) {
@@ -2745,4 +2772,306 @@ export const sendCancellationEmail = async (userEmail, firstName, cancellationDa
     return { success: false, error: error.message };
   }
 };
+
+
+/**
+ * NOUVELLE FONCTION - Envoi simultané EMAIL + SMS lors de la confirmation de commande
+ */
+export const sendOrderConfirmationWithSMS = async (userEmail, firstName, orderData, customerData) => {
+  try {
+    console.log('📧📱 Envoi simultané EMAIL + SMS de confirmation...');
+    
+    // 1. Envoyer l'email de confirmation (fonction existante)
+    const emailResults = await sendOrderConfirmationEmails(
+      userEmail,
+      firstName,
+      orderData,
+      customerData
+    );
+
+    // 2. Envoyer le SMS de confirmation si numéro disponible
+    let smsResult = { success: false, message: 'Numéro non disponible' };
+    
+    if (customerData.phone) {
+      console.log('📱 Envoi SMS confirmation...');
+      smsResult = await sendOrderConfirmationSMS(customerData.phone, {
+        numero_commande: orderData.numero_commande || `CMD-${orderData.id}`,
+        total: orderData.total,
+        customer_name: `${customerData.firstName} ${customerData.lastName}`
+      });
+    }
+
+    // 3. Retourner les résultats combinés
+    return {
+      email: emailResults,
+      sms: smsResult,
+      success: emailResults.customer.success || emailResults.admin.success,
+      notifications: {
+        emailSent: emailResults.customer.success,
+        smsSent: smsResult.success,
+        adminNotified: emailResults.admin.success
+      }
+    };
+
+  } catch (error) {
+    console.error('❌ Erreur envoi confirmation avec SMS:', error);
+    return {
+      email: { success: false, error: error.message },
+      sms: { success: false, error: error.message },
+      success: false
+    };
+  }
+};
+
+/**
+ * FONCTION AMÉLIORÉE - Envoi email + SMS selon changement de statut
+ */
+export const sendStatusChangeNotifications = async (orderData, statusChangeData, customerData) => {
+  try {
+    const { oldStatus, newStatus, updatedBy } = statusChangeData;
+    const { userEmail, firstName, phone } = customerData;
+    
+    console.log(`📧📱 Envoi notifications changement statut:`, {
+      orderNumber: orderData.numero_commande,
+      email: userEmail,
+      phone: phone ? `${phone.substring(0, 4)}...` : 'Non disponible',
+      statusChange: `${oldStatus} → ${newStatus}`
+    });
+    
+    // Ne rien envoyer si statut identique
+    if (oldStatus === newStatus) {
+      console.log('⏭️ Statut identique, aucune notification envoyée');
+      return { 
+        success: true, 
+        message: 'Statut identique, notifications non nécessaires',
+        email: { success: true },
+        sms: { success: true }
+      };
+    }
+
+    // Validation des données requises
+    if (!userEmail || !firstName || !orderData.numero_commande) {
+      console.error('❌ Données manquantes:', { userEmail, firstName, orderNumber: orderData.numero_commande });
+      return { 
+        success: false, 
+        error: 'Données manquantes',
+        email: { success: false },
+        sms: { success: false }
+      };
+    }
+    
+    // Préparation des résultats
+    const results = {
+      email: { success: false },
+      sms: { success: false },
+      success: false
+    };
+
+    // 1. ENVOI EMAIL selon le statut
+    try {
+      switch (newStatus) {
+        case 'shipped':
+          console.log('📦 Envoi email expédition...');
+          results.email = await sendShippingNotificationEmail(userEmail, firstName, {
+            orderNumber: orderData.numero_commande,
+            trackingNumber: orderData.tracking_number || 'En cours d\'attribution',
+            estimatedDelivery: calculateDeliveryDate(3)
+          });
+          break;
+          
+        case 'delivered':
+          console.log('✅ Envoi email livraison...');
+          results.email = await sendDeliveryConfirmationEmail(userEmail, firstName, {
+            orderNumber: orderData.numero_commande,
+            trackingNumber: orderData.tracking_number
+          });
+          break;
+          
+        case 'cancelled':
+          console.log('❌ Envoi email annulation...');
+          results.email = await sendCancellationEmail(userEmail, firstName, {
+            orderNumber: orderData.numero_commande,
+            refundInfo: 'Remboursement sous 3-5 jours ouvrés'
+          });
+          break;
+          
+        default:
+          console.log('📧 Envoi email changement statut générique...');
+          results.email = await sendGenericStatusChangeEmail(
+            userEmail, 
+            firstName, 
+            orderData.numero_commande,
+            oldStatus,
+            newStatus,
+            orderData.tracking_number
+          );
+          break;
+      }
+    } catch (emailError) {
+      console.error('❌ Erreur envoi email:', emailError);
+      results.email = { success: false, error: emailError.message };
+    }
+
+    // 2. ENVOI SMS si numéro disponible
+    if (phone) {
+      try {
+        console.log('📱 Envoi SMS changement statut...');
+        results.sms = await sendStatusChangeSMS(phone, orderData, statusChangeData);
+      } catch (smsError) {
+        console.error('❌ Erreur envoi SMS:', smsError);
+        results.sms = { success: false, error: smsError.message };
+      }
+    } else {
+      console.log('📱 SMS non envoyé: Numéro de téléphone non disponible');
+      results.sms = { success: false, message: 'Numéro non disponible' };
+    }
+
+    // 3. Déterminer le succès global
+    results.success = results.email.success || results.sms.success;
+    
+    // 4. Log des résultats
+    console.log('📊 Résultats notifications:', {
+      email: results.email.success ? '✅ Envoyé' : '❌ Échec',
+      sms: results.sms.success ? '✅ Envoyé' : '❌ Échec',
+      overall: results.success ? '✅ Au moins une notification envoyée' : '❌ Toutes les notifications ont échoué'
+    });
+
+    return results;
+    
+  } catch (error) {
+    console.error('❌ Erreur dans sendStatusChangeNotifications:', error);
+    return {
+      success: false,
+      error: error.message,
+      email: { success: false, error: error.message },
+      sms: { success: false, error: error.message }
+    };
+  }
+};
+
+/**
+ * NOUVELLE FONCTION - Email générique pour changement de statut
+ */
+export const sendGenericStatusChangeEmail = async (userEmail, firstName, orderNumber, oldStatus, newStatus, trackingNumber = null) => {
+  try {
+    console.log(`📧 Envoi email changement statut: ${oldStatus} → ${newStatus}`);
+
+    // Configuration des statuts pour l'affichage
+    const statusConfig = {
+      pending: { icon: '⏳', title: 'En attente', color: '#f59e0b', message: 'Votre commande est en attente de traitement.' },
+      confirmed: { icon: '✅', title: 'Confirmée', color: '#10b981', message: 'Votre commande est confirmée et sera bientôt préparée.' },
+      processing: { icon: '🔄', title: 'En préparation', color: '#3b82f6', message: 'Votre commande est actuellement en préparation dans nos ateliers.' },
+      shipped: { icon: '📦', title: 'Expédiée', color: '#8b5cf6', message: 'Votre commande a été expédiée et est en route vers vous.' },
+      delivered: { icon: '🎉', title: 'Livrée', color: '#10b981', message: 'Votre commande a été livrée avec succès !' },
+      cancelled: { icon: '❌', title: 'Annulée', color: '#ef4444', message: 'Votre commande a été annulée.' },
+      refunded: { icon: '💰', title: 'Remboursée', color: '#6b7280', message: 'Le remboursement de votre commande a été traité.' }
+    };
+
+    const statusInfo = statusConfig[newStatus] || {
+      icon: '📋',
+      title: newStatus,
+      color: '#6b7280',
+      message: `Le statut de votre commande a été mis à jour vers "${newStatus}".`
+    };
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Mise à jour de commande - CrystosJewel</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f3f4f6;">
+        
+        <div style="padding: 20px;">
+          <table cellpadding="0" cellspacing="0" border="0" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
+            
+            <!-- Header -->
+            <tr>
+              <td style="background: linear-gradient(135deg, ${statusInfo.color} 0%, ${statusInfo.color}dd 100%); padding: 30px 20px; text-align: center; border-radius: 16px 16px 0 0;">
+                <div style="font-size: 64px; margin-bottom: 16px;">${statusInfo.icon}</div>
+                <h1 style="margin: 0 0 8px 0; color: #ffffff; font-size: 24px; font-weight: bold;">Mise à jour de votre commande</h1>
+                <p style="margin: 0; color: rgba(255,255,255,0.9); font-size: 14px;">${statusInfo.title}</p>
+              </td>
+            </tr>
+
+            <!-- Content -->
+            <tr>
+              <td style="padding: 30px 25px;">
+                
+                <div style="text-align: center; margin-bottom: 25px;">
+                  <h2 style="margin: 0 0 12px 0; color: #374151; font-size: 18px;">Bonjour ${firstName} !</h2>
+                  <p style="margin: 0; color: #6b7280; font-size: 16px; line-height: 1.6;">${statusInfo.message}</p>
+                </div>
+
+                <!-- Order Info -->
+                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f8fafc; border-radius: 12px; margin-bottom: 25px;">
+                  <tr>
+                    <td style="padding: 20px;">
+                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
+                        <tr>
+                          <td style="color: #6b7280; font-size: 14px; padding-bottom: 8px;">Numéro de commande</td>
+                          <td style="color: #374151; font-size: 14px; font-weight: 600; text-align: right; padding-bottom: 8px;">${orderNumber}</td>
+                        </tr>
+                        <tr>
+                          <td style="color: #6b7280; font-size: 14px; padding-bottom: 8px;">Ancien statut</td>
+                          <td style="color: #9ca3af; font-size: 14px; text-align: right; padding-bottom: 8px;">${oldStatus}</td>
+                        </tr>
+                        <tr>
+                          <td style="color: #6b7280; font-size: 14px;">Nouveau statut</td>
+                          <td style="color: ${statusInfo.color}; font-size: 14px; font-weight: 600; text-align: right;">${statusInfo.title}</td>
+                        </tr>
+                        ${trackingNumber ? `
+                        <tr>
+                          <td style="color: #6b7280; font-size: 14px; padding-top: 8px;">Numéro de suivi</td>
+                          <td style="color: #3b82f6; font-size: 14px; font-weight: 600; text-align: right; padding-top: 8px;">${trackingNumber}</td>
+                        </tr>
+                        ` : ''}
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+
+                <!-- CTA -->
+                <div style="text-align: center; margin-bottom: 25px;">
+                  <a href="${process.env.BASE_URL}/mescommandes" style="display: inline-block; background: ${statusInfo.color}; color: white; text-decoration: none; padding: 15px 30px; border-radius: 50px; font-weight: 600; font-size: 16px;">
+                    📋 Voir ma commande
+                  </a>
+                </div>
+
+                <!-- Support -->
+                <div style="text-align: center; padding: 20px; background: #f9fafb; border-radius: 12px;">
+                  <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                    Des questions ? Contactez-nous à 
+                    <a href="mailto:${process.env.MAIL_USER}" style="color: ${statusInfo.color}; text-decoration: none;">${process.env.MAIL_USER}</a>
+                  </p>
+                </div>
+
+              </td>
+            </tr>
+
+          </table>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const info = await transporter.sendMail({
+      from: `"CrystosJewel 📦" <${process.env.MAIL_USER}>`,
+      to: userEmail,
+      subject: `${statusInfo.icon} Commande ${orderNumber} - ${statusInfo.title}`,
+      html: htmlContent,
+    });
+
+    console.log(`✅ Email changement statut envoyé: ${info.response}`);
+    return { success: true, messageId: info.messageId };
+    
+  } catch (error) {
+    console.error("❌ Erreur email changement statut:", error);
+    return { success: false, error: error.message };
+  }
+};
+
+// ... autres fonctions existantes (sendShippingNotificationEmail, sendDeliveryConfirmationEmail, etc.)
 

@@ -187,262 +187,484 @@ export const adminOrdersController = {
     },
 
     // ✅ FONCTION POUR RÉCUPÉRER LA LISTE DES COMMANDES
+// app/controlleurs/adminOrdersController.js - MÉTHODE getAllOrders COMPLÈTE
+
+/**
+ * ✅ MÉTHODE COMPLÈTE getAllOrders SANS o.email
+ */
 async getAllOrders(req, res) {
     try {
-        console.log('📋 Récupération commandes avec emails clients corrigés');
+        console.log('📋 Récupération de toutes les commandes avec emails corrigés');
 
-        // ✅ REQUÊTE CORRIGÉE AVEC TOUTES LES SOURCES D'EMAIL POSSIBLES
-        const commandesQuery = `
+        // ✅ PARAMÈTRES DE FILTRAGE
+        const { status: filterStatus, date: filterDate, search: filterSearch, promo: filterPromo } = req.query;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
+
+        // ✅ CONSTRUCTION DE LA CLAUSE WHERE
+        let whereConditions = [];
+        let replacements = [];
+        let paramIndex = 1;
+
+        // Filtre par statut
+        if (filterStatus && filterStatus !== 'all') {
+            whereConditions.push(`COALESCE(o.status, o.status_suivi, 'pending') = $${paramIndex}`);
+            replacements.push(filterStatus);
+            paramIndex++;
+        }
+
+        // Filtre par date
+        if (filterDate) {
+            switch (filterDate) {
+                case 'today':
+                    whereConditions.push(`DATE(o.created_at) = CURRENT_DATE`);
+                    break;
+                case 'week':
+                    whereConditions.push(`o.created_at >= DATE_TRUNC('week', CURRENT_DATE)`);
+                    break;
+                case 'month':
+                    whereConditions.push(`o.created_at >= DATE_TRUNC('month', CURRENT_DATE)`);
+                    break;
+                case 'year':
+                    whereConditions.push(`o.created_at >= DATE_TRUNC('year', CURRENT_DATE)`);
+                    break;
+            }
+        }
+
+        // Filtre par code promo
+        if (filterPromo) {
+            if (filterPromo === 'with-promo') {
+                whereConditions.push(`(o.promo_code IS NOT NULL AND o.promo_code != '')`);
+            } else if (filterPromo === 'without-promo') {
+                whereConditions.push(`(o.promo_code IS NULL OR o.promo_code = '')`);
+            }
+        }
+
+        // Filtre par recherche
+        if (filterSearch && filterSearch.trim()) {
+            whereConditions.push(`(
+                LOWER(COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name))) LIKE $${paramIndex}
+                OR LOWER(COALESCE(o.customer_email, c.email)) LIKE $${paramIndex}
+                OR LOWER(o.numero_commande) LIKE $${paramIndex}
+                OR LOWER(o.promo_code) LIKE $${paramIndex}
+            )`);
+            replacements.push(`%${filterSearch.toLowerCase()}%`);
+            paramIndex++;
+        }
+
+        const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
+
+        // ✅ REQUÊTE PRINCIPALE SANS o.email
+        const ordersQuery = `
             SELECT 
                 o.id,
-                o.numero_commande,
+                COALESCE(o.numero_commande, CONCAT('CMD-', o.id)) as numero_commande,
                 o.customer_id,
                 
-                -- ✅ RÉCUPÉRATION COMPLÈTE DES EMAILS
+                -- ✅ EMAIL CLIENT SANS o.email QUI N'EXISTE PAS
                 COALESCE(
-                    o.customer_email,     -- Email stocké directement dans orders
-                    o.email,              -- Autre colonne possible dans orders
-                    o.user_email,         -- Encore une autre possibilité
-                    c.email,              -- Email depuis la table customer
-                    c.user_email,         -- Autre colonne possible dans customer
-                    'N/A'
+                    o.customer_email,
+                    o.user_email,
+                    c.email,
+                    c.user_email,
+                    'Email non renseigné'
                 ) as customer_email,
                 
-                -- ✅ RÉCUPÉRATION COMPLÈTE DES NOMS
+                -- ✅ NOM CLIENT COMPLET
                 COALESCE(
                     o.customer_name,
-                    CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name)),
-                    CONCAT(TRIM(c.prenom), ' ', TRIM(c.nom)),
+                    CONCAT(TRIM(COALESCE(c.first_name, '')), ' ', TRIM(COALESCE(c.last_name, ''))),
+                    CONCAT(TRIM(COALESCE(c.prenom, '')), ' ', TRIM(COALESCE(c.nom, ''))),
                     c.name,
                     c.username,
                     'Client inconnu'
                 ) as customer_name,
                 
-                -- ✅ COLONNES SÉPARÉES POUR DEBUG
-                o.customer_email as order_email,
-                o.email as order_email_alt,
-                c.email as customer_table_email,
-                c.user_email as customer_user_email,
-                c.first_name,
-                c.last_name,
-                c.prenom,
-                c.nom,
-                
-                o.total,
-                o.status,
-                o.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as created_at_local,
-                o.order_date AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as order_date_local,
-                o.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as updated_at_local,
+                -- ✅ INFORMATIONS FINANCIÈRES
+                COALESCE(o.total, 0) as total,
+                COALESCE(o.subtotal, o.original_total, o.total, 0) as subtotal,
+                COALESCE(o.discount_amount, o.promo_discount_amount, 0) as discount_amount,
+                COALESCE(o.promo_discount_percent, o.discount_percent, 0) as discount_percent,
                 o.promo_code,
-                o.promo_discount_amount,
-                o.promo_discount_percent,
-                o.discount_amount,
-                o.original_amount,
-                o.original_total,
-                o.subtotal,
+                
+                -- ✅ STATUT ET DATES
+                COALESCE(o.status, o.status_suivi, 'pending') as status,
+                o.created_at,
+                o.updated_at,
+                o.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as created_at_local,
+                o.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as updated_at_local,
+                
+                -- ✅ INFORMATIONS LIVRAISON
                 o.tracking_number,
+                COALESCE(o.shipping_method, 'Standard') as shipping_method,
                 COALESCE(o.payment_method, 'card') as payment_method,
-                COALESCE(o.payment_status, 'pending') as payment_status,
-                o.shipping_address,
-                o.shipping_phone,
-                c.phone
+                COALESCE(o.payment_status, 'completed') as payment_status,
+                
+                -- ✅ CONTACT CLIENT
+                COALESCE(o.customer_phone, c.phone) as customer_phone,
+                COALESCE(o.shipping_address, c.address) as shipping_address,
+                
+                -- ✅ INFORMATIONS ARTICLES ET TAILLES
+                (
+                    SELECT COUNT(*)
+                    FROM order_items oi
+                    WHERE oi.order_id = o.id
+                ) as total_items,
+                
+                (
+                    SELECT COUNT(*)
+                    FROM order_items oi
+                    WHERE oi.order_id = o.id
+                    AND oi.size IS NOT NULL 
+                    AND oi.size != '' 
+                    AND oi.size != 'Non spécifiée'
+                    AND oi.size != 'null'
+                ) as items_with_size,
+                
+                -- ✅ DÉTAILS ARTICLES AVEC TAILLES
+                (
+                    SELECT JSON_AGG(
+                        JSON_BUILD_OBJECT(
+                            'name', COALESCE(oi.jewel_name, j.name, 'Article'),
+                            'quantity', oi.quantity,
+                            'price', oi.price_ttc,
+                            'size', CASE 
+                                WHEN oi.size IS NOT NULL AND oi.size != '' AND oi.size != 'Non spécifiée' AND oi.size != 'null'
+                                THEN oi.size 
+                                ELSE 'Non spécifiée' 
+                            END,
+                            'image', COALESCE(oi.jewel_image, j.image, '/images/placeholder.jpg')
+                        )
+                        ORDER BY oi.id
+                    )
+                    FROM order_items oi
+                    LEFT JOIN jewel j ON oi.jewel_id = j.id
+                    WHERE oi.order_id = o.id
+                ) as items_details,
+                
+                -- ✅ COLONNES DEBUG (optionnelles, pour identifier les problèmes)
+                o.customer_email as order_customer_email,
+                c.email as customer_table_email,
+                c.first_name as customer_first_name,
+                c.last_name as customer_last_name
+
             FROM orders o
             LEFT JOIN customer c ON o.customer_id = c.id
+            ${whereClause}
             ORDER BY o.created_at DESC
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
 
-        const [commandesResult] = await sequelize.query(commandesQuery);
-        
-        // ✅ DEBUG DES EMAILS RÉCUPÉRÉS
-        console.log('🔍 DEBUG EMAILS pour les 3 premières commandes:');
-        commandesResult.slice(0, 3).forEach((cmd, index) => {
-            console.log(`Commande ${index + 1} (ID: ${cmd.id}):`, {
-                customer_id: cmd.customer_id,
-                customer_email_final: cmd.customer_email,
-                order_email: cmd.order_email,
-                order_email_alt: cmd.order_email_alt,
-                customer_table_email: cmd.customer_table_email,
-                customer_user_email: cmd.customer_user_email,
-                customer_name: cmd.customer_name
-            });
+        // Ajouter pagination aux paramètres
+        replacements.push(limit, offset);
+
+        console.log('📋 Exécution requête commandes avec paramètres:', replacements);
+
+        // ✅ EXÉCUTION REQUÊTE PRINCIPALE
+        const [orders] = await sequelize.query(ordersQuery, { bind: replacements });
+
+        // ✅ REQUÊTE COUNT POUR PAGINATION
+        const countQuery = `
+            SELECT COUNT(*) as total
+            FROM orders o
+            LEFT JOIN customer c ON o.customer_id = c.id
+            ${whereClause}
+        `;
+
+        const [countResult] = await sequelize.query(countQuery, { 
+            bind: replacements.slice(0, -2) // Enlever limit et offset pour le count
         });
 
-        // ✅ TRAITEMENT AVEC VALIDATION EMAIL
-        const commandes = commandesResult.map(commande => {
-            const total = parseFloat(commande.total || 0);
-            const discountAmount = parseFloat(commande.promo_discount_amount || commande.discount_amount || 0);
-            const originalAmount = parseFloat(commande.original_amount || commande.original_total || (total + discountAmount));
-            
-            const mainDate = commande.created_at_local || commande.order_date_local || commande.created_at;
+        const totalOrders = parseInt(countResult[0].total);
+        const totalPages = Math.ceil(totalOrders / limit);
+
+        // ✅ TRAITEMENT DES DONNÉES DE COMMANDES
+        const processedOrders = orders.map(order => {
+            // Calcul des informations de tailles
+            const totalItems = parseInt(order.total_items) || 0;
+            const itemsWithSize = parseInt(order.items_with_size) || 0;
+            const sizesCoverage = totalItems > 0 ? Math.round((itemsWithSize / totalItems) * 100) : 0;
+
+            // Parse des détails d'articles
+            let itemsDetails = [];
+            try {
+                itemsDetails = order.items_details ? JSON.parse(order.items_details) : [];
+            } catch (e) {
+                console.warn(`⚠️ Erreur parsing items pour commande ${order.id}:`, e.message);
+                itemsDetails = [];
+            }
+
+            // Calcul des montants
+            const subtotal = parseFloat(order.subtotal) || 0;
+            const discountAmount = parseFloat(order.discount_amount) || 0;
+            const total = parseFloat(order.total) || 0;
+            const savings = subtotal - total;
 
             return {
-                ...commande,
-                // ✅ DATES CORRIGÉES
-                date: this.formatDateTime(mainDate).split(' ')[0],
-                dateTime: this.formatDateTime(mainDate),
-                timeAgo: this.getTimeAgo(mainDate),
+                id: order.id,
+                numero_commande: order.numero_commande,
+                customer_id: order.customer_id,
+                customerName: order.customer_name,
+                customerEmail: order.customer_email,
+                customerPhone: order.customer_phone,
                 
-                // ✅ CALCULS FINANCIERS
-                amount: total,
-                finalTotal: total,
-                originalAmount: originalAmount,
+                // Montants
+                total: total,
+                subtotal: subtotal,
                 discountAmount: discountAmount,
-                hasDiscount: discountAmount > 0,
+                savings: Math.max(savings, discountAmount),
                 
-                // ✅ PAIEMENT
-                payment_method: commande.payment_method,
-                payment_method_display: this.getPaymentMethodDisplay(commande.payment_method),
-                payment_status: commande.payment_status,
+                // Statut et dates
+                status: this.normalizeStatus(order.status),
+                statusDisplay: this.translateStatus(this.normalizeStatus(order.status)),
+                statusClass: this.getStatusClass(this.normalizeStatus(order.status)),
+                createdAt: order.created_at,
+                updatedAt: order.updated_at,
+                createdAtLocal: order.created_at_local,
+                dateDisplay: this.formatDateTime(order.created_at_local),
+                timeAgo: this.getTimeAgo(order.created_at),
                 
-                // ✅ STATUT NORMALISÉ
-                status: this.normalizeStatus(commande.status),
+                // Code promo
+                promoCode: order.promo_code,
+                hasPromo: !!order.promo_code,
+                discountPercent: parseFloat(order.discount_percent) || 0,
                 
-                // ✅ INFORMATIONS CLIENT AVEC VALIDATION
-                customerName: commande.customer_name,
-                customerEmail: commande.customer_email, // Déjà traité par COALESCE
-                phone: commande.shipping_phone || commande.phone,
+                // Livraison
+                trackingNumber: order.tracking_number,
+                shippingMethod: order.shipping_method,
+                paymentMethod: order.payment_method,
+                paymentMethodDisplay: this.getPaymentMethodDisplay(order.payment_method),
+                paymentStatus: order.payment_status,
                 
-                // ✅ DEBUG INFO (à retirer plus tard)
+                // Tailles
+                totalItems: totalItems,
+                itemsWithSize: itemsWithSize,
+                sizesCoverage: sizesCoverage,
+                sizesInfo: {
+                    totalItems,
+                    itemsWithSize,
+                    sizesCoverage,
+                    hasSizeInfo: itemsWithSize > 0,
+                    sizesDisplay: itemsWithSize > 0 ? 
+                        `${itemsWithSize}/${totalItems} articles` : 
+                        'Aucune taille',
+                    coverageClass: sizesCoverage === 100 ? 'success' : 
+                                   sizesCoverage > 50 ? 'warning' : 'danger'
+                },
+                
+                // Articles
+                itemsDetails: itemsDetails,
+                itemsCount: itemsDetails.length,
+                
+                // Adresse
+                shippingAddress: order.shipping_address,
+                
+                // Debug (à retirer en production)
                 _debug: {
-                    customer_id: commande.customer_id,
-                    emails_found: {
-                        order_email: commande.order_email,
-                        customer_table_email: commande.customer_table_email,
-                        final_email: commande.customer_email
-                    }
+                    orderEmail: order.order_customer_email,
+                    customerTableEmail: order.customer_table_email,
+                    firstName: order.customer_first_name,
+                    lastName: order.customer_last_name,
+                    finalEmail: order.customer_email
                 }
             };
         });
 
-        // ✅ COMPTER LES EMAILS MANQUANTS
-        const emailsManquants = commandes.filter(cmd => cmd.customerEmail === 'N/A').length;
-        console.log(`📊 Emails manquants: ${emailsManquants}/${commandes.length} commandes`);
+        // ✅ CALCUL DES STATISTIQUES
+        const stats = this.calculateOrderStats(processedOrders);
+        const statusStats = this.calculateStatusStats(processedOrders);
 
-        // Render normal...
+        // ✅ LOG DES RÉSULTATS
+        const emailsManquants = processedOrders.filter(cmd => 
+            cmd.customerEmail === 'Email non renseigné'
+        ).length;
+        
+        console.log(`📊 Commandes récupérées: ${processedOrders.length}/${totalOrders}`);
+        console.log(`📧 Emails manquants: ${emailsManquants} commandes`);
+        console.log(`📏 Commandes avec tailles: ${processedOrders.filter(cmd => cmd.itemsWithSize > 0).length}`);
+
+        // ✅ RENDU DE LA VUE
         res.render('commandes', {
             title: 'Gestion des Commandes',
-            commandes: commandes,
-            stats: this.calculateStats(commandes),
-            statusStats: this.calculateStatusStats(commandes),
-            helpers: {
-                formatPrice: (price) => parseFloat(price || 0).toFixed(2),
-                formatDate: (date) => this.formatDateTime(date),
-                getTimeAgo: (date) => this.getTimeAgo(date)
-            }
-        });
-
-    } catch (error) {
-        console.error('❌ Erreur récupération commandes:', error);
-        res.status(500).render('error', {
-            message: 'Erreur lors de la récupération des commandes',
-            error: error
-        });
-    }
-},
-
-
-
-async getOrderDetails(req, res) {
-    try {
-        const { id } = req.params;
-        console.log(`🔍 Récupération détails commande #${id} avec email client corrigé`);
-
-        // ✅ REQUÊTE CORRIGÉE AVEC TOUS LES CHAMPS EMAIL POSSIBLES
-        const orderQuery = `
-            SELECT 
-                o.*,
-                
-                -- ✅ RÉCUPÉRATION COMPLÈTE DES EMAILS
-                COALESCE(
-                    o.customer_email,
-                    o.email,
-                    o.user_email,
-                    c.email,
-                    c.user_email,
-                    'N/A'
-                ) as customer_email,
-                
-                -- ✅ RÉCUPÉRATION COMPLÈTE DES NOMS
-                COALESCE(
-                    o.customer_name,
-                    CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name)),
-                    CONCAT(TRIM(c.prenom), ' ', TRIM(c.nom)),
-                    c.name,
-                    c.username,
-                    'Client inconnu'
-                ) as customer_name,
-                
-                -- ✅ DONNÉES SÉPARÉES POUR DEBUG
-                c.first_name,
-                c.last_name,
-                c.prenom,
-                c.nom,
-                c.phone,
-                
-                COALESCE(o.shipping_address, c.address, c.adresse) as shipping_address,
-                COALESCE(o.status, o.status_suivi, 'waiting') as current_status,
-                COALESCE(o.payment_method, 'card') as payment_method,
-                COALESCE(o.payment_status, 'pending') as payment_status
-            FROM orders o
-            LEFT JOIN customer c ON o.customer_id = c.id
-            WHERE o.id = $1
-        `;
-
-        const [orderResult] = await sequelize.query(orderQuery, { bind: [id] });
-        
-        if (orderResult.length === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Commande non trouvée'
-            });
-        }
-
-        const order = orderResult[0];
-        
-        // ✅ DEBUG DE L'EMAIL RÉCUPÉRÉ
-        console.log(`📧 Email pour commande #${id}:`, {
-            customer_id: order.customer_id,
-            customer_email_final: order.customer_email,
-            first_name: order.first_name,
-            last_name: order.last_name
-        });
-
-        // ... reste du code pour items, history, etc. ...
-
-        const response = {
-            success: true,
-            order: {
-                ...order,
-                status: this.normalizeStatus(order.current_status),
-                date: new Date(order.created_at).toLocaleDateString('fr-FR'),
-                dateTime: new Date(order.created_at).toLocaleString('fr-FR'),
-                hasDiscount: parseFloat(order.promo_discount_amount || 0) > 0 || order.promo_code,
-                payment_method: order.payment_method,
-                payment_status: order.payment_status,
-                payment_method_display: this.getPaymentMethodDisplay(order.payment_method)
+            user: req.session.user,
+            
+            // Données principales
+            commandes: processedOrders,
+            stats: stats,
+            statusStats: statusStats,
+            
+            // Filtres actuels
+            filters: {
+                status: filterStatus || 'all',
+                date: filterDate || '',
+                search: filterSearch || '',
+                promo: filterPromo || ''
             },
-            items: [], // processedItems,
-            tracking: [], // tracking,
-            history: [], // history,
-            summary: {
-                originalSubtotal: parseFloat(order.original_amount || order.total || 0),
-                discount: parseFloat(order.promo_discount_amount || 0),
-                subtotal: parseFloat(order.subtotal || order.total || 0),
-                shipping: parseFloat(order.shipping_price || 0),
-                total: parseFloat(order.total || 0)
+            
+            // Pagination
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                totalOrders: totalOrders,
+                hasNext: page < totalPages,
+                hasPrev: page > 1,
+                limit: limit
+            },
+            
+            // Fonctions helpers pour le template
+            helpers: {
+                formatPrice: (price) => (parseFloat(price) || 0).toLocaleString('fr-FR', { 
+                    minimumFractionDigits: 2, 
+                    maximumFractionDigits: 2 
+                }),
+                formatDate: (date) => this.formatDateTime(date),
+                formatTimeAgo: (date) => this.getTimeAgo(date),
+                translateStatus: (status) => this.translateStatus(status),
+                getStatusClass: (status) => this.getStatusClass(status),
+                hasPromoCode: (order) => !!order.promoCode,
+                getSizesCoverageIndicator: (sizesInfo) => {
+                    if (!sizesInfo || sizesInfo.totalItems === 0) return '❓ Non défini';
+                    const coverage = sizesInfo.sizesCoverage || 0;
+                    if (coverage === 100) return '🎯 Complète';
+                    if (coverage > 50) return '📏 Partielle';
+                    if (coverage > 0) return '📐 Limitée';
+                    return '❓ Aucune';
+                }
             }
-        };
-
-        res.json(response);
+        });
 
     } catch (error) {
-        console.error('❌ Erreur détails commande:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de la récupération des détails: ' + error.message
+        console.error('❌ Erreur lors de la récupération des commandes:', error);
+        console.error('Stack trace:', error.stack);
+        
+        res.status(500).render('error', {
+            title: 'Erreur',
+            message: 'Erreur lors de la récupération des commandes',
+            error: process.env.NODE_ENV === 'development' ? error : {},
+            user: req.session.user
         });
     }
 },
+
+// Calcul des statistiques par statut
+calculateStatusStats(orders) {
+    return {
+        pending: orders.filter(order => order.status === 'pending').length,
+        confirmed: orders.filter(order => order.status === 'confirmed').length,
+        preparing: orders.filter(order => order.status === 'preparing').length,
+        shipped: orders.filter(order => order.status === 'shipped').length,
+        delivered: orders.filter(order => order.status === 'delivered').length,
+        cancelled: orders.filter(order => order.status === 'cancelled').length,
+        refunded: orders.filter(order => order.status === 'refunded').length
+    };
+},
+
+
+
+
+
+// async getOrderDetails(req, res) {
+//     try {
+//         const { id } = req.params;
+//         console.log(`🔍 Récupération détails commande #${id} avec email client corrigé`);
+
+//         // ✅ REQUÊTE CORRIGÉE AVEC TOUS LES CHAMPS EMAIL POSSIBLES
+//         const orderQuery = `
+//             SELECT 
+//                 o.*,
+                
+//                 -- ✅ RÉCUPÉRATION COMPLÈTE DES EMAILS
+//                 COALESCE(
+//                     o.customer_email,
+//                     o.email,
+//                     o.user_email,
+//                     c.email,
+//                     c.user_email,
+//                     'N/A'
+//                 ) as customer_email,
+                
+//                 -- ✅ RÉCUPÉRATION COMPLÈTE DES NOMS
+//                 COALESCE(
+//                     o.customer_name,
+//                     CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name)),
+//                     CONCAT(TRIM(c.prenom), ' ', TRIM(c.nom)),
+//                     c.name,
+//                     c.username,
+//                     'Client inconnu'
+//                 ) as customer_name,
+                
+//                 -- ✅ DONNÉES SÉPARÉES POUR DEBUG
+//                 c.first_name,
+//                 c.last_name,
+//                 c.prenom,
+//                 c.nom,
+//                 c.phone,
+                
+//                 COALESCE(o.shipping_address, c.address, c.adresse) as shipping_address,
+//                 COALESCE(o.status, o.status_suivi, 'waiting') as current_status,
+//                 COALESCE(o.payment_method, 'card') as payment_method,
+//                 COALESCE(o.payment_status, 'pending') as payment_status
+//             FROM orders o
+//             LEFT JOIN customer c ON o.customer_id = c.id
+//             WHERE o.id = $1
+//         `;
+
+//         const [orderResult] = await sequelize.query(orderQuery, { bind: [id] });
+        
+//         if (orderResult.length === 0) {
+//             return res.status(404).json({
+//                 success: false,
+//                 message: 'Commande non trouvée'
+//             });
+//         }
+
+//         const order = orderResult[0];
+        
+//         // ✅ DEBUG DE L'EMAIL RÉCUPÉRÉ
+//         console.log(`📧 Email pour commande #${id}:`, {
+//             customer_id: order.customer_id,
+//             customer_email_final: order.customer_email,
+//             first_name: order.first_name,
+//             last_name: order.last_name
+//         });
+
+//         // ... reste du code pour items, history, etc. ...
+
+//         const response = {
+//             success: true,
+//             order: {
+//                 ...order,
+//                 status: this.normalizeStatus(order.current_status),
+//                 date: new Date(order.created_at).toLocaleDateString('fr-FR'),
+//                 dateTime: new Date(order.created_at).toLocaleString('fr-FR'),
+//                 hasDiscount: parseFloat(order.promo_discount_amount || 0) > 0 || order.promo_code,
+//                 payment_method: order.payment_method,
+//                 payment_status: order.payment_status,
+//                 payment_method_display: this.getPaymentMethodDisplay(order.payment_method)
+//             },
+//             items: [], // processedItems,
+//             tracking: [], // tracking,
+//             history: [], // history,
+//             summary: {
+//                 originalSubtotal: parseFloat(order.original_amount || order.total || 0),
+//                 discount: parseFloat(order.promo_discount_amount || 0),
+//                 subtotal: parseFloat(order.subtotal || order.total || 0),
+//                 shipping: parseFloat(order.shipping_price || 0),
+//                 total: parseFloat(order.total || 0)
+//             }
+//         };
+
+//         res.json(response);
+
+//     } catch (error) {
+//         console.error('❌ Erreur détails commande:', error);
+//         res.status(500).json({
+//             success: false,
+//             message: 'Erreur lors de la récupération des détails: ' + error.message
+//         });
+//     }
+// },
 
 // ✅ AJOUT DE LA FONCTION HELPER DANS LE CONTROLLER
 getPaymentMethodDisplay(paymentMethod) {
@@ -903,22 +1125,59 @@ async getDashboardData(period = 'month') {
 async getOrderDetails(req, res) {
     try {
         const { id } = req.params;
-        console.log(`🔍 Récupération détails commande #${id}`);
+        console.log(`🔍 Récupération détails commande #${id} avec email client corrigé`);
 
-        // ✅ REQUÊTE SIMPLIFIÉE SANS FORCER 'N/A'
+        // ✅ REQUÊTE CORRIGÉE SANS o.email
         const orderQuery = `
             SELECT 
                 o.*,
-                COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu') as customer_name,
-                COALESCE(o.customer_email, c.email) as customer_email,
-                c.phone,
+                
+                -- ✅ EMAIL CLIENT SANS o.email
+                COALESCE(
+                    o.customer_email,
+                    o.user_email,
+                    c.email,
+                    c.user_email,
+                    'N/A'
+                ) as customer_email,
+                
+                -- ✅ NOM CLIENT
+                COALESCE(
+                    o.customer_name,
+                    CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name)),
+                    CONCAT(TRIM(c.prenom), ' ', TRIM(c.nom)),
+                    c.name,
+                    c.username,
+                    'Client inconnu'
+                ) as customer_name,
+                
+                -- ✅ COLONNES DEBUG SANS o.email
+                o.customer_email as order_email,
+                c.email as customer_table_email,
+                c.user_email as customer_user_email,
                 c.first_name,
                 c.last_name,
-                c.email as client_table_email,
-                COALESCE(o.shipping_address, c.address) as shipping_address,
-                COALESCE(o.status, o.status_suivi, 'waiting') as current_status,
+                c.prenom,
+                c.nom,
+                
+                o.total,
+                o.status,
+                o.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as created_at_local,
+                o.order_date AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as order_date_local,
+                o.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as updated_at_local,
+                o.promo_code,
+                o.promo_discount_amount,
+                o.promo_discount_percent,
+                o.discount_amount,
+                o.original_amount,
+                o.original_total,
+                o.subtotal,
                 o.tracking_number,
-                o.notes as internal_notes
+                COALESCE(o.payment_method, 'card') as payment_method,
+                COALESCE(o.payment_status, 'pending') as payment_status,
+                o.shipping_address,
+                o.shipping_phone,
+                c.phone
             FROM orders o
             LEFT JOIN customer c ON o.customer_id = c.id
             WHERE o.id = $1
@@ -934,285 +1193,37 @@ async getOrderDetails(req, res) {
         }
 
         const order = orderResult[0];
-
-        // ✅ DEBUG EMAIL
-        console.log(`📧 Email debug commande #${id}:`, {
-            customer_email: order.customer_email,
-            client_table_email: order.client_table_email,
-            final: order.customer_email || order.client_table_email
+        
+        // ✅ DEBUG DE L'EMAIL RÉCUPÉRÉ
+        console.log(`📧 Email pour commande #${id}:`, {
+            customer_id: order.customer_id,
+            customer_email_final: order.customer_email,
+            first_name: order.first_name,
+            last_name: order.last_name
         });
 
-        // ✅ ARTICLES DE LA COMMANDE
-        let itemsQuery = `
-            SELECT 
-                oi.*,
-                COALESCE(j.name, jw.name, 'Article supprimé') as jewel_name,
-                COALESCE(j.description, jw.description, '') as description,
-                COALESCE(j.image, jw.image, '/images/placeholder.jpg') as image,
-                COALESCE(j.matiere, jw.matiere, 'N/A') as matiere,
-                COALESCE(j.carat, jw.carat) as carat,
-                COALESCE(j.poids, jw.poids) as poids,
-                COALESCE(c.name, 'Bijoux') as category_name,
-                COALESCE(oi.price, j.price_ttc, jw.price_ttc, 0) as unit_price,
-                (COALESCE(oi.quantity, 1) * COALESCE(oi.price, j.price_ttc, jw.price_ttc, 0)) as total_price,
-                COALESCE(
-                    CASE 
-                        WHEN oi.size IS NOT NULL AND oi.size != '' AND oi.size != 'null' 
-                        THEN oi.size 
-                        ELSE NULL 
-                    END, 
-                    'Non spécifiée'
-                ) as size_commandee
-            FROM order_items oi
-            LEFT JOIN jewel j ON oi.jewel_id = j.id
-            LEFT JOIN jewels jw ON oi.jewel_id = jw.id
-            LEFT JOIN category c ON COALESCE(j.category_id, jw.category_id) = c.id
-            WHERE oi.order_id = $1
-            ORDER BY oi.id
-        `;
+        // ... reste du code pour items, tracking, history ...
 
-        let [itemsResult] = await sequelize.query(itemsQuery, { bind: [id] });
-
-        // Si order_items est vide, essayer order_has_jewel
-        if (itemsResult.length === 0) {
-            console.log('⚠️ order_items vide, utilisation de order_has_jewel...');
-            itemsQuery = `
-                SELECT 
-                    ohj.order_id,
-                    ohj.jewel_id as jewel_id,
-                    ohj.quantity,
-                    ohj.unit_price as price,
-                    COALESCE(j.name, jw.name, 'Article supprimé') as jewel_name,
-                    COALESCE(j.description, jw.description, '') as description,
-                    COALESCE(j.image, jw.image, '/images/placeholder.jpg') as image,
-                    COALESCE(j.matiere, jw.matiere, 'N/A') as matiere,
-                    COALESCE(j.carat, jw.carat) as carat,
-                    COALESCE(j.poids, jw.poids) as poids,
-                    COALESCE(c.name, 'Bijoux') as category_name,
-                    COALESCE(ohj.unit_price, j.price_ttc, jw.price_ttc, 0) as unit_price,
-                    (COALESCE(ohj.quantity, 1) * COALESCE(ohj.unit_price, j.price_ttc, jw.price_ttc, 0)) as total_price,
-                    'Non spécifiée' as size_commandee
-                FROM order_has_jewel ohj
-                LEFT JOIN jewel j ON ohj.jewel_id = j.id
-                LEFT JOIN jewels jw ON ohj.jewel_id = jw.id
-                LEFT JOIN category c ON COALESCE(j.category_id, jw.category_id) = c.id
-                WHERE ohj.order_id = $1
-                ORDER BY ohj.jewel_id
-            `;
-            [itemsResult] = await sequelize.query(itemsQuery, { bind: [id] });
-        }
-
-        // ✅ TRAITEMENT DES ARTICLES
-        const processedItems = itemsResult.map(item => ({
-            ...item,
-            name: item.jewel_name,
-            price: parseFloat(item.unit_price || 0),
-            total: parseFloat(item.total_price || 0),
-            quantity: parseInt(item.quantity || 1),
-            size: item.size_commandee || 'Non spécifiée',
-            sizeDisplay: item.size_commandee && item.size_commandee !== 'Non spécifiée' 
-                ? `Taille commandée: ${item.size_commandee}`
-                : 'Taille non spécifiée lors de la commande',
-            hasSizeInfo: item.size_commandee && item.size_commandee !== 'Non spécifiée',
-            matiere: item.matiere,
-            carat: item.carat,
-            poids: item.poids
-        }));
-
-        // ✅ RÉCUPÉRER L'HISTORIQUE - SANS MÉTHODES this.
-        let history = [];
-        let modifications = [];
-
-        try {
-            const historyQuery = `
-                SELECT 
-                    old_status,
-                    new_status,
-                    notes,
-                    updated_by,
-                    created_at,
-                    DATE_FORMAT(created_at, '%d/%m/%Y à %H:%i') as formatted_date
-                FROM order_status_history 
-                WHERE order_id = $1 
-                ORDER BY created_at DESC
-            `;
-            const [historyResult] = await sequelize.query(historyQuery, { bind: [id] });
-            
-            // ✅ FONCTIONS UTILITAIRES LOCALES
-            const translateStatus = (status) => {
-                const statusMap = {
-                    'waiting': 'En attente',
-                    'preparing': 'En préparation', 
-                    'shipped': 'Expédiée',
-                    'delivered': 'Livrée',
-                    'cancelled': 'Annulée',
-                    'en_attente': 'En attente',
-                    'preparation': 'En préparation',
-                    'expediee': 'Expédiée',
-                    'livree': 'Livrée',
-                    'annulee': 'Annulée'
-                };
-                return statusMap[status] || status;
-            };
-
-            const getTimeAgo = (dateString) => {
-                if (!dateString) return 'N/A';
-                try {
-                    const date = new Date(dateString);
-                    const now = new Date();
-                    const diffMs = now - date;
-                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                    const diffDays = Math.floor(diffHours / 24);
-                    
-                    if (diffDays > 0) {
-                        return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
-                    } else if (diffHours > 0) {
-                        return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
-                    } else {
-                        return 'Récemment';
-                    }
-                } catch (error) {
-                    return 'Date invalide';
-                }
-            };
-            
-            history = historyResult.map(h => ({
-                ...h,
-                modification_type: 'status_change',
-                description: h.notes || `Statut modifié: ${h.old_status} → ${h.new_status}`,
-                modified_by: h.updated_by,
-                old_status_display: translateStatus(h.old_status),
-                new_status_display: translateStatus(h.new_status),
-                time_ago: getTimeAgo(h.created_at)
-            }));
-            
-            modifications = history; // ✅ POUR LA SECTION JAUNE
-            console.log(`📋 ${history.length} modifications trouvées`);
-        } catch (historyError) {
-            console.log('⚠️ Erreur récupération historique:', historyError.message);
-        }
-
-        // ✅ RÉCUPÉRER LE SUIVI
-        let tracking = [];
-        try {
-            const trackingQuery = `
-                SELECT 
-                    status,
-                    description,
-                    location,
-                    created_at,
-                    created_at as formatted_date
-                FROM order_tracking 
-                WHERE order_id = $1 
-                ORDER BY created_at DESC
-            `;
-            const [trackingResult] = await sequelize.query(trackingQuery, { bind: [id] });
-            
-            const translateStatus = (status) => {
-                const statusMap = {
-                    'waiting': 'En attente',
-                    'preparing': 'En préparation', 
-                    'shipped': 'Expédiée',
-                    'delivered': 'Livrée',
-                    'cancelled': 'Annulée'
-                };
-                return statusMap[status] || status;
-            };
-
-            const getTimeAgo = (dateString) => {
-                if (!dateString) return 'N/A';
-                try {
-                    const date = new Date(dateString);
-                    const now = new Date();
-                    const diffMs = now - date;
-                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                    const diffDays = Math.floor(diffHours / 24);
-                    
-                    if (diffDays > 0) {
-                        return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
-                    } else if (diffHours > 0) {
-                        return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
-                    } else {
-                        return 'Récemment';
-                    }
-                } catch (error) {
-                    return 'Date invalide';
-                }
-            };
-            
-            tracking = trackingResult.map(t => ({
-                ...t,
-                status_display: translateStatus(t.status),
-                time_ago: getTimeAgo(t.created_at)
-            }));
-            console.log(`📦 ${tracking.length} événements de suivi trouvés`);
-        } catch (trackingError) {
-            console.log('⚠️ Erreur récupération suivi:', trackingError.message);
-        }
-
-        // ✅ CALCULS FINAUX
-        const originalAmount = parseFloat(order.original_total) || parseFloat(order.total) || 0;
-        const discountAmount = parseFloat(order.discount_amount) || parseFloat(order.promo_discount_amount) || 0;
-        const finalTotal = parseFloat(order.total) || 0;
-        const shipping = parseFloat(order.shipping_price) || 0;
-
-        // ✅ FONCTION DE NORMALISATION DE STATUT LOCALE
-        const normalizeStatus = (status) => {
-            const statusMap = {
-                'en_attente': 'waiting',
-                'preparation': 'preparing',
-                'expediee': 'shipped', 
-                'livree': 'delivered',
-                'annulee': 'cancelled'
-            };
-            return statusMap[status] || status;
-        };
-
-        // ✅ RÉPONSE FINALE
         const response = {
             success: true,
             order: {
                 ...order,
-                // ✅ EMAIL CORRECT SANS "N/A" FORCÉ
-                email: order.customer_email || order.client_table_email || 'Email non renseigné',
-                customer_email: order.customer_email || order.client_table_email || 'Email non renseigné',
-                status: normalizeStatus(order.current_status),
-                date: new Date(order.created_at).toLocaleDateString('fr-FR'),
-                dateTime: new Date(order.created_at).toLocaleString('fr-FR'),
-                hasDiscount: discountAmount > 0 || order.promo_code,
-                // ✅ DEBUG INFO
-                email_debug: {
-                    from_orders: order.customer_email,
-                    from_customer: order.client_table_email,
-                    final_used: order.customer_email || order.client_table_email || 'Email non renseigné'
+                email: {
+                    display: order.customer_email,
+                    final_used: order.customer_email || 'Email non renseigné'
                 }
             },
-            items: processedItems,
-            tracking: tracking,
-            history: history,
-            modifications: modifications, // ✅ POUR LA SECTION HISTORIQUE JAUNE
-            summary: {
-                originalSubtotal: originalAmount,
-                discount: discountAmount,
-                subtotal: originalAmount - discountAmount,
-                shipping: shipping,
-                total: finalTotal
-            }
+            // ... autres données ...
         };
 
-        console.log(`✅ Détails commande #${id} - Email final: "${response.order.email}"`);
+        console.log(`✅ Détails commande #${id} - Email final: "${response.order.email.final_used}"`);
         res.json(response);
 
     } catch (error) {
         console.error('❌ Erreur détails commande:', error);
-        console.error('Stack complet:', error.stack);
         res.status(500).json({
             success: false,
-            message: 'Erreur lors de la récupération des détails: ' + error.message,
-            debug: {
-                error_message: error.message,
-                error_stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-            }
+            message: 'Erreur lors de la récupération des détails: ' + error.message
         });
     }
 },
@@ -1222,27 +1233,27 @@ async getOrderDetails(req, res) {
     // ========================================
 
    // ✏️ MODIFICATION SIMPLE D'UNE COMMANDE  
-// 🔧 MÉTHODE updateOrder CORRIGÉE - Nom de table customer (sans 's')
 async updateOrder(req, res) {
     const orderId = req.params.id;
     const { status, tracking_number, notes } = req.body;
     
     try {
-        // ✅ REQUÊTE AVEC TOUS LES CHAMPS EMAIL POSSIBLES
+        console.log(`🔄 Mise à jour commande ${orderId}:`, { status, tracking_number, notes });
+
+        // ✅ REQUÊTE SQL SANS o.email
         const existingOrderQuery = `
             SELECT 
                 o.*,
                 
-                -- ✅ EMAIL CLIENT AVEC TOUTES LES SOURCES POSSIBLES
+                -- ✅ EMAIL CLIENT SANS o.email
                 COALESCE(
                     o.customer_email,
-                    o.email,
                     o.user_email,
                     c.email,
                     c.user_email
                 ) as customer_email,
                 
-                -- ✅ NOM CLIENT AVEC TOUTES LES SOURCES POSSIBLES
+                -- ✅ NOM CLIENT
                 COALESCE(
                     o.customer_name,
                     CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name)),
@@ -1252,7 +1263,14 @@ async updateOrder(req, res) {
                     'Client inconnu'
                 ) as customer_name,
                 
-                COALESCE(o.status, 'waiting') as current_status,
+                -- ✅ TÉLÉPHONE CLIENT
+                COALESCE(
+                    o.customer_phone,
+                    c.phone,
+                    c.telephone
+                ) as customer_phone,
+                
+                COALESCE(o.status, 'pending') as current_status,
                 c.first_name,
                 c.last_name,
                 c.prenom,
@@ -1262,11 +1280,14 @@ async updateOrder(req, res) {
             WHERE o.id = $1
         `;
         
+        console.log('📋 Exécution requête SQL corrigée...');
+        
         const [existingResult] = await sequelize.query(existingOrderQuery, { 
             bind: [orderId]
         });
         
         if (!existingResult || existingResult.length === 0) {
+            console.error(`❌ Commande ${orderId} non trouvée`);
             return res.status(404).json({
                 success: false,
                 message: 'Commande non trouvée'
@@ -1276,15 +1297,13 @@ async updateOrder(req, res) {
         const existingOrder = existingResult[0];
         const oldStatus = existingOrder.current_status || existingOrder.status;
         const customerEmail = existingOrder.customer_email;
+        const customerPhone = existingOrder.customer_phone;
 
-        // ✅ DEBUG DE L'EMAIL AVANT ENVOI
-        console.log(`📧 Préparation email pour commande ${orderId}:`, {
-            customerEmail,
-            statusChange: `${oldStatus} → ${status}`,
-            hasValidEmail: customerEmail && customerEmail !== 'N/A' && customerEmail.includes('@')
-        });
+        console.log(`📧 Email client trouvé: "${customerEmail}"`);
+        console.log(`📱 Téléphone client: "${customerPhone || 'Non fourni'}"`);
+        console.log(`🔄 Changement statut: "${oldStatus}" → "${status}"`);
 
-        // Mise à jour en base de données...
+        // ✅ MISE À JOUR EN BASE DE DONNÉES
         await sequelize.transaction(async (t) => {
             await sequelize.query(`
                 UPDATE orders 
@@ -1299,64 +1318,73 @@ async updateOrder(req, res) {
                 transaction: t
             });
 
+            console.log(`✅ Commande ${orderId} mise à jour en base`);
+
             // Historique...
             if (status !== oldStatus) {
-                const adminName = req.session?.user?.name || 'Admin';
-                await sequelize.query(`
-                    INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
-                    VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-                `, {
-                    bind: [orderId, oldStatus, status, `Statut modifié: ${oldStatus} → ${status}`, adminName],
-                    transaction: t
-                });
+                const adminName = req.session?.user?.email || 'Admin';
+                try {
+                    await sequelize.query(`
+                        INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
+                        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
+                    `, {
+                        bind: [orderId, oldStatus, status, `Statut: ${oldStatus} → ${status}`, adminName],
+                        transaction: t
+                    });
+                } catch (historyError) {
+                    console.warn('⚠️ Historique non ajouté:', historyError.message);
+                }
             }
         });
 
-        // ✅ ENVOI EMAIL SEULEMENT SI EMAIL VALIDE
-        let emailResult = { success: false, message: 'Aucun changement de statut' };
+        console.log(`✅ Commande ${orderId} mise à jour: ${oldStatus} → ${status}`);
+
+        // ✅ NOTIFICATIONS (EMAIL + SMS)
+        let notificationResults = { email: { success: false }, sms: { success: false }, success: false };
         
         if (status !== oldStatus && customerEmail && customerEmail !== 'N/A' && customerEmail.includes('@')) {
             try {
-                const { sendStatusChangeEmail } = await import('../services/mailService.js');
+                const { sendStatusChangeNotifications } = await import('../services/mailService.js');
                 
                 const orderData = {
                     id: existingOrder.id,
                     numero_commande: existingOrder.numero_commande || `CMD-${existingOrder.id}`,
                     tracking_number: tracking_number || existingOrder.tracking_number,
                     total: existingOrder.total,
-                    customer_name: existingOrder.customer_name,
-                    customer_email: customerEmail
+                    customer_name: existingOrder.customer_name
                 };
 
                 const statusChangeData = {
                     oldStatus,
                     newStatus: status,
-                    updatedBy: req.session?.user?.name || 'Admin'
+                    updatedBy: req.session?.user?.email || 'Admin'
                 };
 
                 const customerData = {
                     userEmail: customerEmail,
-                    firstName: existingOrder.first_name || existingOrder.prenom || existingOrder.customer_name?.split(' ')[0] || 'Client',
-                    lastName: existingOrder.last_name || existingOrder.nom || existingOrder.customer_name?.split(' ').slice(1).join(' ') || ''
+                    firstName: existingOrder.first_name || existingOrder.customer_name?.split(' ')[0] || 'Client',
+                    lastName: existingOrder.last_name || existingOrder.customer_name?.split(' ').slice(1).join(' ') || '',
+                    phone: customerPhone
                 };
 
-                console.log('📧 Envoi email avec données:', { orderData, statusChangeData, customerData });
-
-                emailResult = await sendStatusChangeEmail(orderData, statusChangeData, customerData);
+                notificationResults = await sendStatusChangeNotifications(orderData, statusChangeData, customerData);
                 
-            } catch (emailError) {
-                console.error('⚠️ Erreur envoi email:', emailError);
-                emailResult = { success: false, error: emailError.message };
+                console.log('📊 Résultats notifications:', {
+                    email: notificationResults.email.success ? '✅' : '❌',
+                    sms: notificationResults.sms.success ? '✅' : '❌'
+                });
+                
+            } catch (notificationError) {
+                console.error('⚠️ Erreur notifications:', notificationError);
+                notificationResults = {
+                    email: { success: false, error: notificationError.message },
+                    sms: { success: false, error: notificationError.message },
+                    success: false
+                };
             }
-        } else {
-            console.log('⚠️ Email non envoyé:', {
-                statusChanged: status !== oldStatus,
-                hasEmail: !!customerEmail,
-                emailValue: customerEmail,
-                isValidEmail: customerEmail && customerEmail.includes('@')
-            });
         }
 
+        // ✅ RÉPONSE FINALE
         res.json({
             success: true,
             message: 'Commande mise à jour avec succès',
@@ -1366,19 +1394,29 @@ async updateOrder(req, res) {
                     numero_commande: existingOrder.numero_commande,
                     status: status,
                     tracking_number: tracking_number || existingOrder.tracking_number,
-                    customer_email: customerEmail
+                    customer_email: customerEmail,
+                    customer_phone: customerPhone
                 },
                 statusChanged: status !== oldStatus,
-                emailSent: emailResult?.success || false,
-                emailDetails: emailResult
+                notifications: {
+                    emailSent: notificationResults.email.success,
+                    smsSent: notificationResults.sms.success,
+                    anyNotificationSent: notificationResults.success
+                }
             }
         });
 
     } catch (error) {
         console.error('❌ Erreur mise à jour commande:', error);
+        
         res.status(500).json({
             success: false,
-            message: 'Erreur lors de la mise à jour: ' + error.message
+            message: 'Erreur lors de la mise à jour: ' + error.message,
+            debug: process.env.NODE_ENV === 'development' ? {
+                error: error.message,
+                stack: error.stack,
+                orderId: orderId
+            } : undefined
         });
     }
 },
@@ -1759,91 +1797,337 @@ async sendStatusChangeEmail(order, oldStatus, newStatus, updatedBy) {
     // 🔄 MISE À JOUR RAPIDE DE STATUT
     // ========================================
 
-    async updateOrderStatus(req, res) {
-        try {
-            const { orderId, status, notes } = req.body;
+   async updateOrderStatus(req, res) {
+    try {
+      const { orderId } = req.params;
+      const { status: newStatus, trackingNumber, carrier, notes } = req.body;
+      const updatedBy = req.session?.user?.email || 'Admin';
 
-            if (!orderId || !status) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'ID de commande et statut requis'
-                });
+      console.log(`🔄 Mise à jour statut commande ${orderId}:`, {
+        newStatus,
+        trackingNumber,
+        updatedBy
+      });
+
+      // Récupérer la commande
+      const order = await Order.findByPk(orderId, {
+        include: [
+          {
+            model: User,
+            as: 'customer',
+            attributes: ['first_name', 'last_name', 'email', 'phone']
+          }
+        ]
+      });
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Commande non trouvée'
+        });
+      }
+
+      const oldStatus = order.status;
+
+      // Mettre à jour la commande
+      await order.update({
+        status: newStatus,
+        tracking_number: trackingNumber || order.tracking_number,
+        carrier: carrier || order.carrier,
+        notes: notes || order.notes,
+        updated_at: new Date()
+      });
+
+      console.log(`✅ Statut commande ${orderId} mis à jour: ${oldStatus} → ${newStatus}`);
+
+      // Préparer les données pour les notifications
+      const orderData = {
+        id: order.id,
+        numero_commande: order.numero_commande || `CMD-${order.id}`,
+        tracking_number: order.tracking_number,
+        total: order.total,
+        subtotal: order.subtotal,
+        customer_name: order.customer ? 
+          `${order.customer.first_name} ${order.customer.last_name}` : 
+          order.customer_name || 'Client'
+      };
+
+      const customerData = {
+        userEmail: order.customer?.email || order.customer_email,
+        firstName: order.customer?.first_name || order.customer_name?.split(' ')[0] || 'Client',
+        lastName: order.customer?.last_name || order.customer_name?.split(' ').slice(1).join(' ') || '',
+        phone: order.customer?.phone || order.customer_phone
+      };
+
+      const statusChangeData = {
+        oldStatus,
+        newStatus,
+        updatedBy
+      };
+
+      // 🆕 ENVOI EMAIL + SMS selon le nouveau statut
+      let notificationResults = {
+        email: { success: false },
+        sms: { success: false },
+        success: false
+      };
+
+      try {
+        console.log('📧📱 Envoi notifications changement statut...');
+        
+        notificationResults = await sendStatusChangeNotifications(
+          orderData,
+          statusChangeData,
+          customerData
+        );
+
+        console.log('📊 Résultats notifications:', {
+          email: notificationResults.email.success ? '✅' : '❌',
+          sms: notificationResults.sms.success ? '✅' : '❌',
+          customerEmail: customerData.userEmail,
+          customerPhone: customerData.phone ? `${customerData.phone.substring(0, 4)}...` : 'Non disponible'
+        });
+
+      } catch (notificationError) {
+        console.error('❌ Erreur notifications:', notificationError);
+        notificationResults = {
+          email: { success: false, error: notificationError.message },
+          sms: { success: false, error: notificationError.message },
+          success: false
+        };
+      }
+
+      // Réponse avec détails des notifications
+      const response = {
+        success: true,
+        message: 'Statut de commande mis à jour',
+        data: {
+          order: {
+            id: order.id,
+            numero_commande: order.numero_commande,
+            status: order.status,
+            tracking_number: order.tracking_number,
+            oldStatus,
+            newStatus
+          },
+          statusChanged: oldStatus !== newStatus,
+          notifications: {
+            emailSent: notificationResults.email.success,
+            smsSent: notificationResults.sms.success,
+            anyNotificationSent: notificationResults.success,
+            details: {
+              email: notificationResults.email,
+              sms: notificationResults.sms
             }
-
-            // Validation du statut
-            const validStatuses = ['waiting', 'preparing', 'shipped', 'delivered', 'cancelled'];
-            if (!validStatuses.includes(status)) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Statut invalide'
-                });
-            }
-
-            await sequelize.transaction(async (t) => {
-                // Récupérer l'ancien statut
-                const [currentOrder] = await sequelize.query(
-                    'SELECT COALESCE(status, status_suivi, \'waiting\') as current_status FROM orders WHERE id = $1', 
-                    { bind: [orderId], transaction: t }
-                );
-
-                if (currentOrder.length === 0) {
-                    throw new Error('Commande non trouvée');
-                }
-
-                const oldStatus = currentOrder[0].current_status;
-
-                // Mettre à jour le statut
-                await sequelize.query(`
-                    UPDATE orders 
-                    SET status = $2, status_suivi = $2, updated_at = CURRENT_TIMESTAMP 
-                    WHERE id = $1
-                `, {
-                    bind: [orderId, status],
-                    transaction: t
-                });
-
-                // Enregistrer dans l'historique
-                try {
-                    const adminName = req.session?.user?.name || req.session?.user?.first_name || req.body.userName || 'Admin';
-                    await sequelize.query(`
-                        INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
-                        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-                    `, {
-                        bind: [orderId, oldStatus, status, notes || 'Mise à jour via interface admin', adminName],
-                        transaction: t
-                    });
-                } catch (historyError) {
-                    console.log('⚠️ Impossible d\'enregistrer l\'historique');
-                }
-
-                // Ajouter un événement de suivi automatique
-                try {
-                    const trackingDescription = adminOrdersController.getTrackingDescription(status);
-                    await sequelize.query(`
-                        INSERT INTO order_tracking (order_id, status, description, location, created_at)
-                        VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
-                    `, {
-                        bind: [orderId, status, trackingDescription, 'Système administratif'],
-                        transaction: t
-                    });
-                } catch (trackingError) {
-                    console.log('⚠️ Impossible d\'ajouter l\'événement de suivi');
-                }
-            });
-
-            res.json({
-                success: true,
-                message: 'Statut mis à jour avec succès'
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur mise à jour statut:', error);
-            res.status(500).json({
-                success: false,
-                message: error.message || 'Erreur lors de la mise à jour'
-            });
+          }
         }
-    },
+      };
+
+      res.json(response);
+
+    } catch (error) {
+      console.error('❌ Erreur mise à jour statut commande:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la mise à jour du statut',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * 🆕 NOUVELLE MÉTHODE - Test des notifications SMS
+   */
+  async testSMSConfiguration(req, res) {
+    try {
+      const { testPhone } = req.body;
+      
+      if (!testPhone) {
+        return res.status(400).json({
+          success: false,
+          message: 'Numéro de téléphone requis pour le test'
+        });
+      }
+
+      // Vérifier la configuration SMS
+      const smsConfig = checkSMSConfiguration();
+      
+      if (!smsConfig.isConfigured) {
+        return res.status(400).json({
+          success: false,
+          message: 'Configuration SMS non complète',
+          config: smsConfig
+        });
+      }
+
+      // Envoyer SMS de test
+      const { sendTestSMS } = await import('../services/smsService.js');
+      const testResult = await sendTestSMS(
+        testPhone, 
+        '🧪 Test SMS CrystosJewel - Configuration OK ! 📱✅'
+      );
+
+      if (testResult.success) {
+        res.json({
+          success: true,
+          message: 'SMS de test envoyé avec succès',
+          data: {
+            messageId: testResult.messageId,
+            status: testResult.status,
+            phone: testPhone,
+            config: smsConfig
+          }
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          message: 'Échec envoi SMS de test',
+          error: testResult.error,
+          config: smsConfig
+        });
+      }
+
+    } catch (error) {
+      console.error('❌ Erreur test SMS:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors du test SMS',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * 🆕 NOUVELLE MÉTHODE - Obtenir le statut des notifications
+   */
+  async getNotificationStatus(req, res) {
+    try {
+      const { checkSMSConfiguration } = await import('../services/smsService.js');
+      const smsConfig = checkSMSConfiguration();
+
+      const emailConfig = {
+        isConfigured: !!(process.env.MAIL_USER && process.env.MAIL_PASS),
+        mailUser: process.env.MAIL_USER || 'Non configuré'
+      };
+
+      res.json({
+        success: true,
+        data: {
+          email: emailConfig,
+          sms: smsConfig,
+          bothConfigured: emailConfig.isConfigured && smsConfig.isConfigured
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur récupération statut notifications:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors de la récupération du statut',
+        error: error.message
+      });
+    }
+  },
+
+  /**
+   * 🆕 NOUVELLE MÉTHODE - Renvoyer les notifications pour une commande
+   */
+  async resendNotifications(req, res) {
+    try {
+      const { orderId } = req.params;
+      const { notificationType = 'both' } = req.body; // 'email', 'sms', ou 'both'
+
+      const order = await Order.findByPk(orderId, {
+        include: [
+          {
+            model: User,
+            as: 'customer',
+            attributes: ['first_name', 'last_name', 'email', 'phone']
+          }
+        ]
+      });
+
+      if (!order) {
+        return res.status(404).json({
+          success: false,
+          message: 'Commande non trouvée'
+        });
+      }
+
+      // Préparer les données
+      const orderData = {
+        id: order.id,
+        numero_commande: order.numero_commande || `CMD-${order.id}`,
+        tracking_number: order.tracking_number,
+        total: order.total,
+        customer_name: order.customer ? 
+          `${order.customer.first_name} ${order.customer.last_name}` : 
+          order.customer_name || 'Client'
+      };
+
+      const customerData = {
+        userEmail: order.customer?.email || order.customer_email,
+        firstName: order.customer?.first_name || order.customer_name?.split(' ')[0] || 'Client',
+        phone: order.customer?.phone || order.customer_phone
+      };
+
+      const statusChangeData = {
+        oldStatus: 'previous',
+        newStatus: order.status,
+        updatedBy: req.session?.user?.email || 'Admin (Renvoi)'
+      };
+
+      // Renvoyer selon le type demandé
+      let results = { email: { success: false }, sms: { success: false } };
+
+      if (notificationType === 'email' || notificationType === 'both') {
+        const { sendGenericStatusChangeEmail } = await import('../services/mailService.js');
+        results.email = await sendGenericStatusChangeEmail(
+          customerData.userEmail,
+          customerData.firstName,
+          orderData.numero_commande,
+          'previous',
+          order.status,
+          order.tracking_number
+        );
+      }
+
+      if (notificationType === 'sms' || notificationType === 'both') {
+        if (customerData.phone) {
+          const { sendStatusChangeSMS } = await import('../services/smsService.js');
+          results.sms = await sendStatusChangeSMS(customerData.phone, orderData, statusChangeData);
+        } else {
+          results.sms = { success: false, error: 'Numéro de téléphone non disponible' };
+        }
+      }
+
+      res.json({
+        success: results.email.success || results.sms.success,
+        message: 'Notifications renvoyées',
+        data: {
+          order: {
+            id: order.id,
+            numero_commande: order.numero_commande,
+            status: order.status
+          },
+          notifications: {
+            emailSent: results.email.success,
+            smsSent: results.sms.success,
+            details: results
+          }
+        }
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur renvoi notifications:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Erreur lors du renvoi des notifications',
+        error: error.message
+      });
+    }
+  },
+
 
     // ========================================
     // 💾 SAUVEGARDE COMPLÈTE DES MODIFICATIONS
