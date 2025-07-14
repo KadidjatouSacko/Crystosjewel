@@ -609,54 +609,97 @@
     </div>
 
     <!-- Statistiques -->
-    <div class="stats-overview">
-        <div class="stat-card">
-            <div class="stat-header">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
-                    <i class="fas fa-users"></i>
-                </div>
+  <!-- Statistiques -->
+<div class="stats-overview">
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                <i class="fas fa-users"></i>
             </div>
-            <div class="stat-value" id="totalCustomers"><%= customersStats.total || 0 %></div>
-            <div class="stat-label">Total Clients</div>
         </div>
-
-        <div class="stat-card">
-            <div class="stat-header">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
-                    <i class="fas fa-shopping-cart"></i>
-                </div>
-            </div>
-            <div class="stat-value" id="customersWithOrders"><%= customersStats.withOrders || 0 %></div>
-            <div class="stat-label">Avec Commandes</div>
+        <div class="stat-value" id="totalCustomers">
+            <% 
+            let totalClients = 0;
+            if (typeof customersStats !== 'undefined' && customersStats.total) {
+                totalClients = customersStats.total;
+            } else if (typeof statsGlobales !== 'undefined' && statsGlobales.totalClients) {
+                totalClients = statsGlobales.totalClients;
+            } else if (typeof customers !== 'undefined' && customers.length) {
+                totalClients = customers.length;
+            }
+            %>
+            <%= totalClients %>
         </div>
-
-        <div class="stat-card">
-            <div class="stat-header">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-                    <i class="fas fa-user-check"></i>
-                </div>
-            </div>
-            <div class="stat-value" id="customersWithAccounts"><%= customersStats.withAccounts || 0 %></div>
-            <div class="stat-label">Comptes Créés</div>
-        </div>
-
-        <div class="stat-card">
-            <div class="stat-header">
-                <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
-                    <i class="fas fa-envelope"></i>
-                </div>
-            </div>
-            <div class="stat-value" id="newsletterSubscribers"><%= customersStats.newsletter || 0 %></div>
-            <div class="stat-label">Newsletter</div>
-        </div>
+        <div class="stat-label">Total Clients</div>
     </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                <i class="fas fa-shopping-cart"></i>
+            </div>
+        </div>
+        <div class="stat-value" id="customersWithOrders">
+            <% 
+            let withOrders = 0;
+            if (typeof customersStats !== 'undefined' && customersStats.withOrders) {
+                withOrders = customersStats.withOrders;
+            } else if (typeof customers !== 'undefined' && customers.length) {
+                withOrders = customers.filter(c => c.total_orders && c.total_orders > 0).length;
+            }
+            %>
+            <%= withOrders %>
+        </div>
+        <div class="stat-label">Avec Commandes</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                <i class="fas fa-user-check"></i>
+            </div>
+        </div>
+        <div class="stat-value" id="customersWithAccounts">
+            <% 
+            let withAccounts = 0;
+            if (typeof customersStats !== 'undefined' && customersStats.withAccounts) {
+                withAccounts = customersStats.withAccounts;
+            } else if (typeof customers !== 'undefined' && customers.length) {
+                withAccounts = customers.filter(c => !c.is_guest).length;
+            }
+            %>
+            <%= withAccounts %>
+        </div>
+        <div class="stat-label">Comptes Créés</div>
+    </div>
+
+    <div class="stat-card">
+        <div class="stat-header">
+            <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                <i class="fas fa-envelope"></i>
+            </div>
+        </div>
+        <div class="stat-value" id="newsletterSubscribers">
+            <% 
+            let newsletter = 0;
+            if (typeof customersStats !== 'undefined' && customersStats.newsletter) {
+                newsletter = customersStats.newsletter;
+            } else if (typeof customers !== 'undefined' && customers.length) {
+                newsletter = customers.filter(c => c.marketing_opt_in || c.email_notifications).length;
+            }
+            %>
+            <%= newsletter %>
+        </div>
+        <div class="stat-label">Newsletter</div>
+    </div>
+</div>
 
     <!-- Liste des clients -->
     <div class="customers-list">
         <div class="list-header">
             <h3>Liste des Clients</h3>
             <div class="table-actions">
-                <span id="resultsCount"><%= customers.length %> clients trouvés</span>
+                <span id="resultsCount"><%= (typeof customers !== 'undefined' ? customers.length : 0) %> clients trouvés</span>
             </div>
         </div>
 
