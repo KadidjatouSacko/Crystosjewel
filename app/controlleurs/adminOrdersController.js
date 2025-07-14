@@ -666,7 +666,7 @@ calculateStatusStats(orders) {
 //     }
 // },
 
-// ✅ AJOUT DE LA FONCTION HELPER DANS LE CONTROLLER
+
 getPaymentMethodDisplay(paymentMethod) {
     const methods = {
         'card': 'Carte bancaire',
@@ -1120,69 +1120,48 @@ async getDashboardData(period = 'month') {
     // 🔍 DÉTAILS D'UNE COMMANDE
     // ========================================
 
-   // 🔧 FIX ERREUR 500 - getOrderDetails sans erreurs de méthodes
+// CORRECTION MINIMALE - SEULEMENT getOrderDetails dans adminOrdersController.js
 
+/**
+ * ✅ CORRECTION UNIQUEMENT DE getOrderDetails - SUPPRESSION o.email
+ */
+// VERSION ULTRA-MINIMALE - Seulement les colonnes de base qui existent forcément
+
+/**
+ * ✅ getOrderDetails ULTRA-MINIMAL - Colonnes de base uniquement
+ */
 async getOrderDetails(req, res) {
     try {
         const { id } = req.params;
-        console.log(`🔍 Récupération détails commande #${id} avec email client corrigé`);
+        console.log(`🔍 Récupération détails commande #${id}`);
 
-        // ✅ REQUÊTE CORRIGÉE SANS o.email
+        // ✅ D'ABORD: VÉRIFIER LA STRUCTURE DE LA TABLE
+        try {
+            const [tableStructure] = await sequelize.query(`
+                SELECT column_name, data_type 
+                FROM information_schema.columns 
+                WHERE table_name = 'orders' 
+                ORDER BY ordinal_position
+            `);
+            console.log('🔍 Structure table orders:', tableStructure.map(col => col.column_name));
+        } catch (structError) {
+            console.warn('⚠️ Impossible de récupérer la structure:', structError.message);
+        }
+
+        // ✅ REQUÊTE AVEC SEULEMENT o.* ET c.email
         const orderQuery = `
             SELECT 
                 o.*,
-                
-                -- ✅ EMAIL CLIENT SANS o.email
-                COALESCE(
-                    o.customer_email,
-                    o.user_email,
-                    c.email,
-                    c.user_email,
-                    'N/A'
-                ) as customer_email,
-                
-                -- ✅ NOM CLIENT
-                COALESCE(
-                    o.customer_name,
-                    CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name)),
-                    CONCAT(TRIM(c.prenom), ' ', TRIM(c.nom)),
-                    c.name,
-                    c.username,
-                    'Client inconnu'
-                ) as customer_name,
-                
-                -- ✅ COLONNES DEBUG SANS o.email
-                o.customer_email as order_email,
                 c.email as customer_table_email,
-                c.user_email as customer_user_email,
                 c.first_name,
                 c.last_name,
-                c.prenom,
-                c.nom,
-                
-                o.total,
-                o.status,
-                o.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as created_at_local,
-                o.order_date AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as order_date_local,
-                o.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as updated_at_local,
-                o.promo_code,
-                o.promo_discount_amount,
-                o.promo_discount_percent,
-                o.discount_amount,
-                o.original_amount,
-                o.original_total,
-                o.subtotal,
-                o.tracking_number,
-                COALESCE(o.payment_method, 'card') as payment_method,
-                COALESCE(o.payment_status, 'pending') as payment_status,
-                o.shipping_address,
-                o.shipping_phone,
-                c.phone
+                c.phone as customer_table_phone
             FROM orders o
             LEFT JOIN customer c ON o.customer_id = c.id
             WHERE o.id = $1
         `;
 
+        console.log('📋 Exécution requête SQL...');
         const [orderResult] = await sequelize.query(orderQuery, { bind: [id] });
         
         if (orderResult.length === 0) {
@@ -1193,37 +1172,87 @@ async getOrderDetails(req, res) {
         }
 
         const order = orderResult[0];
-        
-        // ✅ DEBUG DE L'EMAIL RÉCUPÉRÉ
-        console.log(`📧 Email pour commande #${id}:`, {
-            customer_id: order.customer_id,
-            customer_email_final: order.customer_email,
-            first_name: order.first_name,
-            last_name: order.last_name
-        });
+        console.log('📊 Données brutes récupérées:', Object.keys(order));
 
-        // ... reste du code pour items, tracking, history ...
+        // ✅ CONSTRUCTION SÉCURISÉE DE L'EMAIL
+        let finalEmail = 'Email non renseigné';
+        if (order.customer_email) {
+            finalEmail = order.customer_email;
+        } else if (order.customer_table_email) {
+            finalEmail = order.customer_table_email;
+        }
 
+        // ✅ CONSTRUCTION SÉCURISÉE DU NOM
+        let finalName = 'Client inconnu';
+        if (order.customer_name) {
+            finalName = order.customer_name;
+        } else if (order.first_name && order.last_name) {
+            finalName = `${order.first_name} ${order.last_name}`;
+        }
+
+        console.log(`📧 Email final: "${finalEmail}"`);
+        console.log(`👤 Nom final: "${finalName}"`);
+
+        // ✅ RÉCUPÉRATION DES ARTICLES (SIMPLE)
+        const itemsQuery = `
+            SELECT 
+                oi.*,
+                j.name as jewel_name,
+                j.image as jewel_image
+            FROM order_items oi
+            LEFT JOIN jewel j ON oi.jewel_id = j.id
+            WHERE oi.order_id = $1
+            ORDER BY oi.id
+        `;
+
+        const [items] = await sequelize.query(itemsQuery, { bind: [id] });
+        console.log(`📦 ${items.length} articles trouvés`);
+
+        // ✅ RÉPONSE ULTRA-SIMPLE
         const response = {
             success: true,
             order: {
-                ...order,
-                email: {
-                    display: order.customer_email,
-                    final_used: order.customer_email || 'Email non renseigné'
-                }
+                id: order.id,
+                numero_commande: order.numero_commande || `CMD-${order.id}`,
+                customer_name: finalName,
+                customer_email: finalEmail,
+                status: order.status || 'pending',
+                total: order.total || 0,
+                tracking_number: order.tracking_number || '',
+                notes: order.notes || '',
+                created_at: order.created_at,
+                date: order.created_at ? 
+                    new Date(order.created_at).toLocaleDateString('fr-FR') : 
+                    'Date inconnue',
+                
+                // ✅ TOUTES LES COLONNES BRUTES POUR DEBUG
+                _rawData: order
             },
-            // ... autres données ...
+            items: items.map(item => ({
+                id: item.id,
+                name: item.jewel_name || item.jewel_name || 'Article',
+                quantity: item.quantity || 1,
+                price: item.price_ttc || 0,
+                size: item.size || 'Non spécifiée'
+            }))
         };
 
-        console.log(`✅ Détails commande #${id} - Email final: "${response.order.email.final_used}"`);
+        console.log(`✅ Réponse préparée pour commande #${id}`);
         res.json(response);
 
     } catch (error) {
         console.error('❌ Erreur détails commande:', error);
+        console.error('❌ Message:', error.message);
+        console.error('❌ SQL:', error.sql);
+        
         res.status(500).json({
             success: false,
-            message: 'Erreur lors de la récupération des détails: ' + error.message
+            message: 'Erreur lors de la récupération des détails: ' + error.message,
+            debug: {
+                error: error.message,
+                sql: error.sql,
+                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            }
         });
     }
 },
@@ -1232,7 +1261,6 @@ async getOrderDetails(req, res) {
     // ✏️ MODIFICATION D'UNE COMMANDE
     // ========================================
 
-   // ✏️ MODIFICATION SIMPLE D'UNE COMMANDE  
 async updateOrder(req, res) {
     const orderId = req.params.id;
     const { status, tracking_number, notes } = req.body;
@@ -1240,47 +1268,20 @@ async updateOrder(req, res) {
     try {
         console.log(`🔄 Mise à jour commande ${orderId}:`, { status, tracking_number, notes });
 
-        // ✅ REQUÊTE SQL SANS o.email
+        // ✅ REQUÊTE MINIMALE - SEULEMENT LES COLONNES QUI EXISTENT
         const existingOrderQuery = `
             SELECT 
                 o.*,
-                
-                -- ✅ EMAIL CLIENT SANS o.email
-                COALESCE(
-                    o.customer_email,
-                    o.user_email,
-                    c.email,
-                    c.user_email
-                ) as customer_email,
-                
-                -- ✅ NOM CLIENT
-                COALESCE(
-                    o.customer_name,
-                    CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name)),
-                    CONCAT(TRIM(c.prenom), ' ', TRIM(c.nom)),
-                    c.name,
-                    c.username,
-                    'Client inconnu'
-                ) as customer_name,
-                
-                -- ✅ TÉLÉPHONE CLIENT
-                COALESCE(
-                    o.customer_phone,
-                    c.phone,
-                    c.telephone
-                ) as customer_phone,
-                
-                COALESCE(o.status, 'pending') as current_status,
+                c.email as customer_table_email,
                 c.first_name,
                 c.last_name,
-                c.prenom,
-                c.nom
+                c.phone as customer_table_phone
             FROM orders o
             LEFT JOIN customer c ON o.customer_id = c.id
             WHERE o.id = $1
         `;
         
-        console.log('📋 Exécution requête SQL corrigée...');
+        console.log('📋 Récupération commande existante...');
         
         const [existingResult] = await sequelize.query(existingOrderQuery, { 
             bind: [orderId]
@@ -1295,16 +1296,31 @@ async updateOrder(req, res) {
         }
 
         const existingOrder = existingResult[0];
-        const oldStatus = existingOrder.current_status || existingOrder.status;
-        const customerEmail = existingOrder.customer_email;
-        const customerPhone = existingOrder.customer_phone;
+        const oldStatus = existingOrder.status || 'pending';
+        
+        // ✅ CONSTRUCTION SÉCURISÉE DE L'EMAIL
+        let customerEmail = 'Email non renseigné';
+        if (existingOrder.customer_email) {
+            customerEmail = existingOrder.customer_email;
+        } else if (existingOrder.customer_table_email) {
+            customerEmail = existingOrder.customer_table_email;
+        }
+        
+        // ✅ CONSTRUCTION SÉCURISÉE DU NOM
+        let customerName = 'Client inconnu';
+        if (existingOrder.customer_name) {
+            customerName = existingOrder.customer_name;
+        } else if (existingOrder.first_name && existingOrder.last_name) {
+            customerName = `${existingOrder.first_name} ${existingOrder.last_name}`;
+        }
 
-        console.log(`📧 Email client trouvé: "${customerEmail}"`);
-        console.log(`📱 Téléphone client: "${customerPhone || 'Non fourni'}"`);
+        console.log(`📧 Email client: "${customerEmail}"`);
+        console.log(`👤 Nom client: "${customerName}"`);
         console.log(`🔄 Changement statut: "${oldStatus}" → "${status}"`);
 
         // ✅ MISE À JOUR EN BASE DE DONNÉES
         await sequelize.transaction(async (t) => {
+            // Mise à jour de la commande
             await sequelize.query(`
                 UPDATE orders 
                 SET 
@@ -1320,30 +1336,45 @@ async updateOrder(req, res) {
 
             console.log(`✅ Commande ${orderId} mise à jour en base`);
 
-            // Historique...
+            // ✅ HISTORIQUE (OPTIONNEL)
             if (status !== oldStatus) {
-                const adminName = req.session?.user?.email || 'Admin';
+                const adminName = req.session?.user?.email || req.session?.user?.name || 'Admin';
+                
                 try {
                     await sequelize.query(`
                         INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
                         VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
                     `, {
-                        bind: [orderId, oldStatus, status, `Statut: ${oldStatus} → ${status}`, adminName],
+                        bind: [
+                            orderId, 
+                            oldStatus, 
+                            status, 
+                            `Statut: ${oldStatus} → ${status}${notes ? `. Notes: ${notes}` : ''}`, 
+                            adminName
+                        ],
                         transaction: t
                     });
+                    console.log('✅ Historique ajouté');
                 } catch (historyError) {
-                    console.warn('⚠️ Historique non ajouté:', historyError.message);
+                    console.warn('⚠️ Historique non ajouté (table inexistante):', historyError.message);
                 }
             }
         });
 
         console.log(`✅ Commande ${orderId} mise à jour: ${oldStatus} → ${status}`);
 
-        // ✅ NOTIFICATIONS (EMAIL + SMS)
-        let notificationResults = { email: { success: false }, sms: { success: false }, success: false };
+        // ✅ ENVOI DES NOTIFICATIONS (OPTIONNEL)
+        let notificationResults = {
+            email: { success: false, message: 'Pas de changement' },
+            sms: { success: false, message: 'Pas de changement' },
+            success: false
+        };
         
-        if (status !== oldStatus && customerEmail && customerEmail !== 'N/A' && customerEmail.includes('@')) {
+        if (status !== oldStatus && customerEmail && customerEmail !== 'Email non renseigné' && customerEmail.includes('@')) {
             try {
+                console.log('📧📱 Tentative envoi notifications...');
+                
+                // Import dynamique pour éviter les erreurs
                 const { sendStatusChangeNotifications } = await import('../services/mailService.js');
                 
                 const orderData = {
@@ -1351,7 +1382,7 @@ async updateOrder(req, res) {
                     numero_commande: existingOrder.numero_commande || `CMD-${existingOrder.id}`,
                     tracking_number: tracking_number || existingOrder.tracking_number,
                     total: existingOrder.total,
-                    customer_name: existingOrder.customer_name
+                    customer_name: customerName
                 };
 
                 const statusChangeData = {
@@ -1362,9 +1393,9 @@ async updateOrder(req, res) {
 
                 const customerData = {
                     userEmail: customerEmail,
-                    firstName: existingOrder.first_name || existingOrder.customer_name?.split(' ')[0] || 'Client',
-                    lastName: existingOrder.last_name || existingOrder.customer_name?.split(' ').slice(1).join(' ') || '',
-                    phone: customerPhone
+                    firstName: existingOrder.first_name || customerName.split(' ')[0] || 'Client',
+                    lastName: existingOrder.last_name || customerName.split(' ').slice(1).join(' ') || '',
+                    phone: existingOrder.customer_table_phone
                 };
 
                 notificationResults = await sendStatusChangeNotifications(orderData, statusChangeData, customerData);
@@ -1375,17 +1406,23 @@ async updateOrder(req, res) {
                 });
                 
             } catch (notificationError) {
-                console.error('⚠️ Erreur notifications:', notificationError);
+                console.error('⚠️ Erreur notifications (non bloquante):', notificationError);
                 notificationResults = {
                     email: { success: false, error: notificationError.message },
                     sms: { success: false, error: notificationError.message },
                     success: false
                 };
             }
+        } else {
+            console.log('⚠️ Notifications non envoyées:', {
+                statusChanged: status !== oldStatus,
+                hasValidEmail: customerEmail && customerEmail.includes('@'),
+                emailValue: customerEmail
+            });
         }
 
-        // ✅ RÉPONSE FINALE
-        res.json({
+        // ✅ RÉPONSE SIMPLE ET COMPLÈTE
+        const response = {
             success: true,
             message: 'Commande mise à jour avec succès',
             data: {
@@ -1395,7 +1432,7 @@ async updateOrder(req, res) {
                     status: status,
                     tracking_number: tracking_number || existingOrder.tracking_number,
                     customer_email: customerEmail,
-                    customer_phone: customerPhone
+                    customer_name: customerName
                 },
                 statusChanged: status !== oldStatus,
                 notifications: {
@@ -1404,17 +1441,21 @@ async updateOrder(req, res) {
                     anyNotificationSent: notificationResults.success
                 }
             }
-        });
+        };
+
+        console.log('✅ Réponse envoyée:', response.message);
+        res.json(response);
 
     } catch (error) {
         console.error('❌ Erreur mise à jour commande:', error);
+        console.error('❌ SQL:', error.sql);
         
         res.status(500).json({
             success: false,
             message: 'Erreur lors de la mise à jour: ' + error.message,
             debug: process.env.NODE_ENV === 'development' ? {
                 error: error.message,
-                stack: error.stack,
+                sql: error.sql,
                 orderId: orderId
             } : undefined
         });
