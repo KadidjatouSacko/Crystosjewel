@@ -194,358 +194,144 @@ export const adminOrdersController = {
  */
 async getAllOrders(req, res) {
     try {
-        console.log('📋 Récupération de toutes les commandes avec emails corrigés');
+        console.log('📋 Récupération commandes avec emails clients et dates corrigés');
 
-        // ✅ PARAMÈTRES DE FILTRAGE
-        const { status: filterStatus, date: filterDate, search: filterSearch, promo: filterPromo } = req.query;
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
-        const offset = (page - 1) * limit;
-
-        // ✅ CONSTRUCTION DE LA CLAUSE WHERE
-        let whereConditions = [];
-        let replacements = [];
-        let paramIndex = 1;
-
-        // Filtre par statut
-        if (filterStatus && filterStatus !== 'all') {
-            whereConditions.push(`COALESCE(o.status, o.status_suivi, 'pending') = $${paramIndex}`);
-            replacements.push(filterStatus);
-            paramIndex++;
-        }
-
-        // Filtre par date
-        if (filterDate) {
-            switch (filterDate) {
-                case 'today':
-                    whereConditions.push(`DATE(o.created_at) = CURRENT_DATE`);
-                    break;
-                case 'week':
-                    whereConditions.push(`o.created_at >= DATE_TRUNC('week', CURRENT_DATE)`);
-                    break;
-                case 'month':
-                    whereConditions.push(`o.created_at >= DATE_TRUNC('month', CURRENT_DATE)`);
-                    break;
-                case 'year':
-                    whereConditions.push(`o.created_at >= DATE_TRUNC('year', CURRENT_DATE)`);
-                    break;
-            }
-        }
-
-        // Filtre par code promo
-        if (filterPromo) {
-            if (filterPromo === 'with-promo') {
-                whereConditions.push(`(o.promo_code IS NOT NULL AND o.promo_code != '')`);
-            } else if (filterPromo === 'without-promo') {
-                whereConditions.push(`(o.promo_code IS NULL OR o.promo_code = '')`);
-            }
-        }
-
-        // Filtre par recherche
-        if (filterSearch && filterSearch.trim()) {
-            whereConditions.push(`(
-                LOWER(COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name))) LIKE $${paramIndex}
-                OR LOWER(COALESCE(o.customer_email, c.email)) LIKE $${paramIndex}
-                OR LOWER(o.numero_commande) LIKE $${paramIndex}
-                OR LOWER(o.promo_code) LIKE $${paramIndex}
-            )`);
-            replacements.push(`%${filterSearch.toLowerCase()}%`);
-            paramIndex++;
-        }
-
-        const whereClause = whereConditions.length > 0 ? `WHERE ${whereConditions.join(' AND ')}` : '';
-
-        // ✅ REQUÊTE PRINCIPALE SANS o.email
-        const ordersQuery = `
+        // ✅ REQUÊTE CORRIGÉE AVEC TOUTES LES SOURCES D'EMAIL ET DATES
+        const commandesQuery = `
             SELECT 
                 o.id,
-                COALESCE(o.numero_commande, CONCAT('CMD-', o.id)) as numero_commande,
+                o.numero_commande,
                 o.customer_id,
                 
-                -- ✅ EMAIL CLIENT SANS o.email QUI N'EXISTE PAS
+                -- ✅ RÉCUPÉRATION COMPLÈTE DES EMAILS
                 COALESCE(
                     o.customer_email,
-                    o.user_email,
                     c.email,
-                    c.user_email,
-                    'Email non renseigné'
+                    'N/A'
                 ) as customer_email,
                 
-                -- ✅ NOM CLIENT COMPLET
+                -- ✅ RÉCUPÉRATION COMPLÈTE DES NOMS CLIENTS
                 COALESCE(
                     o.customer_name,
                     CONCAT(TRIM(COALESCE(c.first_name, '')), ' ', TRIM(COALESCE(c.last_name, ''))),
-                    CONCAT(TRIM(COALESCE(c.prenom, '')), ' ', TRIM(COALESCE(c.nom, ''))),
-                    c.name,
-                    c.username,
                     'Client inconnu'
                 ) as customer_name,
                 
-                -- ✅ INFORMATIONS FINANCIÈRES
-                COALESCE(o.total, 0) as total,
-                COALESCE(o.subtotal, o.original_total, o.total, 0) as subtotal,
-                COALESCE(o.discount_amount, o.promo_discount_amount, 0) as discount_amount,
-                COALESCE(o.promo_discount_percent, o.discount_percent, 0) as discount_percent,
-                o.promo_code,
+                -- ✅ RÉCUPÉRATION TÉLÉPHONE ET ADRESSE
+                COALESCE(o.customer_phone, c.phone, 'N/A') as customer_phone,
+                COALESCE(o.shipping_address, c.address, 'N/A') as customer_address,
                 
-                -- ✅ STATUT ET DATES
-                COALESCE(o.status, o.status_suivi, 'pending') as status,
+                -- ✅ DATES CORRECTES (sans 00:00)
                 o.created_at,
                 o.updated_at,
-                o.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as created_at_local,
-                o.updated_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as updated_at_local,
+                DATE_FORMAT(o.created_at, '%d/%m/%Y %H:%i') as formatted_date,
                 
-                -- ✅ INFORMATIONS LIVRAISON
-                o.tracking_number,
-                COALESCE(o.shipping_method, 'Standard') as shipping_method,
+                -- ✅ MONTANTS AVEC CALCULS CORRECTS
+                COALESCE(o.subtotal, o.original_total, o.total, 0) as subtotal,
+                COALESCE(o.total, 0) as total,
+                COALESCE(o.original_total, o.subtotal, o.total, 0) as original_total,
+                
+                -- ✅ INFORMATIONS PROMO COMPLÈTES
+                o.promo_code,
+                COALESCE(o.promo_discount_amount, o.discount_amount, 0) as discount_amount,
+                COALESCE(o.promo_discount_percent, o.discount_percent, 0) as discount_percent,
+                COALESCE(o.shipping_price, o.delivery_fee, 0) as shipping_price,
+                
+                -- ✅ STATUT ET PAIEMENT
+                COALESCE(o.status, o.status_suivi, 'waiting') as status,
                 COALESCE(o.payment_method, 'card') as payment_method,
-                COALESCE(o.payment_status, 'completed') as payment_status,
+                COALESCE(o.payment_status, 'pending') as payment_status,
                 
-                -- ✅ CONTACT CLIENT
-                COALESCE(o.customer_phone, c.phone) as customer_phone,
-                COALESCE(o.shipping_address, c.address) as shipping_address,
+                -- ✅ SUIVI LIVRAISON
+                o.tracking_number,
+                o.delivery_notes
                 
-                -- ✅ INFORMATIONS ARTICLES ET TAILLES
-                (
-                    SELECT COUNT(*)
-                    FROM order_items oi
-                    WHERE oi.order_id = o.id
-                ) as total_items,
-                
-                (
-                    SELECT COUNT(*)
-                    FROM order_items oi
-                    WHERE oi.order_id = o.id
-                    AND oi.size IS NOT NULL 
-                    AND oi.size != '' 
-                    AND oi.size != 'Non spécifiée'
-                    AND oi.size != 'null'
-                ) as items_with_size,
-                
-                -- ✅ DÉTAILS ARTICLES AVEC TAILLES
-                (
-                    SELECT JSON_AGG(
-                        JSON_BUILD_OBJECT(
-                            'name', COALESCE(oi.jewel_name, j.name, 'Article'),
-                            'quantity', oi.quantity,
-                            'price', oi.price_ttc,
-                            'size', CASE 
-                                WHEN oi.size IS NOT NULL AND oi.size != '' AND oi.size != 'Non spécifiée' AND oi.size != 'null'
-                                THEN oi.size 
-                                ELSE 'Non spécifiée' 
-                            END,
-                            'image', COALESCE(oi.jewel_image, j.image, '/images/placeholder.jpg')
-                        )
-                        ORDER BY oi.id
-                    )
-                    FROM order_items oi
-                    LEFT JOIN jewel j ON oi.jewel_id = j.id
-                    WHERE oi.order_id = o.id
-                ) as items_details,
-                
-                -- ✅ COLONNES DEBUG (optionnelles, pour identifier les problèmes)
-                o.customer_email as order_customer_email,
-                c.email as customer_table_email,
-                c.first_name as customer_first_name,
-                c.last_name as customer_last_name
-
             FROM orders o
             LEFT JOIN customer c ON o.customer_id = c.id
-            ${whereClause}
             ORDER BY o.created_at DESC
-            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
 
-        // Ajouter pagination aux paramètres
-        replacements.push(limit, offset);
+        const [result] = await sequelize.query(commandesQuery);
 
-        console.log('📋 Exécution requête commandes avec paramètres:', replacements);
-
-        // ✅ EXÉCUTION REQUÊTE PRINCIPALE
-        const [orders] = await sequelize.query(ordersQuery, { bind: replacements });
-
-        // ✅ REQUÊTE COUNT POUR PAGINATION
-        const countQuery = `
-            SELECT COUNT(*) as total
-            FROM orders o
-            LEFT JOIN customer c ON o.customer_id = c.id
-            ${whereClause}
-        `;
-
-        const [countResult] = await sequelize.query(countQuery, { 
-            bind: replacements.slice(0, -2) // Enlever limit et offset pour le count
-        });
-
-        const totalOrders = parseInt(countResult[0].total);
-        const totalPages = Math.ceil(totalOrders / limit);
-
-        // ✅ TRAITEMENT DES DONNÉES DE COMMANDES
-        const processedOrders = orders.map(order => {
-            // Calcul des informations de tailles
-            const totalItems = parseInt(order.total_items) || 0;
-            const itemsWithSize = parseInt(order.items_with_size) || 0;
-            const sizesCoverage = totalItems > 0 ? Math.round((itemsWithSize / totalItems) * 100) : 0;
-
-            // Parse des détails d'articles
-            let itemsDetails = [];
-            try {
-                itemsDetails = order.items_details ? JSON.parse(order.items_details) : [];
-            } catch (e) {
-                console.warn(`⚠️ Erreur parsing items pour commande ${order.id}:`, e.message);
-                itemsDetails = [];
-            }
-
-            // Calcul des montants
-            const subtotal = parseFloat(order.subtotal) || 0;
-            const discountAmount = parseFloat(order.discount_amount) || 0;
-            const total = parseFloat(order.total) || 0;
-            const savings = subtotal - total;
-
+        // ✅ TRAITEMENT DES DONNÉES AVEC CALCULS CORRECTS
+        const commandes = result.map(commande => {
+            
+            // ✅ CALCULS FINANCIERS CORRECTS
+            const subtotal = parseFloat(commande.subtotal || 0);
+            const discountAmount = parseFloat(commande.discount_amount || 0);
+            const shippingPrice = parseFloat(commande.shipping_price || 0);
+            const finalTotal = parseFloat(commande.total || 0);
+            
+            // Prix avant réduction = total final + réduction
+            const originalTotal = discountAmount > 0 ? finalTotal + discountAmount : finalTotal;
+            
             return {
-                id: order.id,
-                numero_commande: order.numero_commande,
-                customer_id: order.customer_id,
-                customerName: order.customer_name,
-                customerEmail: order.customer_email,
-                customerPhone: order.customer_phone,
+                id: commande.id,
+                numero_commande: commande.numero_commande || `CMD-${commande.id}`,
                 
-                // Montants
-                total: total,
-                subtotal: subtotal,
-                discountAmount: discountAmount,
-                savings: Math.max(savings, discountAmount),
+                // ✅ DATE CORRECTE (pas 00:00)
+                created_at: commande.created_at,
+                formatted_date: commande.formatted_date,
+                date: commande.formatted_date,
                 
-                // Statut et dates
-                status: this.normalizeStatus(order.status),
-                statusDisplay: this.translateStatus(this.normalizeStatus(order.status)),
-                statusClass: this.getStatusClass(this.normalizeStatus(order.status)),
-                createdAt: order.created_at,
-                updatedAt: order.updated_at,
-                createdAtLocal: order.created_at_local,
-                dateDisplay: this.formatDateTime(order.created_at_local),
-                timeAgo: this.getTimeAgo(order.created_at),
+                // ✅ INFORMATIONS CLIENT COMPLÈTES
+                customer_name: commande.customer_name,
+                customer_email: commande.customer_email,
+                customer_phone: commande.customer_phone,
+                customer_address: commande.customer_address,
                 
-                // Code promo
-                promoCode: order.promo_code,
-                hasPromo: !!order.promo_code,
-                discountPercent: parseFloat(order.discount_percent) || 0,
+                // ✅ MONTANTS CORRECTS
+                subtotal: subtotal.toFixed(2),
+                original_total: originalTotal.toFixed(2),
+                discount_amount: discountAmount.toFixed(2),
+                shipping_price: shippingPrice.toFixed(2),
+                total: finalTotal.toFixed(2),
                 
-                // Livraison
-                trackingNumber: order.tracking_number,
-                shippingMethod: order.shipping_method,
-                paymentMethod: order.payment_method,
-                paymentMethodDisplay: this.getPaymentMethodDisplay(order.payment_method),
-                paymentStatus: order.payment_status,
+                // ✅ PROMO INFOS
+                promo_code: commande.promo_code,
+                discount_percent: parseFloat(commande.discount_percent || 0),
+                hasDiscount: discountAmount > 0 || commande.promo_code,
                 
-                // Tailles
-                totalItems: totalItems,
-                itemsWithSize: itemsWithSize,
-                sizesCoverage: sizesCoverage,
-                sizesInfo: {
-                    totalItems,
-                    itemsWithSize,
-                    sizesCoverage,
-                    hasSizeInfo: itemsWithSize > 0,
-                    sizesDisplay: itemsWithSize > 0 ? 
-                        `${itemsWithSize}/${totalItems} articles` : 
-                        'Aucune taille',
-                    coverageClass: sizesCoverage === 100 ? 'success' : 
-                                   sizesCoverage > 50 ? 'warning' : 'danger'
-                },
+                // ✅ STATUT ET PAIEMENT
+                status: this.normalizeStatus(commande.status),
+                payment_method: commande.payment_method,
+                payment_status: commande.payment_status,
                 
-                // Articles
-                itemsDetails: itemsDetails,
-                itemsCount: itemsDetails.length,
-                
-                // Adresse
-                shippingAddress: order.shipping_address,
-                
-                // Debug (à retirer en production)
-                _debug: {
-                    orderEmail: order.order_customer_email,
-                    customerTableEmail: order.customer_table_email,
-                    firstName: order.customer_first_name,
-                    lastName: order.customer_last_name,
-                    finalEmail: order.customer_email
-                }
+                // ✅ SUIVI
+                tracking_number: commande.tracking_number,
+                delivery_notes: commande.delivery_notes
             };
         });
 
-        // ✅ CALCUL DES STATISTIQUES
-        const stats = this.calculateOrderStats(processedOrders);
-        const statusStats = this.calculateStatusStats(processedOrders);
+        // ✅ DEBUG INFO
+        console.log(`📊 ${commandes.length} commandes récupérées`);
+        const emailsManquants = commandes.filter(cmd => cmd.customer_email === 'N/A').length;
+        console.log(`📧 Emails manquants: ${emailsManquants}/${commandes.length}`);
 
-        // ✅ LOG DES RÉSULTATS
-        const emailsManquants = processedOrders.filter(cmd => 
-            cmd.customerEmail === 'Email non renseigné'
-        ).length;
-        
-        console.log(`📊 Commandes récupérées: ${processedOrders.length}/${totalOrders}`);
-        console.log(`📧 Emails manquants: ${emailsManquants} commandes`);
-        console.log(`📏 Commandes avec tailles: ${processedOrders.filter(cmd => cmd.itemsWithSize > 0).length}`);
-
-        // ✅ RENDU DE LA VUE
         res.render('commandes', {
             title: 'Gestion des Commandes',
-            user: req.session.user,
-            
-            // Données principales
-            commandes: processedOrders,
-            stats: stats,
-            statusStats: statusStats,
-            
-            // Filtres actuels
-            filters: {
-                status: filterStatus || 'all',
-                date: filterDate || '',
-                search: filterSearch || '',
-                promo: filterPromo || ''
-            },
-            
-            // Pagination
-            pagination: {
-                currentPage: page,
-                totalPages: totalPages,
-                totalOrders: totalOrders,
-                hasNext: page < totalPages,
-                hasPrev: page > 1,
-                limit: limit
-            },
-            
-            // Fonctions helpers pour le template
+            commandes: commandes,
+            stats: this.calculateStats(commandes),
+            statusStats: this.calculateStatusStats(commandes),
+            // ✅ HELPERS POUR LA VUE
             helpers: {
-                formatPrice: (price) => (parseFloat(price) || 0).toLocaleString('fr-FR', { 
-                    minimumFractionDigits: 2, 
-                    maximumFractionDigits: 2 
-                }),
+                formatPrice: (price) => parseFloat(price || 0).toFixed(2),
                 formatDate: (date) => this.formatDateTime(date),
-                formatTimeAgo: (date) => this.getTimeAgo(date),
+                getTimeAgo: (date) => this.getTimeAgo(date),
                 translateStatus: (status) => this.translateStatus(status),
-                getStatusClass: (status) => this.getStatusClass(status),
-                hasPromoCode: (order) => !!order.promoCode,
-                getSizesCoverageIndicator: (sizesInfo) => {
-                    if (!sizesInfo || sizesInfo.totalItems === 0) return '❓ Non défini';
-                    const coverage = sizesInfo.sizesCoverage || 0;
-                    if (coverage === 100) return '🎯 Complète';
-                    if (coverage > 50) return '📏 Partielle';
-                    if (coverage > 0) return '📐 Limitée';
-                    return '❓ Aucune';
-                }
+                getPaymentMethodDisplay: (method) => this.getPaymentMethodDisplay(method)
             }
         });
 
     } catch (error) {
-        console.error('❌ Erreur lors de la récupération des commandes:', error);
-        console.error('Stack trace:', error.stack);
-        
+        console.error('❌ Erreur récupération commandes:', error);
         res.status(500).render('error', {
-            title: 'Erreur',
             message: 'Erreur lors de la récupération des commandes',
-            error: process.env.NODE_ENV === 'development' ? error : {},
-            user: req.session.user
+            error: error
         });
     }
 },
+
 
 // Calcul des statistiques par statut
 calculateStatusStats(orders) {

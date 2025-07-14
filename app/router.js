@@ -18,6 +18,7 @@ import { JewelImage } from "./models/jewelImage.js";
 
 // Imports des contrôleurs EXISTANTS
 import { mainControlleur } from "./controlleurs/mainControlleur.js";
+import{ customerManagementController}from "./controlleurs/customerManagementController.js";
 import { Op } from 'sequelize';
 import { baguesControlleur } from "./controlleurs/baguesControlleur.js";
 import { braceletsControlleur } from "./controlleurs/braceletsControlleur.js";
@@ -3471,6 +3472,50 @@ router.use((req, res, next) => {
   }
   next();
 });
+
+
+
+// ========================================
+// 📊 PAGE PRINCIPALE - GESTION DES CLIENTS
+// ========================================
+router.get('/gestion-clients',isAdmin,customerManagementController.renderCustomerManagement);
+
+// ========================================
+// 👤 GESTION INDIVIDUELLE DES CLIENTS
+// ========================================
+
+// Voir les détails d'un client
+router.get('/customer/:customerId/details', isAdmin,customerManagementController.getCustomerDetails);
+
+// Mettre à jour un client
+// router.post('/customer/update',isAdmin,customerManagementController.updateCustomer);
+
+// Ajouter un nouveau client
+router.post('/customer/add',isAdmin,customerManagementController.addCustomer);
+
+// Supprimer un client
+router.delete('/customer/:customerId',isAdmin,customerManagementController.deleteCustomer);
+
+// ========================================
+// 📧 GESTION DES EMAILS
+// ========================================
+
+// Envoyer des emails en masse
+router.post('/send-bulk-email', isAdmin,customerManagementController.sendBulkEmail);
+
+// ========================================
+// 📤 EXPORT ET STATISTIQUES
+// ========================================
+
+// Exporter la liste des clients
+router.get('/export-customers',isAdmin,
+customerManagementController.exportCustomers);
+
+// Statistiques avancées des clients
+router.get('/customer-stats',isAdmin,
+   customerManagementController.getCustomerStats);
+
+
 
 // Export par défaut
 export default router;
