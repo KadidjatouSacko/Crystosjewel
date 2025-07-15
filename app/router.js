@@ -18,6 +18,9 @@ import { JewelImage } from "./models/jewelImage.js";
 
 // Imports des contrôleurs EXISTANTS
 import { emailManagementController } from './controlleurs/emailManagementController.js';
+// Ajoutez ces lignes APRÈS l'import pour tester :
+console.log('🔍 Test import emailManagementController:', emailManagementController);
+console.log('🔍 showAdminPage existe?', typeof emailManagementController?.showAdminPage);
 
 import { mainControlleur } from "./controlleurs/mainControlleur.js";
 import{ customerManagementController}from "./controlleurs/customerManagementController.js";
@@ -3695,13 +3698,43 @@ router.post('/admin/send-bulk-email', isAdmin, async (req, res) => {
     }
 });
 
+
+
+// ===================================
+// ROUTES EMAIL COMPLÈTES
+// ===================================
+
+// Pages principales
 router.get('/admin/emails', isAdmin, emailManagementController.showAdminPage);
+router.get('/admin/email-management', isAdmin, emailManagementController.renderEmailManagement);
+
+// Gestion des clients
+router.get('/admin/emails/customers', isAdmin, emailManagementController.getCustomers);
+
+// Gestion des campagnes
 router.post('/admin/emails/campaigns', isAdmin, emailManagementController.createCampaign);
+router.post('/admin/emails/campaigns/send', isAdmin, emailManagementController.createAndSendCampaign);
 router.post('/admin/emails/campaigns/:id/send', isAdmin, emailManagementController.sendCampaign);
+router.post('/admin/emails/campaigns/:id/duplicate', isAdmin, emailManagementController.duplicateCampaign);
+router.post('/admin/emails/campaigns/:id/schedule', isAdmin, emailManagementController.scheduleCampaign);
+router.post('/admin/emails/campaigns/:id/cancel-schedule', isAdmin, emailManagementController.cancelScheduledCampaign);
+router.delete('/admin/emails/campaigns/:id', isAdmin, emailManagementController.deleteCampaign);
+router.get('/admin/emails/campaigns/history', isAdmin, emailManagementController.getCampaignHistory);
+router.get('/admin/emails/campaigns/:id', isAdmin, emailManagementController.getCampaignDetails);
+
+// Gestion des templates
 router.get('/admin/emails/templates', isAdmin, emailManagementController.getTemplates);
+router.get('/admin/emails/templates/:id', isAdmin, emailManagementController.getTemplate);
 router.post('/admin/emails/templates', isAdmin, emailManagementController.createTemplate);
-// router.post('/admin/emails/save-template', isAdmin, emailManagementController.saveEmailTemplate);
-router.post('/admin/emails/send-test', isAdmin, emailManagementController.sendTestEmail);
+router.post('/admin/emails/save-template', isAdmin, emailManagementController.saveEmailTemplate);
+router.put('/admin/emails/templates/:id', isAdmin, emailManagementController.updateTemplate);
+router.delete('/admin/emails/templates/:id', isAdmin, emailManagementController.deleteTemplate);
+
+// Fonctionnalités avancées
+router.post('/admin/emails/test', isAdmin, emailManagementController.sendTestEmail);
+router.post('/admin/emails/preview', isAdmin, emailManagementController.previewEmail);
+router.get('/admin/emails/analytics', isAdmin, emailManagementController.getAdvancedAnalytics);
+router.get('/admin/emails/export', isAdmin, emailManagementController.exportAdvancedData);
 
 // Tracking
 router.get('/api/email/track/open/:token', emailManagementController.trackOpen);
@@ -3711,8 +3744,6 @@ router.get('/api/email/track/click/:token', emailManagementController.trackClick
 router.get('/unsubscribe', emailManagementController.showUnsubscribePage);
 router.post('/api/email/unsubscribe', emailManagementController.processUnsubscribe);
 router.post('/api/email/update-preferences', emailManagementController.updatePreferences);
-
-
 
 // Export par défaut
 export default router;

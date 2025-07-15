@@ -1,12 +1,20 @@
 // ===================================
-// app/models/emailRelations.js
+// app/models/emailRelations.js - VOTRE FORMAT
 // ===================================
 
-import{ EmailCampaign}from './emailCampaignModel.js';
-import{ EmailCampaignRecipient}from './emailCampaignRecipientModel.js';
-import{ EmailTemplate}from './emailTemplateModel.js';
-import{ EmailUnsubscribe} from './emailUnsubscribeModel.js';
-import{ Customer}from './customerModel.js';
+import { EmailCampaign } from './emailCampaignModel.js';
+import { EmailCampaignRecipient } from './emailCampaignRecipientModel.js';
+import { EmailTemplate } from './emailTemplateModel.js';
+import { EmailUnsubscribe } from './emailUnsubscribeModel.js';
+
+// Import conditionnel pour Customer
+let Customer = null;
+try {
+    const customerModule = await import('./customerModel.js');
+    Customer = customerModule.Customer;
+} catch (error) {
+    console.log('ℹ️  Customer model non trouvé, relations email fonctionneront sans Customer');
+}
 
 // Relations EmailCampaign
 EmailCampaign.hasMany(EmailCampaignRecipient, {
@@ -42,9 +50,6 @@ if (Customer) {
         as: 'emailRecipients'
     });
 }
-
-// Pas de relation directe pour EmailUnsubscribe car il peut contenir des emails
-// qui ne sont pas forcément des customers enregistrés
 
 export {
     EmailCampaign,
