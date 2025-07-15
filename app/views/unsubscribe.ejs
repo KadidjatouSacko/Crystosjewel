@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Désinscription - CrystosJewel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .logo {
+            font-size: 3em;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .brand-name {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #2d3748;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+
+        .subtitle {
+            color: #718096;
+            font-size: 1.2em;
+            margin-bottom: 30px;
+        }
+
+        .unsubscribe-form {
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+            text-align: left;
+        }
+
+        .form-group label {
+            display: block;
+            color: #2d3748;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 1.1em;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-top: 5px;
+        }
+
+        .checkbox-group label {
+            flex: 1;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(229, 62, 62, 0.4);
+        }
+
+        .btn-secondary {
+            background: #e2e8f0;
+            color: #2d3748;
+        }
+
+        .btn-secondary:hover {
+            background: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .preferences-section {
+            background: #f7fafc;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            text-align: left;
+        }
+
+        .preferences-section h3 {
+            color: #2d3748;
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .preference-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            transition: background-color 0.3s ease;
+        }
+
+        .preference-item:hover {
+            background: #edf2f7;
+        }
+
+        .preference-item input[type="checkbox"] {
+            width: auto;
+            margin: 0;
+        }
+
+        .preference-item label {
+            flex: 1;
+            font-weight: 500;
+            margin: 0;
+        }
+
+        .preference-item .description {
+            color: #718096;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+        }
+
+        .footer {
+            color: #718096;
+            font-size: 0.9em;
+            line-height: 1.5;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            gap: 10px;
+            color: #667eea;
+        }
+
+        .loading.show {
+            display: flex;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #e2e8f0;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .brand-name {
+                font-size: 2em;
+            }
+
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+                justify-content: center;
+            }
+
+            .checkbox-group {
+                flex-direction: column;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Logo et branding -->
+        <div class="logo">
+            <i class="fas fa-gem"></i>
+        </div>
+        <h1 class="brand-name">CrystosJewel</h1>
+        <p class="subtitle">Gestion de vos préférences email</p>
+
+        <!-- Message de succès -->
+        <div id="successMessage" class="success-message">
+            <i class="fas fa-check-circle"></i>
+            Vos préférences ont été mises à jour avec succès !
+        </div>
+
+        <!-- Formulaire de désinscription -->
+        <div class="unsubscribe-form">
+            <h2 style="color: #2d3748; margin-bottom: 20px;">
+                <i class="fas fa-envelope-open-text" style="color: #667eea;"></i>
+                Nous sommes désolés de vous voir partir
+            </h2>
+            
+            <p style="color: #718096; margin-bottom: 25px; line-height: 1.6;">
+                Votre email : <strong><%= email || 'Non spécifié' %></strong>
+            </p>
+
+            <form id="unsubscribeForm">
+                <input type="hidden" name="email" value="<%= email || '' %>">
+                <input type="hidden" name="token" value="<%= token || '' %>">
+
+                <div class="form-group">
+                    <label for="reason">Pourquoi souhaitez-vous vous désinscrire ?</label>
+                    <select id="reason" name="reason" required>
+                        <option value="">Sélectionnez une raison</option>
+                        <option value="too_many">Trop d'emails</option>
+                        <option value="not_relevant">Contenu pas pertinent</option>
+                        <option value="never_subscribed">Je ne me souviens pas m'être inscrit</option>
+                        <option value="temporary">Pause temporaire</option>
+                        <option value="privacy">Préoccupations de confidentialité</option>
+                        <option value="other">Autre raison</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="otherReasonGroup" style="display: none;">
+                    <label for="otherReason">Précisez votre raison :</label>
+                    <textarea id="otherReason" name="otherReason" rows="3" placeholder="Dites-nous pourquoi..."></textarea>
+                </div>
+
+                <div class="checkbox-group">
+                    <input type="checkbox" id="feedback" name="feedback">
+                    <label for="feedback">
+                        J'accepte que CrystosJewel utilise ce feedback pour améliorer ses services
+                    </label>
+                </div>
+            </form>
+        </div>
+
+        <!-- Section des préférences -->
+        <div class="preferences-section">
+            <h3>
+                <i class="fas fa-sliders-h" style="color: #667eea;"></i>
+                Ou personnalisez vos préférences
+            </h3>
+            <p style="color: #718096; margin-bottom: 20px;">
+                Vous pouvez choisir quels types d'emails vous souhaitez recevoir au lieu de vous désinscrire complètement.
+            </p>
+
+            <div class="preference-item">
+                <input type="checkbox" id="newsletter" name="newsletter" checked>
+                <label for="newsletter">
+                    Newsletter mensuelle
+                    <div class="description">Nos actualités et nouveautés</div>
+                </label>
+            </div>
+
+            <div class="preference-item">
+                <input type="checkbox" id="promotions" name="promotions" checked>
+                <label for="promotions">
+                    Offres promotionnelles
+                    <div class="description">Codes promo et ventes privées</div>
+                </label>
+            </div>
+
+            <div class="preference-item">
+                <input type="checkbox" id="newProducts" name="newProducts" checked>
+                <label for="newProducts">
+                    Nouveaux produits
+                    <div class="description">Soyez les premiers informés de nos nouvelles collections</div>
+                </label>
+            </div>
+
+            <div class="preference-item">
+                <input type="checkbox" id="orderUpdates" name="orderUpdates" checked>
+                <label for="orderUpdates">
+                    Mises à jour de commandes
+                    <div class="description">Confirmations et suivi de livraison (recommandé)</div>
+                </label>
+            </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div style="margin-bottom: 30px;">
+            <button type="button" class="btn btn-secondary" onclick="updatePreferences()">
+                <i class="fas fa-save"></i>
+                Sauvegarder les préférences
+            </button>
+            <button type="button" class="btn btn-danger" onclick="completeUnsubscribe()">
+                <i class="fas fa-times"></i>
+                Se désinscrire complètement
+            </button>
+        </div>
+
+        <!-- Loading indicator -->
+        <div id="loading" class="loading" style="justify-content: center; margin: 20px 0;">
+            <div class="spinner"></div>
+            <span>Traitement en cours...</span>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>
+                Si vous avez des questions, contactez-nous à 
+                <a href="mailto:support@crystosjewel.com">support@crystosjewel.com</a>
+            </p>
+            <p style="margin-top: 10px;">
+                <a href="/">Retour au site</a> | 
+                <a href="/privacy">Politique de confidentialité</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Afficher le champ "Autre raison" si sélectionné
+        document.getElementById('reason').addEventListener('change', function() {
+            const otherReasonGroup = document.getElementById('otherReasonGroup');
+            if (this.value === 'other') {
+                otherReasonGroup.style.display = 'block';
+                document.getElementById('otherReason').required = true;
+            } else {
+                otherReasonGroup.style.display = 'none';
+                document.getElementById('otherReason').required = false;
+            }
+        });
+
+        // Fonction pour mettre à jour les préférences
+        async function updatePreferences() {
+            const loading = document.getElementById('loading');
+            const successMessage = document.getElementById('successMessage');
+            
+            try {
+                loading.classList.add('show');
+                
+                const preferences = {
+                    email: '<%= email || "" %>',
+                    token: '<%= token || "" %>',
+                    newsletter: document.getElementById('newsletter').checked,
+                    promotions: document.getElementById('promotions').checked,
+                    newProducts: document.getElementById('newProducts').checked,
+                    orderUpdates: document.getElementById('orderUpdates').checked
+                };
+
+                const response = await fetch('/api/email/update-preferences', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(preferences)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    successMessage.textContent = 'Vos préférences ont été mises à jour avec succès !';
+                    successMessage.classList.add('show');
+                    
+                    setTimeout(() => {
+                        successMessage.classList.remove('show');
+                    }, 5000);
+                } else {
+                    throw new Error(result.message || 'Erreur lors de la mise à jour');
+                }
+                
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue. Veuillez réessayer.');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        // Fonction pour se désinscrire complètement
+        async function completeUnsubscribe() {
+            const form = document.getElementById('unsubscribeForm');
+            const formData = new FormData(form);
+            
+            // Validation
+            if (!formData.get('reason')) {
+                alert('Veuillez sélectionner une raison pour votre désinscription.');
+                return;
+            }
+            
+            if (formData.get('reason') === 'other' && !formData.get('otherReason')) {
+                alert('Veuillez préciser votre raison.');
+                return;
+            }
+
+            if (!confirm('Êtes-vous sûr de vouloir vous désinscrire complètement ? Vous ne recevrez plus aucun email de notre part.')) {
+                return;
+            }
+
+            const loading = document.getElementById('loading');
+            
+            try {
+                loading.classList.add('show');
+                
+                const unsubscribeData = {
+                    email: '<%= email || "" %>',
+                    token: '<%= token || "" %>',
+                    reason: formData.get('reason'),
+                    otherReason: formData.get('otherReason'),
+                    feedback: formData.get('feedback') === 'on'
+                };
+
+                const response = await fetch('/api/email/unsubscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(unsubscribeData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Redirection vers page de confirmation
+                    window.location.href = '/unsubscribe/success';
+                } else {
+                    throw new Error(result.message || 'Erreur lors de la désinscription');
+                }
+                
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Une erreur est survenue. Veuillez réessayer.');
+            } finally {
+                loading.classList.remove('show');
+            }
+        }
+
+        // Animation d'entrée
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                container.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+        });
+    </script>
+</body>
+</html>

@@ -20,6 +20,8 @@ import { CustomerCommunicationPreference } from "./customerCommunicationPreferen
 import { EmailCampaign } from "./emailCampaignModel.js";
 import { EmailCampaignRecipient } from "./emailCampaignRecipientModel.js";
 
+
+
 // ===== NOUVEAUX MODÈLES POUR L'ADMINISTRATION =====
 import { HomeImage } from "./HomeImage.js";
 import { SiteSetting } from "./SiteSetting.js"
@@ -30,6 +32,7 @@ import { PromoCodeUse } from "./PromoCodeUse.js";
 import { GuestSession } from "./GuestSession.js";
 
 // ===== ASSOCIATIONS PRINCIPALES EXISTANTES =====
+
 
 
 PromoCode.hasMany(Order, {

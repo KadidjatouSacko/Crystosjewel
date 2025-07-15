@@ -5,76 +5,34 @@ import { Customer } from "./customerModel.js";
 export class EmailCampaign extends Model {}
 
 EmailCampaign.init({
-    id: {
+     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
         autoIncrement: true
     },
     name: {
-        type: DataTypes.STRING(255),
+        type: DataTypes.STRING,
         allowNull: false
     },
     subject: {
-        type: DataTypes.STRING(500),
+        type: DataTypes.STRING,
         allowNull: false
     },
-    preheader: {
-        type: DataTypes.STRING(255),
-        allowNull: true
-    },
-    from_name: {
-        type: DataTypes.STRING(100),
-        defaultValue: 'CrystosJewel'
-    },
-    from_email: {
-        type: DataTypes.STRING(255),
+    content: {
+        type: DataTypes.TEXT('long'),
         allowNull: false
     },
-    template_name: {
-        type: DataTypes.ENUM('elegant', 'modern', 'promo', 'newsletter'),
-        defaultValue: 'elegant'
-    },
-    content_html: {
-        type: DataTypes.TEXT,
-        allowNull: false
-    },
-    content_text: {
-        type: DataTypes.TEXT,
-        allowNull: true
+    template_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        references: {
+            model: 'email_templates',
+            key: 'id'
+        }
     },
     status: {
         type: DataTypes.ENUM('draft', 'scheduled', 'sending', 'sent', 'failed'),
         defaultValue: 'draft'
-    },
-    recipient_filter: {
-        type: DataTypes.JSON,
-        allowNull: true,
-        comment: 'Critères de filtrage des destinataires'
-    },
-    selected_customers: {
-        type: DataTypes.JSON,
-        allowNull: true,
-        comment: 'IDs des clients sélectionnés manuellement'
-    },
-    total_recipients: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
-    sent_count: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
-    failed_count: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
-    opened_count: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
-    },
-    clicked_count: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
     },
     scheduled_at: {
         type: DataTypes.DATE,
@@ -84,27 +42,81 @@ EmailCampaign.init({
         type: DataTypes.DATE,
         allowNull: true
     },
-    created_by: {
+    total_recipients: {
         type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    total_sent: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    total_delivered: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    total_opened: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    total_clicked: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    total_bounced: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    total_unsubscribed: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    sender_email: {
+        type: DataTypes.STRING,
         allowNull: false,
-        references: {
-            model: 'customer',
-            key: 'id'
+        validate: {
+            isEmail: true
         }
     },
-    created_at: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
+    sender_name: {
+        type: DataTypes.STRING,
+        allowNull: false
     },
-    updated_at: {
-        type: DataTypes.DATE,
-        defaultValue: DataTypes.NOW
+    reply_to: {
+        type: DataTypes.STRING,
+        allowNull: true,
+        validate: {
+            isEmail: true
+        }
+    },
+    tracking_enabled: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: true
+    },
+    metadata: {
+        type: DataTypes.JSON,
+        defaultValue: {}
     }
 }, {
     sequelize,
-    tableName: "email_campaigns",
-    timestamps: false
+    tableName: 'email_campaigns',
+    timestamps: true,
+    indexes: [
+        {
+            fields: ['status']
+        },
+        {
+            fields: ['scheduled_at']
+        },
+        {
+            fields: ['sent_at']
+        },
+        {
+            fields: ['template_id']
+        }
+    ]
 });
+
+
 
 // Relations
 EmailCampaign.belongsTo(Customer, { foreignKey: 'created_by', as: 'creator' });

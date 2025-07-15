@@ -1,9 +1,18 @@
-import { EmailCampaign } from '../models/emailCampaignModel.js';
-import { EmailCampaignRecipient } from '../models/emailCampaignRecipientModel.js';
-import { EmailTemplate } from '../models/emailTemplateModel.js';
+// import { EmailCampaign } from '../models/emailCampaignModel.js';
+// import { EmailCampaignRecipient } from '../models/emailCampaignRecipientModel.js';
+// import { EmailTemplate } from '../models/emailTemplateModel.js';
 import { Customer } from '../models/customerModel.js';
 import { sendBulkEmailService } from '../services/emailService.js';
 import { Op } from 'sequelize';
+import { sequelize } from '../models/sequelize-client.js';
+import {
+    EmailCampaign,
+    EmailCampaignRecipient,
+    EmailTemplate,
+    EmailUnsubscribe
+} from '../models/emailRelations.js';
+import { sendEmail } from '../services/emailService.js';
+import crypto from 'crypto';
 
 export const emailManagementController = {
 
