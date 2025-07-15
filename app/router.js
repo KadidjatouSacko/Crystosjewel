@@ -21,7 +21,7 @@ import { emailManagementController } from "./controlleurs/emailManagementControl
 // Ajoutez ces lignes APRÈS l'import pour tester :
 console.log('🔍 Test import emailManagementController:', emailManagementController);
 console.log('🔍 showAdminPage existe?', typeof emailManagementController?.showAdminPage);
-
+import { adminEmailsController } from './controlleurs/adminEmailsController.js';
 import { mainControlleur } from "./controlleurs/mainControlleur.js";
 import{ customerManagementController}from "./controlleurs/customerManagementController.js";
 import { Op } from 'sequelize';
@@ -3744,6 +3744,11 @@ router.get('/api/email/track/click/:token', emailManagementController.trackClick
 router.get('/unsubscribe', emailManagementController.showUnsubscribePage);
 router.post('/api/email/unsubscribe', emailManagementController.processUnsubscribe);
 router.post('/api/email/update-preferences', emailManagementController.updatePreferences);
+
+// Routes pour la gestion des emails admin
+router.get('/admin/emails', isAdmin, adminEmailsController.showAdminPage);
+router.post('/admin/emails/repair', isAdmin, adminEmailsController.repairEmails);
+router.get('/admin/emails/stats', isAdmin, adminEmailsController.getEmailStats);
 
 // Export par défaut
 export default router;
