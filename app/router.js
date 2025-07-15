@@ -3695,6 +3695,78 @@ router.post('/admin/send-bulk-email', isAdmin, async (req, res) => {
     }
 });
 
+// ===================================
+// ADMINISTRATION DES EMAILS
+// ===================================
+
+// Page principale d'administration
+router.get('/admin/emails', isAdmin, emailManagementController.showAdminPage);
+
+// API des campagnes
+router.post('/admin/emails/campaigns', isAdmin, emailManagementController.createCampaign);
+router.post('/admin/emails/campaigns/:id/send', isAdmin, emailManagementController.sendCampaign);
+router.get('/admin/emails/campaigns/:id/analytics', isAdmin, emailManagementController.getAnalytics);
+
+// API des templates
+router.get('/admin/emails/templates', isAdmin, emailManagementController.getTemplates);
+router.post('/admin/emails/templates', isAdmin, emailManagementController.createTemplate);
+
+// Export des données
+router.get('/admin/emails/export', isAdmin, emailManagementController.exportData);
+
+// ===================================
+// TRACKING DES EMAILS
+// ===================================
+
+// Tracking d'ouverture (pixel invisible)
+router.get('/api/email/track/open/:token', emailManagementController.trackOpen);
+
+// Tracking des clics
+router.get('/api/email/track/click/:token', emailManagementController.trackClick);
+
+// ===================================
+// DÉSINSCRIPTION
+// ===================================
+
+// Page de désinscription
+router.get('/unsubscribe', emailManagementController.showUnsubscribePage);
+
+// Traitement de la désinscription
+router.post('/api/email/unsubscribe', emailManagementController.processUnsubscribe);
+
+// Mise à jour des préférences
+router.post('/api/email/update-preferences', emailManagementController.updatePreferences);
+
+// Page de confirmation de désinscription
+router.get('/unsubscribe/success', (req, res) => {
+    res.render('unsubscribe-success', {
+        title: 'Désinscription confirmée'
+    });
+});
+
+// ===================================
+// MIDDLEWARE POUR VÉRIFIER LES ADMINS
+// ===================================
+
+// Si vous n'avez pas encore ce middleware, voici un exemple :
+function isAdmin(req, res, next) {
+    // Vérifiez ici si l'utilisateur est admin
+    // Adaptez selon votre système d'authentification
+    
+    if (req.session && req.session.user && req.session.user.role === 'admin') {
+        return next();
+    }
+    
+    // Ou si vous utilisez un autre système d'auth
+    // if (req.user && req.user.isAdmin) {
+    //     return next();
+    // }
+    
+    res.status(403).json({
+        success: false,
+        message: 'Accès refusé - Droits administrateur requis'
+    });
+}
 
 // Export par défaut
 export default router;

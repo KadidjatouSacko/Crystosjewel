@@ -429,16 +429,15 @@ export const emailManagementController = {
                 message: 'Erreur lors de l\'envoi du test'
             });
         }
-    }
-};
+    },
 
 // ===== FONCTIONS UTILITAIRES =====
 
-function generateTrackingId() {
+ generateTrackingId() {
     return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
-}
+},
 
-async function sendCampaignEmails(campaignId, recipients, emailData) {
+async sendCampaignEmails(campaignId, recipients, emailData) {
     try {
         console.log(`📧 Démarrage envoi campagne ${campaignId} vers ${recipients.length} destinataires`);
         
@@ -515,5 +514,624 @@ async function sendCampaignEmails(campaignId, recipients, emailData) {
         }, {
             where: { id: campaignId }
         });
+    }},
+
+     // ===================================
+    // PAGE D'ADMINISTRATION PRINCIPALE
+    // ===================================
+    async showAdminPage(req, res) {
+        try {
+            console.log('📧 Affichage page administration email');
+
+            // Récupérer les statistiques
+            const stats = await this.getEmailStats();
+            
+            // Récupérer les campagnes récentes
+            const recentCampaigns = await EmailCampaign.findAll({
+                limit: 10,
+                order: [['created_at', 'DESC']],
+                include: [{
+                    model: EmailTemplate,
+                    as: 'template'
+                }]
+            });
+
+            // Récupérer les templates
+            const templates = await EmailTemplate.findAll({
+                where: { is_active: true },
+                order: [['name', 'ASC']]
+            });
+
+            res.render('admin/email-management', {
+                title: 'Gestion des Emails',
+                stats,
+                campaigns: recentCampaigns,
+                templates
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur affichage page admin email:', error);
+            res.status(500).render('error', {
+                message: 'Erreur lors du chargement de la page',
+                error: error
+            });
+        }
+    },
+
+    // ===================================
+    // STATISTIQUES EMAIL
+    // ===================================
+    async getEmailStats() {
+        try {
+            const [
+                totalCampaigns,
+                totalSent,
+                totalDelivered,
+                totalOpened,
+                totalClicked,
+                totalUnsubscribed
+            ] = await Promise.all([
+                EmailCampaign.count(),
+                EmailCampaignRecipient.count({ where: { status: 'sent' } }),
+                EmailCampaignRecipient.count({ where: { status: 'delivered' } }),
+                EmailCampaignRecipient.count({ where: { status: 'opened' } }),
+                EmailCampaignRecipient.count({ where: { status: 'clicked' } }),
+                EmailUnsubscribe.count()
+            ]);
+
+            const openRate = totalSent > 0 ? ((totalOpened / totalSent) * 100).toFixed(1) : '0.0';
+            const clickRate = totalSent > 0 ? ((totalClicked / totalSent) * 100).toFixed(1) : '0.0';
+            const deliveryRate = totalSent > 0 ? ((totalDelivered / totalSent) * 100).toFixed(1) : '0.0';
+
+            return {
+                totalCampaigns,
+                totalSent,
+                totalDelivered,
+                totalOpened,
+                totalClicked,
+                totalUnsubscribed,
+                openRate,
+                clickRate,
+                deliveryRate
+            };
+        } catch (error) {
+            console.error('❌ Erreur calcul stats email:', error);
+            return {
+                totalCampaigns: 0,
+                totalSent: 0,
+                totalDelivered: 0,
+                totalOpened: 0,
+                totalClicked: 0,
+                totalUnsubscribed: 0,
+                openRate: '0.0',
+                clickRate: '0.0',
+                deliveryRate: '0.0'
+            };
+        }
+    },
+
+    // ===================================
+    // CRÉER UNE CAMPAGNE
+    // ===================================
+    async createCampaign(req, res) {
+        try {
+            console.log('📧 Création nouvelle campagne email');
+            const { name, subject, content, template_id, recipients, scheduled_at } = req.body;
+
+            // Validation
+            if (!name || !subject || !content) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Nom, sujet et contenu sont requis'
+                });
+            }
+
+            // Créer la campagne
+            const campaign = await EmailCampaign.create({
+                name,
+                subject,
+                content,
+                template_id: template_id || null,
+                scheduled_at: scheduled_at || null,
+                status: scheduled_at ? 'scheduled' : 'draft',
+                sender_email: process.env.MAIL_USER,
+                sender_name: 'CrystosJewel',
+                reply_to: process.env.ADMIN_EMAIL || process.env.MAIL_USER
+            });
+
+            // Traiter les destinataires
+            if (recipients && recipients.length > 0) {
+                const recipientData = recipients.map(recipient => ({
+                    campaign_id: campaign.id,
+                    email: recipient.email,
+                    customer_id: recipient.customer_id || null,
+                    first_name: recipient.first_name || null,
+                    last_name: recipient.last_name || null,
+                    tracking_token: crypto.randomBytes(32).toString('hex')
+                }));
+
+                await EmailCampaignRecipient.bulkCreate(recipientData);
+                
+                // Mettre à jour le total des destinataires
+                await campaign.update({ total_recipients: recipients.length });
+            }
+
+            console.log(`✅ Campagne créée: ${campaign.name} (ID: ${campaign.id})`);
+
+            res.json({
+                success: true,
+                message: 'Campagne créée avec succès',
+                campaign: {
+                    id: campaign.id,
+                    name: campaign.name,
+                    status: campaign.status
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur création campagne:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la création de la campagne'
+            });
+        }
+    },
+
+    // ===================================
+    // ENVOYER UNE CAMPAGNE
+    // ===================================
+    async sendCampaign(req, res) {
+        try {
+            const { id } = req.params;
+            console.log(`📧 Envoi campagne ID: ${id}`);
+
+            const campaign = await EmailCampaign.findByPk(id, {
+                include: [{
+                    model: EmailCampaignRecipient,
+                    as: 'recipients',
+                    where: { status: 'pending' }
+                }]
+            });
+
+            if (!campaign) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Campagne non trouvée'
+                });
+            }
+
+            if (campaign.status === 'sent') {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Cette campagne a déjà été envoyée'
+                });
+            }
+
+            // Marquer la campagne comme en cours d'envoi
+            await campaign.update({ 
+                status: 'sending',
+                sent_at: new Date()
+            });
+
+            // Traitement asynchrone de l'envoi
+            this.processCampaignSending(campaign);
+
+            res.json({
+                success: true,
+                message: 'Envoi de la campagne en cours'
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur envoi campagne:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de l\'envoi de la campagne'
+            });
+        }
+    },
+
+    // ===================================
+    // TRAITEMENT ASYNCHRONE DE L'ENVOI
+    // ===================================
+    async processCampaignSending(campaign) {
+        try {
+            console.log(`📧 Traitement envoi campagne: ${campaign.name}`);
+            
+            const recipients = campaign.recipients || [];
+            let sentCount = 0;
+            let failedCount = 0;
+
+            for (const recipient of recipients) {
+                try {
+                    // Personnaliser le contenu
+                    const personalizedContent = this.personalizeContent(campaign.content, {
+                        first_name: recipient.first_name,
+                        last_name: recipient.last_name,
+                        email: recipient.email,
+                        tracking_token: recipient.tracking_token
+                    });
+
+                    // Envoyer l'email
+                    const result = await sendEmail({
+                        to: recipient.email,
+                        subject: campaign.subject,
+                        html: personalizedContent,
+                        from: `"${campaign.sender_name}" <${campaign.sender_email}>`,
+                        replyTo: campaign.reply_to
+                    });
+
+                    if (result.success) {
+                        await recipient.update({ 
+                            status: 'sent',
+                            sent_at: new Date()
+                        });
+                        sentCount++;
+                    } else {
+                        await recipient.update({ 
+                            status: 'failed',
+                            bounce_reason: result.error
+                        });
+                        failedCount++;
+                    }
+
+                } catch (error) {
+                    console.error(`❌ Erreur envoi à ${recipient.email}:`, error);
+                    await recipient.update({ 
+                        status: 'failed',
+                        bounce_reason: error.message
+                    });
+                    failedCount++;
+                }
+
+                // Délai entre les envois pour éviter la limitation
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+
+            // Mettre à jour les statistiques de la campagne
+            await campaign.update({
+                status: 'sent',
+                total_sent: sentCount,
+                total_failed: failedCount
+            });
+
+            console.log(`✅ Campagne ${campaign.name} envoyée: ${sentCount} succès, ${failedCount} échecs`);
+
+        } catch (error) {
+            console.error('❌ Erreur traitement campagne:', error);
+            await campaign.update({ status: 'failed' });
+        }
+    },
+
+    // ===================================
+    // PERSONNALISATION DU CONTENU
+    // ===================================
+    personalizeContent(content, data) {
+        let personalizedContent = content;
+        
+        // Remplacer les variables
+        personalizedContent = personalizedContent.replace(/\{\{first_name\}\}/g, data.first_name || '');
+        personalizedContent = personalizedContent.replace(/\{\{last_name\}\}/g, data.last_name || '');
+        personalizedContent = personalizedContent.replace(/\{\{email\}\}/g, data.email || '');
+        
+        // Ajouter les liens de tracking
+        if (data.tracking_token) {
+            const trackingPixel = `<img src="${process.env.BASE_URL}/api/email/track/open/${data.tracking_token}" width="1" height="1" style="display:none;">`;
+            personalizedContent += trackingPixel;
+            
+            // Ajouter lien de désinscription
+            const unsubscribeLink = `${process.env.BASE_URL}/unsubscribe?token=${data.tracking_token}&email=${encodeURIComponent(data.email)}`;
+            personalizedContent = personalizedContent.replace(/\{\{unsubscribe_url\}\}/g, unsubscribeLink);
+        }
+        
+        return personalizedContent;
+    },
+
+    // ===================================
+    // GESTION DES TEMPLATES
+    // ===================================
+    async getTemplates(req, res) {
+        try {
+            const templates = await EmailTemplate.findAll({
+                where: { is_active: true },
+                order: [['name', 'ASC']]
+            });
+
+            res.json({
+                success: true,
+                templates
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur récupération templates:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la récupération des templates'
+            });
+        }
+    },
+
+    async createTemplate(req, res) {
+        try {
+            const { name, description, subject, content, type, category } = req.body;
+
+            const template = await EmailTemplate.create({
+                name,
+                description,
+                subject,
+                content,
+                type: type || 'custom',
+                category
+            });
+
+            console.log(`✅ Template créé: ${template.name}`);
+
+            res.json({
+                success: true,
+                message: 'Template créé avec succès',
+                template
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur création template:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la création du template'
+            });
+        }
+    },
+
+    // ===================================
+    // TRACKING DES EMAILS
+    // ===================================
+    async trackOpen(req, res) {
+        try {
+            const { token } = req.params;
+            
+            const recipient = await EmailCampaignRecipient.findOne({
+                where: { tracking_token: token }
+            });
+
+            if (recipient && recipient.status !== 'opened') {
+                await recipient.update({
+                    status: 'opened',
+                    opened_at: new Date(),
+                    open_count: recipient.open_count + 1
+                });
+
+                // Mettre à jour les stats de la campagne
+                const campaign = await EmailCampaign.findByPk(recipient.campaign_id);
+                if (campaign) {
+                    await campaign.increment('total_opened');
+                }
+
+                console.log(`📧 Ouverture trackée pour token: ${token}`);
+            }
+
+            // Retourner un pixel transparent
+            const pixel = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==', 'base64');
+            
+            res.set({
+                'Content-Type': 'image/png',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            });
+            
+            res.send(pixel);
+
+        } catch (error) {
+            console.error('❌ Erreur tracking ouverture:', error);
+            res.status(200).send(''); // Ne pas faire échouer l'affichage de l'email
+        }
+    },
+
+    async trackClick(req, res) {
+        try {
+            const { token } = req.params;
+            const { url } = req.query;
+            
+            const recipient = await EmailCampaignRecipient.findOne({
+                where: { tracking_token: token }
+            });
+
+            if (recipient) {
+                await recipient.update({
+                    status: 'clicked',
+                    clicked_at: new Date(),
+                    click_count: recipient.click_count + 1
+                });
+
+                // Mettre à jour les stats de la campagne
+                const campaign = await EmailCampaign.findByPk(recipient.campaign_id);
+                if (campaign) {
+                    await campaign.increment('total_clicked');
+                }
+
+                console.log(`📧 Clic tracké pour token: ${token}`);
+            }
+
+            // Rediriger vers l'URL cible
+            res.redirect(url || '/');
+
+        } catch (error) {
+            console.error('❌ Erreur tracking clic:', error);
+            res.redirect('/');
+        }
+    },
+
+    // ===================================
+    // DÉSINSCRIPTION
+    // ===================================
+    async showUnsubscribePage(req, res) {
+        try {
+            const { token, email } = req.query;
+            
+            res.render('unsubscribe', {
+                title: 'Désinscription',
+                email: email || '',
+                token: token || ''
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur page désinscription:', error);
+            res.status(500).render('error', {
+                message: 'Erreur lors du chargement de la page',
+                error: error
+            });
+        }
+    },
+
+    async processUnsubscribe(req, res) {
+        try {
+            const { email, token, reason, otherReason, feedback } = req.body;
+
+            // Vérifier le token
+            const recipient = await EmailCampaignRecipient.findOne({
+                where: { tracking_token: token, email: email }
+            });
+
+            if (!recipient) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Token invalide ou email non trouvé'
+                });
+            }
+
+            // Enregistrer la désinscription
+            await EmailUnsubscribe.create({
+                email,
+                token: crypto.randomBytes(32).toString('hex'),
+                reason,
+                other_reason: otherReason,
+                feedback_allowed: feedback === true,
+                ip_address: req.ip,
+                user_agent: req.get('User-Agent')
+            });
+
+            console.log(`📧 Désinscription enregistrée pour: ${email}`);
+
+            res.json({
+                success: true,
+                message: 'Désinscription effectuée avec succès'
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur désinscription:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la désinscription'
+            });
+        }
+    },
+
+    async updatePreferences(req, res) {
+        try {
+            const { email, token, newsletter, promotions, newProducts, orderUpdates } = req.body;
+
+            // Ici, vous pouvez implémenter la logique de mise à jour des préférences
+            // selon votre système de gestion des abonnements
+
+            console.log(`📧 Préférences mises à jour pour: ${email}`);
+
+            res.json({
+                success: true,
+                message: 'Préférences mises à jour avec succès'
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur mise à jour préférences:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la mise à jour des préférences'
+            });
+        }
+    },
+
+    // ===================================
+    // ANALYTICS ET RAPPORTS
+    // ===================================
+    async getAnalytics(req, res) {
+        try {
+            const { campaignId, dateFrom, dateTo } = req.query;
+            
+            let whereClause = {};
+            if (campaignId) whereClause.campaign_id = campaignId;
+            if (dateFrom && dateTo) {
+                whereClause.sent_at = {
+                    [Op.between]: [new Date(dateFrom), new Date(dateTo)]
+                };
+            }
+
+            const analytics = await EmailCampaignRecipient.findAll({
+                where: whereClause,
+                attributes: [
+                    'status',
+                    [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+                ],
+                group: ['status']
+            });
+
+            res.json({
+                success: true,
+                analytics
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur analytics:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la récupération des analytics'
+            });
+        }
+    },
+
+    async exportData(req, res) {
+        try {
+            const { type, campaignId } = req.query;
+            
+            if (type === 'campaigns') {
+                const campaigns = await EmailCampaign.findAll({
+                    include: [{
+                        model: EmailTemplate,
+                        as: 'template'
+                    }]
+                });
+
+                // Convertir en CSV
+                const csvData = this.convertToCSV(campaigns, [
+                    'id', 'name', 'subject', 'status', 'total_recipients', 
+                    'total_sent', 'total_opened', 'total_clicked', 'created_at'
+                ]);
+
+                res.set({
+                    'Content-Type': 'text/csv',
+                    'Content-Disposition': 'attachment; filename="campaigns.csv"'
+                });
+                
+                res.send(csvData);
+            }
+
+        } catch (error) {
+            console.error('❌ Erreur export:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de l\'export'
+            });
+        }
+    },
+
+    // ===================================
+    // UTILITAIRES
+    // ===================================
+    convertToCSV(data, fields) {
+        const header = fields.join(',') + '\n';
+        const rows = data.map(item => {
+            return fields.map(field => {
+                const value = item[field] || '';
+                return `"${value.toString().replace(/"/g, '""')}"`;
+            }).join(',');
+        }).join('\n');
+        
+        return header + rows;
     }
 }
