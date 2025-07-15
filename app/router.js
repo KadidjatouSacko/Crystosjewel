@@ -17,7 +17,7 @@ import { Type } from "./models/TypeModel.js";
 import { JewelImage } from "./models/jewelImage.js";
 
 // Imports des contrôleurs EXISTANTS
-import { emailManagementController } from './controlleurs/emailManagementController.js';
+import { emailManagementController } from "./controlleurs/emailManagementController.js";
 // Ajoutez ces lignes APRÈS l'import pour tester :
 console.log('🔍 Test import emailManagementController:', emailManagementController);
 console.log('🔍 showAdminPage existe?', typeof emailManagementController?.showAdminPage);
