@@ -11,7 +11,6 @@ import {
     EmailTemplate,
     EmailUnsubscribe
 } from '../models/emailRelations.js';
-import { sendEmail } from '../services/emailService.js';
 import crypto from 'crypto';
 
 export const emailManagementController = {

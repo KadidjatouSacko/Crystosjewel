@@ -2,10 +2,14 @@
 // app/models/emailUnsubscribeModel.js
 // ===================================
 
-import { DataTypes } from 'sequelize';
+import { DataTypes, Model } from "sequelize";
 import { sequelize } from "./sequelize-client.js";
 
-const EmailUnsubscribe = sequelize.define('EmailUnsubscribe', {
+
+export class EmailUnsubscribe extends Model {}
+
+EmailUnsubscribe.init({
+
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
@@ -49,6 +53,7 @@ const EmailUnsubscribe = sequelize.define('EmailUnsubscribe', {
         allowNull: true
     }
 }, {
+     sequelize,
     tableName: 'email_unsubscribes',
     timestamps: true,
     indexes: [
@@ -64,4 +69,3 @@ const EmailUnsubscribe = sequelize.define('EmailUnsubscribe', {
     ]
 });
 
-export default EmailUnsubscribe;

@@ -2,11 +2,11 @@
 // app/models/emailRelations.js
 // ===================================
 
-import EmailCampaign from './emailCampaignModel.js';
-import EmailCampaignRecipient from './emailCampaignRecipientModel.js';
-import EmailTemplate from './emailTemplateModel.js';
-import EmailUnsubscribe from './emailUnsubscribeModel.js';
-import Customer from './customerModel.js';
+import{ EmailCampaign}from './emailCampaignModel.js';
+import{ EmailCampaignRecipient}from './emailCampaignRecipientModel.js';
+import{ EmailTemplate}from './emailTemplateModel.js';
+import{ EmailUnsubscribe} from './emailUnsubscribeModel.js';
+import{ Customer}from './customerModel.js';
 
 // Relations EmailCampaign
 EmailCampaign.hasMany(EmailCampaignRecipient, {
