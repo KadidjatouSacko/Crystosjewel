@@ -719,7 +719,7 @@
                 </tr>
             </thead>
             <tbody id="customersTableBody">
-                <% if (customers && customers.length > 0) { %>
+                <% if (typeof customers !== 'undefined' && customers && customers.length > 0) { %>
                     <% customers.forEach(customer => { %>
                         <tr data-customer-id="<%= customer.id %>" class="customer-row">
                             <td>
@@ -776,6 +776,7 @@
                                     </button>
                                 </div>
                             </td>
+                            
                         </tr>
                     <% }); %>
                 <% } else { %>
@@ -794,6 +795,7 @@
     <!-- Modal pour éditer un client -->
     <div id="editCustomerModal" class="modal">
         <div class="modal-content">
+            <span id="resultsCount"><%= (typeof customers !== 'undefined' ? customers.length : 0) %> clients trouvés</span>
             <div class="modal-header">
                 <h2><i class="fas fa-edit"></i> Modifier Client</h2>
                 <button class="close" id="closeEditModal">&times;</button>

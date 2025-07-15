@@ -1,14 +1,12 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %></title>
+    <title><%= title || 'Gestion des Clients' %></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/css/follow-customer.css">
     <style>
-        /* Styles spécifiques pour la gestion clients - voir l'artefact principal */
+        /* Styles pour la gestion clients */
         .customer-management {
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             min-height: 100vh;
@@ -196,12 +194,15 @@
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             padding: 20px;
             border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .list-header h3 {
             color: #1e293b;
             font-size: 1.5rem;
-            margin-bottom: 10px;
+            margin: 0;
         }
 
         .customers-table {
@@ -252,12 +253,13 @@
         .customer-details h4 {
             color: #1e293b;
             font-size: 14px;
-            margin-bottom: 3px;
+            margin: 0 0 3px 0;
         }
 
         .customer-details p {
             color: #64748b;
             font-size: 13px;
+            margin: 0;
         }
 
         .status-badge {
@@ -342,7 +344,232 @@
             color: #64748b;
         }
 
-        /* Responsive */
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #d89ab3 0%, #b794a8 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        .close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #d89ab3;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .email-composer {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .email-templates {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .template-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e5e7eb;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .template-card:hover {
+            border-color: #d89ab3;
+            transform: translateY(-2px);
+        }
+
+        .template-card.active {
+            border-color: #d89ab3;
+            background: #fdf2f8;
+        }
+
+        .email-preview {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            min-height: 200px;
+        }
+
+        .selected-customers-info {
+            background: linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%);
+            border: 1px solid #3b82f6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 9999;
+            animation: slideInRight 0.3s ease;
+            max-width: 350px;
+        }
+
+        .notification.success {
+            background: #10b981;
+        }
+
+        .notification.error {
+            background: #ef4444;
+        }
+
+        .notification.warning {
+            background: #f59e0b;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+
         @media (max-width: 768px) {
             .controls-section {
                 flex-direction: column;
@@ -357,8 +584,21 @@
                 width: 100%;
             }
 
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
             .stats-overview {
                 grid-template-columns: 1fr;
+            }
+
+            .email-templates {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                width: 95%;
+                margin: 1% auto;
             }
         }
     </style>
@@ -379,7 +619,6 @@
                 <input type="text" id="searchCustomers" placeholder="Rechercher un client...">
                 <i class="fas fa-search"></i>
             </div>
-            
             
             <select class="filter-dropdown" id="accountFilter">
                 <option value="all">Tous les clients</option>
@@ -421,7 +660,19 @@
                     <i class="fas fa-users"></i>
                 </div>
             </div>
-            <div class="stat-value"><%= customersStats.total || 0 %></div>
+            <div class="stat-value" id="totalCustomers">
+                <% 
+                let totalClients = 0;
+                if (typeof customersData !== 'undefined' && customersData && customersData.customers) {
+                    totalClients = customersData.customers.length;
+                } else if (typeof customers !== 'undefined' && customers && customers.length) {
+                    totalClients = customers.length;
+                } else if (typeof stats !== 'undefined' && stats.totalCustomers) {
+                    totalClients = stats.totalCustomers;
+                }
+                %>
+                <%= totalClients %>
+            </div>
             <div class="stat-label">Total Clients</div>
         </div>
 
@@ -431,7 +682,19 @@
                     <i class="fas fa-shopping-cart"></i>
                 </div>
             </div>
-            <div class="stat-value"><%= customersStats.withOrders || 0 %></div>
+            <div class="stat-value" id="customersWithOrders">
+                <% 
+                let withOrders = 0;
+                if (typeof customersData !== 'undefined' && customersData && customersData.customers) {
+                    withOrders = customersData.customers.filter(c => c.total_orders && c.total_orders > 0).length;
+                } else if (typeof customers !== 'undefined' && customers && customers.length) {
+                    withOrders = customers.filter(c => c.total_orders && c.total_orders > 0).length;
+                } else if (typeof stats !== 'undefined' && stats.withOrders) {
+                    withOrders = stats.withOrders;
+                }
+                %>
+                <%= withOrders %>
+            </div>
             <div class="stat-label">Avec Commandes</div>
         </div>
 
@@ -441,7 +704,19 @@
                     <i class="fas fa-user-check"></i>
                 </div>
             </div>
-            <div class="stat-value"><%= customersStats.withAccounts || 0 %></div>
+            <div class="stat-value" id="customersWithAccounts">
+                <% 
+                let withAccounts = 0;
+                if (typeof customersData !== 'undefined' && customersData && customersData.customers) {
+                    withAccounts = customersData.customers.filter(c => !c.is_guest).length;
+                } else if (typeof customers !== 'undefined' && customers && customers.length) {
+                    withAccounts = customers.filter(c => !c.is_guest).length;
+                } else if (typeof stats !== 'undefined' && stats.withAccounts) {
+                    withAccounts = stats.withAccounts;
+                }
+                %>
+                <%= withAccounts %>
+            </div>
             <div class="stat-label">Comptes Créés</div>
         </div>
 
@@ -451,7 +726,19 @@
                     <i class="fas fa-envelope"></i>
                 </div>
             </div>
-            <div class="stat-value"><%= customersStats.newsletter || 0 %></div>
+            <div class="stat-value" id="newsletterSubscribers">
+                <% 
+                let newsletter = 0;
+                if (typeof customersData !== 'undefined' && customersData && customersData.customers) {
+                    newsletter = customersData.customers.filter(c => c.marketing_opt_in || c.email_notifications).length;
+                } else if (typeof customers !== 'undefined' && customers && customers.length) {
+                    newsletter = customers.filter(c => c.marketing_opt_in || c.email_notifications).length;
+                } else if (typeof stats !== 'undefined' && stats.newsletter) {
+                    newsletter = stats.newsletter;
+                }
+                %>
+                <%= newsletter %>
+            </div>
             <div class="stat-label">Newsletter</div>
         </div>
     </div>
@@ -461,7 +748,20 @@
         <div class="list-header">
             <h3>Liste des Clients</h3>
             <div class="table-actions">
-                <span id="resultsCount"><%= customers.length %> clients trouvés</span>
+                <span id="resultsCount">
+                    <% 
+                    let customerCount = 0;
+                    if (typeof customersData !== 'undefined' && customersData && customersData.customers) {
+                        customerCount = customersData.customers.length;
+                    } else if (typeof customers !== 'undefined' && customers) {
+                        customerCount = customers.length;
+                    }
+                    %>
+                    <%= customerCount %> clients trouvés
+                </span>
+                <span id="selectedCount" style="margin-left: 20px; color: #d89ab3; font-weight: 600; display: none;">
+                    0 client(s) sélectionné(s)
+                </span>
             </div>
         </div>
 
@@ -481,11 +781,24 @@
                 </tr>
             </thead>
             <tbody id="customersTableBody">
-                <% if (customers && customers.length > 0) { %>
-                    <% customers.forEach(customer => { %>
-                        <tr data-customer-id="<%= customer.id %>" class="customer-row">
+                <% 
+                let customersToShow = [];
+                if (typeof customersData !== 'undefined' && customersData && customersData.customers) {
+                    customersToShow = customersData.customers;
+                } else if (typeof customers !== 'undefined' && customers) {
+                    customersToShow = customers;
+                }
+                
+                if (customersToShow && customersToShow.length > 0) { 
+                %>
+                    <% customersToShow.forEach(customer => { %>
+                        <tr data-customer-id="<%= customer.id %>" 
+                            data-account="<%= customer.is_guest ? 'guest' : 'account' %>"
+                            data-newsletter="<%= (customer.marketing_opt_in || customer.email_notifications) ? 'yes' : 'no' %>"
+                            data-orders="<%= (customer.total_orders && customer.total_orders > 0) ? 'yes' : 'no' %>"
+                            class="customer-row">
                             <td>
-                                <input type="checkbox" class="customer-checkbox" value="<%= customer.id %>">
+                                <input type="checkbox" class="customer-checkbox" value="<%= customer.id %>" data-email="<%= customer.email %>">
                             </td>
                             <td>
                                 <div class="customer-info">
@@ -493,7 +806,12 @@
                                         <%= (customer.first_name || customer.email || 'C')[0].toUpperCase() %>
                                     </div>
                                     <div class="customer-details">
-                                        <h4><%= (customer.first_name || '') %> <%= (customer.last_name || '') %></h4>
+                                        <h4>
+                                            <%= (customer.first_name || '') %> <%= (customer.last_name || '') %>
+                                            <% if (!customer.first_name && !customer.last_name) { %>
+                                                Utilisateur
+                                            <% } %>
+                                        </h4>
                                         <p><%= customer.email %></p>
                                     </div>
                                 </div>
@@ -518,6 +836,8 @@
                             <td>
                                 <% if (customer.last_order_date) { %>
                                     <%= new Date(customer.last_order_date).toLocaleDateString('fr-FR') %>
+                                <% } else if (customer.created_at) { %>
+                                    <%= new Date(customer.created_at).toLocaleDateString('fr-FR') %>
                                 <% } else { %>
                                     <span style="color: #9ca3af;">Jamais</span>
                                 <% } %>
@@ -553,76 +873,12 @@
         </table>
     </div>
 
-    <!-- Modals -->
-    <!-- Modal pour éditer un client -->
-    <div id="editCustomerModal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2><i class="fas fa-edit"></i> Modifier Client</h2>
-                <button class="close" id="closeEditModal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="editCustomerForm">
-                    <input type="hidden" id="editCustomerId" name="customerId">
-                    
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label for="editFirstName">Prénom</label>
-                            <input type="text" id="editFirstName" name="firstName" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="editLastName">Nom</label>
-                            <input type="text" id="editLastName" name="lastName" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="editEmail">Email</label>
-                            <input type="email" id="editEmail" name="email" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label for="editPhone">Téléphone</label>
-                            <input type="tel" id="editPhone" name="phone">
-                        </div>
-                        
-                        <div class="form-group full-width">
-                            <label for="editAddress">Adresse</label>
-                            <textarea id="editAddress" name="address" rows="3"></textarea>
-                        </div>
-                        
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                <input type="checkbox" id="editNewsletterOpt" name="newsletterOpt">
-                                <label for="editNewsletterOpt">Abonné à la newsletter</label>
-                            </div>
-                        </div>
-                        
-                        <div class="form-group">
-                            <div class="checkbox-group">
-                                <input type="checkbox" id="editEmailNotifications" name="emailNotifications">
-                                <label for="editEmailNotifications">Notifications par email</label>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 30px;">
-                        <button type="button" class="btn btn-secondary" id="cancelEdit">Annuler</button>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Sauvegarder
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Modal pour composer un email -->
-    <div id="emailModal" class="modal" style="display: none;">
+    <div id="emailModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-envelope"></i> Composer un Email</h2>
-                <button class="close" id="closeEmailModal">&times;</button>
+                <button class="close" onclick="closeEmailModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <form id="emailForm">
@@ -638,7 +894,13 @@
                         </select>
                     </div>
 
-                    <div class="email-composer">
+                    <div id="selectedCustomersInfo" class="selected-customers-info">
+                        <i class="fas fa-info-circle"></i>
+                        <span id="selectedCustomersText">0 client(s) sélectionné(s)</span>
+                    </div>
+
+                   
+                            <div class="email-composer">
                         <h4>Choisir un Template</h4>
                         <div class="email-templates">
                             <div class="template-card active" data-template="newsletter">
@@ -696,31 +958,18 @@
                         <div class="email-preview" id="emailPreview">
                             <h4>Aperçu de l'Email</h4>
                             <div id="previewContent">
-                                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                                    <div style="background: linear-gradient(135deg, #d89ab3 0%, #b794a8 100%); color: white; padding: 30px; text-align: center;">
-                                        <h1 style="margin: 0; font-size: 28px;">💎 Bijouterie Élégance</h1>
-                                        <p style="margin: 10px 0 0 0; opacity: 0.9;">Votre bijoutier de confiance</p>
-                                    </div>
-                                    <div style="padding: 30px;">
-                                        <h2 id="previewTitle" style="color: #1e293b; margin-bottom: 20px;">Titre de l'email</h2>
-                                        <div id="previewMessage" style="color: #64748b; line-height: 1.6; margin-bottom: 25px;">
-                                            Votre message apparaîtra ici...
-                                        </div>
-                                        <div id="previewPromo" style="background: #fef3c7; border: 1px solid #fbbf24; border-radius: 8px; padding: 20px; text-align: center; margin: 20px 0; display: none;">
-                                            <h3 style="color: #92400e; margin: 0 0 10px 0;">🎉 Offre Spéciale</h3>
-                                            <p style="margin: 0; color: #78350f;">Code: <strong id="previewCode"></strong></p>
-                                        </div>
-                                    </div>
-                                </div>
+                                <!-- Le contenu sera généré par JavaScript -->
                             </div>
                         </div>
 
                         <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 30px;">
-                            <button type="button" class="btn btn-secondary" id="cancelEmail">Annuler</button>
-                            <button type="button" class="btn btn-secondary" id="previewEmail">
-                                <i class="fas fa-eye"></i> Aperçu
+                            <button type="button" onclick="closeEmailModal()" class="btn btn-secondary">
+                                Annuler
                             </button>
-                            <button type="submit" class="btn btn-primary" id="sendEmail">
+                            <button type="button" onclick="previewEmailTemplate()" class="btn btn-secondary">
+                                <i class="fas fa-eye"></i> Test Aperçu
+                            </button>
+                            <button type="submit" class="btn btn-primary">
                                 <i class="fas fa-paper-plane"></i> Envoyer
                             </button>
                         </div>
@@ -731,17 +980,15 @@
     </div>
 
     <!-- Modal pour voir les détails d'un client -->
-    <div id="viewCustomerModal" class="modal" style="display: none;">
+    <div id="viewCustomerModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
                 <h2><i class="fas fa-user"></i> Détails du Client</h2>
-                <button class="close" id="closeViewModal">&times;</button>
+                <button class="close" onclick="closeModal('viewCustomerModal')">&times;</button>
             </div>
             <div class="modal-body">
                 <div id="customerDetails">
-                    <!-- Les détails seront chargés ici via AJAX -->
                     <div style="text-align: center; padding: 40px;">
-                        <div class="spinner"></div>
                         <p>Chargement des détails...</p>
                     </div>
                 </div>
@@ -749,46 +996,201 @@
         </div>
     </div>
 
+    <!-- Modal pour éditer un client -->
+    <div id="editCustomerModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-edit"></i> Modifier Client</h2>
+                <button class="close" onclick="closeModal('editCustomerModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="editCustomerForm">
+                    <input type="hidden" id="editCustomerId" name="customerId">
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="editFirstName">Prénom</label>
+                            <input type="text" id="editFirstName" name="firstName" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editLastName">Nom</label>
+                            <input type="text" id="editLastName" name="lastName" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editEmail">Email</label>
+                            <input type="email" id="editEmail" name="email" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="editPhone">Téléphone</label>
+                            <input type="tel" id="editPhone" name="phone">
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="editAddress">Adresse</label>
+                            <textarea id="editAddress" name="address" rows="3"></textarea>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="editNewsletterOpt" name="newsletterOpt">
+                                <label for="editNewsletterOpt">Abonné à la newsletter</label>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="editEmailNotifications" name="emailNotifications">
+                                <label for="editEmailNotifications">Notifications par email</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 30px;">
+                        <button type="button" onclick="closeModal('editCustomerModal')" class="btn btn-secondary">Annuler</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Sauvegarder
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+      <!-- Injection des données du serveur -->
+    <script type="application/json" id="server-data">
+        <%- JSON.stringify({
+            customers: (typeof customersData !== 'undefined' && customersData && customersData.customers) ? customersData.customers :
+                      (typeof customers !== 'undefined' && customers) ? customers : [],
+            stats: (typeof stats !== 'undefined') ? stats : {}
+        }) %>
+    </script>
+
     <script>
-        // Variables globales
+        // Variables globales avec données du serveur
         let allCustomers = [];
         let filteredCustomers = [];
         let selectedCustomers = [];
         let currentTemplate = 'newsletter';
 
-        // Initialisation au chargement de la page
+        // Charger les données du serveur depuis le script JSON
+        try {
+            const serverData = JSON.parse(document.getElementById('server-data').textContent);
+            window.customersServerData = serverData.customers || [];
+            window.serverStats = serverData.stats || {};
+        } catch (error) {
+            console.error('Erreur lors du chargement des données serveur:', error);
+            window.customersServerData = [];
+            window.serverStats = {};
+        }
+
+        // Templates d'email avec designs différents
+        const emailTemplates = {
+            newsletter: {
+                colors: { primary: '#d89ab3', secondary: '#b794a8' },
+                icon: '💎',
+                title: 'Newsletter Élégante'
+            },
+            promotion: {
+                colors: { primary: '#f59e0b', secondary: '#d97706' },
+                icon: '🔥',
+                title: 'Offre Promotionnelle'
+            },
+            welcome: {
+                colors: { primary: '#ec4899', secondary: '#be185d' },
+                icon: '🌟',
+                title: 'Bienvenue'
+            },
+            custom: {
+                colors: { primary: '#8b5cf6', secondary: '#7c3aed' },
+                icon: '📧',
+                title: 'Email Personnalisé'
+            }
+        };
+
+        // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
-            initializeEventListeners();
-            loadCustomersData();
-            updatePreview();
+            console.log('🚀 Initialisation du système de gestion clients...');
+            console.log('📊 Données clients disponibles:', window.customersServerData?.length || 0);
+            
+            try {
+                initializeEventListeners();
+                loadCustomersData();
+                updatePreview();
+                console.log('✅ Système initialisé avec succès');
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'initialisation:', error);
+                showNotification('Erreur lors de l\'initialisation du système', 'error');
+            }
         });
 
-        // Initialiser tous les event listeners
+        // Initialiser les event listeners
         function initializeEventListeners() {
-            // Recherche et filtres
-            document.getElementById('searchCustomers').addEventListener('input', filterCustomers);
-            document.getElementById('accountFilter').addEventListener('change', filterCustomers);
-            document.getElementById('newsletterFilter').addEventListener('change', filterCustomers);
-            document.getElementById('orderFilter').addEventListener('change', filterCustomers);
+            console.log('📋 Initialisation des event listeners...');
+            
+            // Vérifier que les éléments existent avant d'ajouter les listeners
+            const elements = {
+                searchCustomers: document.getElementById('searchCustomers'),
+                accountFilter: document.getElementById('accountFilter'),
+                newsletterFilter: document.getElementById('newsletterFilter'),
+                orderFilter: document.getElementById('orderFilter'),
+                selectAll: document.getElementById('selectAll'),
+                sendEmailBtn: document.getElementById('sendEmailBtn'),
+                exportBtn: document.getElementById('exportBtn'),
+                addCustomerBtn: document.getElementById('addCustomerBtn'),
+                emailForm: document.getElementById('emailForm'),
+                editCustomerForm: document.getElementById('editCustomerForm'),
+                emailRecipients: document.getElementById('emailRecipients')
+            };
 
-            // Sélection de tous les clients
-            document.getElementById('selectAll').addEventListener('change', toggleSelectAll);
+            // Filtres et recherche
+            if (elements.searchCustomers) {
+                elements.searchCustomers.addEventListener('input', filterCustomers);
+                console.log('✅ Search listener ajouté');
+            }
+            if (elements.accountFilter) {
+                elements.accountFilter.addEventListener('change', filterCustomers);
+            }
+            if (elements.newsletterFilter) {
+                elements.newsletterFilter.addEventListener('change', filterCustomers);
+            }
+            if (elements.orderFilter) {
+                elements.orderFilter.addEventListener('change', filterCustomers);
+            }
+
+            // Sélection
+            if (elements.selectAll) {
+                elements.selectAll.addEventListener('change', toggleSelectAll);
+            }
+
+            // Délégation d'événements pour les checkboxes des clients
+            document.addEventListener('change', function(e) {
+                if (e.target && e.target.classList.contains('customer-checkbox')) {
+                    updateSelectedCustomers();
+                }
+            });
 
             // Boutons d'action
-            document.getElementById('sendEmailBtn').addEventListener('click', () => openEmailModal());
-            document.getElementById('exportBtn').addEventListener('click', exportCustomers);
-            document.getElementById('addCustomerBtn').addEventListener('click', addNewCustomer);
-
-            // Modals
-            document.getElementById('closeEditModal').addEventListener('click', () => closeModal('editCustomerModal'));
-            document.getElementById('closeEmailModal').addEventListener('click', () => closeModal('emailModal'));
-            document.getElementById('closeViewModal').addEventListener('click', () => closeModal('viewCustomerModal'));
-            document.getElementById('cancelEdit').addEventListener('click', () => closeModal('editCustomerModal'));
-            document.getElementById('cancelEmail').addEventListener('click', () => closeModal('emailModal'));
+            if (elements.sendEmailBtn) {
+                elements.sendEmailBtn.addEventListener('click', openEmailModal);
+                console.log('✅ Email button listener ajouté');
+            }
+            if (elements.exportBtn) {
+                elements.exportBtn.addEventListener('click', exportCustomers);
+            }
+            if (elements.addCustomerBtn) {
+                elements.addCustomerBtn.addEventListener('click', addNewCustomer);
+            }
 
             // Formulaires
-            document.getElementById('editCustomerForm').addEventListener('submit', saveCustomer);
-            document.getElementById('emailForm').addEventListener('submit', sendBulkEmail);
+            if (elements.emailForm) {
+                elements.emailForm.addEventListener('submit', sendBulkEmail);
+            }
+            if (elements.editCustomerForm) {
+                elements.editCustomerForm.addEventListener('submit', saveCustomer);
+            }
 
             // Templates d'email
             document.querySelectorAll('.template-card').forEach(card => {
@@ -798,615 +1200,833 @@
             });
 
             // Aperçu email en temps réel
-            document.getElementById('emailTitle').addEventListener('input', updatePreview);
-            document.getElementById('emailContent').addEventListener('input', updatePreview);
-            document.getElementById('emailDiscount').addEventListener('input', updatePreview);
-            document.getElementById('emailPromoCode').addEventListener('input', updatePreview);
+            ['emailTitle', 'emailContent', 'emailDiscount', 'emailPromoCode'].forEach(id => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.addEventListener('input', updatePreview);
+                }
+            });
+
+            // Sélection de destinataires
+            if (elements.emailRecipients) {
+                elements.emailRecipients.addEventListener('change', updateSelectedCustomersInfo);
+            }
 
             // Fermer modals en cliquant à l'extérieur
             window.addEventListener('click', function(event) {
-                if (event.target.classList.contains('modal')) {
+                if (event.target && event.target.classList.contains('modal')) {
                     closeModal(event.target.id);
                 }
             });
+
+            // Raccourcis clavier
+            document.addEventListener('keydown', function(event) {
+                if (event.key === 'Escape') {
+                    const openModal = document.querySelector('.modal[style*="block"]');
+                    if (openModal) {
+                        closeModal(openModal.id);
+                    }
+                }
+            });
+
+            console.log('✅ Event listeners initialisés');
         }
 
         // Charger les données des clients
         function loadCustomersData() {
-            // Les données sont déjà chargées via EJS, on les récupère du DOM
-            allCustomers = Array.from(document.querySelectorAll('.customer-row')).map(row => {
-                return {
-                    id: row.dataset.customerId,
-                    element: row
-                };
-            });
-            filteredCustomers = [...allCustomers];
-            updateResultsCount();
+            try {
+                const customerRows = document.querySelectorAll('.customer-row');
+                allCustomers = Array.from(customerRows).map(row => {
+                    return {
+                        id: row.dataset.customerId,
+                        element: row
+                    };
+                });
+                filteredCustomers = [...allCustomers];
+                updateResultsCount();
+                console.log('📋 Données clients chargées:', allCustomers.length);
+            } catch (error) {
+                console.error('❌ Erreur lors du chargement des données:', error);
+            }
         }
 
         // Filtrer les clients
         function filterCustomers() {
-            const searchTerm = document.getElementById('searchCustomers').value.toLowerCase();
-            const accountFilter = document.getElementById('accountFilter').value;
-            const newsletterFilter = document.getElementById('newsletterFilter').value;
-            const orderFilter = document.getElementById('orderFilter').value;
+            try {
+                const searchTerm = document.getElementById('searchCustomers')?.value.toLowerCase() || '';
+                const accountFilter = document.getElementById('accountFilter')?.value || 'all';
+                const newsletterFilter = document.getElementById('newsletterFilter')?.value || 'all';
+                const orderFilter = document.getElementById('orderFilter')?.value || 'all';
 
-            filteredCustomers = allCustomers.filter(customer => {
-                const row = customer.element;
-                const customerInfo = row.querySelector('.customer-details');
-                const name = customerInfo.querySelector('h4').textContent.toLowerCase();
-                const email = customerInfo.querySelector('p').textContent.toLowerCase();
-                
-                // Filtrage par texte
-                const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
-                
-                // Filtrage par type de compte
-                const accountBadges = row.querySelectorAll('.status-badge');
-                const accountStatus = accountBadges[0].textContent.toLowerCase();
-                const matchesAccount = accountFilter === 'all' || 
-                    (accountFilter === 'with-account' && accountStatus === 'compte') ||
-                    (accountFilter === 'without-account' && accountStatus === 'invité');
-                
-                // Filtrage par newsletter
-                const newsletterStatus = accountBadges[1].textContent.toLowerCase();
-                const matchesNewsletter = newsletterFilter === 'all' ||
-                    (newsletterFilter === 'subscribed' && newsletterStatus === 'abonné') ||
-                    (newsletterFilter === 'not-subscribed' && newsletterStatus === 'non abonné');
-                
-                // Filtrage par commandes
-                const ordersCount = parseInt(row.children[4].textContent);
-                const matchesOrders = orderFilter === 'all' ||
-                    (orderFilter === 'with-orders' && ordersCount > 0) ||
-                    (orderFilter === 'without-orders' && ordersCount === 0);
+                filteredCustomers = allCustomers.filter(customer => {
+                    const row = customer.element;
+                    if (!row) return false;
+                    
+                    const customerInfo = row.querySelector('.customer-details');
+                    if (!customerInfo) return false;
+                    
+                    const nameElement = customerInfo.querySelector('h4');
+                    const emailElement = customerInfo.querySelector('p');
+                    
+                    if (!nameElement || !emailElement) return false;
+                    
+                    const name = nameElement.textContent.toLowerCase();
+                    const email = emailElement.textContent.toLowerCase();
+                    
+                    // Filtrage par texte
+                    const matchesSearch = name.includes(searchTerm) || email.includes(searchTerm);
+                    
+                    // Filtrage par type de compte
+                    const matchesAccount = accountFilter === 'all' || 
+                        (accountFilter === 'with-account' && row.dataset.account === 'account') ||
+                        (accountFilter === 'without-account' && row.dataset.account === 'guest');
+                    
+                    // Filtrage par newsletter
+                    const matchesNewsletter = newsletterFilter === 'all' ||
+                        (newsletterFilter === 'subscribed' && row.dataset.newsletter === 'yes') ||
+                        (newsletterFilter === 'not-subscribed' && row.dataset.newsletter === 'no');
+                    
+                    // Filtrage par commandes
+                    const matchesOrders = orderFilter === 'all' ||
+                        (orderFilter === 'with-orders' && row.dataset.orders === 'yes') ||
+                        (orderFilter === 'without-orders' && row.dataset.orders === 'no');
 
-                return matchesSearch && matchesAccount && matchesNewsletter && matchesOrders;
-            });
+                    return matchesSearch && matchesAccount && matchesNewsletter && matchesOrders;
+                });
 
-            // Afficher/masquer les lignes
-            allCustomers.forEach(customer => {
-                customer.element.style.display = 'none';
-            });
+                // Afficher/masquer les lignes
+                allCustomers.forEach(customer => {
+                    if (customer.element) {
+                        customer.element.style.display = 'none';
+                    }
+                });
 
-            filteredCustomers.forEach(customer => {
-                customer.element.style.display = 'table-row';
-            });
+                filteredCustomers.forEach(customer => {
+                    if (customer.element) {
+                        customer.element.style.display = 'table-row';
+                    }
+                });
 
-            updateResultsCount();
+                updateResultsCount();
+            } catch (error) {
+                console.error('❌ Erreur lors du filtrage:', error);
+            }
         }
 
         // Mettre à jour le nombre de résultats
         function updateResultsCount() {
-            document.getElementById('resultsCount').textContent = `${filteredCustomers.length} clients trouvés`;
+            try {
+                const count = filteredCustomers.length;
+                const resultsElement = document.getElementById('resultsCount');
+                if (resultsElement) {
+                    resultsElement.textContent = `${count} clients trouvés`;
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de la mise à jour du compteur:', error);
+            }
         }
 
-        // Sélectionner/désélectionner tous les clients
+        // Sélectionner/désélectionner tous
         function toggleSelectAll(event) {
-            const checkboxes = document.querySelectorAll('.customer-checkbox');
-            checkboxes.forEach(checkbox => {
-                if (checkbox.closest('tr').style.display !== 'none') {
-                    checkbox.checked = event.target.checked;
-                }
-            });
-            updateSelectedCustomers();
+            try {
+                const checkboxes = document.querySelectorAll('.customer-checkbox');
+                checkboxes.forEach(checkbox => {
+                    const row = checkbox.closest('tr');
+                    if (row && row.style.display !== 'none') {
+                        checkbox.checked = event.target.checked;
+                    }
+                });
+                updateSelectedCustomers();
+            } catch (error) {
+                console.error('❌ Erreur lors de la sélection globale:', error);
+            }
         }
 
         // Mettre à jour la liste des clients sélectionnés
         function updateSelectedCustomers() {
-            selectedCustomers = Array.from(document.querySelectorAll('.customer-checkbox:checked'))
-                .map(checkbox => checkbox.value);
-        }
+            try {
+                const selected = document.querySelectorAll('.customer-checkbox:checked');
+                selectedCustomers = Array.from(selected).map(cb => ({
+                    id: cb.value,
+                    email: cb.dataset.email || cb.getAttribute('data-email')
+                }));
 
-        // Voir les détails d'un client
-        function viewCustomer(customerId) {
-            openModal('viewCustomerModal');
-            
-            fetch(`/admin/customer/${customerId}/details`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        displayCustomerDetails(data.customer);
+                const count = selectedCustomers.length;
+                const countElement = document.getElementById('selectedCount');
+                
+                if (countElement) {
+                    if (count > 0) {
+                        countElement.textContent = `${count} client(s) sélectionné(s)`;
+                        countElement.style.display = 'inline';
                     } else {
-                        document.getElementById('customerDetails').innerHTML = 
-                            `<div style="text-align: center; padding: 40px; color: #ef4444;">
-                                <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
-                                <h3>Erreur</h3>
-                                <p>Impossible de charger les détails du client.</p>
-                            </div>`;
+                        countElement.style.display = 'none';
                     }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    document.getElementById('customerDetails').innerHTML = 
-                        `<div style="text-align: center; padding: 40px; color: #ef4444;">
-                            <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
-                            <h3>Erreur de connexion</h3>
-                            <p>Impossible de charger les détails du client.</p>
-                        </div>`;
-                });
-        }
-
-        // Afficher les détails du client
-        function displayCustomerDetails(customer) {
-            const detailsHtml = `
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
-                    <div>
-                        <h4 style="color: #1e293b; margin-bottom: 15px; font-size: 18px;">📋 Informations personnelles</h4>
-                        <div style="background: #f8fafc; padding: 20px; border-radius: 10px;">
-                            <p style="margin-bottom: 10px;"><strong>Nom:</strong> ${customer.first_name || ''} ${customer.last_name || ''}</p>
-                            <p style="margin-bottom: 10px;"><strong>Email:</strong> ${customer.email}</p>
-                            <p style="margin-bottom: 10px;"><strong>Téléphone:</strong> ${customer.phone || 'Non renseigné'}</p>
-                            <p style="margin-bottom: 10px;"><strong>Adresse:</strong> ${customer.address || 'Non renseignée'}</p>
-                            <p style="margin-bottom: 10px;"><strong>Type de compte:</strong> ${customer.is_guest ? 'Invité' : 'Compte créé'}</p>
-                            <p style="margin-bottom: 10px;"><strong>Newsletter:</strong> ${customer.marketing_opt_in ? '✅ Abonné' : '❌ Non abonné'}</p>
-                            <p style="margin-bottom: 0;"><strong>Membre depuis:</strong> ${new Date(customer.created_at).toLocaleDateString('fr-FR')}</p>
-                        </div>
-                    </div>
-                    <div>
-                        <h4 style="color: #1e293b; margin-bottom: 15px; font-size: 18px;">📊 Activité</h4>
-                        <div style="background: #f8fafc; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                            <p style="margin-bottom: 10px;"><strong>Commandes:</strong> ${customer.total_orders || 0}</p>
-                            <p style="margin-bottom: 10px;"><strong>Total dépensé:</strong> ${parseFloat(customer.total_spent || 0).toFixed(2)}€</p>
-                            <p style="margin-bottom: 0;"><strong>Dernière commande:</strong> ${customer.last_order_date ? new Date(customer.last_order_date).toLocaleDateString('fr-FR') : 'Jamais'}</p>
-                        </div>
-                        
-                        <h4 style="color: #1e293b; margin-bottom: 15px; font-size: 18px;">🛍️ Dernières commandes</h4>
-                        <div style="max-height: 300px; overflow-y: auto;">
-                            ${customer.recentOrders && customer.recentOrders.length > 0 ? customer.recentOrders.map(order => `
-                                <div style="background: white; border: 1px solid #e5e7eb; padding: 15px; border-radius: 8px; margin-bottom: 10px;">
-                                    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 5px;">
-                                        <strong style="color: #1e293b;">#${order.numero_commande}</strong>
-                                        <span style="color: #059669; font-weight: 600;">${parseFloat(order.total).toFixed(2)}€</span>
-                                    </div>
-                                    <small style="color: #64748b;">${new Date(order.created_at).toLocaleDateString('fr-FR')} - ${order.status}</small>
-                                </div>
-                            `).join('') : '<p style="color: #64748b; text-align: center; padding: 20px;">Aucune commande</p>'}
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.getElementById('customerDetails').innerHTML = detailsHtml;
-        }
-
-        // Éditer un client
-        function editCustomer(customerId) {
-            fetch(`/admin/customer/${customerId}/details`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        populateEditForm(data.customer);
-                        openModal('editCustomerModal');
-                    } else {
-                        alert('Erreur lors du chargement des données du client');
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    alert('Erreur lors du chargement des données du client');
-                });
-        }
-
-        // Remplir le formulaire d'édition
-        function populateEditForm(customer) {
-            document.getElementById('editCustomerId').value = customer.id;
-            document.getElementById('editFirstName').value = customer.first_name || '';
-            document.getElementById('editLastName').value = customer.last_name || '';
-            document.getElementById('editEmail').value = customer.email || '';
-            document.getElementById('editPhone').value = customer.phone || '';
-            document.getElementById('editAddress').value = customer.address || '';
-            document.getElementById('editNewsletterOpt').checked = customer.marketing_opt_in || false;
-            document.getElementById('editEmailNotifications').checked = customer.email_notifications || false;
-        }
-
-        // Sauvegarder les modifications du client
-        function saveCustomer(event) {
-            event.preventDefault();
-            
-            const formData = new FormData(event.target);
-            const customerData = {
-                customerId: formData.get('customerId'),
-                firstName: formData.get('firstName'),
-                lastName: formData.get('lastName'),
-                email: formData.get('email'),
-                phone: formData.get('phone'),
-                address: formData.get('address'),
-                newsletterOpt: formData.has('newsletterOpt'),
-                emailNotifications: formData.has('emailNotifications')
-            };
-
-            fetch('/admin/customer/update', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(customerData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert('Client mis à jour avec succès');
-                    closeModal('editCustomerModal');
-                    location.reload(); // Recharger la page pour voir les modifications
-                } else {
-                    alert('Erreur lors de la mise à jour: ' + data.message);
                 }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                alert('Erreur lors de la mise à jour du client');
-            });
-        }
 
-        // Envoyer un email à un client spécifique
-        function emailCustomer(email) {
-            document.getElementById('emailRecipients').value = 'selected';
-            // Simuler la sélection de ce client spécifique
-            openEmailModal();
-        }
-
-        // Ouvrir le modal d'email
-        function openEmailModal() {
-            updateSelectedCustomers();
-            if (document.getElementById('emailRecipients').value === 'selected' && selectedCustomers.length === 0) {
-                alert('Veuillez sélectionner au moins un client');
-                return;
+                updateSelectedCustomersInfo();
+            } catch (error) {
+                console.error('❌ Erreur lors de la mise à jour des sélections:', error);
             }
-            openModal('emailModal');
+        }
+
+        // Mettre à jour les infos des clients sélectionnés dans le modal
+        function updateSelectedCustomersInfo() {
+            try {
+                const recipientsSelect = document.getElementById('emailRecipients');
+                const infoDiv = document.getElementById('selectedCustomersInfo');
+                const textSpan = document.getElementById('selectedCustomersText');
+                
+                if (!recipientsSelect || !infoDiv || !textSpan) return;
+                
+                const recipients = recipientsSelect.value;
+                
+                if (recipients === 'selected') {
+                    const count = selectedCustomers.length;
+                    textSpan.textContent = `${count} client(s) sélectionné(s)`;
+                    infoDiv.style.display = count > 0 ? 'block' : 'none';
+                } else {
+                    infoDiv.style.display = 'none';
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de la mise à jour des infos:', error);
+            }
         }
 
         // Sélectionner un template d'email
         function selectEmailTemplate(template) {
-            currentTemplate = template;
-            
-            // Retirer la classe active de tous les templates
-            document.querySelectorAll('.template-card').forEach(card => {
-                card.classList.remove('active');
-            });
-            
-            // Ajouter la classe active au template sélectionné
-            document.querySelector(`[data-template="${template}"]`).classList.add('active');
-            
-            // Mettre à jour l'aperçu
-            updatePreview();
+            try {
+                currentTemplate = template;
+                
+                // Retirer la classe active de tous les templates
+                document.querySelectorAll('.template-card').forEach(card => {
+                    card.classList.remove('active');
+                });
+                
+                // Ajouter la classe active au template sélectionné
+                const selectedCard = document.querySelector(`[data-template="${template}"]`);
+                if (selectedCard) {
+                    selectedCard.classList.add('active');
+                }
+                
+                // Mettre à jour l'aperçu
+                updatePreview();
+            } catch (error) {
+                console.error('❌ Erreur lors de la sélection du template:', error);
+            }
         }
 
         // Mettre à jour l'aperçu de l'email
         function updatePreview() {
-            const title = document.getElementById('emailTitle').value || 'Titre de l\'email';
-            const content = document.getElementById('emailContent').value || 'Votre message apparaîtra ici...';
-            const discount = document.getElementById('emailDiscount').value;
-            const promoCode = document.getElementById('emailPromoCode').value;
+            try {
+                const template = emailTemplates[currentTemplate];
+                if (!template) return;
 
-            document.getElementById('previewTitle').textContent = title;
-            document.getElementById('previewMessage').innerHTML = content.replace(/\n/g, '<br>');
+                const titleInput = document.getElementById('emailTitle');
+                const contentInput = document.getElementById('emailContent');
+                const discountInput = document.getElementById('emailDiscount');
+                const promoCodeInput = document.getElementById('emailPromoCode');
 
-            const promoDiv = document.getElementById('previewPromo');
-            if (discount && discount > 0 && promoCode) {
-                document.getElementById('previewCode').textContent = promoCode;
-                promoDiv.style.display = 'block';
-            } else {
-                promoDiv.style.display = 'none';
-            }
-        }
+                const title = titleInput?.value || 'Titre de l\'email';
+                const content = contentInput?.value || 'Votre message apparaîtra ici...';
+                const discount = discountInput?.value;
+                const promoCode = promoCodeInput?.value;
 
-        // Envoyer un email en masse
-        function sendBulkEmail(event) {
-            event.preventDefault();
-            
-            const formData = new FormData(event.target);
-            const emailData = {
-                recipients: document.getElementById('emailRecipients').value,
-                selectedCustomers: selectedCustomers,
-                template: currentTemplate,
-                subject: formData.get('subject'),
-                title: formData.get('title'),
-                content: formData.get('content'),
-                discount: formData.get('discount'),
-                promoCode: formData.get('promoCode')
-            };
+                const previewDiv = document.getElementById('previewContent');
+                if (!previewDiv) return;
 
-            // Confirmer l'envoi
-            const recipientCount = emailData.recipients === 'selected' ? selectedCustomers.length : 
-                                 emailData.recipients === 'all' ? allCustomers.length : 'certains';
-            
-            if (!confirm(`Êtes-vous sûr de vouloir envoyer cet email à ${recipientCount} client(s) ?`)) {
-                return;
-            }
-
-            // Désactiver le bouton d'envoi
-            const sendBtn = document.getElementById('sendEmail');
-            sendBtn.disabled = true;
-            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
-
-            fetch('/admin/send-bulk-email', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(emailData)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(`Email envoyé avec succès à ${data.sentCount} client(s)`);
-                    closeModal('emailModal');
-                    document.getElementById('emailForm').reset();
-                    selectEmailTemplate('newsletter'); // Reset template
-                    updatePreview();
-                } else {
-                    alert('Erreur lors de l\'envoi: ' + data.message);
+                let promoSection = '';
+                if (discount && discount > 0 && promoCode) {
+                    promoSection = `
+                        <div style="background: ${template.colors.primary}15; border: 2px solid ${template.colors.primary}; border-radius: 12px; padding: 25px; text-align: center; margin: 25px 0;">
+                            <h3 style="color: ${template.colors.secondary}; margin: 0 0 15px 0; font-size: 22px;">
+                                🎉 Offre Spéciale ${discount}% !
+                            </h3>
+                            <div style="background: white; border: 1px solid ${template.colors.primary}; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                                <p style="margin: 0; color: ${template.colors.secondary}; font-size: 14px; font-weight: 600;">
+                                    Code promo : <span style="font-family: monospace; font-size: 18px; font-weight: bold;">${promoCode}</span>
+                                </p>
+                            </div>
+                        </div>
+                    `;
                 }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                alert('Erreur lors de l\'envoi des emails');
-            })
-            .finally(() => {
-                // Réactiver le bouton
-                sendBtn.disabled = false;
-                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Envoyer';
-            });
+
+                previewDiv.innerHTML = `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 15px; overflow: hidden; box-shadow: 0 8px 25px rgba(0,0,0,0.15);">
+                        <div style="background: linear-gradient(135deg, ${template.colors.primary} 0%, ${template.colors.secondary} 100%); color: white; padding: 40px 30px; text-align: center;">
+                            <h1 style="margin: 0; font-size: 32px; font-weight: 700;">
+                                ${template.icon} ${template.title}
+                            </h1>
+                            <p style="margin: 15px 0 0 0; opacity: 0.9; font-size: 16px;">
+                                Bijouterie Élégance - Votre bijoutier de confiance
+                            </p>
+                        </div>
+                        <div style="padding: 40px 30px;">
+                            <h2 style="color: #1e293b; margin-bottom: 25px; font-size: 26px; text-align: center;">
+                                ${title}
+                            </h2>
+                            <div style="color: #64748b; font-size: 16px; line-height: 1.7; margin-bottom: 30px;">
+                                ${content.replace(/\n/g, '<br>')}
+                            </div>
+                            ${promoSection}
+                            <div style="text-align: center; margin: 35px 0;">
+                                <a href="#" style="background: linear-gradient(135deg, ${template.colors.primary} 0%, ${template.colors.secondary} 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; display: inline-block; box-shadow: 0 4px 15px ${template.colors.primary}40;">
+                                    Découvrir nos bijoux ✨
+                                </a>
+                            </div>
+                        </div>
+                        <div style="background-color: #f8fafc; padding: 25px; text-align: center; border-top: 1px solid #e5e7eb;">
+                            <p style="margin: 0; color: #6b7280; font-size: 14px;">
+                                Bijouterie Élégance - Des bijoux d'exception depuis 1985
+                            </p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('❌ Erreur lors de la mise à jour de l\'aperçu:', error);
+            }
         }
 
-        // Exporter la liste des clients
-        function exportCustomers() {
-            updateSelectedCustomers();
-            const exportType = selectedCustomers.length > 0 ? 'selected' : 'all';
-            
-            const params = new URLSearchParams({
-                type: exportType,
-                customers: selectedCustomers.join(',')
-            });
+        // Test de l'aperçu
+        function previewEmailTemplate() {
+            try {
+                updatePreview();
+                const previewDiv = document.getElementById('previewContent');
+                if (!previewDiv) {
+                    showNotification('Erreur: aperçu non disponible', 'error');
+                    return;
+                }
+                
+                // Créer une nouvelle fenêtre pour l'aperçu
+                const previewWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+                if (previewWindow) {
+                    previewWindow.document.write(`
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>Aperçu Email - ${emailTemplates[currentTemplate]?.title || 'Email'}</title>
+                            <meta charset="UTF-8">
+                        </head>
+                        <body style="margin: 0; padding: 20px; background: #f3f4f6;">
+                            ${previewDiv.innerHTML}
+                        </body>
+                        </html>
+                    `);
+                    previewWindow.document.close();
+                } else {
+                    showNotification('Impossible d\'ouvrir la fenêtre d\'aperçu', 'error');
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'aperçu:', error);
+                showNotification('Erreur lors de l\'ouverture de l\'aperçu', 'error');
+            }
+        }
 
-            window.open(`/admin/export-customers?${params.toString()}`, '_blank');
+        // Ouvrir le modal d'email
+        function openEmailModal() {
+            try {
+                console.log('🔵 Ouverture du modal email...');
+                updateSelectedCustomers();
+                const recipients = document.getElementById('emailRecipients')?.value;
+                
+                if (recipients === 'selected' && selectedCustomers.length === 0) {
+                    showNotification('Veuillez sélectionner au moins un client', 'warning');
+                    return;
+                }
+                
+                openModal('emailModal');
+                updateSelectedCustomersInfo();
+                console.log('✅ Modal email ouvert');
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'ouverture du modal email:', error);
+                showNotification('Erreur lors de l\'ouverture du modal', 'error');
+            }
+        }
+
+        // Fermer le modal d'email
+        function closeEmailModal() {
+            try {
+                closeModal('emailModal');
+                // Reset du formulaire
+                const emailForm = document.getElementById('emailForm');
+                if (emailForm) {
+                    emailForm.reset();
+                }
+                selectEmailTemplate('newsletter');
+                updatePreview();
+            } catch (error) {
+                console.error('❌ Erreur lors de la fermeture du modal email:', error);
+            }
+        }
+
+        // Envoyer email en masse
+        function sendBulkEmail(event) {
+            try {
+                event.preventDefault();
+                
+                const formData = new FormData(event.target);
+                const subject = formData.get('subject');
+                const title = formData.get('title');
+                const content = formData.get('content');
+                
+                if (!subject || !title || !content) {
+                    showNotification('Veuillez remplir tous les champs requis', 'warning');
+                    return;
+                }
+                
+                const emailData = {
+                    recipients: document.getElementById('emailRecipients')?.value || 'all',
+                    selectedCustomers: selectedCustomers.map(c => c.id),
+                    template: currentTemplate,
+                    subject: subject,
+                    title: title,
+                    content: content,
+                    discount: formData.get('discount'),
+                    promoCode: formData.get('promoCode')
+                };
+
+                const recipientCount = emailData.recipients === 'selected' ? selectedCustomers.length : 
+                                     emailData.recipients === 'all' ? allCustomers.length : 'certains';
+                
+                if (!confirm(`Êtes-vous sûr de vouloir envoyer cet email à ${recipientCount} client(s) ?`)) {
+                    return;
+                }
+
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    const originalHTML = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Envoi en cours...';
+
+                    fetch('/admin/send-bulk-email', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(emailData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            const message = `Email envoyé avec succès à ${data.sentCount} client(s)${data.errorCount > 0 ? ` (${data.errorCount} erreurs)` : ''}`;
+                            showNotification(message, 'success');
+                            closeEmailModal();
+                        } else {
+                            showNotification('Erreur lors de l\'envoi: ' + (data.message || 'Erreur inconnue'), 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        showNotification('Erreur lors de l\'envoi des emails', 'error');
+                    })
+                    .finally(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalHTML;
+                    });
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'envoi de l\'email:', error);
+                showNotification('Erreur lors de l\'envoi de l\'email', 'error');
+            }
+        }
+
+        // Voir les détails d'un client
+        function viewCustomer(customerId) {
+            try {
+                console.log('🔍 Affichage des détails du client:', customerId);
+                openModal('viewCustomerModal');
+                
+                // Utiliser les données du serveur si disponibles
+                const customerData = window.customersServerData?.find(c => c.id == customerId);
+                
+                if (customerData) {
+                    displayCustomerDetails(customerData);
+                } else {
+                    // Fallback: récupérer depuis le serveur
+                    fetch(`/admin/customer/${customerId}/details`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                displayCustomerDetails(data.customer);
+                            } else {
+                                showErrorInModal('customerDetails');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erreur:', error);
+                            showErrorInModal('customerDetails');
+                        });
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'affichage des détails:', error);
+                showNotification('Erreur lors de l\'affichage des détails', 'error');
+            }
+        }
+
+        // Afficher les détails du client
+        function displayCustomerDetails(customer) {
+            try {
+                const detailsHtml = `
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                        <div>
+                            <h4 style="color: #1e293b; margin-bottom: 15px; font-size: 18px;">📋 Informations personnelles</h4>
+                            <div style="background: #f8fafc; padding: 20px; border-radius: 10px;">
+                                <p style="margin-bottom: 10px;"><strong>Nom :</strong> ${customer.first_name || ''} ${customer.last_name || ''}</p>
+                                <p style="margin-bottom: 10px;"><strong>Email :</strong> ${customer.email}</p>
+                                <p style="margin-bottom: 10px;"><strong>Téléphone :</strong> ${customer.phone || 'Non renseigné'}</p>
+                                <p style="margin-bottom: 10px;"><strong>Adresse :</strong> ${customer.address || 'Non renseignée'}</p>
+                                <p style="margin-bottom: 10px;"><strong>Type :</strong> ${customer.is_guest ? 'Client invité' : 'Compte créé'}</p>
+                                <p style="margin-bottom: 0;"><strong>Inscrit le :</strong> ${customer.created_at ? new Date(customer.created_at).toLocaleDateString('fr-FR') : 'Date inconnue'}</p>
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h4 style="color: #1e293b; margin-bottom: 15px; font-size: 18px;">📊 Statistiques</h4>
+                            <div style="background: #f8fafc; padding: 20px; border-radius: 10px;">
+                                <p style="margin-bottom: 10px;"><strong>Commandes :</strong> ${customer.total_orders || 0}</p>
+                                <p style="margin-bottom: 10px;"><strong>Total dépensé :</strong> ${parseFloat(customer.total_spent || 0).toFixed(2)}€</p>
+                                <p style="margin-bottom: 10px;"><strong>Dernière commande :</strong> ${customer.last_order_date ? new Date(customer.last_order_date).toLocaleDateString('fr-FR') : 'Jamais'}</p>
+                                <p style="margin-bottom: 10px;"><strong>Newsletter :</strong> ${customer.marketing_opt_in ? 'Abonné' : 'Non abonné'}</p>
+                                <p style="margin-bottom: 0;"><strong>Notifications :</strong> ${customer.email_notifications ? 'Activées' : 'Désactivées'}</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 30px;">
+                        <h4 style="color: #1e293b; margin-bottom: 15px; font-size: 18px;">📝 Notes</h4>
+                        <div style="background: #f8fafc; padding: 20px; border-radius: 10px;">
+                            <p style="margin: 0;">${customer.notes || 'Aucune note pour ce client.'}</p>
+                        </div>
+                    </div>
+                `;
+                
+                const detailsElement = document.getElementById('customerDetails');
+                if (detailsElement) {
+                    detailsElement.innerHTML = detailsHtml;
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'affichage des détails client:', error);
+                showErrorInModal('customerDetails');
+            }
+        }
+
+        // Afficher erreur dans modal
+        function showErrorInModal(elementId) {
+            try {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    element.innerHTML = 
+                        `<div style="text-align: center; padding: 40px; color: #ef4444;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 48px; margin-bottom: 16px;"></i>
+                            <h3>Erreur</h3>
+                            <p>Impossible de charger les détails du client.</p>
+                        </div>`;
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'affichage de l\'erreur:', error);
+            }
+        }
+
+        // Éditer un client
+        function editCustomer(customerId) {
+            try {
+                console.log('✏️ Édition du client:', customerId);
+                openModal('editCustomerModal');
+                
+                // Utiliser les données du serveur si disponibles
+                const customerData = window.customersServerData?.find(c => c.id == customerId);
+                
+                if (customerData) {
+                    populateEditForm(customerData);
+                } else {
+                    // Fallback: récupérer depuis le serveur
+                    fetch(`/admin/customer/${customerId}/details`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                populateEditForm(data.customer);
+                            } else {
+                                showNotification('Erreur lors du chargement des données client', 'error');
+                                closeModal('editCustomerModal');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Erreur:', error);
+                            showNotification('Erreur de connexion', 'error');
+                            closeModal('editCustomerModal');
+                        });
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'édition du client:', error);
+                showNotification('Erreur lors de l\'édition', 'error');
+            }
+        }
+
+        // Remplir le formulaire d'édition
+        function populateEditForm(customer) {
+            try {
+                const elements = {
+                    editCustomerId: customer.id,
+                    editFirstName: customer.first_name || '',
+                    editLastName: customer.last_name || '',
+                    editEmail: customer.email || '',
+                    editPhone: customer.phone || '',
+                    editAddress: customer.address || ''
+                };
+
+                // Remplir les champs texte
+                Object.entries(elements).forEach(([id, value]) => {
+                    const element = document.getElementById(id);
+                    if (element) {
+                        element.value = value;
+                    }
+                });
+
+                // Remplir les checkboxes
+                const newsletterCheckbox = document.getElementById('editNewsletterOpt');
+                const notificationsCheckbox = document.getElementById('editEmailNotifications');
+                
+                if (newsletterCheckbox) {
+                    newsletterCheckbox.checked = customer.marketing_opt_in || false;
+                }
+                if (notificationsCheckbox) {
+                    notificationsCheckbox.checked = customer.email_notifications || false;
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors du remplissage du formulaire:', error);
+            }
+        }
+
+        // Sauvegarder les modifications d'un client
+        function saveCustomer(event) {
+            try {
+                event.preventDefault();
+                
+                const formData = new FormData(event.target);
+                const customerId = formData.get('customerId');
+                
+                const customerData = {
+                    id: customerId,
+                    firstName: formData.get('firstName'),
+                    lastName: formData.get('lastName'),
+                    email: formData.get('email'),
+                    phone: formData.get('phone'),
+                    address: formData.get('address'),
+                    marketingOptIn: document.getElementById('editNewsletterOpt')?.checked || false,
+                    emailNotifications: document.getElementById('editEmailNotifications')?.checked || false
+                };
+
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    const originalHTML = submitBtn.innerHTML;
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
+
+                    fetch(`/admin/customer/${customerId}/update`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(customerData)
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Client mis à jour avec succès', 'success');
+                            closeModal('editCustomerModal');
+                            // Recharger la page pour voir les modifications
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1000);
+                        } else {
+                            showNotification('Erreur lors de la mise à jour: ' + (data.message || 'Erreur inconnue'), 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        showNotification('Erreur lors de la mise à jour du client', 'error');
+                    })
+                    .finally(() => {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalHTML;
+                    });
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de la sauvegarde:', error);
+                showNotification('Erreur lors de la sauvegarde', 'error');
+            }
+        }
+
+        // Envoyer email à un client spécifique
+        function emailCustomer(email) {
+            try {
+                console.log('📧 Email pour le client:', email);
+                // Pré-sélectionner le client dans le modal d'email
+                openEmailModal();
+                // Ici vous pourriez ajouter une logique pour pré-remplir l'email
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'envoi d\'email:', error);
+            }
+        }
+
+        // Exporter les clients
+        function exportCustomers() {
+            try {
+                console.log('📥 Export des clients...');
+                const selectedOnly = selectedCustomers.length > 0;
+                
+                if (selectedOnly) {
+                    const confirmExport = confirm(`Exporter uniquement les ${selectedCustomers.length} clients sélectionnés ?`);
+                    if (!confirmExport) return;
+                }
+
+                // Créer l'URL d'export
+                let exportUrl = '/admin/customers/export';
+                if (selectedOnly) {
+                    const customerIds = selectedCustomers.map(c => c.id).join(',');
+                    exportUrl += `?selected=${customerIds}`;
+                }
+
+                // Déclencher le téléchargement
+                window.location.href = exportUrl;
+                
+                showNotification('Export en cours...', 'success');
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'export:', error);
+                showNotification('Erreur lors de l\'export', 'error');
+            }
         }
 
         // Ajouter un nouveau client
         function addNewCustomer() {
-            // Rediriger vers la page d'ajout de client ou ouvrir un modal
-            window.location.href = '/admin/add-customer';
+            try {
+                console.log('➕ Ajout d\'un nouveau client...');
+                // Rediriger vers la page d'ajout de client
+                window.location.href = '/admin/customers/add';
+            } catch (error) {
+                console.error('❌ Erreur lors de la redirection:', error);
+                showNotification('Erreur lors de la redirection', 'error');
+            }
         }
 
-        // Fonctions utilitaires pour les modals
+        // Utilitaires pour les modals
         function openModal(modalId) {
-            document.getElementById(modalId).style.display = 'block';
-            document.body.style.overflow = 'hidden';
+            try {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.display = 'block';
+                    document.body.style.overflow = 'hidden';
+                    console.log('✅ Modal ouvert:', modalId);
+                } else {
+                    console.error('❌ Modal non trouvé:', modalId);
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'ouverture du modal:', error);
+            }
         }
 
         function closeModal(modalId) {
-            document.getElementById(modalId).style.display = 'none';
-            document.body.style.overflow = 'auto';
+            try {
+                const modal = document.getElementById(modalId);
+                if (modal) {
+                    modal.style.display = 'none';
+                    document.body.style.overflow = 'auto';
+                    console.log('✅ Modal fermé:', modalId);
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de la fermeture du modal:', error);
+            }
         }
 
-        // Styles additionnels pour les modals
-        const modalStyles = `
-            .modal {
-                position: fixed;
-                z-index: 1000;
-                left: 0;
-                top: 0;
-                width: 100%;
-                height: 100%;
-                background: rgba(0, 0, 0, 0.5);
-                animation: fadeIn 0.3s ease;
-            }
+        // Système de notifications
+        function showNotification(message, type = 'info') {
+            try {
+                console.log(`📢 Notification ${type}:`, message);
+                
+                // Supprimer les notifications existantes
+                const existingNotifications = document.querySelectorAll('.notification');
+                existingNotifications.forEach(notification => {
+                    notification.remove();
+                });
 
-            .modal-content {
-                background: white;
-                margin: 2% auto;
-                padding: 0;
-                border-radius: 15px;
-                width: 90%;
-                max-width: 900px;
-                max-height: 90vh;
-                overflow-y: auto;
-                animation: slideUp 0.3s ease;
-            }
+                // Créer la nouvelle notification
+                const notification = document.createElement('div');
+                notification.className = `notification ${type}`;
+                
+                const iconMap = {
+                    'success': 'check-circle',
+                    'error': 'exclamation-circle',
+                    'warning': 'exclamation-triangle',
+                    'info': 'info-circle'
+                };
+                
+                const icon = iconMap[type] || 'info-circle';
+                
+                notification.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-${icon}"></i>
+                        <span>${message}</span>
+                    </div>
+                `;
 
-            .modal-header {
-                background: linear-gradient(135deg, #d89ab3 0%, #b794a8 100%);
-                color: white;
-                padding: 20px 30px;
-                border-radius: 15px 15px 0 0;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
+                // Ajouter au DOM
+                document.body.appendChild(notification);
 
-            .modal-header h2 {
-                margin: 0;
-                font-size: 1.5rem;
-            }
-
-            .close {
-                background: none;
-                border: none;
-                color: white;
-                font-size: 24px;
-                cursor: pointer;
-                padding: 5px;
-                border-radius: 50%;
-                transition: background 0.3s ease;
-            }
-
-            .close:hover {
-                background: rgba(255, 255, 255, 0.2);
-            }
-
-            .modal-body {
-                padding: 30px;
-            }
-
-            .form-grid {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 20px;
-                margin-bottom: 20px;
-            }
-
-            .form-group {
-                margin-bottom: 20px;
-            }
-
-            .form-group.full-width {
-                grid-column: 1 / -1;
-            }
-
-            .form-group label {
-                display: block;
-                margin-bottom: 8px;
-                font-weight: 600;
-                color: #374151;
-            }
-
-            .form-group input,
-            .form-group select,
-            .form-group textarea {
-                width: 100%;
-                padding: 12px 15px;
-                border: 2px solid #e5e7eb;
-                border-radius: 8px;
-                font-size: 14px;
-                transition: border-color 0.3s ease;
-            }
-
-            .form-group input:focus,
-            .form-group select:focus,
-            .form-group textarea:focus {
-                outline: none;
-                border-color: #d89ab3;
-            }
-
-            .checkbox-group {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                margin-top: 10px;
-            }
-
-            .checkbox-group input[type="checkbox"] {
-                width: auto;
-            }
-
-            .email-composer {
-                background: #f8fafc;
-                border-radius: 12px;
-                padding: 25px;
-                margin-top: 20px;
-            }
-
-            .email-templates {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-                gap: 15px;
-                margin-bottom: 25px;
-            }
-
-            .template-card {
-                background: white;
-                padding: 20px;
-                border-radius: 10px;
-                border: 2px solid #e5e7eb;
-                cursor: pointer;
-                transition: all 0.3s ease;
-                text-align: center;
-            }
-
-            .template-card:hover {
-                border-color: #d89ab3;
-                transform: translateY(-2px);
-            }
-
-            .template-card.active {
-                border-color: #d89ab3;
-                background: #fdf2f8;
-            }
-
-            .email-preview {
-                background: white;
-                border: 2px solid #e5e7eb;
-                border-radius: 10px;
-                padding: 20px;
-                margin-top: 20px;
-                min-height: 200px;
-            }
-
-            .spinner {
-                border: 4px solid #f3f4f6;
-                border-top: 4px solid #d89ab3;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                animation: spin 1s linear infinite;
-                margin: 0 auto;
-            }
-
-            @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-            }
-
-            @keyframes slideUp {
-                from {
-                    opacity: 0;
-                    transform: translateY(30px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
-            }
-
-            @media (max-width: 768px) {
-                .form-grid {
-                    grid-template-columns: 1fr;
-                }
-
-                .email-templates {
-                    grid-template-columns: 1fr;
-                }
-
-                .modal-content {
-                    width: 95%;
-                    margin: 1% auto;
-                }
-            }
-        `;
-
-        // Ajouter les styles au document
-        const styleSheet = document.createElement('style');
-        styleSheet.textContent = modalStyles;
-        document.head.appendChild(styleSheet);
-
-        // Fonction pour formater les prix
-        function formatPrice(price) {
-            return parseFloat(price || 0).toFixed(2) + '€';
-        }
-
-        // Fonction pour formater les dates
-        function formatDate(dateString) {
-            if (!dateString) return 'Jamais';
-            return new Date(dateString).toLocaleDateString('fr-FR');
-        }
-
-        // Auto-refresh des statistiques toutes les 5 minutes
-        setInterval(() => {
-            fetch('/admin/customer-stats')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        document.getElementById('totalCustomers').textContent = data.stats.total;
-                        document.getElementById('customersWithOrders').textContent = data.stats.withOrders;
-                        document.getElementById('customersWithAccounts').textContent = data.stats.withAccounts;
-                        document.getElementById('newsletterSubscribers').textContent = data.stats.newsletter;
+                // Auto-suppression après 5 secondes
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.style.animation = 'slideOutRight 0.3s ease forwards';
+                        setTimeout(() => {
+                            if (notification.parentNode) {
+                                notification.parentNode.removeChild(notification);
+                            }
+                        }, 300);
                     }
-                })
-                .catch(error => console.log('Erreur refresh stats:', error));
-        }, 300000); // 5 minutes
+                }, 5000);
+            } catch (error) {
+                console.error('❌ Erreur lors de l\'affichage de la notification:', error);
+            }
+        }
+
+        // Gestion du responsive
+        function handleResponsive() {
+            try {
+                const isMobile = window.innerWidth <= 768;
+                
+                if (isMobile) {
+                    // Ajustements pour mobile
+                    const searchInput = document.querySelector('.search-input input');
+                    if (searchInput) {
+                        searchInput.style.width = '100%';
+                    }
+                }
+            } catch (error) {
+                console.error('❌ Erreur lors de la gestion du responsive:', error);
+            }
+        }
+
+        // Event listener pour le redimensionnement
+        window.addEventListener('resize', handleResponsive);
+
+        // Exposer les fonctions globalement pour les boutons HTML
+        window.viewCustomer = viewCustomer;
+        window.editCustomer = editCustomer;
+        window.emailCustomer = emailCustomer;
+        window.closeEmailModal = closeEmailModal;
+        window.closeModal = closeModal;
+        window.previewEmailTemplate = previewEmailTemplate;
+
+        // Message de debug pour vérifier le chargement
+        console.log('✅ Système de gestion clients initialisé avec succès');
+        console.log('📊 Clients disponibles:', window.customersServerData?.length || 0);
+        console.log('🔧 Fonctions exposées globalement:', {
+            viewCustomer: typeof window.viewCustomer,
+            editCustomer: typeof window.editCustomer,
+            emailCustomer: typeof window.emailCustomer,
+            closeEmailModal: typeof window.closeEmailModal,
+            closeModal: typeof window.closeModal,
+            previewEmailTemplate: typeof window.previewEmailTemplate
+        });
     </script>
+    
 </body>
 </html>

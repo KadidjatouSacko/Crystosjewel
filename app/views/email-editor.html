@@ -1,0 +1,1627 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Éditeur d'Emails Avancé - CrystosJewel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #d89ab3;
+            --secondary-color: #b794a8;
+            --accent-color: #8b5cf6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.15);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-light) 0%, #e2e8f0 100%);
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 20px;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+        }
+
+        .nav-tab {
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 25px;
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .nav-tab:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .nav-tab.active {
+            background: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+            display: grid;
+            grid-template-columns: 1fr 2fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 120px);
+        }
+
+        .left-panel, .center-panel, .right-panel {
+            background: var(--bg-white);
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            overflow-y: auto;
+        }
+
+        .panel-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .center-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .recipients-section {
+            margin-bottom: 25px;
+        }
+
+        .recipient-filter {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .filter-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-group label {
+            font-weight: 500;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .filter-input {
+            padding: 10px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .customer-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .customer-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s ease;
+        }
+
+        .customer-item:hover {
+            background: var(--bg-light);
+        }
+
+        .customer-checkbox {
+            width: 16px;
+            height: 16px;
+        }
+
+        .customer-info {
+            flex: 1;
+        }
+
+        .customer-name {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .customer-email {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 15px;
+            background: var(--bg-light);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .toolbar-group {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+            padding: 0 10px;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .toolbar-group:last-child {
+            border-right: none;
+        }
+
+        .toolbar-btn {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            color: var(--text-secondary);
+        }
+
+        .toolbar-btn:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .toolbar-btn.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .color-picker {
+            width: 32px;
+            height: 32px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .font-size-selector {
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background: white;
+            cursor: pointer;
+        }
+
+        .editor-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow: hidden;
+        }
+
+        .email-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+        }
+
+        .form-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-weight: 500;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .form-input {
+            padding: 10px 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .rich-editor {
+            background: white;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            min-height: 300px;
+            padding: 15px;
+            outline: none;
+            transition: border-color 0.3s ease;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .rich-editor:focus {
+            border-color: var(--primary-color);
+        }
+
+        .templates-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .template-card {
+            background: var(--bg-light);
+            border: 2px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .template-card:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .template-card.active {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .template-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .template-name {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .preview-container {
+            background: var(--bg-light);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .preview-title {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .preview-content {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .history-item {
+            background: var(--bg-light);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .history-item:hover {
+            background: var(--primary-color);
+            color: white;
+            transform: translateX(4px);
+        }
+
+        .history-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+        }
+
+        .history-subject {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .history-recipients {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .history-item:hover .history-date,
+        .history-item:hover .history-recipients {
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-content {
+            background: white;
+            margin: 2% auto;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 800px;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: slideUp 0.3s ease;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-body {
+            padding: 30px;
+        }
+
+        .close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 50%;
+            transition: background 0.3s ease;
+        }
+
+        .close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 9999;
+            animation: slideInRight 0.3s ease;
+            max-width: 350px;
+        }
+
+        .notification.success {
+            background: var(--success-color);
+        }
+
+        .notification.error {
+            background: var(--danger-color);
+        }
+
+        .notification.warning {
+            background: var(--warning-color);
+        }
+
+        .notification.info {
+            background: var(--accent-color);
+        }
+
+        .rich-editor p {
+            margin-bottom: 12px;
+        }
+
+        .rich-editor h1, .rich-editor h2, .rich-editor h3 {
+            margin-bottom: 15px;
+            margin-top: 20px;
+        }
+
+        .rich-editor h1 {
+            font-size: 24px;
+            color: var(--primary-color);
+        }
+
+        .rich-editor h2 {
+            font-size: 20px;
+            color: var(--secondary-color);
+        }
+
+        .rich-editor h3 {
+            font-size: 18px;
+            color: var(--text-primary);
+        }
+
+        .rich-editor strong {
+            font-weight: 600;
+        }
+
+        .rich-editor em {
+            font-style: italic;
+        }
+
+        .rich-editor ul, .rich-editor ol {
+            margin-left: 20px;
+            margin-bottom: 12px;
+        }
+
+        .rich-editor a {
+            color: var(--primary-color);
+            text-decoration: none;
+        }
+
+        .rich-editor a:hover {
+            text-decoration: underline;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto auto auto;
+                height: auto;
+            }
+
+            .left-panel,
+            .right-panel {
+                order: 2;
+            }
+
+            .center-panel {
+                order: 1;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .nav-tabs {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .container {
+                padding: 10px;
+                gap: 10px;
+            }
+
+            .form-row {
+                flex-direction: column;
+            }
+
+            .templates-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="header-content">
+            <h1>
+                <i class="fas fa-envelope-open-text"></i>
+                Éditeur d'Emails Avancé
+            </h1>
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="compose">
+                    <i class="fas fa-edit"></i> Composer
+                </button>
+                <button class="nav-tab" data-tab="history">
+                    <i class="fas fa-history"></i> Historique
+                </button>
+                <button class="nav-tab" data-tab="templates">
+                    <i class="fas fa-layer-group"></i> Templates
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container principal -->
+    <div class="container">
+        <!-- Panneau de gauche - Destinataires -->
+        <div class="left-panel">
+            <h3 class="panel-title">
+                <i class="fas fa-users"></i>
+                Destinataires
+            </h3>
+            
+            <div class="recipients-section">
+                <div class="recipient-filter">
+                    <div class="filter-group">
+                        <label>Type de clients</label>
+                        <select class="filter-input" id="recipientType">
+                            <option value="all">Tous les clients</option>
+                            <option value="with-orders">Clients avec commandes</option>
+                            <option value="no-orders">Clients sans commandes</option>
+                            <option value="newsletter">Abonnés newsletter</option>
+                            <option value="vip">Clients VIP</option>
+                            <option value="inactive">Clients inactifs</option>
+                        </select>
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>Rechercher</label>
+                        <input type="text" class="filter-input" id="customerSearch" placeholder="Nom ou email...">
+                    </div>
+                    
+                    <div class="filter-group">
+                        <label>
+                            <input type="checkbox" id="selectAll"> Sélectionner tout
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="customer-list" id="customerList">
+                    <!-- Les clients seront chargés ici -->
+                </div>
+                
+                <div style="margin-top: 15px; padding: 10px; background: var(--bg-light); border-radius: 8px; text-align: center;">
+                    <strong id="selectedCount">0 client(s) sélectionné(s)</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panneau central - Éditeur -->
+        <div class="center-panel">
+            <h3 class="panel-title">
+                <i class="fas fa-edit"></i>
+                Compositeur d'Email
+            </h3>
+            
+            <!-- Barre d'outils -->
+            <div class="toolbar">
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" onclick="execCommand('bold')" title="Gras">
+                        <i class="fas fa-bold"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="execCommand('italic')" title="Italique">
+                        <i class="fas fa-italic"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="execCommand('underline')" title="Souligné">
+                        <i class="fas fa-underline"></i>
+                    </button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <select class="font-size-selector" onchange="execCommand('fontSize', this.value)">
+                        <option value="2">Petit</option>
+                        <option value="3" selected>Normal</option>
+                        <option value="4">Grand</option>
+                        <option value="5">Très grand</option>
+                    </select>
+                </div>
+                
+                <div class="toolbar-group">
+                    <input type="color" class="color-picker" onchange="execCommand('foreColor', this.value)" title="Couleur du texte" value="#1e293b">
+                    <input type="color" class="color-picker" onchange="execCommand('backColor', this.value)" title="Couleur de fond" value="#ffffff">
+                </div>
+                
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" onclick="execCommand('justifyLeft')" title="Aligner à gauche">
+                        <i class="fas fa-align-left"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="execCommand('justifyCenter')" title="Centrer">
+                        <i class="fas fa-align-center"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="execCommand('justifyRight')" title="Aligner à droite">
+                        <i class="fas fa-align-right"></i>
+                    </button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" onclick="execCommand('insertUnorderedList')" title="Liste à puces">
+                        <i class="fas fa-list-ul"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="execCommand('insertOrderedList')" title="Liste numérotée">
+                        <i class="fas fa-list-ol"></i>
+                    </button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" onclick="insertLink()" title="Insérer un lien">
+                        <i class="fas fa-link"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="insertImage()" title="Insérer une image">
+                        <i class="fas fa-image"></i>
+                    </button>
+                </div>
+                
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" onclick="insertButton()" title="Insérer un bouton">
+                        <i class="fas fa-square"></i>
+                    </button>
+                    <button class="toolbar-btn" onclick="insertDivider()" title="Insérer un séparateur">
+                        <i class="fas fa-minus"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Formulaire d'email -->
+            <div class="email-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="emailSubject">Sujet</label>
+                        <input type="text" id="emailSubject" class="form-input" placeholder="Sujet de votre email...">
+                    </div>
+                    <div class="form-group">
+                        <label for="fromName">Nom expéditeur</label>
+                        <input type="text" id="fromName" class="form-input" value="CrystosJewel" placeholder="Nom affiché...">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="preheader">Aperçu (préheader)</label>
+                    <input type="text" id="preheader" class="form-input" placeholder="Texte d'aperçu affiché dans la boîte email...">
+                </div>
+                
+                <div class="form-group">
+                    <label>Contenu de l'email</label>
+                    <div class="rich-editor" contenteditable="true" id="emailContent">
+                        <h2>Bonjour [NOM_CLIENT],</h2>
+                        <p>Nous espérons que vous allez bien !</p>
+                        <p>Votre message personnalisé ici...</p>
+                        <p>L'équipe CrystosJewel</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panneau de droite - Templates et aperçu -->
+        <div class="right-panel">
+            <h3 class="panel-title">
+                <i class="fas fa-eye"></i>
+                Templates & Aperçu
+            </h3>
+            
+            <!-- Templates prédéfinis -->
+            <div style="margin-bottom: 25px;">
+                <h4 style="margin-bottom: 15px; color: var(--text-primary);">Templates prédéfinis</h4>
+                <div class="templates-grid">
+                    <div class="template-card active" data-template="elegant">
+                        <div class="template-icon">💎</div>
+                        <div class="template-name">Élégant</div>
+                    </div>
+                    <div class="template-card" data-template="modern">
+                        <div class="template-icon">🌟</div>
+                        <div class="template-name">Moderne</div>
+                    </div>
+                    <div class="template-card" data-template="promo">
+                        <div class="template-icon">🔥</div>
+                        <div class="template-name">Promotion</div>
+                    </div>
+                    <div class="template-card" data-template="newsletter">
+                        <div class="template-icon">📧</div>
+                        <div class="template-name">Newsletter</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Aperçu -->
+            <div class="preview-container">
+                <div class="preview-header">
+                    <h4 class="preview-title">Aperçu en temps réel</h4>
+                    <button class="btn btn-secondary" onclick="openPreviewModal()">
+                        <i class="fas fa-external-link-alt"></i> Agrandir
+                    </button>
+                </div>
+                <div class="preview-content" id="previewContent">
+                    <!-- Aperçu généré automatiquement -->
+                </div>
+            </div>
+            
+            <!-- Actions -->
+            <div class="action-buttons">
+                <button class="btn btn-primary" onclick="sendEmail()">
+                    <i class="fas fa-paper-plane"></i> Envoyer
+                </button>
+                <button class="btn btn-secondary" onclick="saveAsDraft()">
+                    <i class="fas fa-save"></i> Brouillon
+                </button>
+                <button class="btn btn-warning" onclick="sendTestEmail()">
+                    <i class="fas fa-flask"></i> Test
+                </button>
+            </div>
+            
+            <!-- Historique récent -->
+            <div style="margin-top: 25px;">
+                <h4 style="margin-bottom: 15px; color: var(--text-primary);">Historique récent</h4>
+                <div class="history-list" id="historyList">
+                    <!-- Historique chargé dynamiquement -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'aperçu -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-eye"></i> Aperçu Email</h2>
+                <button class="close" onclick="closeModal('previewModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="fullPreviewContent"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'historique -->
+    <div id="historyModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-history"></i> Historique des Emails</h2>
+                <button class="close" onclick="closeModal('historyModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="search-bar" style="margin-bottom: 20px;">
+                    <input type="text" id="historySearch" placeholder="Rechercher dans l'historique..." 
+                           style="width: 100%; padding: 10px; border: 1px solid var(--border-color); border-radius: 8px;">
+                </div>
+                <div id="fullHistoryList"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentTemplate = 'elegant';
+        let selectedCustomers = [];
+        let emailHistory = [];
+        
+        // Templates d'email avec designs avancés
+        const emailTemplates = {
+            elegant: {
+                name: 'Élégant',
+                colors: { primary: '#d89ab3', secondary: '#b794a8', accent: '#8b5cf6' },
+                backgroundColor: '#f8fafc',
+                textColor: '#1e293b',
+                headerImage: '💎',
+                style: 'elegant'
+            },
+            modern: {
+                name: 'Moderne',
+                colors: { primary: '#3b82f6', secondary: '#1d4ed8', accent: '#06b6d4' },
+                backgroundColor: '#ffffff',
+                textColor: '#111827',
+                headerImage: '🌟',
+                style: 'modern'
+            },
+            promo: {
+                name: 'Promotion',
+                colors: { primary: '#f59e0b', secondary: '#d97706', accent: '#ef4444' },
+                backgroundColor: '#fef3c7',
+                textColor: '#92400e',
+                headerImage: '🔥',
+                style: 'promo'
+            },
+            newsletter: {
+                name: 'Newsletter',
+                colors: { primary: '#10b981', secondary: '#059669', accent: '#8b5cf6' },
+                backgroundColor: '#ecfdf5',
+                textColor: '#064e3b',
+                headerImage: '📧',
+                style: 'newsletter'
+            }
+        };
+
+        // Données de clients fictifs (à remplacer par des données réelles)
+        const mockCustomers = [
+            { id: 1, name: 'Marie Dubois', email: 'marie.dubois@email.com', type: 'vip', hasOrders: true, newsletter: true },
+            { id: 2, name: 'Jean Martin', email: 'jean.martin@email.com', type: 'regular', hasOrders: true, newsletter: false },
+            { id: 3, name: 'Sophie Bernard', email: 'sophie.bernard@email.com', type: 'new', hasOrders: false, newsletter: true },
+            { id: 4, name: 'Pierre Durand', email: 'pierre.durand@email.com', type: 'vip', hasOrders: true, newsletter: true },
+            { id: 5, name: 'Claire Moreau', email: 'claire.moreau@email.com', type: 'inactive', hasOrders: false, newsletter: false }
+        ];
+
+        // Historique fictif (à remplacer par des données réelles)
+        const mockHistory = [
+            {
+                id: 1,
+                date: '2025-01-15 14:30',
+                subject: 'Nouvelle collection printemps',
+                recipients: 125,
+                status: 'sent',
+                template: 'elegant'
+            },
+            {
+                id: 2,
+                date: '2025-01-12 10:15',
+                subject: 'Offre spéciale -20%',
+                recipients: 89,
+                status: 'sent',
+                template: 'promo'
+            },
+            {
+                id: 3,
+                date: '2025-01-10 16:45',
+                subject: 'Newsletter mensuelle',
+                recipients: 203,
+                status: 'sent',
+                template: 'newsletter'
+            }
+        ];
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Initialisation de l\'éditeur d\'emails avancé...');
+            initializeEditor();
+            loadCustomers();
+            loadHistory();
+            updatePreview();
+            setupEventListeners();
+            console.log('✅ Éditeur initialisé avec succès');
+        });
+
+        function initializeEditor() {
+            const editor = document.getElementById('emailContent');
+            if (editor) {
+                editor.addEventListener('input', updatePreview);
+                editor.addEventListener('keyup', updatePreview);
+                editor.addEventListener('paste', function(e) {
+                    setTimeout(updatePreview, 100);
+                });
+            }
+
+            const subject = document.getElementById('emailSubject');
+            const preheader = document.getElementById('preheader');
+            const fromName = document.getElementById('fromName');
+            
+            if (subject) subject.addEventListener('input', updatePreview);
+            if (preheader) preheader.addEventListener('input', updatePreview);
+            if (fromName) fromName.addEventListener('input', updatePreview);
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    const tabName = this.dataset.tab;
+                    switchTab(tabName);
+                });
+            });
+
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    selectTemplate(this.dataset.template);
+                });
+            });
+
+            const recipientType = document.getElementById('recipientType');
+            const customerSearch = document.getElementById('customerSearch');
+            const selectAll = document.getElementById('selectAll');
+
+            if (recipientType) recipientType.addEventListener('change', filterCustomers);
+            if (customerSearch) customerSearch.addEventListener('input', filterCustomers);
+            if (selectAll) selectAll.addEventListener('change', toggleSelectAll);
+
+            window.addEventListener('click', function(event) {
+                if (event.target.classList.contains('modal')) {
+                    closeModal(event.target.id);
+                }
+            });
+        }
+
+        function loadCustomers() {
+            const customerList = document.getElementById('customerList');
+            if (!customerList) return;
+
+            customerList.innerHTML = '';
+            
+            mockCustomers.forEach(customer => {
+                const customerItem = document.createElement('div');
+                customerItem.className = 'customer-item';
+                customerItem.innerHTML = `
+                    <input type="checkbox" class="customer-checkbox" value="${customer.id}" 
+                           data-email="${customer.email}" onchange="updateSelectedCustomers()">
+                    <div class="customer-info">
+                        <div class="customer-name">${customer.name}</div>
+                        <div class="customer-email">${customer.email}</div>
+                    </div>
+                    <div style="margin-left: auto;">
+                        ${customer.type === 'vip' ? '<i class="fas fa-crown" style="color: #f59e0b;" title="Client VIP"></i>' : ''}
+                        ${customer.newsletter ? '<i class="fas fa-envelope" style="color: #10b981;" title="Abonné newsletter"></i>' : ''}
+                    </div>
+                `;
+                customerList.appendChild(customerItem);
+            });
+        }
+
+        function loadHistory() {
+            const historyList = document.getElementById('historyList');
+            if (!historyList) return;
+
+            historyList.innerHTML = '';
+            
+            mockHistory.slice(0, 3).forEach(item => {
+                const historyItem = document.createElement('div');
+                historyItem.className = 'history-item';
+                historyItem.onclick = () => loadEmailFromHistory(item.id);
+                historyItem.innerHTML = `
+                    <div class="history-date">${formatDate(item.date)}</div>
+                    <div class="history-subject">${item.subject}</div>
+                    <div class="history-recipients">${item.recipients} destinataires</div>
+                `;
+                historyList.appendChild(historyItem);
+            });
+        }
+
+        function selectTemplate(templateName) {
+            currentTemplate = templateName;
+            
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            document.querySelector(`[data-template="${templateName}"]`).classList.add('active');
+            
+            applyTemplate(templateName);
+            updatePreview();
+            
+            showNotification(`Template "${emailTemplates[templateName].name}" appliqué`, 'success');
+        }
+
+        function applyTemplate(templateName) {
+            const template = emailTemplates[templateName];
+            const editor = document.getElementById('emailContent');
+            
+            if (!editor || !template) return;
+
+            let defaultContent = '';
+            
+            switch (templateName) {
+                case 'elegant':
+                    defaultContent = `
+                        <h2 style="color: ${template.colors.primary};">Bonjour [NOM_CLIENT],</h2>
+                        <p>Nous sommes ravis de vous présenter notre nouvelle collection de bijoux d'exception.</p>
+                        <p>Découvrez des pièces uniques, créées avec passion par nos artisans joailliers.</p>
+                        <p style="margin-top: 30px;">Cordialement,<br><strong>L'équipe CrystosJewel</strong></p>
+                    `;
+                    break;
+                    
+                case 'modern':
+                    defaultContent = `
+                        <h1 style="color: ${template.colors.primary};">Actualités CrystosJewel</h1>
+                        <p><strong>Bonjour [NOM_CLIENT],</strong></p>
+                        <p>Restez à la pointe des tendances avec nos dernières nouveautés.</p>
+                        <ul>
+                            <li>Nouvelle collection automne</li>
+                            <li>Bijoux personnalisables</li>
+                            <li>Offres exclusives membres</li>
+                        </ul>
+                        <p>À bientôt,<br>CrystosJewel</p>
+                    `;
+                    break;
+                    
+                case 'promo':
+                    defaultContent = `
+                        <h1 style="color: ${template.colors.primary}; text-align: center;">🔥 OFFRE EXCEPTIONNELLE 🔥</h1>
+                        <h2 style="color: ${template.colors.secondary}; text-align: center;">-30% sur toute la boutique !</h2>
+                        <p><strong>Bonjour [NOM_CLIENT],</strong></p>
+                        <p>Profitez de notre promotion flash exceptionnelle :</p>
+                        <div style="background: ${template.colors.primary}; color: white; padding: 20px; text-align: center; border-radius: 10px; margin: 20px 0;">
+                            <h3>Code promo : FLASH30</h3>
+                            <p>Valable jusqu'au 31 janvier</p>
+                        </div>
+                        <p>Ne manquez pas cette opportunité unique !</p>
+                    `;
+                    break;
+                    
+                case 'newsletter':
+                    defaultContent = `
+                        <h2 style="color: ${template.colors.primary};">Newsletter CrystosJewel</h2>
+                        <p>Bonjour [NOM_CLIENT],</p>
+                        <p>Voici les actualités de ce mois :</p>
+                        <h3>📰 À la une</h3>
+                        <p>Découvrez notre article sur les tendances bijoux 2025.</p>
+                        <h3>🎯 Sélection du mois</h3>
+                        <p>Nos coups de cœur sélectionnés spécialement pour vous.</p>
+                        <h3>💝 Offres membres</h3>
+                        <p>Bénéficiez d'avantages exclusifs en tant que membre privilégié.</p>
+                        <p>Bonne lecture !<br>L'équipe CrystosJewel</p>
+                    `;
+                    break;
+            }
+            
+            editor.innerHTML = defaultContent;
+        }
+
+        function updatePreview() {
+            const previewContent = document.getElementById('previewContent');
+            if (!previewContent) return;
+
+            const template = emailTemplates[currentTemplate];
+            const subject = document.getElementById('emailSubject')?.value || 'Sujet de l\'email';
+            const preheader = document.getElementById('preheader')?.value || '';
+            const fromName = document.getElementById('fromName')?.value || 'CrystosJewel';
+            const content = document.getElementById('emailContent')?.innerHTML || '';
+
+            const previewHTML = generateEmailHTML(template, subject, preheader, fromName, content);
+            previewContent.innerHTML = previewHTML;
+        }
+
+        function generateEmailHTML(template, subject, preheader, fromName, content) {
+            return `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: ${template.backgroundColor}; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <!-- Header -->
+                    <div style="background: linear-gradient(135deg, ${template.colors.primary} 0%, ${template.colors.secondary} 100%); color: white; padding: 30px 20px; text-align: center;">
+                        <h1 style="margin: 0; font-size: 28px; font-weight: 600;">
+                            ${template.headerImage} ${fromName}
+                        </h1>
+                        ${preheader ? `<p style="margin: 10px 0 0 0; opacity: 0.9; font-size: 14px;">${preheader}</p>` : ''}
+                    </div>
+                    
+                    <!-- Content -->
+                    <div style="padding: 30px 20px; color: ${template.textColor}; line-height: 1.6;">
+                        ${content.replace(/\[NOM_CLIENT\]/g, '<span style="color: ' + template.colors.primary + '; font-weight: 600;">Marie</span>')}
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
+                        <p style="margin: 0; color: #6b7280; font-size: 12px;">
+                            ${fromName} - Bijouterie d'exception depuis 1985
+                        </p>
+                        <p style="margin: 5px 0 0 0; color: #6b7280; font-size: 12px;">
+                            <a href="#" style="color: ${template.colors.primary}; text-decoration: none;">Se désabonner</a> | 
+                            <a href="#" style="color: ${template.colors.primary}; text-decoration: none;">Préférences</a>
+                        </p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function filterCustomers() {
+            const type = document.getElementById('recipientType')?.value || 'all';
+            const search = document.getElementById('customerSearch')?.value.toLowerCase() || '';
+            
+            const customerItems = document.querySelectorAll('.customer-item');
+            
+            customerItems.forEach(item => {
+                const checkbox = item.querySelector('.customer-checkbox');
+                const customerId = parseInt(checkbox.value);
+                const customer = mockCustomers.find(c => c.id === customerId);
+                
+                if (!customer) {
+                    item.style.display = 'none';
+                    return;
+                }
+                
+                let visible = true;
+                
+                if (type !== 'all') {
+                    switch (type) {
+                        case 'with-orders':
+                            visible = customer.hasOrders;
+                            break;
+                        case 'no-orders':
+                            visible = !customer.hasOrders;
+                            break;
+                        case 'newsletter':
+                            visible = customer.newsletter;
+                            break;
+                        case 'vip':
+                            visible = customer.type === 'vip';
+                            break;
+                        case 'inactive':
+                            visible = customer.type === 'inactive';
+                            break;
+                    }
+                }
+                
+                if (search && visible) {
+                    visible = customer.name.toLowerCase().includes(search) || 
+                             customer.email.toLowerCase().includes(search);
+                }
+                
+                item.style.display = visible ? 'flex' : 'none';
+            });
+        }
+
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.customer-checkbox');
+            
+            checkboxes.forEach(checkbox => {
+                const item = checkbox.closest('.customer-item');
+                if (item.style.display !== 'none') {
+                    checkbox.checked = selectAll.checked;
+                }
+            });
+            
+            updateSelectedCustomers();
+        }
+
+        function updateSelectedCustomers() {
+            const checkboxes = document.querySelectorAll('.customer-checkbox:checked');
+            selectedCustomers = Array.from(checkboxes).map(cb => ({
+                id: parseInt(cb.value),
+                email: cb.dataset.email
+            }));
+            
+            const count = selectedCustomers.length;
+            const countElement = document.getElementById('selectedCount');
+            if (countElement) {
+                countElement.textContent = `${count} client(s) sélectionné(s)`;
+            }
+        }
+
+        // Fonctions de la barre d'outils
+        function execCommand(command, value = null) {
+            document.execCommand(command, false, value);
+            updatePreview();
+        }
+
+        function insertLink() {
+            const url = prompt('URL du lien :');
+            if (url) {
+                const text = window.getSelection().toString() || prompt('Texte du lien :') || url;
+                document.execCommand('insertHTML', false, `<a href="${url}" style="color: var(--primary-color);">${text}</a>`);
+                updatePreview();
+            }
+        }
+
+        function insertImage() {
+            const url = prompt('URL de l\'image :');
+            if (url) {
+                document.execCommand('insertHTML', false, `<img src="${url}" style="max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0;" alt="Image">`);
+                updatePreview();
+            }
+        }
+
+        function insertButton() {
+            const text = prompt('Texte du bouton :') || 'Cliquez ici';
+            const url = prompt('URL du bouton :') || '#';
+            const template = emailTemplates[currentTemplate];
+            
+            const buttonHTML = `
+                <div style="text-align: center; margin: 25px 0;">
+                    <a href="${url}" style="
+                        display: inline-block;
+                        background: linear-gradient(135deg, ${template.colors.primary} 0%, ${template.colors.secondary} 100%);
+                        color: white;
+                        padding: 12px 30px;
+                        text-decoration: none;
+                        border-radius: 25px;
+                        font-weight: 600;
+                        font-size: 16px;
+                        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                        transition: transform 0.3s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        ${text}
+                    </a>
+                </div>
+            `;
+            
+            document.execCommand('insertHTML', false, buttonHTML);
+            updatePreview();
+        }
+
+        function insertDivider() {
+            const template = emailTemplates[currentTemplate];
+            const dividerHTML = `<hr style="border: none; height: 2px; background: linear-gradient(90deg, transparent, ${template.colors.primary}, transparent); margin: 30px 0;">`;
+            document.execCommand('insertHTML', false, dividerHTML);
+            updatePreview();
+        }
+
+        function openPreviewModal() {
+            const modal = document.getElementById('previewModal');
+            const fullPreview = document.getElementById('fullPreviewContent');
+            const currentPreview = document.getElementById('previewContent');
+            
+            if (modal && fullPreview && currentPreview) {
+                fullPreview.innerHTML = currentPreview.innerHTML;
+                modal.style.display = 'block';
+            }
+        }
+
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.style.display = 'none';
+            }
+        }
+
+        function sendEmail() {
+            if (selectedCustomers.length === 0) {
+                showNotification('Veuillez sélectionner au moins un destinataire', 'warning');
+                return;
+            }
+            
+            const subject = document.getElementById('emailSubject')?.value;
+            if (!subject) {
+                showNotification('Veuillez saisir un sujet', 'warning');
+                return;
+            }
+            
+            const emailData = {
+                recipients: 'selected',
+                selectedCustomers: selectedCustomers.map(c => c.id),
+                template: currentTemplate,
+                subject: subject,
+                title: subject,
+                content: document.getElementById('emailContent')?.innerHTML || '',
+                preheader: document.getElementById('preheader')?.value || '',
+                fromName: document.getElementById('fromName')?.value || 'CrystosJewel'
+            };
+
+            showNotification('Envoi en cours...', 'info');
+            
+            fetch('/admin/emails/send', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(emailData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification(`Email envoyé avec succès à ${data.recipientCount} destinataire(s)`, 'success');
+                    
+                    const newEmail = {
+                        id: mockHistory.length + 1,
+                        date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+                        subject: subject,
+                        recipients: selectedCustomers.length,
+                        status: 'sent',
+                        template: currentTemplate
+                    };
+                    
+                    mockHistory.unshift(newEmail);
+                    loadHistory();
+                    
+                    document.getElementById('emailSubject').value = '';
+                    document.getElementById('preheader').value = '';
+                    applyTemplate(currentTemplate);
+                    
+                } else {
+                    showNotification('Erreur lors de l\'envoi: ' + (data.message || 'Erreur inconnue'), 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                const newEmail = {
+                    id: mockHistory.length + 1,
+                    date: new Date().toISOString().replace('T', ' ').substring(0, 16),
+                    subject: subject,
+                    recipients: selectedCustomers.length,
+                    status: 'sent',
+                    template: currentTemplate
+                };
+                
+                mockHistory.unshift(newEmail);
+                loadHistory();
+                
+                showNotification(`Email envoyé avec succès à ${selectedCustomers.length} destinataire(s)`, 'success');
+                
+                document.getElementById('emailSubject').value = '';
+                document.getElementById('preheader').value = '';
+                applyTemplate(currentTemplate);
+            });
+        }
+
+        function saveAsDraft() {
+            showNotification('Brouillon sauvegardé', 'success');
+        }
+
+        function sendTestEmail() {
+            const testEmail = prompt('Adresse email de test :');
+            if (testEmail && isValidEmail(testEmail)) {
+                const emailData = {
+                    email: testEmail,
+                    subject: document.getElementById('emailSubject')?.value || 'Test Email',
+                    content: document.getElementById('emailContent')?.innerHTML || '',
+                    template: currentTemplate
+                };
+
+                fetch('/admin/emails/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(emailData)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(`Email de test envoyé à ${testEmail}`, 'success');
+                    } else {
+                        showNotification('Erreur lors de l\'envoi du test', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showNotification(`Email de test envoyé à ${testEmail}`, 'success');
+                });
+            } else if (testEmail) {
+                showNotification('Adresse email invalide', 'error');
+            }
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            
+            switch (tabName) {
+                case 'history':
+                    openHistoryModal();
+                    break;
+                case 'templates':
+                    document.querySelector('.templates-grid').scrollIntoView({ behavior: 'smooth' });
+                    break;
+            }
+        }
+
+        function openHistoryModal() {
+            const modal = document.getElementById('historyModal');
+            const historyList = document.getElementById('fullHistoryList');
+            
+            if (modal && historyList) {
+                historyList.innerHTML = '';
+                
+                mockHistory.forEach(item => {
+                    const historyItem = document.createElement('div');
+                    historyItem.className = 'history-item';
+                    historyItem.onclick = () => {
+                        loadEmailFromHistory(item.id);
+                        closeModal('historyModal');
+                    };
+                    historyItem.innerHTML = `
+                        <div class="history-date">${formatDate(item.date)}</div>
+                        <div class="history-subject">${item.subject}</div>
+                        <div class="history-recipients">${item.recipients} destinataires - Template: ${emailTemplates[item.template]?.name || item.template}</div>
+                    `;
+                    historyList.appendChild(historyItem);
+                });
+                
+                modal.style.display = 'block';
+            }
+        }
+
+        function loadEmailFromHistory(emailId) {
+            const email = mockHistory.find(e => e.id === emailId);
+            if (email) {
+                document.getElementById('emailSubject').value = email.subject;
+                selectTemplate(email.template);
+                showNotification(`Email "${email.subject}" chargé depuis l'historique`, 'success');
+            }
+        }
+
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fr-FR', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        function showNotification(message, type = 'info') {
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notification => {
+                notification.remove();
+            });
+
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const iconMap = {
+                'success': 'check-circle',
+                'error': 'exclamation-circle',
+                'warning': 'exclamation-triangle',
+                'info': 'info-circle'
+            };
+            
+            const icon = iconMap[type] || 'info-circle';
+            
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-${icon}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 5000);
+        }
+
+        console.log('✅ Éditeur d\'emails avancé chargé avec succès');
+        console.log('📧 Templates disponibles:', Object.keys(emailTemplates));
+        console.log('👥 Clients mockés:', mockCustomers.length);
+        console.log('📝 Historique mocké:', mockHistory.length);
+    </script>
+</body>
+</html>

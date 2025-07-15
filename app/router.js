@@ -17,6 +17,8 @@ import { Type } from "./models/TypeModel.js";
 import { JewelImage } from "./models/jewelImage.js";
 
 // Imports des contrôleurs EXISTANTS
+import { emailManagementController } from './controlleurs/emailManagementController.js';
+
 import { mainControlleur } from "./controlleurs/mainControlleur.js";
 import{ customerManagementController}from "./controlleurs/customerManagementController.js";
 import { Op } from 'sequelize';
@@ -3478,7 +3480,7 @@ router.use((req, res, next) => {
 // ========================================
 // 📊 PAGE PRINCIPALE - GESTION DES CLIENTS
 // ========================================
-router.get('/gestion-clients',isAdmin,customerManagementController.renderCustomerManagement);
+router.get('/admin/gestion-clients',isAdmin,customerManagementController.renderCustomerManagement);
 
 // ========================================
 // 👤 GESTION INDIVIDUELLE DES CLIENTS
@@ -3515,6 +3517,183 @@ customerManagementController.exportCustomers);
 router.get('/customer-stats',isAdmin,
    customerManagementController.getCustomerStats);
 
+// Page de gestion des emails
+router.get('/admin/emails', isAdmin, emailManagementController.renderEmailManagement);
+
+// API pour récupérer les clients avec filtres
+router.get('/admin/api/customers', isAdmin, emailManagementController.getCustomers);
+
+// Créer et envoyer une campagne
+router.post('/admin/emails/send', isAdmin, emailManagementController.createAndSendCampaign);
+
+// Récupérer l'historique des campagnes
+router.get('/admin/api/campaigns', isAdmin, emailManagementController.getCampaignHistory);
+
+// Récupérer les détails d'une campagne
+router.get('/admin/api/campaigns/:id', isAdmin, emailManagementController.getCampaignDetails);
+
+// Envoyer un email de test
+router.post('/admin/emails/test', isAdmin, emailManagementController.sendTestEmail);
+
+// ===== ROUTES POUR LE TRACKING =====
+
+// Tracking d'ouverture d'email (pixel invisible)
+router.get('/email/track/open/:trackingId', async (req, res) => {
+    try {
+        const { trackingId } = req.params;
+
+        await EmailCampaignRecipient.update(
+            { opened_at: new Date() },
+            {
+                where: {
+                    tracking_id: trackingId,
+                    opened_at: null
+                }
+            }
+        );
+
+        const recipient = await EmailCampaignRecipient.findOne({
+            where: { tracking_id: trackingId },
+            include: [{ model: EmailCampaign }]
+        });
+
+        if (recipient?.EmailCampaign) {
+            await EmailCampaign.increment('opened_count', {
+                where: { id: recipient.campaign_id }
+            });
+        }
+
+        const pixelBuffer = Buffer.from(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+            'base64'
+        );
+
+        res.set({
+            'Content-Type': 'image/png',
+            'Content-Length': pixelBuffer.length,
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0'
+        });
+
+        res.send(pixelBuffer);
+
+    } catch (error) {
+        console.error('❌ Erreur tracking ouverture:', error);
+        res.status(200).send('');
+    }
+});
+
+// Tracking de clic sur lien
+router.get('/email/track/click/:trackingId', async (req, res) => {
+    try {
+        const { trackingId } = req.params;
+        const { url } = req.query;
+
+        if (!url) {
+            return res.status(400).send('URL manquante');
+        }
+
+        await EmailCampaignRecipient.update(
+            { clicked_at: new Date() },
+            {
+                where: {
+                    tracking_id: trackingId,
+                    clicked_at: null
+                }
+            }
+        );
+
+        const recipient = await EmailCampaignRecipient.findOne({
+            where: { tracking_id: trackingId },
+            include: [{ model: EmailCampaign }]
+        });
+
+        if (recipient?.EmailCampaign) {
+            await EmailCampaign.increment('clicked_count', {
+                where: { id: recipient.campaign_id }
+            });
+        }
+
+        res.redirect(decodeURIComponent(url));
+
+    } catch (error) {
+        console.error('❌ Erreur tracking clic:', error);
+        res.redirect('/');
+    }
+});
+
+// ===== ROUTES DE DÉSINSCRIPTION =====
+
+// Page de désinscription
+router.get('/unsubscribe', async (req, res) => {
+    try {
+        const { email } = req.query;
+
+        if (!email) {
+            return res.status(400).render('error', {
+                message: 'Email manquant pour la désinscription'
+            });
+        }
+
+        res.render('unsubscribe', {
+            title: 'Se désabonner - CrystosJewel',
+            email: email
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur page désinscription:', error);
+        res.status(500).render('error', {
+            message: 'Erreur lors du chargement de la page'
+        });
+    }
+});
+
+// Traitement de la désinscription
+router.post('/unsubscribe', async (req, res) => {
+    try {
+        const { email } = req.body;
+
+        if (!email) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email requis'
+            });
+        }
+
+        await Customer.update(
+            { marketing_opt_in: false },
+            { where: { email: email } }
+        );
+
+        res.json({
+            success: true,
+            message: 'Vous avez été désabonné avec succès'
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur désinscription:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la désinscription'
+        });
+    }
+});
+
+// ===== ROUTES DE COMPATIBILITÉ =====
+
+// Route pour l'ancien système (compatibilité)
+router.post('/admin/send-bulk-email', isAdmin, async (req, res) => {
+    try {
+        return emailManagementController.createAndSendCampaign(req, res);
+    } catch (error) {
+        console.error('❌ Erreur compatibilité ancienne route:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'envoi'
+        });
+    }
+});
 
 
 // Export par défaut

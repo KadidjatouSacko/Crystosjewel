@@ -17,6 +17,8 @@ import { OrderTracking } from "./OrderTracking.js";
 import { OrderStatusHistory } from "./OrderStatusHistory.js";
 import { CustomerNotification } from "./customerNotification.js";
 import { CustomerCommunicationPreference } from "./customerCommunicationPreference.js";
+import { EmailCampaign } from "./emailCampaignModel.js";
+import { EmailCampaignRecipient } from "./emailCampaignRecipientModel.js";
 
 // ===== NOUVEAUX MODÈLES POUR L'ADMINISTRATION =====
 import { HomeImage } from "./HomeImage.js";
@@ -514,6 +516,9 @@ HomeImage.addHook('afterUpdate', async (homeImage, options) => {
 });
 
 
+// Relations
+EmailCampaignRecipient.belongsTo(EmailCampaign, { foreignKey: 'campaign_id' });
+EmailCampaignRecipient.belongsTo(Customer, { foreignKey: 'customer_id' });
 
 console.log('✅ Associations et méthodes des modèles initialisées (avec fonctionnalités admin)');
 
@@ -521,7 +526,8 @@ export {
   Category, Jewel, Customer, Order, OrderHasJewel, Payment, JewelImage,
   OrderItem, Cart, JewelView, Favorite, Material, Type, Role, 
   OrderStatusHistory, OrderTracking, CustomerNotification,
-  CustomerCommunicationPreference, Activity, HomeImage, SiteSetting
+  CustomerCommunicationPreference, Activity, HomeImage, SiteSetting,
+  EmailCampaign, EmailCampaignRecipient
 };
 
 
