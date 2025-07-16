@@ -5,6 +5,8 @@
 import nodemailer from 'nodemailer';
 import { EmailLog } from '../models/emailLogModel.js';
 import { EmailTemplate } from '../models/emailTemplateModel.js';
+// Import de votre service mail existant
+import { sendTestMail, sendWelcomeMail } from './mailService.js';
 
 // Configuration du transporteur
 const transporter = nodemailer.createTransport({

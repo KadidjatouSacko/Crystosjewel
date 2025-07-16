@@ -8,9 +8,10 @@ import { EmailTemplate } from '../models/emailTemplateModel.js';
 import { EmailLog } from '../models/emailLogModel.js';
 import { Jewel } from '../models/jewelModel.js';
 import { JewelImage } from '../models/jewelImage.js';
-// import { User } from '../models/userModel.js';
+// Seulement Customer, pas de User
 import { Customer } from '../models/customerModel.js';
-import mailService from '../services/mailService.js';
+// Import du service email simplifié
+import emailCampaignService from '../services/emailCampaignService.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -24,42 +25,63 @@ export const emailController = {
             console.log('📧 Affichage éditeur email');
 
             // Récupérer les modèles disponibles
-            const templates = await EmailTemplate.findAll({
-                where: { is_active: true },
-                order: [['created_at', 'DESC']]
-            });
+            let templates = [];
+            try {
+                templates = await EmailTemplate.findAll({
+                    where: { is_active: true },
+                    order: [['created_at', 'DESC']]
+                });
+            } catch (error) {
+                console.log('⚠️ Pas de templates disponibles:', error.message);
+                templates = [];
+            }
 
-            // Statistiques rapides
-            const totalCustomers = await Customer.count();
-            const totalUsers = await User.count();
-            const totalRecipients = totalCustomers + totalUsers;
+            // Statistiques rapides - seulement Customer
+            let stats = {
+                totalRecipients: 0,
+                totalCustomers: 0,
+                totalUsers: 0
+            };
+
+            try {
+                const totalCustomers = await Customer.count();
+                stats = {
+                    totalRecipients: totalCustomers,
+                    totalCustomers: totalCustomers,
+                    totalUsers: 0 // Pas de table User
+                };
+            } catch (error) {
+                console.log('⚠️ Erreur stats:', error.message);
+            }
 
             // Dernières campagnes
-            const recentCampaigns = await EmailLog.findAll({
-                where: {
-                    email_type: 'campaign'
-                },
-                attributes: [
-                    'id',
-                    'subject',
-                    'status',
-                    'created_at',
-                    [sequelize.fn('COUNT', sequelize.col('id')), 'recipients']
-                ],
-                group: ['subject', 'id', 'status', 'created_at'],
-                order: [['created_at', 'DESC']],
-                limit: 5
-            });
+            let recentCampaigns = [];
+            try {
+                recentCampaigns = await EmailLog.findAll({
+                    where: {
+                        email_type: 'campaign'
+                    },
+                    attributes: [
+                        'id',
+                        'subject',
+                        'status',
+                        'created_at',
+                        [sequelize.fn('COUNT', sequelize.col('id')), 'recipients']
+                    ],
+                    group: ['subject', 'id', 'status', 'created_at'],
+                    order: [['created_at', 'DESC']],
+                    limit: 5
+                });
+            } catch (error) {
+                console.log('⚠️ Pas de campagnes récentes:', error.message);
+                recentCampaigns = [];
+            }
 
             res.render('admin/email-editor', {
                 title: 'Éditeur d\'Emails',
-                templates: templates || [],
-                stats: {
-                    totalRecipients,
-                    totalCustomers,
-                    totalUsers
-                },
-                recentCampaigns: recentCampaigns || []
+                templates: templates,
+                stats: stats,
+                recentCampaigns: recentCampaigns
             });
 
         } catch (error) {
@@ -78,64 +100,92 @@ export const emailController = {
         try {
             console.log('📧 Affichage historique des campagnes');
 
-            // Récupérer toutes les campagnes (groupées par subject)
-            const campaignsQuery = `
-                SELECT 
-                    MIN(id) as id,
-                    subject as name,
-                    email_type,
-                    status,
-                    MIN(created_at) as created_at,
-                    COUNT(*) as recipients_count,
-                    SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent_count,
-                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_count
-                FROM email_logs 
-                WHERE email_type IN ('campaign', 'promotional', 'newsletter')
-                GROUP BY subject, email_type, status
-                ORDER BY MIN(created_at) DESC
-                LIMIT 50
-            `;
+            let campaigns = [];
+            let stats = { total: 0, sent: 0, failed: 0, successRate: 0 };
 
-            const [campaigns] = await sequelize.query(campaignsQuery);
+            try {
+                // Vérifier si la table email_logs existe
+                const [tableExists] = await sequelize.query(`
+                    SELECT EXISTS (
+                        SELECT FROM information_schema.tables 
+                        WHERE table_schema = 'public' 
+                        AND table_name = 'email_logs'
+                    );
+                `);
 
-            // Formatage des données
-            const formattedCampaigns = campaigns.map(campaign => ({
-                id: campaign.id,
-                name: campaign.name,
-                status: campaign.status,
-                type: campaign.email_type,
-                created_at: campaign.created_at,
-                recipients: parseInt(campaign.recipients_count),
-                sent: parseInt(campaign.sent_count),
-                failed: parseInt(campaign.failed_count),
-                success_rate: campaign.recipients_count > 0 
-                    ? Math.round((campaign.sent_count / campaign.recipients_count) * 100)
-                    : 0
-            }));
+                if (tableExists[0].exists) {
+                    // Récupérer les campagnes si la table existe
+                    const campaignsQuery = `
+                        SELECT 
+                            MIN(id) as id,
+                            subject as name,
+                            email_type,
+                            status,
+                            MIN(created_at) as created_at,
+                            COUNT(*) as recipients_count,
+                            SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent_count,
+                            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_count
+                        FROM email_logs 
+                        WHERE email_type IN ('campaign', 'promotional', 'newsletter')
+                        GROUP BY subject, email_type, status
+                        ORDER BY MIN(created_at) DESC
+                        LIMIT 50
+                    `;
 
-            // Statistiques globales
-            const totalSent = formattedCampaigns.reduce((sum, c) => sum + c.sent, 0);
-            const totalFailed = formattedCampaigns.reduce((sum, c) => sum + c.failed, 0);
-            const avgSuccessRate = formattedCampaigns.length > 0
-                ? Math.round(formattedCampaigns.reduce((sum, c) => sum + c.success_rate, 0) / formattedCampaigns.length)
-                : 0;
+                    const [campaignsResult] = await sequelize.query(campaignsQuery);
+                    
+                    campaigns = campaignsResult.map(campaign => ({
+                        id: campaign.id || 0,
+                        name: campaign.name || 'Campagne sans nom',
+                        status: campaign.status || 'unknown',
+                        type: campaign.email_type || 'campaign',
+                        created_at: campaign.created_at || new Date(),
+                        recipients: parseInt(campaign.recipients_count) || 0,
+                        sent: parseInt(campaign.sent_count) || 0,
+                        failed: parseInt(campaign.failed_count) || 0,
+                        success_rate: campaign.recipients_count > 0 
+                            ? Math.round((campaign.sent_count / campaign.recipients_count) * 100)
+                            : 0
+                    }));
+
+                    // Calculer les statistiques
+                    const totalSent = campaigns.reduce((sum, c) => sum + (c.sent || 0), 0);
+                    const totalFailed = campaigns.reduce((sum, c) => sum + (c.failed || 0), 0);
+                    const avgSuccessRate = campaigns.length > 0
+                        ? Math.round(campaigns.reduce((sum, c) => sum + (c.success_rate || 0), 0) / campaigns.length)
+                        : 0;
+
+                    stats = {
+                        total: campaigns.length || 0,
+                        sent: totalSent || 0,
+                        failed: totalFailed || 0,
+                        successRate: avgSuccessRate || 0
+                    };
+                }
+            } catch (dbError) {
+                console.log('⚠️ Tables email pas encore créées:', dbError.message);
+                campaigns = [];
+                stats = { total: 0, sent: 0, failed: 0, successRate: 0 };
+            }
+
+            console.log('📊 Stats campagnes:', stats);
+            console.log(`📧 ${campaigns.length} campagnes trouvées`);
 
             res.render('admin/email-history', {
                 title: 'Historique des Campagnes',
-                campaigns: formattedCampaigns,
-                stats: {
-                    total: formattedCampaigns.length,
-                    sent: totalSent,
-                    failed: totalFailed,
-                    successRate: avgSuccessRate
-                }
+                campaigns: campaigns,
+                stats: stats
             });
 
         } catch (error) {
             console.error('❌ Erreur historique email:', error);
-            res.status(500).render('error', {
-                message: 'Erreur lors du chargement de l\'historique',
-                error: error
+            
+            // En cas d'erreur, rendu avec données vides
+            res.render('admin/email-history', {
+                title: 'Historique des Campagnes',
+                campaigns: [],
+                stats: { total: 0, sent: 0, failed: 0, successRate: 0 },
+                error: 'Les tables email ne sont pas encore créées. Exécutez le script SQL d\'installation.'
             });
         }
     },
@@ -211,12 +261,15 @@ export const emailController = {
                 .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'))
                 .replace(/\{\{unsubscribe_url\}\}/g, `${process.env.BASE_URL}/newsletter/unsubscribe?email=${testEmail}`);
 
-            // Envoi via le service mail
-            const result = await mailService.sendRawEmail(
+            // Envoi via le service email
+            const result = await emailCampaignService.sendEmail(
                 testEmail,
                 `[TEST] ${subject}`,
                 testContent,
-                preheader
+                { 
+                    emailType: 'test',
+                    logEmail: true 
+                }
             );
 
             if (result.success) {
@@ -254,38 +307,11 @@ export const emailController = {
                 });
             }
 
-            // Définir les destinataires
+            // Définir les destinataires - seulement Customer
             let recipientList = [];
             
-            if (recipients === 'all') {
-                // Tous les clients et utilisateurs
-                const customers = await Customer.findAll({
-                    attributes: ['email', 'first_name', 'last_name'],
-                    where: {
-                        email: { [Op.ne]: null }
-                    }
-                });
-                
-                const users = await User.findAll({
-                    attributes: ['email', 'firstName', 'lastName'],
-                    where: {
-                        email: { [Op.ne]: null }
-                    }
-                });
-
-                recipientList = [
-                    ...customers.map(c => ({
-                        email: c.email,
-                        firstName: c.first_name,
-                        lastName: c.last_name
-                    })),
-                    ...users.map(u => ({
-                        email: u.email,
-                        firstName: u.firstName,
-                        lastName: u.lastName
-                    }))
-                ];
-            } else if (recipients === 'customers') {
+            if (recipients === 'all' || recipients === 'customers') {
+                // Tous les clients (pas de distinction user/customer)
                 const customers = await Customer.findAll({
                     attributes: ['email', 'first_name', 'last_name'],
                     where: {
@@ -298,106 +324,32 @@ export const emailController = {
                     firstName: c.first_name,
                     lastName: c.last_name
                 }));
-            } else if (recipients === 'users') {
-                const users = await User.findAll({
-                    attributes: ['email', 'firstName', 'lastName'],
-                    where: {
-                        email: { [Op.ne]: null }
-                    }
-                });
-                
-                recipientList = users.map(u => ({
-                    email: u.email,
-                    firstName: u.firstName,
-                    lastName: u.lastName
-                }));
             }
 
-            // Filtrer les doublons par email
-            const uniqueRecipients = recipientList.filter((recipient, index, self) =>
-                index === self.findIndex(r => r.email === recipient.email)
+            console.log(`📧 Envoi campagne à ${recipientList.length} destinataires`);
+
+            // Envoi en lot via le service simplifié
+            const results = await emailCampaignService.sendBulkCampaign(
+                recipientList, // Pas de uniqueRecipients car une seule source
+                subject,
+                content,
+                {
+                    campaignId: `campaign_${Date.now()}`,
+                    emailType: 'campaign'
+                }
             );
 
-            console.log(`📧 Envoi campagne à ${uniqueRecipients.length} destinataires`);
-
-            // Envoi en lot
-            const batchSize = 10;
-            let sentCount = 0;
-            let failedCount = 0;
-
-            for (let i = 0; i < uniqueRecipients.length; i += batchSize) {
-                const batch = uniqueRecipients.slice(i, i + batchSize);
-                
-                const emailPromises = batch.map(async (recipient) => {
-                    try {
-                        // Personnaliser le contenu
-                        const personalizedContent = content
-                            .replace(/\{\{first_name\}\}/g, recipient.firstName || 'Cher client')
-                            .replace(/\{\{last_name\}\}/g, recipient.lastName || '')
-                            .replace(/\{\{email\}\}/g, recipient.email)
-                            .replace(/\{\{company_name\}\}/g, 'CrystosJewel')
-                            .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'))
-                            .replace(/\{\{unsubscribe_url\}\}/g, `${process.env.BASE_URL}/newsletter/unsubscribe?email=${recipient.email}`);
-
-                        const result = await mailService.sendRawEmail(
-                            recipient.email,
-                            subject,
-                            personalizedContent,
-                            preheader
-                        );
-
-                        // Log de l'envoi
-                        await EmailLog.create({
-                            recipient_email: recipient.email,
-                            subject: subject,
-                            email_type: 'campaign',
-                            status: result.success ? 'sent' : 'failed',
-                            error_message: result.success ? null : result.error,
-                            sent_at: result.success ? new Date() : null
-                        });
-
-                        if (result.success) {
-                            sentCount++;
-                        } else {
-                            failedCount++;
-                        }
-
-                        return result;
-                    } catch (error) {
-                        console.error(`❌ Erreur envoi pour ${recipient.email}:`, error);
-                        failedCount++;
-                        
-                        await EmailLog.create({
-                            recipient_email: recipient.email,
-                            subject: subject,
-                            email_type: 'campaign',
-                            status: 'failed',
-                            error_message: error.message
-                        });
-                        
-                        return { success: false };
-                    }
-                });
-
-                await Promise.all(emailPromises);
-                
-                // Pause entre les lots
-                if (i + batchSize < uniqueRecipients.length) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
-
-            console.log(`✅ Campagne terminée: ${sentCount} envoyés, ${failedCount} échecs`);
+            console.log(`✅ Campagne terminée: ${results.sent} envoyés, ${results.failed} échecs`);
 
             res.json({
                 success: true,
                 message: `Campagne envoyée avec succès`,
                 stats: {
-                    total: uniqueRecipients.length,
-                    sent: sentCount,
-                    failed: failedCount,
-                    successRate: uniqueRecipients.length > 0 
-                        ? Math.round((sentCount / uniqueRecipients.length) * 100)
+                    total: results.total,
+                    sent: results.sent,
+                    failed: results.failed,
+                    successRate: results.total > 0 
+                        ? Math.round((results.sent / results.total) * 100)
                         : 0
                 }
             });
@@ -418,55 +370,11 @@ export const emailController = {
         try {
             const { period = '30' } = req.query;
             
-            const daysAgo = new Date();
-            daysAgo.setDate(daysAgo.getDate() - parseInt(period));
-
-            const statsQuery = `
-                SELECT 
-                    email_type,
-                    status,
-                    COUNT(*) as count,
-                    DATE(created_at) as date
-                FROM email_logs 
-                WHERE created_at >= $1
-                GROUP BY email_type, status, DATE(created_at)
-                ORDER BY date DESC
-            `;
-
-            const [stats] = await sequelize.query(statsQuery, {
-                bind: [daysAgo]
-            });
-
-            // Statistiques globales
-            const totalEmails = await EmailLog.count({
-                where: {
-                    created_at: { [Op.gte]: daysAgo }
-                }
-            });
-
-            const sentEmails = await EmailLog.count({
-                where: {
-                    created_at: { [Op.gte]: daysAgo },
-                    status: 'sent'
-                }
-            });
-
-            const failedEmails = await EmailLog.count({
-                where: {
-                    created_at: { [Op.gte]: daysAgo },
-                    status: 'failed'
-                }
-            });
+            const stats = await emailCampaignService.getEmailStats(parseInt(period));
 
             res.json({
                 success: true,
-                stats: {
-                    total: totalEmails,
-                    sent: sentEmails,
-                    failed: failedEmails,
-                    successRate: totalEmails > 0 ? Math.round((sentEmails / totalEmails) * 100) : 0,
-                    daily: stats
-                }
+                stats: stats
             });
 
         } catch (error) {
@@ -485,49 +393,24 @@ export const emailController = {
         try {
             const { type = 'all' } = req.query;
 
-            let customers = [];
-            let users = [];
+            // Seulement Customer, pas de User
+            const customers = await Customer.findAll({
+                attributes: ['id', 'email', 'first_name', 'last_name', 'created_at'],
+                where: {
+                    email: { [Op.ne]: null }
+                },
+                order: [['created_at', 'DESC']]
+            });
 
-            if (type === 'all' || type === 'customers') {
-                customers = await Customer.findAll({
-                    attributes: ['id', 'email', 'first_name', 'last_name', 'created_at'],
-                    where: {
-                        email: { [Op.ne]: null }
-                    },
-                    order: [['created_at', 'DESC']]
-                });
-            }
-
-            if (type === 'all' || type === 'users') {
-                users = await User.findAll({
-                    attributes: ['id', 'email', 'firstName', 'lastName', 'created_at'],
-                    where: {
-                        email: { [Op.ne]: null }
-                    },
-                    order: [['created_at', 'DESC']]
-                });
-            }
-
-            const allCustomers = [
-                ...customers.map(c => ({
-                    id: c.id,
-                    email: c.email,
-                    firstName: c.first_name,
-                    lastName: c.last_name,
-                    fullName: `${c.first_name} ${c.last_name}`,
-                    type: 'customer',
-                    createdAt: c.created_at
-                })),
-                ...users.map(u => ({
-                    id: u.id,
-                    email: u.email,
-                    firstName: u.firstName,
-                    lastName: u.lastName,
-                    fullName: `${u.firstName} ${u.lastName}`,
-                    type: 'user',
-                    createdAt: u.created_at
-                }))
-            ];
+            const allCustomers = customers.map(c => ({
+                id: c.id,
+                email: c.email,
+                firstName: c.first_name,
+                lastName: c.last_name,
+                fullName: `${c.first_name} ${c.last_name}`,
+                type: 'customer',
+                createdAt: c.created_at
+            }));
 
             res.json({
                 success: true,

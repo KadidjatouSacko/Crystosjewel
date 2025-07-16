@@ -1,1184 +1,1759 @@
+<!-- app/views/admin/email-editor.ejs -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> | CrystosJewel Admin</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.min.css" rel="stylesheet">
+    <title>✏️ <%= title %></title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Quill Editor pour l'édition riche -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.snow.css" rel="stylesheet">
+    
+    <!-- Color Picker -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.css" rel="stylesheet">
+    
     <style>
         :root {
-            /* Couleurs principales de votre site */
-            --rose-gold: #b76e79;
-            --rose-gold-light: #e8c2c8;
-            --rose-gold-dark: #7d4b53;
-            --rose-gold-hover: #c98490;
-            --cream: #fff8f0;
-            --dark-text: #3a3a3a;
-            --light-text: #f5f5f5;
-            
-            /* Couleurs système adaptées */
-            --primary: var(--rose-gold);
-            --primary-dark: var(--rose-gold-dark);
-            --primary-light: var(--rose-gold-light);
-            --success: #28a745;
-            --warning: #ffc107;
-            --danger: #dc3545;
-            --dark: var(--dark-text);
-            --gray-light: #f9f9f9;
-            --gray-medium: #e0e0e0;
-            --white: #ffffff;
-            
-            /* Effets */
-            --border-radius: 12px;
-            --shadow: 0 4px 12px rgba(183, 110, 121, 0.1);
-            --shadow-lg: 0 6px 20px rgba(183, 110, 121, 0.15);
-            --transition: all 0.3s ease;
+            --primary: #d89ab3;
+            --primary-dark: #b794a8;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --border: #e2e8f0;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --radius: 8px;
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: linear-gradient(135deg, var(--cream) 0%, var(--rose-gold-light) 100%);
-            color: var(--dark);
-            line-height: 1.6;
-            min-height: 100vh;
-        }
-
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        .header {
-            background: var(--white);
-            border-radius: var(--border-radius);
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: var(--shadow);
-        }
-
-        .header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--rose-gold);
-            margin-bottom: 10px;
-        }
-
-        .breadcrumb {
-            color: var(--gray-medium);
-            font-size: 0.9rem;
-        }
-
-        .breadcrumb a {
-            color: var(--rose-gold);
-            text-decoration: none;
-        }
-
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 350px;
-            gap: 30px;
-            height: calc(100vh - 200px);
-        }
-
-        .editor-panel {
-            background: var(--white);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
             overflow: hidden;
         }
 
-        .editor-header {
-            padding: 20px 30px;
-            border-bottom: 1px solid #e5e7eb;
-            background: var(--gray-light);
+        .editor-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            height: 100vh;
         }
 
-        .editor-tabs {
+        .sidebar-left, .sidebar-right {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-right {
+            border-left: 1px solid var(--border);
+            border-right: none;
+        }
+
+        .editor-main {
+            display: flex;
+            flex-direction: column;
+            background: #f1f5f9;
+        }
+
+        .editor-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .editor-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .editor-actions {
             display: flex;
             gap: 10px;
-            margin-bottom: 20px;
         }
 
-        .tab-btn {
-            padding: 10px 20px;
-            background: var(--white);
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: 500;
-            transition: var(--transition);
+        .preview-area {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            overflow-y: auto;
         }
 
-        .tab-btn.active {
-            background: var(--rose-gold);
-            color: var(--white);
-            border-color: var(--rose-gold);
+        .email-preview {
+            background: white;
+            width: 600px;
+            min-height: 800px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            position: relative;
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
 
         .form-label {
             display: block;
             font-weight: 600;
-            margin-bottom: 8px;
-            color: var(--dark);
-        }
-
-        .form-control {
-            width: 100%;
-            padding: 12px 16px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
+            margin-bottom: 5px;
+            color: var(--text-primary);
             font-size: 14px;
-            transition: var(--transition);
         }
 
-        .form-control:focus {
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
             outline: none;
-            border-color: var(--rose-gold);
-            box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.1);
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(216, 154, 179, 0.1);
         }
 
-        .editor-content {
-            flex: 1;
-            padding: 30px;
-            overflow-y: auto;
-        }
-
-        .quill-container {
-            height: 400px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-        }
-
-        .sidebar {
-            background: var(--white);
-            border-radius: var(--border-radius);
-            box-shadow: var(--shadow);
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        .sidebar-section {
-            border-bottom: 1px solid #e5e7eb;
-        }
-
-        .sidebar-header {
-            padding: 20px;
-            background: var(--gray-light);
-            font-weight: 600;
-            color: var(--dark);
-        }
-
-        .sidebar-content {
-            padding: 20px;
-        }
-
-        .stats-grid {
+        .template-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 15px;
+            gap: 10px;
             margin-bottom: 20px;
         }
 
-        .stat-card {
+        .template-card {
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
             text-align: center;
-            padding: 15px;
-            background: var(--gray-light);
-            border-radius: 8px;
+            font-size: 12px;
         }
 
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: 700;
-            color: var(--rose-gold);
+        .template-card:hover {
+            border-color: var(--primary);
+            background: var(--bg-primary);
         }
 
-        .stat-label {
-            font-size: 0.8rem;
-            color: var(--gray-medium);
-            margin-top: 5px;
+        .template-card.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
         }
 
-        .recipient-selector {
-            margin-bottom: 20px;
+        .content-blocks {
+            margin-bottom: 25px;
         }
 
-        .recipient-option {
+        .block-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: grab;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 12px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: var(--transition);
         }
 
-        .recipient-option:hover {
-            background: var(--gray-light);
+        .block-item:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateX(5px);
         }
 
-        .recipient-option input[type="radio"] {
-            margin: 0;
-        }
-
-        .templates-list {
-            max-height: 300px;
-            overflow-y: auto;
-        }
-
-        .template-item {
-            padding: 15px;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .template-item:hover {
-            background: var(--gray-light);
-            border-color: var(--rose-gold);
-        }
-
-        .template-name {
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 5px;
-        }
-
-        .template-subject {
-            font-size: 0.9rem;
-            color: var(--gray-medium);
-        }
-
-        .action-buttons {
-            padding: 20px 30px;
-            border-top: 1px solid #e5e7eb;
-            background: var(--gray-light);
-            display: flex;
-            gap: 15px;
+        .block-item:active {
+            cursor: grabbing;
         }
 
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
+            padding: 10px 16px;
             border: none;
-            border-radius: 8px;
-            font-size: 14px;
+            border-radius: var(--radius);
             font-weight: 600;
             cursor: pointer;
-            transition: var(--transition);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
             text-decoration: none;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
-            color: var(--white);
-        }
-
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
         }
 
         .btn-secondary {
-            background: var(--gray-light);
-            color: var(--dark);
-            border: 2px solid #e5e7eb;
-        }
-
-        .btn-secondary:hover {
-            background: #f1f5f9;
-            border-color: var(--rose-gold);
+            background: var(--text-secondary);
+            color: white;
         }
 
         .btn-success {
             background: var(--success);
-            color: var(--white);
+            color: white;
+        }
+
+        .btn-info {
+            background: var(--info);
+            color: white;
         }
 
         .btn-warning {
             background: var(--warning);
-            color: var(--white);
+            color: white;
         }
 
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
         }
 
-        .jewels-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 15px;
-            max-height: 300px;
-            overflow-y: auto;
+        .sidebar-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
         }
 
-        .jewel-item {
-            text-align: center;
-            padding: 10px;
-            border: 2px solid #e5e7eb;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: var(--transition);
+        .sidebar-section:last-child {
+            border-bottom: none;
         }
 
-        .jewel-item:hover {
-            border-color: var(--rose-gold);
-            background: var(--gray-light);
-        }
-
-        .jewel-image {
-            width: 80px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 6px;
-            margin-bottom: 8px;
-        }
-
-        .jewel-name {
-            font-size: 0.8rem;
+        .sidebar-section h3 {
+            font-size: 1rem;
             font-weight: 600;
-            margin-bottom: 4px;
-        }
-
-        .jewel-price {
-            font-size: 0.8rem;
-            color: var(--rose-gold);
-            font-weight: 600;
-        }
-
-        .preview-panel {
-            position: fixed;
-            top: 0;
-            right: -100%;
-            width: 50%;
-            height: 100vh;
-            background: var(--white);
-            box-shadow: -10px 0 30px rgba(0, 0, 0, 0.2);
-            transition: right 0.3s ease;
-            z-index: 1000;
+            margin-bottom: 15px;
+            color: var(--text-primary);
             display: flex;
-            flex-direction: column;
-        }
-
-        .preview-panel.active {
-            right: 0;
-        }
-
-        .preview-header {
-            padding: 20px;
-            border-bottom: 1px solid #e5e7eb;
-            background: var(--gray-light);
-            display: flex;
-            justify-content: space-between;
             align-items: center;
+            gap: 8px;
         }
 
-        .preview-content {
-            flex: 1;
+        .email-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
             padding: 20px;
-            overflow-y: auto;
+            border-radius: var(--radius) var(--radius) 0 0;
         }
 
-        .close-preview {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: var(--gray-medium);
+        .email-subject {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 5px;
         }
 
-        .alert {
+        .email-preheader {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .email-content {
+            padding: 20px;
+            line-height: 1.6;
+            min-height: 400px;
+            position: relative;
+        }
+
+        .email-footer {
+            background: var(--bg-primary);
             padding: 15px 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border-radius: 0 0 var(--radius) var(--radius);
+            border-top: 1px solid var(--border);
         }
 
-        .alert-success {
-            background: #f0fdf4;
-            color: #166534;
-            border-color: var(--success);
+        .variables-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
         }
 
-        .alert-error {
-            background: #fef2f2;
-            color: #991b1b;
-            border-color: var(--danger);
+        .variable-tag {
+            background: var(--secondary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
         }
 
-        .alert-info {
-            background: #eff6ff;
-            color: #1d4ed8;
-            border-color: var(--rose-gold);
+        .variable-tag:hover {
+            background: #7c3aed;
+            transform: scale(1.05);
+        }
+
+        .recipients-counter {
+            background: var(--success);
+            color: white;
+            padding: 8px 12px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .filter-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .filter-btn {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
         }
 
         .loading {
-            display: none;
-            align-items: center;
-            gap: 10px;
-            color: var(--gray-medium);
-        }
-
-        .loading.active {
             display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 13px;
         }
 
         .spinner {
             width: 16px;
             height: 16px;
-            border: 2px solid #e5e7eb;
-            border-top: 2px solid var(--rose-gold);
+            border: 2px solid var(--border);
+            border-top: 2px solid var(--primary);
             border-radius: 50%;
             animation: spin 1s linear infinite;
+            margin-right: 8px;
         }
 
+        /* Éditeur riche */
+        .rich-editor {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: white;
+        }
+
+        .ql-toolbar {
+            border-radius: var(--radius) var(--radius) 0 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .ql-container {
+            border-radius: 0 0 var(--radius) var(--radius);
+            min-height: 200px;
+        }
+
+        /* Outils de design */
+        .design-tools {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .tool-group {
+            margin-bottom: 15px;
+        }
+
+        .tool-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .tool-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .color-picker-input {
+            width: 40px;
+            height: 30px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .range-input {
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        .font-controls {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .image-upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .image-upload-zone:hover {
+            border-color: var(--primary);
+            background: var(--bg-primary);
+        }
+
+        .image-upload-zone.dragover {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, rgba(216, 154, 179, 0.1), rgba(183, 148, 168, 0.1));
+        }
+
+        /* Éléments éditables */
+        .editable-element {
+            position: relative;
+            outline: none;
+        }
+
+        .editable-element:hover {
+            outline: 2px dashed var(--primary);
+            outline-offset: 2px;
+        }
+
+        .editable-element:focus {
+            outline: 2px solid var(--primary);
+            outline-offset: 2px;
+        }
+
+        .element-toolbar {
+            position: absolute;
+            top: -35px;
+            left: 0;
+            background: var(--text-primary);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            display: none;
+            gap: 5px;
+            z-index: 1000;
+        }
+
+        .editable-element:hover .element-toolbar,
+        .editable-element:focus .element-toolbar {
+            display: flex;
+        }
+
+        .toolbar-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-size: 10px;
+        }
+
+        .toolbar-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Responsive */
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
 
-        /* Variables d'insertion */
-        .variables-list {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .variable-tag {
-            background: var(--rose-gold);
-            color: var(--white);
-            padding: 4px 8px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-
-        .variable-tag:hover {
-            background: var(--rose-gold-dark);
-        }
-
-        /* Responsive */
         @media (max-width: 1200px) {
-            .main-grid {
-                grid-template-columns: 1fr;
-                gap: 20px;
-            }
-
-            .sidebar {
-                order: -1;
-            }
-
-            .preview-panel {
-                width: 70%;
+            .editor-container {
+                grid-template-columns: 280px 1fr 280px;
             }
         }
 
         @media (max-width: 768px) {
-            .container {
-                padding: 10px;
+            .editor-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
             }
-
-            .header {
-                padding: 20px;
-            }
-
-            .header h1 {
-                font-size: 1.5rem;
-            }
-
-            .editor-content {
-                padding: 20px;
-            }
-
-            .preview-panel {
-                width: 90%;
-            }
-
-            .jewels-grid {
-                grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            
+            .sidebar-left, .sidebar-right {
+                max-height: 200px;
+                padding: 15px;
             }
         }
     </style>
 </head>
-
 <body>
-    <!-- Navigation (inclure votre navbar existante) -->
-    <%- include('../partials/navbarre.ejs') %>
+    <div class="editor-container">
+        <!-- Sidebar gauche -->
+        <div class="sidebar-left">
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-cog"></i>
+                    Configuration
+                </h3>
+                
+                <form class="config-form" id="campaignForm">
+                    <div class="form-group">
+                        <label class="form-label">Nom de la campagne</label>
+                        <input type="text" class="form-input" id="campaignName" placeholder="Ma super campagne">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Sujet de l'email</label>
+                        <input type="text" class="form-input" id="emailSubject" placeholder="🎉 Découvrez nos nouveautés !">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Pré-header (optionnel)</label>
+                        <input type="text" class="form-input" id="emailPreheader" placeholder="Texte de prévisualisation">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Nom de l'expéditeur</label>
+                        <input type="text" class="form-input" id="senderName" value="CrystosJewel">
+                    </div>
+                </form>
+            </div>
 
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>
-                <i class="fas fa-envelope"></i>
-                <%= title %>
-            </h1>
-            <div class="breadcrumb">
-                <a href="/admin">Administration</a> › 
-                <a href="/admin/emails/history">Emails</a> › 
-                Éditeur
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-palette"></i>
+                    Templates
+                </h3>
+                
+                <div class="template-grid">
+                    <div class="template-card active" data-template="elegant">
+                        <i class="fas fa-gem" style="font-size: 18px; margin-bottom: 5px;"></i>
+                        <div>Élégant</div>
+                    </div>
+                    <div class="template-card" data-template="modern">
+                        <i class="fas fa-rocket" style="font-size: 18px; margin-bottom: 5px;"></i>
+                        <div>Moderne</div>
+                    </div>
+                    <div class="template-card" data-template="classic">
+                        <i class="fas fa-newspaper" style="font-size: 18px; margin-bottom: 5px;"></i>
+                        <div>Classique</div>
+                    </div>
+                    <div class="template-card" data-template="minimal">
+                        <i class="fas fa-minus" style="font-size: 18px; margin-bottom: 5px;"></i>
+                        <div>Minimal</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-cube"></i>
+                    Blocs de contenu
+                </h3>
+                
+                <div class="content-blocks">
+                    <div class="block-item" draggable="true" data-block="title">
+                        <i class="fas fa-heading"></i>
+                        <span>Titre</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="text">
+                        <i class="fas fa-paragraph"></i>
+                        <span>Texte</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="image">
+                        <i class="fas fa-image"></i>
+                        <span>Image</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="button">
+                        <i class="fas fa-mouse-pointer"></i>
+                        <span>Bouton</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="divider">
+                        <i class="fas fa-grip-lines"></i>
+                        <span>Séparateur</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="products">
+                        <i class="fas fa-gem"></i>
+                        <span>Produits</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="social">
+                        <i class="fas fa-share-alt"></i>
+                        <span>Réseaux sociaux</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="spacer">
+                        <i class="fas fa-arrows-alt-v"></i>
+                        <span>Espaceur</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-code"></i>
+                    Variables
+                </h3>
+                
+                <div class="variables-list">
+                    <span class="variable-tag" onclick="insertVariable('{{first_name}}')">{{first_name}}</span>
+                    <span class="variable-tag" onclick="insertVariable('{{last_name}}')">{{last_name}}</span>
+                    <span class="variable-tag" onclick="insertVariable('{{email}}')">{{email}}</span>
+                    <span class="variable-tag" onclick="insertVariable('{{company_name}}')">{{company_name}}</span>
+                    <span class="variable-tag" onclick="insertVariable('{{current_date}}')">{{current_date}}</span>
+                    <span class="variable-tag" onclick="insertVariable('{{unsubscribe_url}}')">{{unsubscribe_url}}</span>
+                </div>
             </div>
         </div>
 
-        <!-- Main Grid -->
-        <div class="main-grid">
-            <!-- Éditeur Principal -->
-            <div class="editor-panel">
-                <!-- Header de l'éditeur -->
-                <div class="editor-header">
-                    <div class="editor-tabs">
-                        <div class="tab-btn active" data-tab="compose">
-                            <i class="fas fa-edit"></i>
-                            Composer
-                        </div>
-                        <div class="tab-btn" data-tab="design">
-                            <i class="fas fa-palette"></i>
-                            Design
-                        </div>
-                        <div class="tab-btn" data-tab="preview">
-                            <i class="fas fa-eye"></i>
-                            Aperçu
-                        </div>
-                    </div>
-
-                    <!-- Variables disponibles -->
-                    <div class="variables-list">
-                        <div class="variable-tag" data-variable="{{first_name}}">{{first_name}}</div>
-                        <div class="variable-tag" data-variable="{{last_name}}">{{last_name}}</div>
-                        <div class="variable-tag" data-variable="{{email}}">{{email}}</div>
-                        <div class="variable-tag" data-variable="{{company_name}}">{{company_name}}</div>
-                        <div class="variable-tag" data-variable="{{current_date}}">{{current_date}}</div>
-                        <div class="variable-tag" data-variable="{{unsubscribe_url}}">{{unsubscribe_url}}</div>
-                    </div>
+        <!-- Zone centrale -->
+        <div class="editor-main">
+            <div class="editor-header">
+                <div class="editor-title">
+                    <i class="fas fa-edit"></i>
+                    Éditeur d'Email
                 </div>
-
-                <!-- Contenu de l'éditeur -->
-                <div class="editor-content">
-                    <!-- Onglet Composer -->
-                    <div id="compose-tab" class="tab-content active">
-                        <form id="emailForm">
-                            <div class="form-group">
-                                <label class="form-label">Sujet de l'email</label>
-                                <input type="text" id="emailSubject" class="form-control" 
-                                       placeholder="Saisissez le sujet de votre email">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Texte de prévisualisation</label>
-                                <input type="text" id="emailPreheader" class="form-control" 
-                                       placeholder="Texte qui apparaît après le sujet dans la boîte de réception">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label">Contenu de l'email</label>
-                                <div id="emailEditor" class="quill-container"></div>
-                            </div>
-                        </form>
-                    </div>
-
-                    <!-- Onglet Design -->
-                    <div id="design-tab" class="tab-content" style="display: none;">
-                        <div class="form-group">
-                            <label class="form-label">Modèles prédéfinis</label>
-                            <div class="templates-list">
-                                <% if (templates && templates.length > 0) { %>
-                                    <% templates.forEach(template => { %>
-                                        <div class="template-item" data-template-id="<%= template.id %>">
-                                            <div class="template-name"><%= template.template_name %></div>
-                                            <div class="template-subject"><%= template.subject %></div>
-                                        </div>
-                                    <% }); %>
-                                <% } else { %>
-                                    <p style="text-align: center; color: var(--gray-medium); padding: 20px;">
-                                        Aucun modèle disponible
-                                    </p>
-                                <% } %>
-                            </div>
-                        </div>
-
-                        <div class="form-group">
-                            <label class="form-label">Ajouter des produits</label>
-                            <div id="jewelsList" class="jewels-grid">
-                                <!-- Les bijoux seront chargés dynamiquement -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Onglet Aperçu -->
-                    <div id="preview-tab" class="tab-content" style="display: none;">
-                        <div id="emailPreview" style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 20px; min-height: 400px;">
-                            <p style="text-align: center; color: var(--gray-medium); padding: 40px;">
-                                Saisissez du contenu pour voir l'aperçu
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Actions -->
-                <div class="action-buttons">
-                    <button type="button" id="saveDraftBtn" class="btn btn-secondary">
+                <div class="editor-actions">
+                    <button class="btn btn-secondary" onclick="saveAsDraft()">
                         <i class="fas fa-save"></i>
-                        Sauvegarder brouillon
+                        Brouillon
                     </button>
-                    
-                    <button type="button" id="sendTestBtn" class="btn btn-warning">
-                        <i class="fas fa-paper-plane"></i>
+                    <button class="btn btn-warning" onclick="sendTest()">
+                        <i class="fas fa-flask"></i>
                         Test
                     </button>
-                    
-                    <button type="button" id="previewBtn" class="btn btn-secondary">
+                    <button class="btn btn-info" onclick="previewEmail()">
                         <i class="fas fa-eye"></i>
                         Aperçu
                     </button>
-                    
-                    <button type="button" id="sendCampaignBtn" class="btn btn-primary">
-                        <i class="fas fa-rocket"></i>
-                        Envoyer la campagne
+                    <button class="btn btn-success" onclick="sendCampaign()">
+                        <i class="fas fa-paper-plane"></i>
+                        Envoyer
                     </button>
-
-                    <div class="loading" id="loadingIndicator">
-                        <div class="spinner"></div>
-                        <span>Traitement en cours...</span>
-                    </div>
                 </div>
             </div>
 
-            <!-- Sidebar -->
-            <div class="sidebar">
-                <!-- Statistiques -->
-                <div class="sidebar-section">
-                    <div class="sidebar-header">
-                        <i class="fas fa-chart-bar"></i>
-                        Statistiques
-                    </div>
-                    <div class="sidebar-content">
-                        <div class="stats-grid">
-                            <div class="stat-card">
-                                <div class="stat-value"><%= stats.totalRecipients || 0 %></div>
-                                <div class="stat-label">Total contacts</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value"><%= stats.totalCustomers || 0 %></div>
-                                <div class="stat-label">Clients</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value"><%= stats.totalUsers || 0 %></div>
-                                <div class="stat-label">Utilisateurs</div>
-                            </div>
-                            <div class="stat-card">
-                                <div class="stat-value"><%= recentCampaigns.length || 0 %></div>
-                                <div class="stat-label">Campagnes récentes</div>
+            <div class="preview-area">
+                <div class="email-preview" id="emailPreview">
+                    <div class="email-header">
+                        <div class="email-subject editable-element" contenteditable="true" id="previewSubject">
+                            🎉 Découvrez nos nouveautés !
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
                             </div>
                         </div>
-                    </div>
-                </div>
-
-                <!-- Destinataires -->
-                <div class="sidebar-section">
-                    <div class="sidebar-header">
-                        <i class="fas fa-users"></i>
-                        Destinataires
-                    </div>
-                    <div class="sidebar-content">
-                        <div class="recipient-selector">
-                            <div class="recipient-option">
-                                <input type="radio" name="recipients" value="all" id="all" checked>
-                                <label for="all">Tous les contacts</label>
-                            </div>
-                            <div class="recipient-option">
-                                <input type="radio" name="recipients" value="customers" id="customers">
-                                <label for="customers">Clients uniquement</label>
-                            </div>
-                            <div class="recipient-option">
-                                <input type="radio" name="recipients" value="users" id="users">
-                                <label for="users">Utilisateurs uniquement</label>
-                            </div>
+                        <div class="email-preheader editable-element" contenteditable="true" id="previewPreheader">
+                            Texte de prévisualisation
                         </div>
                     </div>
-                </div>
-
-                <!-- Campagnes récentes -->
-                <div class="sidebar-section">
-                    <div class="sidebar-header">
-                        <i class="fas fa-history"></i>
-                        Campagnes récentes
-                    </div>
-                    <div class="sidebar-content">
-                        <% if (recentCampaigns && recentCampaigns.length > 0) { %>
-                            <% recentCampaigns.forEach(campaign => { %>
-                                <div class="template-item" style="margin-bottom: 10px;">
-                                    <div class="template-name"><%= campaign.subject %></div>
-                                    <div class="template-subject">
-                                        <%= campaign.status %> • 
-                                        <%= new Date(campaign.created_at).toLocaleDateString('fr-FR') %>
-                                    </div>
-                                </div>
-                            <% }); %>
-                        <% } else { %>
-                            <p style="text-align: center; color: var(--gray-medium); padding: 20px;">
-                                Aucune campagne récente
-                            </p>
-                        <% } %>
+                    <div class="email-content" id="emailContent">
+                        <!-- Contenu par défaut -->
+                        <div class="editable-element" contenteditable="true" data-type="heading">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <h2 style="color: #d89ab3; margin-bottom: 20px;">Bonjour {{first_name}} !</h2>
+                        </div>
                         
-                        <a href="/admin/emails/history" class="btn btn-secondary" style="width: 100%; margin-top: 15px;">
-                            <i class="fas fa-history"></i>
-                            Voir l'historique
-                        </a>
+                        <div class="editable-element" contenteditable="true" data-type="text">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <p style="margin-bottom: 15px;">Nous sommes ravis de vous présenter notre nouvelle collection de bijoux exclusifs.</p>
+                        </div>
+                        
+                        <div class="editable-element" contenteditable="true" data-type="text">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <p style="margin-bottom: 20px;">Découvrez des pièces uniques créées avec passion par nos artisans.</p>
+                        </div>
+                        
+                        <div class="editable-element" data-type="button" style="text-align: center; margin: 30px 0;">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="editButton(this)"><i class="fas fa-edit"></i></button>
+                                <button class="toolbar-btn" onclick="changeButtonColor(this)"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <a href="#" class="editable-button" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                                🛍️ Découvrir la collection
+                            </a>
+                        </div>
+                        
+                        <div class="editable-element" contenteditable="true" data-type="text">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <p style="margin-bottom: 15px;">Profitez d'une <strong>réduction de 15%</strong> avec le code <code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">NOUVEAU15</code></p>
+                        </div>
+                        
+                        <div class="editable-element" data-type="divider">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="changeDividerStyle(this)"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;">
+                        </div>
+                        
+                        <div class="editable-element" contenteditable="true" data-type="text">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">
+                                À bientôt,<br>
+                                L'équipe CrystosJewel
+                            </p>
+                        </div>
+                    </div>
+                    <div class="email-footer">
+                        <p>© 2025 CrystosJewel - Tous droits réservés</p>
+                        <p style="margin-top: 5px;">
+                            <a href="{{unsubscribe_url}}" style="color: #64748b;">Se désabonner</a> | 
+                            <a href="#" style="color: #64748b;">Mettre à jour mes préférences</a>
+                        </p>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Panel d'aperçu -->
-    <div class="preview-panel" id="previewPanel">
-        <div class="preview-header">
-            <h3>Aperçu de l'email</h3>
-            <button class="close-preview" id="closePreview">
-                <i class="fas fa-times"></i>
-            </button>
-        </div>
-        <div class="preview-content" id="previewContent">
-            <!-- Le contenu de l'aperçu sera inséré ici -->
+        <!-- Sidebar droite -->
+        <div class="sidebar-right">
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-paint-brush"></i>
+                    Outils de design
+                </h3>
+                
+                <div class="design-tools">
+                    <div class="tool-group">
+                        <label class="tool-label">Couleur de fond</label>
+                        <input type="color" class="color-picker-input" id="bgColorPicker" value="#ffffff" onchange="changeBackgroundColor(this.value)">
+                    </div>
+                    
+                    <div class="tool-group">
+                        <label class="tool-label">Couleur d'accent</label>
+                        <input type="color" class="color-picker-input" id="accentColorPicker" value="#d89ab3" onchange="changeAccentColor(this.value)">
+                    </div>
+                    
+                    <div class="tool-group">
+                        <label class="tool-label">Police</label>
+                        <select class="form-select" id="fontFamilySelect" onchange="changeFontFamily(this.value)">
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="Georgia, serif">Georgia</option>
+                            <option value="Times New Roman, serif">Times</option>
+                            <option value="Helvetica, sans-serif">Helvetica</option>
+                            <option value="Inter, sans-serif" selected>Inter</option>
+                        </select>
+                    </div>
+                    
+                    <div class="tool-group">
+                        <label class="tool-label">Taille de police (px)</label>
+                        <input type="range" class="range-input" id="fontSizeRange" min="12" max="24" value="16" onchange="changeFontSize(this.value)">
+                        <span id="fontSizeValue">16px</span>
+                    </div>
+                </div>
+                
+                <div class="image-upload-zone" onclick="triggerImageUpload()" ondrop="handleImageDrop(event)" ondragover="handleDragOver(event)">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: var(--text-secondary); margin-bottom: 10px;"></i>
+                    <p>Glissez une image ici<br>ou cliquez pour parcourir</p>
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none;" onchange="handleImageUpload(event)">
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-users"></i>
+                    Destinataires
+                </h3>
+                
+                <div class="recipients-counter" id="recipientsCounter">
+                    <i class="fas fa-envelope"></i>
+                    0 destinataires sélectionnés
+                </div>
+                
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="newsletter" onclick="filterRecipients('newsletter')">
+                        📧 Newsletter
+                    </button>
+                    <button class="filter-btn" data-filter="all" onclick="filterRecipients('all')">
+                        👥 Tous
+                    </button>
+                    <button class="filter-btn" data-filter="vip" onclick="filterRecipients('vip')">
+                        💎 VIP
+                    </button>
+                    <button class="filter-btn" data-filter="with-orders" onclick="filterRecipients('with-orders')">
+                        🛍️ Clients
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Rechercher un client</label>
+                    <input type="text" class="form-input" id="clientSearch" placeholder="Nom ou email" onkeyup="searchClients()">
+                </div>
+                
+                <div id="clientsList" style="max-height: 200px; overflow-y: auto; margin-top: 10px;">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Chargement des clients...
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-info-circle"></i>
+                    Conseils
+                </h3>
+                
+                <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--radius); font-size: 13px; line-height: 1.5;">
+                    <p style="margin-bottom: 10px;"><strong>📝 Bonnes pratiques :</strong></p>
+                    <ul style="margin-left: 15px;">
+                        <li>Sujet accrocheur (max 50 caractères)</li>
+                        <li>Personnalisez avec des variables</li>
+                        <li>Testez avant d'envoyer</li>
+                        <li>Optimisez pour mobile</li>
+                        <li>Utilisez des images optimisées</li>
+                        <li>Évitez le spam avec un bon ratio texte/images</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Scripts -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/quill/1.3.7/quill.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.js"></script>
+    
     <script>
-        // ==========================================
-        // 📧 ÉDITEUR D'EMAILS - JAVASCRIPT
-        // ==========================================
-
-        let quill;
-        let currentRecipients = 'all';
+        // Variables globales
+        let currentTemplate = 'elegant';
+        let selectedRecipients = [];
+        let currentFilter = 'newsletter';
+        let allClients = <%- JSON.stringify(customers || []) %>;
+        let currentElement = null;
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Initialisation éditeur email');
-            
-            initializeQuillEditor();
-            initializeEventListeners();
-            loadJewels();
+            console.log('✏️ Éditeur d\'emails avancé initialisé');
+            loadClients();
+            setupEventListeners();
+            setupDragAndDrop();
+            updatePreview();
         });
 
-        // ==========================================
-        // 📝 INITIALISATION DE L'ÉDITEUR QUILL
-        // ==========================================
-        function initializeQuillEditor() {
-            const toolbarOptions = [
-                ['bold', 'italic', 'underline', 'strike'],
-                ['blockquote', 'code-block'],
-                [{ 'header': 1 }, { 'header': 2 }],
-                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                [{ 'script': 'sub'}, { 'script': 'super' }],
-                [{ 'indent': '-1'}, { 'indent': '+1' }],
-                [{ 'direction': 'rtl' }],
-                [{ 'size': ['small', false, 'large', 'huge'] }],
-                [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
-                [{ 'color': [] }, { 'background': [] }],
-                [{ 'font': [] }],
-                [{ 'align': [] }],
-                ['link', 'image'],
-                ['clean']
-            ];
-
-            quill = new Quill('#emailEditor', {
-                theme: 'snow',
-                modules: {
-                    toolbar: toolbarOptions
-                },
-                placeholder: 'Composez votre email ici...'
-            });
-
-            // Événement de changement de contenu
-            quill.on('text-change', function() {
-                updatePreview();
-            });
-        }
-
-        // ==========================================
-        // 🎯 GESTION DES ÉVÉNEMENTS
-        // ==========================================
-        function initializeEventListeners() {
-            // Onglets
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    const tabName = this.dataset.tab;
-                    switchTab(tabName);
-                });
-            });
-
-            // Variables
-            document.querySelectorAll('.variable-tag').forEach(tag => {
-                tag.addEventListener('click', function() {
-                    const variable = this.dataset.variable;
-                    insertVariable(variable);
-                });
-            });
-
-            // Destinataires
-            document.querySelectorAll('input[name="recipients"]').forEach(radio => {
-                radio.addEventListener('change', function() {
-                    currentRecipients = this.value;
-                    console.log('📧 Destinataires sélectionnés:', currentRecipients);
-                });
-            });
-
-            // Boutons d'action
-            document.getElementById('saveDraftBtn').addEventListener('click', saveDraft);
-            document.getElementById('sendTestBtn').addEventListener('click', sendTest);
-            document.getElementById('previewBtn').addEventListener('click', showPreview);
-            document.getElementById('sendCampaignBtn').addEventListener('click', sendCampaign);
-            document.getElementById('closePreview').addEventListener('click', closePreview);
-
-            // Mise à jour de l'aperçu en temps réel
+        function setupEventListeners() {
             document.getElementById('emailSubject').addEventListener('input', updatePreview);
             document.getElementById('emailPreheader').addEventListener('input', updatePreview);
+            
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    selectTemplate(this.dataset.template);
+                });
+            });
 
-            // Modèles
-            document.addEventListener('click', function(e) {
-                if (e.target.closest('.template-item')) {
-                    const templateId = e.target.closest('.template-item').dataset.templateId;
-                    if (templateId) {
-                        loadTemplate(templateId);
+            // Synchroniser les champs avec l'aperçu
+            document.getElementById('emailSubject').addEventListener('input', function() {
+                document.getElementById('previewSubject').textContent = this.value || '🎉 Découvrez nos nouveautés !';
+            });
+
+            document.getElementById('emailPreheader').addEventListener('input', function() {
+                document.getElementById('previewPreheader').textContent = this.value || 'Texte de prévisualisation';
+            });
+        }
+
+        function setupDragAndDrop() {
+            const contentBlocks = document.querySelectorAll('.block-item');
+            const emailContent = document.getElementById('emailContent');
+
+            contentBlocks.forEach(block => {
+                block.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', this.dataset.block);
+                });
+            });
+
+            emailContent.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                this.style.background = 'rgba(216, 154, 179, 0.1)';
+            });
+
+            emailContent.addEventListener('dragleave', function(e) {
+                this.style.background = '';
+            });
+
+            emailContent.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.style.background = '';
+                
+                const blockType = e.dataTransfer.getData('text/plain');
+                const rect = this.getBoundingClientRect();
+                const y = e.clientY - rect.top;
+                
+                insertBlock(blockType, y);
+            });
+        }
+
+        function insertBlock(blockType, position) {
+            const emailContent = document.getElementById('emailContent');
+            const blocks = {
+                title: `
+                    <div class="editable-element" contenteditable="true" data-type="heading">
+                        <div class="element-toolbar">
+                            <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                            <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                            <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                            <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <h2 style="color: #d89ab3; margin-bottom: 20px;">Nouveau titre</h2>
+                    </div>
+                `,
+                text: `
+                    <div class="editable-element" contenteditable="true" data-type="text">
+                        <div class="element-toolbar">
+                            <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                            <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                            <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                            <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <p style="margin-bottom: 15px;">Nouveau paragraphe de texte.</p>
+                    </div>
+                `,
+                image: `
+                    <div class="editable-element" data-type="image" style="text-align: center; margin: 20px 0;">
+                        <div class="element-toolbar">
+                            <button class="toolbar-btn" onclick="changeImage(this)"><i class="fas fa-edit"></i></button>
+                            <button class="toolbar-btn" onclick="alignImage(this, 'left')"><i class="fas fa-align-left"></i></button>
+                            <button class="toolbar-btn" onclick="alignImage(this, 'center')"><i class="fas fa-align-center"></i></button>
+                            <button class="toolbar-btn" onclick="alignImage(this, 'right')"><i class="fas fa-align-right"></i></button>
+                            <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <img src="/images/placeholder-image.jpg" alt="Image" style="max-width: 100%; height: auto; border-radius: 8px;">
+                    </div>
+                `,
+                button: `
+                    <div class="editable-element" data-type="button" style="text-align: center; margin: 30px 0;">
+                        <div class="element-toolbar">
+                            <button class="toolbar-btn" onclick="editButton(this)"><i class="fas fa-edit"></i></button>
+                            <button class="toolbar-btn" onclick="changeButtonColor(this)"><i class="fas fa-palette"></i></button>
+                            <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <a href="#" class="editable-button" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                            Nouveau bouton
+                        </a>
+                    </div>
+                `,
+                divider: `
+                    <div class="editable-element" data-type="divider">
+                        <div class="element-toolbar">
+                            <button class="toolbar-btn" onclick="changeDividerStyle(this)"><i class="fas fa-palette"></i></button>
+                            <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;">
+                    </div>
+                `,
+                products: `
+                    <div class="editable-element" data-type="products" style="margin: 30px 0;">
+                        <div class="element-toolbar">
+                            <button class="toolbar-btn" onclick="configureProducts(this)"><i class="fas fa-cog"></i></button>
+                            <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                            <div style="text-align: center; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
+                                <img src="/images/product-placeholder.jpg" alt="Produit" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+                                <h4 style="color: #d89ab3; margin-bottom: 5px;">Produit 1</h4>
+                                <p style="color: #64748b; font-size: 14px;">49,99€</p>
+                            </div>
+                            <div style="text-align: center; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
+                                <img src="/images/product-placeholder.jpg" alt="Produit" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+                                <h4 style="color: #d89ab3; margin-bottom: 5px;">Produit 2</h4>
+                                <p style="color: #64748b; font-size: 14px;">79,99€</p>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                social: `
+                    <div class="editable-element" data-type="social" style="text-align: center; margin: 30px 0;">
+                        <div class="element-toolbar">
+                            <button class="toolbar-btn" onclick="editSocial(this)"><i class="fas fa-edit"></i></button>
+                            <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <p style="margin-bottom: 15px; color: #64748b;">Suivez-nous :</p>
+                        <div style="display: flex; justify-content: center; gap: 15px;">
+                            <a href="#" style="display: inline-block; width: 40px; height: 40px; background: #3b5998; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" style="display: inline-block; width: 40px; height: 40px; background: #1da1f2; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#" style="display: inline-block; width: 40px; height: 40px; background: #e4405f; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; text-decoration: none;">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                        </div>
+                    </div>
+                `,
+                spacer: `
+                    <div class="editable-element" data-type="spacer">
+                        <div class="element-toolbar">
+                            <button class="toolbar-btn" onclick="adjustSpacing(this, 'increase')"><i class="fas fa-plus"></i></button>
+                            <button class="toolbar-btn" onclick="adjustSpacing(this, 'decrease')"><i class="fas fa-minus"></i></button>
+                            <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                        </div>
+                        <div style="height: 30px;"></div>
+                    </div>
+                `
+            };
+
+            if (blocks[blockType]) {
+                // Trouver la position d'insertion
+                const children = Array.from(emailContent.children);
+                let insertIndex = children.length;
+                
+                for (let i = 0; i < children.length; i++) {
+                    const rect = children[i].getBoundingClientRect();
+                    const contentRect = emailContent.getBoundingClientRect();
+                    if (position < rect.top - contentRect.top + rect.height / 2) {
+                        insertIndex = i;
+                        break;
                     }
                 }
-            });
-        }
 
-        // ==========================================
-        // 📑 GESTION DES ONGLETS
-        // ==========================================
-        function switchTab(tabName) {
-            // Désactiver tous les onglets
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.style.display = 'none');
+                const tempDiv = document.createElement('div');
+                tempDiv.innerHTML = blocks[blockType];
+                const newElement = tempDiv.firstElementChild;
 
-            // Activer l'onglet sélectionné
-            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
-            document.getElementById(`${tabName}-tab`).style.display = 'block';
+                if (insertIndex >= children.length) {
+                    emailContent.appendChild(newElement);
+                } else {
+                    emailContent.insertBefore(newElement, children[insertIndex]);
+                }
 
-            // Actions spécifiques par onglet
-            if (tabName === 'preview') {
-                updatePreview();
+                // Animer l'insertion
+                newElement.style.opacity = '0';
+                newElement.style.transform = 'translateY(-10px)';
+                setTimeout(() => {
+                    newElement.style.transition = 'all 0.3s ease';
+                    newElement.style.opacity = '1';
+                    newElement.style.transform = 'translateY(0)';
+                }, 10);
+
+                showNotification(`✅ Bloc "${blockType}" ajouté`, 'success');
             }
         }
 
-        // ==========================================
-        // 🔤 INSERTION DE VARIABLES
-        // ==========================================
-        function insertVariable(variable) {
-            if (!quill) return;
-            
-            const selection = quill.getSelection();
-            const index = selection ? selection.index : quill.getLength();
-            
-            quill.insertText(index, variable);
-            quill.setSelection(index + variable.length);
+        // Fonctions d'édition
+        function formatText(command) {
+            document.execCommand(command, false, null);
         }
 
-        // ==========================================
-        // 💎 CHARGEMENT DES BIJOUX
-        // ==========================================
-        async function loadJewels() {
-            try {
-                const response = await fetch('/admin/api/jewels/for-email');
-                const data = await response.json();
+        function changeTextColor() {
+            const color = prompt('Couleur (hex, rgb ou nom) :', '#d89ab3');
+            if (color) {
+                document.execCommand('foreColor', false, color);
+            }
+        }
 
-                if (data.success) {
-                    const jewelsList = document.getElementById('jewelsList');
-                    jewelsList.innerHTML = '';
+        function editButton(toolbar) {
+            const button = toolbar.parentElement.querySelector('.editable-button');
+            const newText = prompt('Texte du bouton :', button.textContent);
+            const newUrl = prompt('URL du bouton :', button.href);
+            
+            if (newText) button.textContent = newText;
+            if (newUrl) button.href = newUrl;
+        }
 
-                    data.jewels.forEach(jewel => {
-                        const jewelElement = createJewelElement(jewel);
-                        jewelsList.appendChild(jewelElement);
-                    });
+        function changeButtonColor(toolbar) {
+            const button = toolbar.parentElement.querySelector('.editable-button');
+            const color = prompt('Couleur du bouton (hex) :', '#d89ab3');
+            if (color) {
+                button.style.background = `linear-gradient(135deg, ${color}, ${color}dd)`;
+            }
+        }
+
+        function changeDividerStyle(toolbar) {
+            const hr = toolbar.parentElement.querySelector('hr');
+            const style = prompt('Style du trait (1=fin, 2=épais, 3=pointillé) :', '1');
+            
+            switch(style) {
+                case '1':
+                    hr.style.borderTop = '1px solid #e2e8f0';
+                    break;
+                case '2':
+                    hr.style.borderTop = '3px solid #d89ab3';
+                    break;
+                case '3':
+                    hr.style.borderTop = '1px dashed #d89ab3';
+                    break;
+            }
+        }
+
+        function alignImage(toolbar, alignment) {
+            const imageContainer = toolbar.parentElement;
+            imageContainer.style.textAlign = alignment;
+        }
+
+        function changeImage(toolbar) {
+            const img = toolbar.parentElement.querySelector('img');
+            const newSrc = prompt('URL de l\'image :', img.src);
+            const newAlt = prompt('Texte alternatif :', img.alt);
+            
+            if (newSrc) img.src = newSrc;
+            if (newAlt) img.alt = newAlt;
+        }
+
+        function adjustSpacing(toolbar, action) {
+            const spacer = toolbar.parentElement.querySelector('div[style*="height"]');
+            const currentHeight = parseInt(spacer.style.height) || 30;
+            const newHeight = action === 'increase' ? currentHeight + 10 : Math.max(10, currentHeight - 10);
+            spacer.style.height = newHeight + 'px';
+        }
+
+        function deleteElement(toolbar) {
+            if (confirm('Supprimer cet élément ?')) {
+                const element = toolbar.parentElement;
+                element.style.transition = 'all 0.3s ease';
+                element.style.opacity = '0';
+                element.style.transform = 'translateX(-20px)';
+                setTimeout(() => element.remove(), 300);
+            }
+        }
+
+        // Fonctions de design
+        function changeBackgroundColor(color) {
+            document.getElementById('emailContent').style.backgroundColor = color;
+        }
+
+        function changeAccentColor(color) {
+            const elements = document.querySelectorAll('h1, h2, h3, .editable-button');
+            elements.forEach(el => {
+                if (el.classList.contains('editable-button')) {
+                    el.style.background = `linear-gradient(135deg, ${color}, ${color}dd)`;
                 } else {
-                    console.error('❌ Erreur chargement bijoux:', data.message);
+                    el.style.color = color;
+                }
+            });
+        }
+
+        function changeFontFamily(font) {
+            document.getElementById('emailContent').style.fontFamily = font;
+        }
+
+        function changeFontSize(size) {
+            document.getElementById('fontSizeValue').textContent = size + 'px';
+            document.getElementById('emailContent').style.fontSize = size + 'px';
+        }
+
+        // Upload d'images
+        function triggerImageUpload() {
+            document.getElementById('imageUpload').click();
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    // Créer un nouvel élément image
+                    insertBlock('image');
+                    const newImage = document.querySelector('.editable-element[data-type="image"]:last-of-type img');
+                    if (newImage) {
+                        newImage.src = e.target.result;
+                        showNotification('✅ Image ajoutée', 'success');
+                    }
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function handleDragOver(event) {
+            event.preventDefault();
+            event.currentTarget.classList.add('dragover');
+        }
+
+        function handleImageDrop(event) {
+            event.preventDefault();
+            event.currentTarget.classList.remove('dragover');
+            
+            const files = event.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        insertBlock('image');
+                        const newImage = document.querySelector('.editable-element[data-type="image"]:last-of-type img');
+                        if (newImage) {
+                            newImage.src = e.target.result;
+                            showNotification('✅ Image ajoutée', 'success');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        }
+
+        // Fonctions de template
+        function updatePreview() {
+            const subject = document.getElementById('emailSubject').value || '🎉 Découvrez nos nouveautés !';
+            const preheader = document.getElementById('emailPreheader').value || 'Texte de prévisualisation';
+            
+            document.getElementById('previewSubject').textContent = subject;
+            document.getElementById('previewPreheader').textContent = preheader;
+        }
+
+        function selectTemplate(templateName) {
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            document.querySelector(`[data-template="${templateName}"]`).classList.add('active');
+            currentTemplate = templateName;
+            
+            applyTemplate(templateName);
+        }
+
+        function applyTemplate(templateName) {
+            const content = document.getElementById('emailContent');
+            const templates = {
+                elegant: {
+                    background: '#ffffff',
+                    accentColor: '#d89ab3',
+                    fontFamily: 'Georgia, serif',
+                    content: `
+                        <div class="editable-element" contenteditable="true" data-type="heading">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <h2 style="color: #d89ab3; margin-bottom: 20px; font-family: Georgia, serif;">Bonjour {{first_name}} !</h2>
+                        </div>
+                        <div class="editable-element" contenteditable="true" data-type="text">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <p style="margin-bottom: 15px; font-size: 16px; line-height: 1.6;">Nous sommes ravis de vous présenter notre nouvelle collection de bijoux exclusifs.</p>
+                        </div>
+                        <div class="editable-element" data-type="button" style="text-align: center; margin: 30px 0;">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="editButton(this)"><i class="fas fa-edit"></i></button>
+                                <button class="toolbar-btn" onclick="changeButtonColor(this)"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <a href="#" class="editable-button" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                                🛍️ Découvrir la collection
+                            </a>
+                        </div>
+                    `
+                },
+                modern: {
+                    background: '#f8fafc',
+                    accentColor: '#8b5cf6',
+                    fontFamily: 'Inter, Arial, sans-serif',
+                    content: `
+                        <div class="editable-element" data-type="heading" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 30px; margin-bottom: 20px; border-radius: 12px;">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <h2 style="margin: 0; font-size: 24px;">Hey {{first_name}} ! 🚀</h2>
+                            <p style="margin: 10px 0 0; opacity: 0.9;">L'avenir du style, c'est maintenant</p>
+                        </div>
+                        <div class="editable-element" contenteditable="true" data-type="text">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <p style="margin-bottom: 20px; font-size: 16px;">Découvrez des créations qui redéfinissent l'élégance moderne.</p>
+                        </div>
+                    `
+                },
+                classic: {
+                    background: '#ffffff',
+                    accentColor: '#1e293b',
+                    fontFamily: 'Times New Roman, serif',
+                    content: `
+                        <div class="editable-element" data-type="heading" style="border-left: 4px solid #d89ab3; padding-left: 20px; margin-bottom: 20px;">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <h2 style="color: #1e293b; margin-bottom: 10px;">Cher(e) {{first_name}},</h2>
+                            <p style="color: #64748b; margin: 0;">Nous avons le plaisir de vous informer...</p>
+                        </div>
+                    `
+                },
+                minimal: {
+                    background: '#ffffff',
+                    accentColor: '#64748b',
+                    fontFamily: 'Helvetica, Arial, sans-serif',
+                    content: `
+                        <div class="editable-element" contenteditable="true" data-type="heading">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <h1 style="font-size: 28px; font-weight: 300; color: #1e293b; margin-bottom: 30px;">{{first_name}}</h1>
+                        </div>
+                        <div class="editable-element" contenteditable="true" data-type="text">
+                            <div class="element-toolbar">
+                                <button class="toolbar-btn" onclick="formatText('bold')"><i class="fas fa-bold"></i></button>
+                                <button class="toolbar-btn" onclick="formatText('italic')"><i class="fas fa-italic"></i></button>
+                                <button class="toolbar-btn" onclick="changeTextColor()"><i class="fas fa-palette"></i></button>
+                                <button class="toolbar-btn" onclick="deleteElement(this)"><i class="fas fa-trash"></i></button>
+                            </div>
+                            <p style="font-size: 18px; line-height: 1.8; color: #64748b;">Simple. Élégant. Authentique.</p>
+                        </div>
+                    `
+                }
+            };
+            
+            const template = templates[templateName] || templates.elegant;
+            
+            // Appliquer le style global
+            content.style.backgroundColor = template.background;
+            content.style.fontFamily = template.fontFamily;
+            
+            // Remplacer le contenu
+            content.innerHTML = template.content;
+            
+            // Mettre à jour les color pickers
+            document.getElementById('bgColorPicker').value = template.background === '#f8fafc' ? '#f8fafc' : '#ffffff';
+            document.getElementById('accentColorPicker').value = template.accentColor;
+            document.getElementById('fontFamilySelect').value = template.fontFamily;
+        }
+
+        // Gestion des destinataires
+        function loadClients() {
+            displayClients(allClients);
+            updateRecipientsCounter();
+        }
+
+        function filterRecipients(filter) {
+            currentFilter = filter;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+            
+            let filteredClients = allClients;
+            
+            switch(filter) {
+                case 'newsletter':
+                    filteredClients = allClients.filter(c => c.newsletter);
+                    break;
+                case 'vip':
+                    filteredClients = allClients.filter(c => c.type === 'vip');
+                    break;
+                case 'with-orders':
+                    filteredClients = allClients.filter(c => c.hasOrders);
+                    break;
+                case 'all':
+                default:
+                    filteredClients = allClients;
+            }
+            
+            displayClients(filteredClients);
+            updateRecipientsCounter();
+        }
+
+        function displayClients(clients) {
+            const container = document.getElementById('clientsList');
+            
+            if (clients.length === 0) {
+                container.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">Aucun client trouvé</p>';
+                return;
+            }
+            
+            container.innerHTML = clients.map(client => `
+                <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 5px; font-size: 13px; cursor: pointer; ${selectedRecipients.includes(client.id) ? 'background: var(--bg-primary); border-color: var(--primary);' : ''}" onclick="toggleClient(${client.id})">
+                    <div style="font-weight: 600;">${client.name}</div>
+                    <div style="color: var(--text-secondary); font-size: 11px;">${client.email}</div>
+                    <div style="margin-top: 4px;">
+                        ${client.type === 'vip' ? '<span style="background: #fbbf24; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">VIP</span>' : ''}
+                        ${client.newsletter ? '<span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">Newsletter</span>' : ''}
+                        ${selectedRecipients.includes(client.id) ? '<span style="background: var(--primary); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">✓</span>' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function searchClients() {
+            const query = document.getElementById('clientSearch').value.toLowerCase();
+            const filtered = allClients.filter(client => 
+                client.name.toLowerCase().includes(query) || 
+                client.email.toLowerCase().includes(query)
+            );
+            displayClients(filtered);
+        }
+
+        function toggleClient(clientId) {
+            const index = selectedRecipients.indexOf(clientId);
+            if (index > -1) {
+                selectedRecipients.splice(index, 1);
+            } else {
+                selectedRecipients.push(clientId);
+            }
+            updateRecipientsCounter();
+            displayClients(allClients.filter(c => {
+                switch(currentFilter) {
+                    case 'newsletter': return c.newsletter;
+                    case 'vip': return c.type === 'vip';
+                    case 'with-orders': return c.hasOrders;
+                    default: return true;
+                }
+            }));
+        }
+
+        function updateRecipientsCounter() {
+            const counter = document.getElementById('recipientsCounter');
+            const count = selectedRecipients.length > 0 ? selectedRecipients.length : 
+                allClients.filter(c => {
+                    switch(currentFilter) {
+                        case 'newsletter': return c.newsletter;
+                        case 'vip': return c.type === 'vip';
+                        case 'with-orders': return c.hasOrders;
+                        default: return true;
+                    }
+                }).length;
+            
+            counter.innerHTML = `<i class="fas fa-envelope"></i> ${count} destinataires sélectionnés`;
+        }
+
+        function insertVariable(variable) {
+            const selection = window.getSelection();
+            if (selection.rangeCount > 0) {
+                const range = selection.getRangeAt(0);
+                const textNode = document.createTextNode(variable);
+                range.deleteContents();
+                range.insertNode(textNode);
+                range.setStartAfter(textNode);
+                range.setEndAfter(textNode);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } else {
+                // Si pas de sélection, insérer à la fin du contenu
+                const content = document.getElementById('emailContent');
+                const lastElement = content.lastElementChild;
+                if (lastElement && lastElement.contentEditable === 'true') {
+                    lastElement.innerHTML += variable;
+                }
+            }
+        }
+
+        // Actions principales
+        async function saveAsDraft() {
+            const campaignData = {
+                name: document.getElementById('campaignName').value || 'Brouillon sans nom',
+                subject: document.getElementById('emailSubject').value,
+                content: document.getElementById('emailContent').innerHTML,
+                preheader: document.getElementById('emailPreheader').value,
+                fromName: document.getElementById('senderName').value,
+                template: currentTemplate,
+                status: 'draft'
+            };
+            
+            try {
+                const response = await fetch('/admin/emails/campaigns/draft', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(campaignData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('✅ Brouillon sauvegardé', 'success');
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
                 }
             } catch (error) {
-                console.error('❌ Erreur chargement bijoux:', error);
+                console.error('Erreur sauvegarde:', error);
+                showNotification('❌ Erreur lors de la sauvegarde', 'error');
             }
         }
 
-        function createJewelElement(jewel) {
-            const div = document.createElement('div');
-            div.className = 'jewel-item';
-            div.innerHTML = `
-                <img src="${jewel.image}" alt="${jewel.name}" class="jewel-image" onerror="this.src='/images/placeholder-image.jpg'">
-                <div class="jewel-name">${jewel.name}</div>
-                <div class="jewel-price">${jewel.price}€</div>
-            `;
+        async function sendTest() {
+            const email = prompt('Adresse email pour le test :');
+            if (!email) return;
             
-            div.addEventListener('click', function() {
-                insertJewelInEmail(jewel);
-            });
+            const campaignData = {
+                email: email,
+                subject: document.getElementById('emailSubject').value,
+                content: document.getElementById('emailContent').innerHTML,
+                template: currentTemplate
+            };
             
-            return div;
-        }
-
-        function insertJewelInEmail(jewel) {
-            if (!quill) return;
-            
-            const jewelHtml = `
-                <div style="border: 1px solid #e5e7eb; border-radius: 8px; padding: 15px; margin: 10px 0; text-align: center;">
-                    <img src="${jewel.image}" alt="${jewel.name}" style="max-width: 200px; height: auto; border-radius: 6px;">
-                    <h3 style="margin: 10px 0; color: #1f2937;">${jewel.name}</h3>
-                    <p style="font-size: 1.2rem; font-weight: 600; color: #6366f1;">${jewel.price}€</p>
-                    <a href="${process.env.BASE_URL || 'http://localhost:3000'}${jewel.url}" style="display: inline-block; background: #6366f1; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px; margin-top: 10px;">Voir le produit</a>
-                </div>
-            `;
-            
-            const selection = quill.getSelection();
-            const index = selection ? selection.index : quill.getLength();
-            
-            quill.clipboard.dangerouslyPasteHTML(index, jewelHtml);
-        }
-
-        // ==========================================
-        // 👁️ APERÇU EN TEMPS RÉEL
-        // ==========================================
-        function updatePreview() {
-            const subject = document.getElementById('emailSubject').value;
-            const preheader = document.getElementById('emailPreheader').value;
-            const content = quill ? quill.root.innerHTML : '';
-
-            const previewElement = document.getElementById('emailPreview');
-            
-            if (!subject && !content) {
-                previewElement.innerHTML = `
-                    <p style="text-align: center; color: var(--gray-medium); padding: 40px;">
-                        Saisissez du contenu pour voir l'aperçu
-                    </p>
-                `;
-                return;
-            }
-
-            // Remplacer les variables par des données de test
-            const testContent = content
-                .replace(/\{\{first_name\}\}/g, 'Marie')
-                .replace(/\{\{last_name\}\}/g, 'Dupont')
-                .replace(/\{\{email\}\}/g, 'marie.dupont@example.com')
-                .replace(/\{\{company_name\}\}/g, 'CrystosJewel')
-                .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'))
-                .replace(/\{\{unsubscribe_url\}\}/g, '#');
-
-            previewElement.innerHTML = `
-                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                    <div style="background: #f8fafc; padding: 20px; border-radius: 8px 8px 0 0;">
-                        <h2 style="margin: 0; color: #1f2937;">${subject || 'Sujet de l\'email'}</h2>
-                        ${preheader ? `<p style="margin: 5px 0 0 0; color: #6b7280;">${preheader}</p>` : ''}
-                    </div>
-                    <div style="background: white; padding: 30px; border-radius: 0 0 8px 8px; border: 1px solid #e5e7eb;">
-                        ${testContent}
-                    </div>
-                </div>
-            `;
-        }
-
-        // ==========================================
-        // 💾 ACTIONS PRINCIPALES
-        // ==========================================
-        async function saveDraft() {
-            const emailData = getEmailData();
-            
-            if (!emailData.subject) {
-                showAlert('Veuillez saisir un sujet', 'error');
-                return;
-            }
-
-            showLoading(true);
-
             try {
+                showNotification('📤 Envoi du test en cours...', 'info');
+                
                 const response = await fetch('/admin/emails/campaigns/test', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        ...emailData,
-                        testEmail: testEmail
-                    })
+                    body: JSON.stringify(campaignData)
                 });
-
-                const result = await response.json();
                 
-                if (result.success) {
-                    showAlert(`Email de test envoyé à ${testEmail}`, 'success');
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification(`✅ Test envoyé à ${email}`, 'success');
                 } else {
-                    showAlert(result.message || 'Erreur lors de l\'envoi du test', 'error');
+                    showNotification(`❌ ${data.message}`, 'error');
                 }
             } catch (error) {
-                console.error('❌ Erreur envoi test:', error);
-                showAlert('Erreur lors de l\'envoi du test', 'error');
-            } finally {
-                showLoading(false);
+                console.error('Erreur test:', error);
+                showNotification('❌ Erreur lors de l\'envoi du test', 'error');
+            }
+        }
+
+        function previewEmail() {
+            const modal = document.createElement('div');
+            modal.id = 'previewModal';
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8); z-index: 10000; padding: 20px;
+                display: flex; align-items: center; justify-content: center;
+            `;
+            
+            // Cloner l'email sans les toolbars
+            const emailClone = document.getElementById('emailPreview').cloneNode(true);
+            emailClone.querySelectorAll('.element-toolbar').forEach(toolbar => toolbar.remove());
+            emailClone.querySelectorAll('.editable-element').forEach(el => {
+                el.contentEditable = false;
+                el.style.outline = 'none';
+            });
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; max-width: 800px; margin: 0 auto; max-height: 90vh; overflow-y: auto; width: 100%;">
+                    <div style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                        <h3>🔍 Aperçu de l'email</h3>
+                        <button onclick="closePreview()" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+                    </div>
+                    <div style="padding: 20px;">
+                        ${emailClone.outerHTML}
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        function closePreview() {
+            const modal = document.getElementById('previewModal');
+            if (modal) {
+                modal.remove();
             }
         }
 
         async function sendCampaign() {
-            const emailData = getEmailData();
+            if (!confirm('🚀 Voulez-vous vraiment envoyer cette campagne ?')) {
+                return;
+            }
             
-            if (!emailData.subject || !emailData.content) {
-                showAlert('Veuillez remplir le sujet et le contenu', 'error');
+            const campaignData = {
+                name: document.getElementById('campaignName').value || 'Campagne sans nom',
+                subject: document.getElementById('emailSubject').value,
+                content: document.getElementById('emailContent').innerHTML,
+                preheader: document.getElementById('emailPreheader').value,
+                fromName: document.getElementById('senderName').value,
+                template: currentTemplate,
+                recipientType: currentFilter,
+                selectedCustomerIds: selectedRecipients
+            };
+            
+            if (!campaignData.subject) {
+                showNotification('❌ Le sujet est requis', 'error');
                 return;
             }
-
-            if (!confirm(`Êtes-vous sûr de vouloir envoyer cette campagne à tous les ${currentRecipients === 'all' ? 'contacts' : currentRecipients} ?`)) {
-                return;
-            }
-
-            showLoading(true);
-
+            
             try {
+                showNotification('🚀 Envoi de la campagne en cours...', 'info');
+                
                 const response = await fetch('/admin/emails/campaigns/send', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({
-                        ...emailData,
-                        recipients: currentRecipients
-                    })
+                    body: JSON.stringify(campaignData)
                 });
-
-                const result = await response.json();
                 
-                if (result.success) {
-                    showAlert(`Campagne envoyée avec succès ! ${result.stats.sent}/${result.stats.total} emails envoyés`, 'success');
-                    
-                    // Réinitialiser le formulaire
-                    document.getElementById('emailSubject').value = '';
-                    document.getElementById('emailPreheader').value = '';
-                    quill.setContents([]);
-                    updatePreview();
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin/emails/history';
+                    }, 3000);
                 } else {
-                    showAlert(result.message || 'Erreur lors de l\'envoi de la campagne', 'error');
+                    showNotification(`❌ ${data.message}`, 'error');
                 }
             } catch (error) {
-                console.error('❌ Erreur envoi campagne:', error);
-                showAlert('Erreur lors de l\'envoi de la campagne', 'error');
-            } finally {
-                showLoading(false);
+                console.error('Erreur envoi:', error);
+                showNotification('❌ Erreur lors de l\'envoi', 'error');
             }
         }
 
-        function showPreview() {
-            updatePreview();
-            document.getElementById('previewPanel').classList.add('active');
-        }
+        function showNotification(message, type = 'info') {
+            const existing = document.querySelectorAll('.notification');
+            existing.forEach(notif => notif.remove());
 
-        function closePreview() {
-            document.getElementById('previewPanel').classList.remove('active');
-        }
-
-        async function loadTemplate(templateId) {
-            try {
-                showLoading(true);
-                
-                // Simuler le chargement d'un template
-                // À remplacer par un vrai appel API
-                showAlert('Fonctionnalité de chargement de template à implémenter', 'info');
-                
-            } catch (error) {
-                console.error('❌ Erreur chargement template:', error);
-                showAlert('Erreur lors du chargement du template', 'error');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        // ==========================================
-        // 🛠️ FONCTIONS UTILITAIRES
-        // ==========================================
-        function getEmailData() {
-            return {
-                subject: document.getElementById('emailSubject').value,
-                preheader: document.getElementById('emailPreheader').value,
-                content: quill ? quill.root.innerHTML : '',
-                recipients: currentRecipients
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 99999;
+                max-width: 350px;
+                animation: slideIn 0.3s ease;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            `;
+            
+            const bgColors = {
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
             };
-        }
-
-        function showAlert(message, type = 'info') {
-            // Supprimer les alertes existantes
-            const existingAlerts = document.querySelectorAll('.alert');
-            existingAlerts.forEach(alert => alert.remove());
-
-            // Créer la nouvelle alerte
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type}`;
-            alert.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
-                ${message}
+            
+            notification.style.background = bgColors[type] || bgColors.info;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px; padding: 0;">×</button>
+                </div>
             `;
 
-            // Insérer l'alerte
-            const container = document.querySelector('.editor-content');
-            container.insertBefore(alert, container.firstChild);
+            document.body.appendChild(notification);
 
-            // Supprimer automatiquement après 5 secondes
             setTimeout(() => {
-                if (alert.parentNode) {
-                    alert.remove();
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideOut 0.3s ease forwards';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.remove();
+                        }
+                    }, 300);
                 }
-            }, 5000);
+            }, 4000);
         }
 
-        function showLoading(show) {
-            const loading = document.getElementById('loadingIndicator');
-            const buttons = document.querySelectorAll('.action-buttons .btn');
-            
-            if (show) {
-                loading.classList.add('active');
-                buttons.forEach(btn => btn.disabled = true);
-            } else {
-                loading.classList.remove('active');
-                buttons.forEach(btn => btn.disabled = false);
+        // Raccourcis clavier
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 's':
+                        e.preventDefault();
+                        saveAsDraft();
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        sendCampaign();
+                        break;
+                    case 't':
+                        e.preventDefault();
+                        sendTest();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        previewEmail();
+                        break;
+                }
             }
-        }
-
-        // ==========================================
-        // 📱 GESTION RESPONSIVE
-        // ==========================================
-        function handleResize() {
-            const isMobile = window.innerWidth <= 1200;
-            const sidebar = document.querySelector('.sidebar');
-            const mainGrid = document.querySelector('.main-grid');
             
-            if (isMobile) {
-                mainGrid.style.gridTemplateColumns = '1fr';
-            } else {
-                mainGrid.style.gridTemplateColumns = '1fr 350px';
+            if (e.key === 'Escape') {
+                closePreview();
             }
-        }
+        });
 
-        window.addEventListener('resize', handleResize);
-        handleResize(); // Appel initial
+        // CSS pour les animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+
+        console.log('✏️ Éditeur d\'emails CrystosJewel avancé initialisé');
+        console.log('🎯 Raccourcis disponibles:');
+        console.log('   Ctrl+S : Sauvegarder brouillon');
+        console.log('   Ctrl+Enter : Envoyer campagne');
+        console.log('   Ctrl+T : Envoyer test');
+        console.log('   Ctrl+P : Prévisualiser');
+        console.log('   Échap : Fermer prévisualisation');
+        console.log('🎨 Fonctionnalités:');
+        console.log('   - Drag & Drop des blocs');
+        console.log('   - Édition inline des éléments');
+        console.log('   - Outils de design avancés');
+        console.log('   - Upload d\'images par glisser-déposer');
+        console.log('   - Templates personnalisables');
     </script>
 </body>
 </html>

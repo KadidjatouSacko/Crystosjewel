@@ -23,7 +23,6 @@ console.log('🔍 Test import emailManagementController:', emailManagementContro
 console.log('🔍 showAdminPage existe?', typeof emailManagementController?.showAdminPage);
 import { adminEmailsController } from './controlleurs/adminEmailsController.js';
 import { mainControlleur } from "./controlleurs/mainControlleur.js";
-import emailController
 import{ customerManagementController}from "./controlleurs/customerManagementController.js";
 import { Op } from 'sequelize';
 import { baguesControlleur } from "./controlleurs/baguesControlleur.js";
