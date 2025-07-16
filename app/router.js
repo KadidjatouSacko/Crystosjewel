@@ -23,6 +23,7 @@ console.log('🔍 Test import emailManagementController:', emailManagementContro
 console.log('🔍 showAdminPage existe?', typeof emailManagementController?.showAdminPage);
 import { adminEmailsController } from './controlleurs/adminEmailsController.js';
 import { mainControlleur } from "./controlleurs/mainControlleur.js";
+import emailController
 import{ customerManagementController}from "./controlleurs/customerManagementController.js";
 import { Op } from 'sequelize';
 import { baguesControlleur } from "./controlleurs/baguesControlleur.js";
@@ -294,6 +295,7 @@ function finalParseJewelForm(req, res, next) {
   });
 }
 
+
 // 2. MIDDLEWARE personnalisé pour parser le formulaire
 function parseJewelForm(req, res, next) {
   console.log('🔍 === DÉBUT PARSING FORMULAIRE SIMPLIFIÉ ===');
@@ -353,7 +355,32 @@ function parseJewelForm(req, res, next) {
   });
 }
 
+// Configuration multer pour les uploads d'images dans les emails
+const emailStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+        cb(null, 'public/uploads/emails/');
+    },
+    filename: function (req, file, cb) {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        cb(null, 'email-' + uniqueSuffix + path.extname(file.originalname));
+    }
+});
 
+const emailUpload = multer({ 
+    storage: emailStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: function (req, file, cb) {
+        const allowedTypes = /jpeg|jpg|png|gif|webp/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+        
+        if (mimetype && extname) {
+            return cb(null, true);
+        } else {
+            cb(new Error('Seules les images sont autorisées'));
+        }
+    }
+});
 
 
 
@@ -3531,266 +3558,24 @@ router.get('/admin/emails/history', isAdmin, emailManagementController.showEmail
 router.get('/admin/api/customers', isAdmin, emailManagementController.getCustomers);
 router.get('/admin/api/campaigns/history', isAdmin, emailManagementController.getCampaignHistory);
 
-// Page éditeur d'emails
-router.get('/admin/email-editor', isAdmin, async (req, res) => {
-    try {
-        // Récupérer les clients pour la liste des destinataires
-        const customers = await User.findAll({
-            attributes: ['id', 'firstName', 'lastName', 'email', 'newsletter', 'created_at'],
-            where: {
-                email: {
-                    [Op.not]: null
-                }
-            },
-            order: [['created_at', 'DESC']]
-        });
+// **Page principale de l'éditeur d'emails**
+router.get('/admin/email-editor', isAdmin, emailController.showEmailEditor);
 
-        // Compter les commandes par client
-        const customersWithOrders = await Promise.all(
-            customers.map(async (customer) => {
-                const orderCount = await Order.count({
-                    where: { customer_email: customer.email }
-                });
-                
-                return {
-                    id: customer.id,
-                    name: `${customer.firstName} ${customer.lastName}`,
-                    email: customer.email,
-                    newsletter: customer.newsletter || false,
-                    hasOrders: orderCount > 0,
-                    type: orderCount >= 3 ? 'vip' : 'regular'
-                };
-            })
-        );
+// **Gestion des brouillons**
+router.post('/admin/emails/campaigns/draft', isAdmin, emailController.saveDraft);
 
-        res.render('admin/email-editor', {
-            title: 'Éditeur d\'Emails - CrystosJewel',
-            customers: customersWithOrders,
-            user: req.session.user
-        });
-    } catch (error) {
-        console.error('❌ Erreur chargement éditeur emails:', error);
-        res.status(500).render('error', { 
-            message: 'Erreur lors du chargement de l\'éditeur d\'emails',
-            error: error 
-        });
-    }
-});
+// **Envoi d'emails de test**
+router.post('/admin/emails/campaigns/test', isAdmin, emailController.sendTest);
 
-// Sauvegarder brouillon
-router.post('/admin/emails/campaigns/draft', isAdmin, async (req, res) => {
-    try {
-        const {
-            name,
-            subject,
-            content,
-            preheader,
-            fromName,
-            template
-        } = req.body;
+// **Envoi de campagnes**
+router.post('/admin/emails/campaigns/send', isAdmin, emailController.sendCampaign);
 
-        // TODO: Implémenter sauvegarde en base
-        // const draft = await EmailCampaign.create({
-        //     name,
-        //     subject,
-        //     content,
-        //     preheader,
-        //     from_name: fromName,
-        //     template,
-        //     status: 'draft',
-        //     created_by: req.session.user.id
-        // });
+// **Historique des campagnes**
+router.get('/admin/emails/history', isAdmin, emailController.showHistory);
 
-        console.log('💾 Brouillon sauvegardé:', { name, subject });
+// **Statistiques des emails**
+router.get('/admin/api/emails/stats', isAdmin, emailController.getEmailStats);
 
-        res.json({
-            success: true,
-            message: 'Brouillon sauvegardé avec succès'
-        });
-    } catch (error) {
-        console.error('❌ Erreur sauvegarde brouillon:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de la sauvegarde'
-        });
-    }
-});
-
-// Envoyer email de test
-router.post('/admin/emails/campaigns/test', isAdmin, async (req, res) => {
-    try {
-        const { email, subject, content, template } = req.body;
-
-        if (!email || !subject) {
-            return res.status(400).json({
-                success: false,
-                message: 'Email et sujet requis'
-            });
-        }
-
-        // Utiliser le service d'email existant
-        const { sendTestEmail } = await import('./services/mailService.js');
-        
-        const result = await sendTestEmail(email, {
-            subject,
-            content,
-            template,
-            senderName: 'CrystosJewel'
-        });
-
-        if (result.success) {
-            res.json({
-                success: true,
-                message: `Email de test envoyé avec succès à ${email}`
-            });
-        } else {
-            res.status(500).json({
-                success: false,
-                message: result.error || 'Erreur lors de l\'envoi du test'
-            });
-        }
-    } catch (error) {
-        console.error('❌ Erreur envoi test:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de l\'envoi du test'
-        });
-    }
-});
-
-// Envoyer campagne email
-router.post('/admin/emails/campaigns/send', isAdmin, async (req, res) => {
-    try {
-        const {
-            name,
-            subject,
-            content,
-            preheader,
-            fromName,
-            template,
-            recipientType,
-            selectedCustomerIds
-        } = req.body;
-
-        if (!subject || !content) {
-            return res.status(400).json({
-                success: false,
-                message: 'Sujet et contenu requis'
-            });
-        }
-
-        // Déterminer les destinataires
-        let whereClause = {};
-        
-        switch (recipientType) {
-            case 'newsletter':
-                whereClause.newsletter = true;
-                break;
-            case 'vip':
-                // Clients avec 3+ commandes
-                const vipCustomers = await Order.findAll({
-                    attributes: ['customer_email'],
-                    group: ['customer_email'],
-                    having: sequelize.literal('COUNT(*) >= 3')
-                });
-                whereClause.email = {
-                    [Op.in]: vipCustomers.map(c => c.customer_email)
-                };
-                break;
-            case 'with-orders':
-                const orderCustomers = await Order.findAll({
-                    attributes: ['customer_email'],
-                    group: ['customer_email']
-                });
-                whereClause.email = {
-                    [Op.in]: orderCustomers.map(c => c.customer_email)
-                };
-                break;
-            case 'all':
-            default:
-                // Tous les clients avec email
-                whereClause.email = { [Op.not]: null };
-        }
-
-        // Si des clients spécifiques sont sélectionnés
-        if (selectedCustomerIds && selectedCustomerIds.length > 0) {
-            whereClause.id = { [Op.in]: selectedCustomerIds };
-        }
-
-        const recipients = await User.findAll({
-            where: whereClause,
-            attributes: ['id', 'firstName', 'lastName', 'email']
-        });
-
-        if (recipients.length === 0) {
-            return res.status(400).json({
-                success: false,
-                message: 'Aucun destinataire trouvé'
-            });
-        }
-
-        // Envoyer les emails par batch
-        const { sendBulkEmail } = await import('./services/mailService.js');
-        
-        const campaignData = {
-            name,
-            subject,
-            content,
-            preheader,
-            fromName,
-            template
-        };
-
-        const result = await sendBulkEmail(recipients, campaignData);
-
-        // TODO: Sauvegarder la campagne en base
-        // await EmailCampaign.create({
-        //     name,
-        //     subject,
-        //     content,
-        //     preheader,
-        //     from_name: fromName,
-        //     template,
-        //     status: 'sent',
-        //     sent_count: result.sentCount,
-        //     created_by: req.session.user.id
-        // });
-
-        res.json({
-            success: true,
-            message: `Campagne envoyée avec succès à ${result.sentCount} destinataires`,
-            sentCount: result.sentCount,
-            errorCount: result.errorCount
-        });
-
-    } catch (error) {
-        console.error('❌ Erreur envoi campagne:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de l\'envoi de la campagne'
-        });
-    }
-});
-
-// Historique des campagnes
-router.get('/admin/emails/history', isAdmin, async (req, res) => {
-    try {
-        // TODO: Récupérer depuis la base
-        const campaigns = []; // await EmailCampaign.findAll({ order: [['created_at', 'DESC']] });
-
-        res.render('admin/email-history', {
-            title: 'Historique des Emails - CrystosJewel',
-            campaigns,
-            user: req.session.user
-        });
-    } catch (error) {
-        console.error('❌ Erreur chargement historique:', error);
-        res.status(500).render('error', { 
-            message: 'Erreur lors du chargement de l\'historique',
-            error: error 
-        });
-    }
-});
 
 
 // À ajouter dans app/router.js

@@ -1,495 +1,783 @@
-<!-- app/views/admin/email-history.ejs -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>📧 <%= title %></title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <title><%= title %> | CrystosJewel Admin</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --primary: #d89ab3;
-            --primary-dark: #b794a8;
-            --secondary: #8b5cf6;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --info: #3b82f6;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --bg-primary: #f8fafc;
-            --bg-secondary: #ffffff;
-            --border: #e2e8f0;
-            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-            --radius: 8px;
+            /* Couleurs principales de votre site */
+            --rose-gold: #b76e79;
+            --rose-gold-light: #e8c2c8;
+            --rose-gold-dark: #7d4b53;
+            --rose-gold-hover: #c98490;
+            --cream: #fff8f0;
+            --dark-text: #3a3a3a;
+            --light-text: #f5f5f5;
+            
+            /* Couleurs système */
+            --success: #28a745;
+            --warning: #ffc107;
+            --danger: #dc3545;
+            --info: #17a2b8;
+            --dark: var(--dark-text);
+            --gray-light: #f9f9f9;
+            --gray-medium: #e0e0e0;
+            --white: #ffffff;
+            
+            /* Effets */
+            --border-radius: 12px;
+            --shadow: 0 4px 12px rgba(183, 110, 121, 0.1);
+            --shadow-lg: 0 6px 20px rgba(183, 110, 121, 0.15);
+            --transition: all 0.3s ease;
         }
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--cream) 0%, var(--rose-gold-light) 100%);
+            color: var(--dark);
             line-height: 1.6;
+            min-height: 100vh;
         }
 
         .container {
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
 
         .header {
-            background: var(--bg-secondary);
-            border-radius: var(--radius);
+            background: var(--white);
+            border-radius: var(--border-radius);
             padding: 30px;
             margin-bottom: 30px;
             box-shadow: var(--shadow);
-            border: 1px solid var(--border);
-        }
-
-        .header h1 {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--text-primary);
-            margin-bottom: 10px;
-        }
-
-        .header p {
-            color: var(--text-secondary);
-            font-size: 1.1rem;
-        }
-
-        .actions-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 30px;
-            gap: 20px;
         }
 
-        .search-filters {
+        .header-content h1 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--rose-gold);
+            margin-bottom: 10px;
+        }
+
+        .breadcrumb {
+            color: var(--gray-medium);
+            font-size: 0.9rem;
+        }
+
+        .breadcrumb a {
+            color: var(--rose-gold);
+            text-decoration: none;
+        }
+
+        .header-actions {
             display: flex;
             gap: 15px;
-            flex: 1;
-        }
-
-        .search-input {
-            flex: 1;
-            max-width: 300px;
-            padding: 12px 16px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            font-size: 14px;
-        }
-
-        .filter-select {
-            padding: 12px 16px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            font-size: 14px;
-            background: var(--bg-secondary);
         }
 
         .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: var(--radius);
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 8px;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
             font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
             text-decoration: none;
         }
 
         .btn-primary {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
+            background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
         }
 
         .btn-secondary {
-            background: var(--text-secondary);
-            color: white;
+            background: var(--gray-light);
+            color: var(--dark);
+            border: 2px solid #e5e7eb;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        .btn-secondary:hover {
+            background: #f1f5f9;
+            border-color: var(--rose-gold);
         }
 
-        .campaigns-grid {
+        /* Stats Cards */
+        .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
         }
 
-        .campaign-card {
-            background: var(--bg-secondary);
-            border-radius: var(--radius);
-            border: 1px solid var(--border);
-            overflow: hidden;
-            transition: all 0.3s ease;
+        .stat-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 25px;
             box-shadow: var(--shadow);
-        }
-
-        .campaign-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
-        }
-
-        .campaign-header {
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
-        }
-
-        .campaign-status {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            margin-bottom: 10px;
-        }
-
-        .status-draft {
-            background: #fef3c7;
-            color: #92400e;
-        }
-
-        .status-sent {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .status-scheduled {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-
-        .campaign-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin-bottom: 5px;
-            color: var(--text-primary);
-        }
-
-        .campaign-subject {
-            color: var(--text-secondary);
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-
-        .campaign-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: var(--text-secondary);
-        }
-
-        .campaign-body {
-            padding: 20px;
-        }
-
-        .campaign-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-
-        .stat-item {
             text-align: center;
-            padding: 10px;
-            background: var(--bg-primary);
-            border-radius: var(--radius);
+            transition: var(--transition);
         }
 
-        .stat-number {
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            color: var(--white);
             font-size: 1.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
             font-weight: 700;
-            color: var(--primary);
+            color: var(--rose-gold);
+            margin-bottom: 8px;
         }
 
         .stat-label {
-            font-size: 11px;
-            color: var(--text-secondary);
+            color: var(--gray-medium);
+            font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
 
-        .campaign-actions {
+        /* Filters */
+        .filters-section {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 25px;
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .filters-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            align-items: end;
+        }
+
+        .filter-group {
             display: flex;
-            gap: 10px;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+
+        .filter-control {
+            padding: 10px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: var(--transition);
+        }
+
+        .filter-control:focus {
+            outline: none;
+            border-color: var(--rose-gold);
+            box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.1);
+        }
+
+        /* Campaigns Grid */
+        .campaigns-section {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 30px;
+            box-shadow: var(--shadow);
+        }
+
+        .campaigns-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--gray-light);
+        }
+
+        .campaigns-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .campaigns-grid {
+            display: grid;
+            gap: 20px;
+        }
+
+        .campaign-card {
+            background: var(--gray-light);
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid transparent;
+            transition: var(--transition);
+            position: relative;
+        }
+
+        .campaign-card:hover {
+            border-color: var(--rose-gold);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .campaign-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .campaign-name {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 5px;
+        }
+
+        .campaign-date {
+            font-size: 0.85rem;
+            color: var(--gray-medium);
+        }
+
+        .campaign-status {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-sent {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .campaign-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--rose-gold);
+        }
+
+        .stat-text {
+            font-size: 0.8rem;
+            color: var(--gray-medium);
+            text-transform: uppercase;
+        }
+
+        .campaign-actions {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .campaign-card:hover .campaign-actions {
+            opacity: 1;
+        }
+
+        .action-btn {
+            background: var(--white);
+            border: 1px solid var(--gray-medium);
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
             justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-left: 5px;
         }
 
-        .btn-sm {
-            padding: 8px 12px;
-            font-size: 12px;
+        .action-btn:hover {
+            background: var(--rose-gold);
+            color: var(--white);
+            border-color: var(--rose-gold);
         }
 
-        .btn-info {
-            background: var(--info);
-            color: white;
-        }
-
-        .btn-warning {
-            background: var(--warning);
-            color: white;
-        }
-
-        .btn-danger {
-            background: var(--danger);
-            color: white;
-        }
-
+        /* Empty State */
         .empty-state {
             text-align: center;
             padding: 60px 20px;
-            background: var(--bg-secondary);
-            border-radius: var(--radius);
-            border: 1px solid var(--border);
+            color: var(--gray-medium);
         }
 
         .empty-icon {
             font-size: 4rem;
-            color: var(--text-secondary);
             margin-bottom: 20px;
+            color: var(--rose-gold-light);
         }
 
         .empty-title {
-            font-size: 1.5rem;
+            font-size: 1.3rem;
             font-weight: 600;
-            color: var(--text-primary);
             margin-bottom: 10px;
+            color: var(--dark);
         }
 
-        .empty-description {
-            color: var(--text-secondary);
-            margin-bottom: 30px;
+        .empty-message {
+            font-size: 1rem;
+            margin-bottom: 25px;
+        }
+
+        /* Success Rate Bar */
+        .success-rate-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .success-rate-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--rose-gold) 0%, var(--success) 100%);
+            transition: width 0.3s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .header {
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: center;
+            }
         }
 
         @media (max-width: 768px) {
-            .actions-bar {
-                flex-direction: column;
-                align-items: stretch;
+            .container {
+                padding: 10px;
             }
 
-            .search-filters {
-                flex-direction: column;
+            .header {
+                padding: 20px;
             }
 
-            .campaigns-grid {
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .filters-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .campaigns-section {
+                padding: 20px;
+            }
+
+            .campaign-card {
+                padding: 20px;
             }
 
             .campaign-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-grid {
                 grid-template-columns: 1fr;
+            }
+
+            .stat-card {
+                padding: 20px;
+            }
+
+            .campaign-actions {
+                position: relative;
+                top: auto;
+                right: auto;
+                opacity: 1;
+                margin-top: 15px;
+                text-align: center;
             }
         }
     </style>
 </head>
+
 <body>
+    <!-- Navigation -->
+    <%- include('../partials/navbarre.ejs') %>
+
     <div class="container">
+        <!-- Header -->
         <div class="header">
-            <h1><i class="fas fa-history"></i> Historique des Emails</h1>
-            <p>Gérez et consultez toutes vos campagnes d'emailing</p>
-        </div>
-
-        <div class="actions-bar">
-            <div class="search-filters">
-                <input type="text" class="search-input" placeholder="Rechercher une campagne..." id="searchInput">
-                <select class="filter-select" id="statusFilter">
-                    <option value="">Tous les statuts</option>
-                    <option value="draft">Brouillons</option>
-                    <option value="sent">Envoyées</option>
-                    <option value="scheduled">Programmées</option>
-                </select>
+            <div class="header-content">
+                <h1>
+                    <i class="fas fa-history"></i>
+                    <%= title %>
+                </h1>
+                <div class="breadcrumb">
+                    <a href="/admin">Administration</a> › 
+                    <a href="/admin/emails">Emails</a> › 
+                    Historique
+                </div>
             </div>
-            
-            <a href="/admin/email-editor" class="btn btn-primary">
-                <i class="fas fa-plus"></i>
-                Nouvelle campagne
-            </a>
+            <div class="header-actions">
+                <a href="/admin/email-editor" class="btn btn-primary">
+                    <i class="fas fa-plus"></i>
+                    Nouvelle campagne
+                </a>
+                <button class="btn btn-secondary" onclick="exportHistory()">
+                    <i class="fas fa-download"></i>
+                    Exporter
+                </button>
+            </div>
         </div>
 
-        <% if (campaigns && campaigns.length > 0) { %>
-            <div class="campaigns-grid" id="campaignsGrid">
-                <% campaigns.forEach(campaign => { %>
-                    <div class="campaign-card" data-status="<%= campaign.status %>" data-name="<%= campaign.name.toLowerCase() %>">
-                        <div class="campaign-header">
-                            <span class="campaign-status status-<%= campaign.status %>">
-                                <% if (campaign.status === 'draft') { %>
-                                    📝 Brouillon
-                                <% } else if (campaign.status === 'sent') { %>
-                                    ✅ Envoyée
-                                <% } else if (campaign.status === 'scheduled') { %>
-                                    ⏰ Programmée
-                                <% } %>
-                            </span>
-                            
-                            <h3 class="campaign-title"><%= campaign.name %></h3>
-                            <p class="campaign-subject"><%= campaign.subject %></p>
-                            
-                            <div class="campaign-meta">
-                                <span>📅 <%= new Date(campaign.created_at).toLocaleDateString('fr-FR') %></span>
-                                <span>👤 <%= campaign.created_by || 'Admin' %></span>
-                            </div>
-                        </div>
+        <!-- Statistiques -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-envelope"></i>
+                </div>
+                <div class="stat-value"><%= stats.total || 0 %></div>
+                <div class="stat-label">Campagnes totales</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-paper-plane"></i>
+                </div>
+                <div class="stat-value"><%= stats.sent || 0 %></div>
+                <div class="stat-label">Emails envoyés</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="stat-value"><%= stats.failed || 0 %></div>
+                <div class="stat-label">Échecs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">
+                    <i class="fas fa-chart-line"></i>
+                </div>
+                <div class="stat-value"><%= stats.successRate || 0 %>%</div>
+                <div class="stat-label">Taux de succès</div>
+            </div>
+        </div>
 
-                        <div class="campaign-body">
-                            <% if (campaign.status === 'sent') { %>
-                                <div class="campaign-stats">
-                                    <div class="stat-item">
-                                        <div class="stat-number"><%= campaign.sent_count || 0 %></div>
-                                        <div class="stat-label">Envoyés</div>
+        <!-- Filtres -->
+        <div class="filters-section">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label class="filter-label">Rechercher une campagne</label>
+                    <input type="text" id="searchInput" class="filter-control" placeholder="Nom de la campagne...">
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Statut</label>
+                    <select id="statusFilter" class="filter-control">
+                        <option value="">Tous les statuts</option>
+                        <option value="sent">Envoyé</option>
+                        <option value="failed">Échec</option>
+                        <option value="pending">En attente</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Type</label>
+                    <select id="typeFilter" class="filter-control">
+                        <option value="">Tous les types</option>
+                        <option value="campaign">Campagne</option>
+                        <option value="promotional">Promotionnel</option>
+                        <option value="newsletter">Newsletter</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label class="filter-label">Période</label>
+                    <select id="periodFilter" class="filter-control">
+                        <option value="">Toute période</option>
+                        <option value="today">Aujourd'hui</option>
+                        <option value="week">Cette semaine</option>
+                        <option value="month">Ce mois</option>
+                        <option value="quarter">Ce trimestre</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Liste des campagnes -->
+        <div class="campaigns-section">
+            <div class="campaigns-header">
+                <div class="campaigns-title">
+                    <i class="fas fa-list"></i>
+                    Campagnes récentes
+                </div>
+                <div>
+                    <span id="campaignsCount"><%= campaigns ? campaigns.length : 0 %></span> campagne(s)
+                </div>
+            </div>
+
+            <div class="campaigns-grid" id="campaignsGrid">
+                <% if (campaigns && campaigns.length > 0) { %>
+                    <% campaigns.forEach(campaign => { %>
+                        <div class="campaign-card" data-status="<%= campaign.status %>" data-name="<%= campaign.name.toLowerCase() %>">
+                            <div class="campaign-header">
+                                <div>
+                                    <div class="campaign-name"><%= campaign.name %></div>
+                                    <div class="campaign-date">
+                                        <%= new Date(campaign.created_at).toLocaleDateString('fr-FR', { 
+                                            day: '2-digit', 
+                                            month: '2-digit', 
+                                            year: 'numeric',
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                        }) %>
                                     </div>
-                                    <div class="stat-item">
-                                        <div class="stat-number"><%= campaign.open_count || 0 %></div>
-                                        <div class="stat-label">Ouverts</div>
-                                    </div>
-                                    <div class="stat-item">
-                                        <div class="stat-number"><%= campaign.click_count || 0 %></div>
-                                        <div class="stat-label">Clics</div>
-                                    </div>
+                                </div>
+                                <div class="campaign-status status-<%= campaign.status %>">
+                                    <%= campaign.status === 'sent' ? 'Envoyé' : 
+                                        campaign.status === 'failed' ? 'Échec' : 'En attente' %>
+                                </div>
+                            </div>
+
+                            <div class="campaign-stats">
+                                <div class="stat-item">
+                                    <div class="stat-number"><%= campaign.recipients || 0 %></div>
+                                    <div class="stat-text">Destinataires</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number"><%= campaign.sent || 0 %></div>
+                                    <div class="stat-text">Envoyés</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number"><%= campaign.failed || 0 %></div>
+                                    <div class="stat-text">Échecs</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-number"><%= campaign.success_rate || 0 %>%</div>
+                                    <div class="stat-text">Succès</div>
+                                </div>
+                            </div>
+
+                            <% if (campaign.success_rate !== undefined) { %>
+                                <div class="success-rate-bar">
+                                    <div class="success-rate-fill" style="width: <%= campaign.success_rate %>%"></div>
                                 </div>
                             <% } %>
 
                             <div class="campaign-actions">
-                                <% if (campaign.status === 'draft') { %>
-                                    <button class="btn btn-sm btn-warning" onclick="editCampaign('<%= campaign.id %>')">
-                                        <i class="fas fa-edit"></i>
-                                        Modifier
-                                    </button>
-                                    <button class="btn btn-sm btn-info" onclick="sendCampaign('<%= campaign.id %>')">
-                                        <i class="fas fa-paper-plane"></i>
-                                        Envoyer
-                                    </button>
-                                <% } else { %>
-                                    <button class="btn btn-sm btn-info" onclick="viewCampaign('<%= campaign.id %>')">
-                                        <i class="fas fa-eye"></i>
-                                        Voir
-                                    </button>
-                                    <button class="btn btn-sm btn-secondary" onclick="duplicateCampaign('<%= campaign.id %>')">
-                                        <i class="fas fa-copy"></i>
-                                        Dupliquer
-                                    </button>
-                                <% } %>
-                                
-                                <button class="btn btn-sm btn-danger" onclick="deleteCampaign('<%= campaign.id %>')">
+                                <button class="action-btn" onclick="previewCampaign('<%= campaign.id %>')" title="Aperçu">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn" onclick="duplicateCampaign('<%= campaign.id %>')" title="Dupliquer">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button class="action-btn" onclick="deleteCampaign('<%= campaign.id %>')" title="Supprimer">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
                         </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="empty-state">
+                        <div class="empty-icon">
+                            <i class="fas fa-envelope-open"></i>
+                        </div>
+                        <div class="empty-title">Aucune campagne trouvée</div>
+                        <div class="empty-message">
+                            Commencez par créer votre première campagne email pour voir l'historique ici.
+                        </div>
+                        <a href="/admin/email-editor" class="btn btn-primary">
+                            <i class="fas fa-plus"></i>
+                            Créer une campagne
+                        </a>
                     </div>
-                <% }) %>
+                <% } %>
             </div>
-        <% } else { %>
-            <div class="empty-state">
-                <div class="empty-icon">
-                    <i class="fas fa-envelope-open"></i>
-                </div>
-                <h2 class="empty-title">Aucune campagne email</h2>
-                <p class="empty-description">
-                    Vous n'avez pas encore créé de campagne d'emailing.<br>
-                    Commencez dès maintenant à créer des emails personnalisés pour vos clients.
-                </p>
-                <a href="/admin/email-editor" class="btn btn-primary">
-                    <i class="fas fa-plus"></i>
-                    Créer ma première campagne
-                </a>
-            </div>
-        <% } %>
+        </div>
     </div>
 
     <script>
-        // Filtrage et recherche
+        // ==========================================
+        // 📧 HISTORIQUE DES EMAILS - JAVASCRIPT
+        // ==========================================
+
         document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            const statusFilter = document.getElementById('statusFilter');
-            const campaignsGrid = document.getElementById('campaignsGrid');
-
-            function filterCampaigns() {
-                const searchTerm = searchInput.value.toLowerCase();
-                const statusValue = statusFilter.value;
-                const cards = campaignsGrid.querySelectorAll('.campaign-card');
-
-                cards.forEach(card => {
-                    const name = card.dataset.name;
-                    const status = card.dataset.status;
-                    
-                    const matchesSearch = !searchTerm || name.includes(searchTerm);
-                    const matchesStatus = !statusValue || status === statusValue;
-                    
-                    if (matchesSearch && matchesStatus) {
-                        card.style.display = 'block';
-                    } else {
-                        card.style.display = 'none';
-                    }
-                });
-            }
-
-            searchInput.addEventListener('input', filterCampaigns);
-            statusFilter.addEventListener('change', filterCampaigns);
+            console.log('📧 Initialisation historique emails');
+            
+            initializeFilters();
+            initializeSearch();
         });
 
-        // Actions sur les campagnes
-        function editCampaign(campaignId) {
-            window.location.href = `/admin/email-editor?edit=${campaignId}`;
+        // ==========================================
+        // 🔍 GESTION DES FILTRES
+        // ==========================================
+        function initializeFilters() {
+            const statusFilter = document.getElementById('statusFilter');
+            const typeFilter = document.getElementById('typeFilter');
+            const periodFilter = document.getElementById('periodFilter');
+
+            statusFilter.addEventListener('change', applyFilters);
+            typeFilter.addEventListener('change', applyFilters);
+            periodFilter.addEventListener('change', applyFilters);
         }
 
-        function viewCampaign(campaignId) {
-            window.open(`/admin/emails/${campaignId}/preview`, '_blank');
+        function initializeSearch() {
+            const searchInput = document.getElementById('searchInput');
+            let searchTimeout;
+
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    applyFilters();
+                }, 300);
+            });
         }
 
-        async function sendCampaign(campaignId) {
-            if (!confirm('Êtes-vous sûr de vouloir envoyer cette campagne ?')) {
-                return;
-            }
+        function applyFilters() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            const typeFilter = document.getElementById('typeFilter').value;
+            const periodFilter = document.getElementById('periodFilter').value;
 
+            const campaigns = document.querySelectorAll('.campaign-card');
+            let visibleCount = 0;
+
+            campaigns.forEach(campaign => {
+                const name = campaign.dataset.name || '';
+                const status = campaign.dataset.status || '';
+                const type = campaign.dataset.type || '';
+                
+                let shouldShow = true;
+
+                // Filtre de recherche
+                if (searchTerm && !name.includes(searchTerm)) {
+                    shouldShow = false;
+                }
+
+                // Filtre de statut
+                if (statusFilter && status !== statusFilter) {
+                    shouldShow = false;
+                }
+
+                // Filtre de type
+                if (typeFilter && type !== typeFilter) {
+                    shouldShow = false;
+                }
+
+                // Afficher/masquer la campagne
+                if (shouldShow) {
+                    campaign.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    campaign.style.display = 'none';
+                }
+            });
+
+            // Mettre à jour le compteur
+            document.getElementById('campaignsCount').textContent = visibleCount;
+        }
+
+        // ==========================================
+        // 🎯 ACTIONS SUR LES CAMPAGNES
+        // ==========================================
+        async function previewCampaign(campaignId) {
             try {
-                const response = await fetch(`/admin/emails/${campaignId}/send`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
-                });
-
+                const response = await fetch(`/admin/emails/${campaignId}/preview`);
                 const data = await response.json();
 
                 if (data.success) {
-                    showNotification('✅ Campagne envoyée avec succès', 'success');
-                    setTimeout(() => window.location.reload(), 2000);
+                    // Afficher l'aperçu dans une modale ou nouvelle fenêtre
+                    showCampaignPreview(data.campaign);
                 } else {
-                    showNotification(`❌ ${data.message}`, 'error');
+                    alert('Erreur lors de la prévisualisation: ' + data.message);
                 }
             } catch (error) {
-                showNotification('❌ Erreur lors de l\'envoi', 'error');
+                console.error('❌ Erreur prévisualisation:', error);
+                alert('Erreur lors de la prévisualisation');
             }
         }
 
         async function duplicateCampaign(campaignId) {
+            if (!confirm('Voulez-vous dupliquer cette campagne ?')) {
+                return;
+            }
+
             try {
                 const response = await fetch(`/admin/emails/${campaignId}/duplicate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    method: 'POST'
                 });
-
                 const data = await response.json();
 
                 if (data.success) {
-                    showNotification('✅ Campagne dupliquée', 'success');
-                    setTimeout(() => window.location.reload(), 2000);
+                    alert('Campagne dupliquée avec succès');
+                    // Rediriger vers l'éditeur avec le contenu dupliqué
+                    window.location.href = '/admin/email-editor';
                 } else {
-                    showNotification(`❌ ${data.message}`, 'error');
+                    alert('Erreur lors de la duplication: ' + data.message);
                 }
             } catch (error) {
-                showNotification('❌ Erreur lors de la duplication', 'error');
+                console.error('❌ Erreur duplication:', error);
+                alert('Erreur lors de la duplication');
             }
         }
 
@@ -500,89 +788,104 @@
 
             try {
                 const response = await fetch(`/admin/emails/${campaignId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    }
+                    method: 'DELETE'
                 });
-
                 const data = await response.json();
 
                 if (data.success) {
-                    showNotification('✅ Campagne supprimée', 'success');
-                    document.querySelector(`[data-campaign-id="${campaignId}"]`).remove();
+                    // Supprimer la carte de la vue
+                    const campaignCard = document.querySelector(`[data-campaign-id="${campaignId}"]`);
+                    if (campaignCard) {
+                        campaignCard.remove();
+                    }
+                    
+                    alert('Campagne supprimée avec succès');
+                    location.reload(); // Recharger pour mettre à jour les stats
                 } else {
-                    showNotification(`❌ ${data.message}`, 'error');
+                    alert('Erreur lors de la suppression: ' + data.message);
                 }
             } catch (error) {
-                showNotification('❌ Erreur lors de la suppression', 'error');
+                console.error('❌ Erreur suppression:', error);
+                alert('Erreur lors de la suppression');
             }
         }
 
-        function showNotification(message, type = 'info') {
-            const existing = document.querySelectorAll('.notification');
-            existing.forEach(notif => notif.remove());
-
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 8px;
-                color: white;
-                font-weight: 600;
-                z-index: 99999;
-                max-width: 350px;
-                animation: slideIn 0.3s ease;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            `;
-            
-            const bgColors = {
-                success: '#10b981',
-                error: '#ef4444',
-                warning: '#f59e0b',
-                info: '#3b82f6'
-            };
-            
-            notification.style.background = bgColors[type] || bgColors.info;
-            notification.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                    <span>${message}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px; padding: 0;">×</button>
-                </div>
-            `;
-
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.style.animation = 'slideOut 0.3s ease forwards';
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.remove();
+        function showCampaignPreview(campaign) {
+            // Créer une fenêtre modale ou popup pour l'aperçu
+            const previewWindow = window.open('', '_blank', 'width=800,height=600,scrollbars=yes');
+            previewWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Aperçu - ${campaign.subject}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; padding: 20px; }
+                        .preview-header { 
+                            background: #f8f9fa; 
+                            padding: 15px; 
+                            border-radius: 8px; 
+                            margin-bottom: 20px; 
                         }
-                    }, 300);
-                }
-            }, 4000);
+                    </style>
+                </head>
+                <body>
+                    <div class="preview-header">
+                        <h2>${campaign.subject}</h2>
+                        <p><strong>Date:</strong> ${new Date(campaign.createdAt).toLocaleDateString('fr-FR')}</p>
+                        <p><strong>Statut:</strong> ${campaign.status}</p>
+                    </div>
+                    <div class="preview-content">
+                        <p>Aperçu de la campagne disponible prochainement...</p>
+                    </div>
+                </body>
+                </html>
+            `);
         }
 
-        // CSS pour les animations
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
+        // ==========================================
+        // 📊 EXPORT DES DONNÉES
+        // ==========================================
+        async function exportHistory() {
+            try {
+                const response = await fetch('/admin/emails/export', {
+                    method: 'GET'
+                });
 
-        console.log('📧 Historique des emails CrystosJewel initialisé');
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `historique-emails-${new Date().toISOString().split('T')[0]}.csv`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                } else {
+                    alert('Erreur lors de l\'export');
+                }
+            } catch (error) {
+                console.error('❌ Erreur export:', error);
+                alert('Erreur lors de l\'export');
+            }
+        }
+
+        // ==========================================
+        // 📱 GESTION RESPONSIVE
+        // ==========================================
+        function handleResize() {
+            const isMobile = window.innerWidth <= 768;
+            const campaignsGrid = document.querySelector('.campaigns-grid');
+            
+            if (isMobile) {
+                campaignsGrid.style.gap = '15px';
+            } else {
+                campaignsGrid.style.gap = '20px';
+            }
+        }
+
+        window.addEventListener('resize', handleResize);
+        handleResize(); // Appel initial
     </script>
 </body>
 </html>

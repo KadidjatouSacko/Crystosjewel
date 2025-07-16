@@ -19,6 +19,8 @@ import { CustomerNotification } from "./customerNotification.js";
 import { CustomerCommunicationPreference } from "./customerCommunicationPreference.js";
 import { EmailCampaign } from "./emailCampaignModel.js";
 import { EmailCampaignRecipient } from "./emailCampaignRecipientModel.js";
+import { EmailTracking } from "./EmailTracking.js";
+import { EmailTemplate } from "./EmailTemplate.js";
 
 
 
@@ -523,14 +525,254 @@ HomeImage.addHook('afterUpdate', async (homeImage, options) => {
 EmailCampaignRecipient.belongsTo(EmailCampaign, { foreignKey: 'campaign_id' });
 EmailCampaignRecipient.belongsTo(Customer, { foreignKey: 'customer_id' });
 
+
+EmailCampaign.belongsTo(Customer, {
+    foreignKey: 'created_by',
+    as: 'creator'
+});
+Customer.hasMany(EmailCampaign, {
+    foreignKey: 'created_by',
+    as: 'emailCampaigns'
+});
+
+// 2. EmailCampaign <-> EmailTracking
+EmailCampaign.hasMany(EmailTracking, {
+    foreignKey: 'campaign_id',
+    as: 'trackings'
+});
+EmailTracking.belongsTo(EmailCampaign, {
+    foreignKey: 'campaign_id',
+    as: 'campaign'
+});
+
+// 3. EmailTemplate <-> Customer (créateur)
+EmailTemplate.belongsTo(Customer, {
+    foreignKey: 'created_by',
+    as: 'creator'
+});
+Customer.hasMany(EmailTemplate, {
+    foreignKey: 'created_by',
+    as: 'emailTemplates'
+});
+
+// ===== MÉTHODES STATIQUES POUR EMAIL CAMPAIGNS =====
+
+// Méthodes pour récupérer les campagnes par statut
+EmailCampaign.getDrafts = async function() {
+    return await this.findAll({
+        where: { status: 'draft' },
+        include: [
+            {
+                model: Customer,
+                as: 'creator',
+                attributes: ['id', 'first_name', 'last_name']
+            }
+        ],
+        order: [['updated_at', 'DESC']]
+    });
+};
+
+EmailCampaign.getSent = async function() {
+    return await this.findAll({
+        where: { status: 'sent' },
+        include: [
+            {
+                model: Customer,
+                as: 'creator',
+                attributes: ['id', 'first_name', 'last_name']
+            }
+        ],
+        order: [['sent_at', 'DESC']]
+    });
+};
+
+EmailCampaign.getScheduled = async function() {
+    return await this.findAll({
+        where: { status: 'scheduled' },
+        include: [
+            {
+                model: Customer,
+                as: 'creator',
+                attributes: ['id', 'first_name', 'last_name']
+            }
+        ],
+        order: [['scheduled_at', 'ASC']]
+    });
+};
+
+// Méthode pour obtenir les statistiques globales
+EmailCampaign.getGlobalStats = async function() {
+    const { Op } = await import('sequelize');
+    
+    const stats = await this.findAll({
+        where: {
+            status: 'sent'
+        },
+        attributes: [
+            [sequelize.fn('COUNT', sequelize.col('id')), 'total_campaigns'],
+            [sequelize.fn('SUM', sequelize.col('sent_count')), 'total_sent'],
+            [sequelize.fn('SUM', sequelize.col('open_count')), 'total_opens'],
+            [sequelize.fn('SUM', sequelize.col('click_count')), 'total_clicks'],
+            [sequelize.fn('AVG', 
+                sequelize.literal('CASE WHEN sent_count > 0 THEN (open_count::float / sent_count * 100) ELSE 0 END')
+            ), 'avg_open_rate'],
+            [sequelize.fn('AVG', 
+                sequelize.literal('CASE WHEN sent_count > 0 THEN (click_count::float / sent_count * 100) ELSE 0 END')
+            ), 'avg_click_rate']
+        ],
+        raw: true
+    });
+    
+    return stats[0] || {
+        total_campaigns: 0,
+        total_sent: 0,
+        total_opens: 0,
+        total_clicks: 0,
+        avg_open_rate: 0,
+        avg_click_rate: 0
+    };
+};
+
+// Méthode pour marquer une ouverture
+EmailCampaign.trackOpen = async function(campaignId, customerEmail, userAgent = null, ipAddress = null) {
+    const campaign = await this.findByPk(campaignId);
+    if (!campaign) return false;
+    
+    // Vérifier si l'ouverture n'a pas déjà été enregistrée
+    const existingOpen = await EmailTracking.findOne({
+        where: {
+            campaign_id: campaignId,
+            customer_email: customerEmail,
+            action_type: 'open'
+        }
+    });
+    
+    if (!existingOpen) {
+        // Créer le tracking
+        await EmailTracking.create({
+            campaign_id: campaignId,
+            customer_email: customerEmail,
+            action_type: 'open',
+            user_agent: userAgent,
+            ip_address: ipAddress
+        });
+        
+        // Incrémenter le compteur d'ouvertures
+        await campaign.increment('open_count');
+        return true;
+    }
+    
+    return false;
+};
+
+// Méthode pour marquer un clic
+EmailCampaign.trackClick = async function(campaignId, customerEmail, clickedUrl, userAgent = null, ipAddress = null) {
+    const campaign = await this.findByPk(campaignId);
+    if (!campaign) return false;
+    
+    // Créer le tracking (on peut avoir plusieurs clics par email)
+    await EmailTracking.create({
+        campaign_id: campaignId,
+        customer_email: customerEmail,
+        action_type: 'click',
+        action_data: clickedUrl,
+        user_agent: userAgent,
+        ip_address: ipAddress
+    });
+    
+    // Incrémenter le compteur de clics
+    await campaign.increment('click_count');
+    return true;
+};
+
+// ===== MÉTHODES POUR EMAIL TRACKING =====
+
+// Obtenir les statistiques par campagne
+EmailTracking.getCampaignStats = async function(campaignId) {
+    const { Op } = await import('sequelize');
+    
+    const stats = await this.findAll({
+        where: { campaign_id: campaignId },
+        attributes: [
+            'action_type',
+            [sequelize.fn('COUNT', sequelize.col('id')), 'count'],
+            [sequelize.fn('COUNT', sequelize.fn('DISTINCT', sequelize.col('customer_email'))), 'unique_count']
+        ],
+        group: ['action_type'],
+        raw: true
+    });
+    
+    const result = {
+        opens: 0,
+        unique_opens: 0,
+        clicks: 0,
+        unique_clicks: 0,
+        unsubscribes: 0,
+        bounces: 0
+    };
+    
+    stats.forEach(stat => {
+        switch(stat.action_type) {
+            case 'open':
+                result.opens = parseInt(stat.count);
+                result.unique_opens = parseInt(stat.unique_count);
+                break;
+            case 'click':
+                result.clicks = parseInt(stat.count);
+                result.unique_clicks = parseInt(stat.unique_count);
+                break;
+            case 'unsubscribe':
+                result.unsubscribes = parseInt(stat.count);
+                break;
+            case 'bounce':
+                result.bounces = parseInt(stat.count);
+                break;
+        }
+    });
+    
+    return result;
+};
+
+// Obtenir les liens les plus cliqués
+EmailTracking.getTopLinks = async function(campaignId, limit = 10) {
+    return await this.findAll({
+        where: {
+            campaign_id: campaignId,
+            action_type: 'click'
+        },
+        attributes: [
+            'action_data',
+            [sequelize.fn('COUNT', sequelize.col('id')), 'click_count']
+        ],
+        group: ['action_data'],
+        order: [[sequelize.literal('click_count'), 'DESC']],
+        limit: limit,
+        raw: true
+    });
+};
+
+// ===== HOOKS POUR MISE À JOUR AUTOMATIQUE =====
+
+// Hook pour mettre à jour updated_at
+EmailCampaign.addHook('beforeUpdate', async (campaign, options) => {
+    campaign.updated_at = new Date();
+});
+
+EmailTemplate.addHook('beforeUpdate', async (template, options) => {
+    template.updated_at = new Date();
+});
+
+
 console.log('✅ Associations et méthodes des modèles initialisées (avec fonctionnalités admin)');
+
 
 export { 
   Category, Jewel, Customer, Order, OrderHasJewel, Payment, JewelImage,
   OrderItem, Cart, JewelView, Favorite, Material, Type, Role, 
   OrderStatusHistory, OrderTracking, CustomerNotification,
   CustomerCommunicationPreference, Activity, HomeImage, SiteSetting,
-  EmailCampaign, EmailCampaignRecipient
+  EmailCampaign, EmailCampaignRecipient,
+  EmailTracking, EmailTemplate
 };
 
 

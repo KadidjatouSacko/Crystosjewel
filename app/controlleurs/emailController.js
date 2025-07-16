@@ -1,113 +1,173 @@
-// app/controlleurs/emailController.js
-import{ Customer}from '../models/customerModel.js';
-import { Order } from '../models/orderModel.js';
+// ==========================================
+// 📧 CONTRÔLEUR EMAIL COMPLET
+// ==========================================
+
 import { Op } from 'sequelize';
 import { sequelize } from '../models/sequelize-client.js';
+import { EmailTemplate } from '../models/emailTemplateModel.js';
+import { EmailLog } from '../models/emailLogModel.js';
+import { Jewel } from '../models/jewelModel.js';
+import { JewelImage } from '../models/jewelImage.js';
+// import { User } from '../models/userModel.js';
+import { Customer } from '../models/customerModel.js';
+import mailService from '../services/mailService.js';
+import fs from 'fs';
+import path from 'path';
 
-/**
- * Contrôleur pour la gestion des emails et campagnes
- */
 export const emailController = {
 
-    /**
-     * Afficher l'éditeur d'emails
-     */
+    // ==========================================
+    // 📄 PAGE PRINCIPALE ÉDITEUR D'EMAILS
+    // ==========================================
     async showEmailEditor(req, res) {
         try {
-            console.log('📧 Chargement de l\'éditeur d\'emails...');
+            console.log('📧 Affichage éditeur email');
 
-            // Récupérer les clients pour la liste des destinataires
-            const customers = await Customer.findAll({
-                attributes: ['id', 'firstName', 'lastName', 'email', 'newsletter', 'created_at'],
-                where: {
-                    email: {
-                        [Op.not]: null
-                    }
-                },
+            // Récupérer les modèles disponibles
+            const templates = await EmailTemplate.findAll({
+                where: { is_active: true },
                 order: [['created_at', 'DESC']]
             });
 
-            // Compter les commandes par client pour déterminer les VIP
-            const customersWithOrders = await Promise.all(
-                customers.map(async (customer) => {
-                    const orderCount = await Order.count({
-                        where: { 
-                            [Op.or]: [
-                                { customer_email: customer.email },
-                                { client_email: customer.email }
-                            ]
-                        }
-                    });
-                    
-                    return {
-                        id: customer.id,
-                        name: `${customer.firstName} ${customer.lastName}`,
-                        email: customer.email,
-                        newsletter: customer.newsletter || false,
-                        hasOrders: orderCount > 0,
-                        type: orderCount >= 3 ? 'vip' : 'regular',
-                        orderCount
-                    };
-                })
-            );
+            // Statistiques rapides
+            const totalCustomers = await Customer.count();
+            const totalUsers = await User.count();
+            const totalRecipients = totalCustomers + totalUsers;
 
-            console.log(`📊 ${customersWithOrders.length} clients chargés`);
+            // Dernières campagnes
+            const recentCampaigns = await EmailLog.findAll({
+                where: {
+                    email_type: 'campaign'
+                },
+                attributes: [
+                    'id',
+                    'subject',
+                    'status',
+                    'created_at',
+                    [sequelize.fn('COUNT', sequelize.col('id')), 'recipients']
+                ],
+                group: ['subject', 'id', 'status', 'created_at'],
+                order: [['created_at', 'DESC']],
+                limit: 5
+            });
 
             res.render('admin/email-editor', {
-                title: 'Éditeur d\'Emails - CrystosJewel',
-                customers: customersWithOrders,
-                user: req.session.user
+                title: 'Éditeur d\'Emails',
+                templates: templates || [],
+                stats: {
+                    totalRecipients,
+                    totalCustomers,
+                    totalUsers
+                },
+                recentCampaigns: recentCampaigns || []
             });
 
         } catch (error) {
-            console.error('❌ Erreur chargement éditeur emails:', error);
-            res.status(500).render('error', { 
-                message: 'Erreur lors du chargement de l\'éditeur d\'emails',
-                error: error 
+            console.error('❌ Erreur éditeur email:', error);
+            res.status(500).render('error', {
+                message: 'Erreur lors du chargement de l\'éditeur',
+                error: error
             });
         }
     },
 
-    /**
-     * Sauvegarder un brouillon
-     */
+    // ==========================================
+    // 📄 HISTORIQUE DES CAMPAGNES
+    // ==========================================
+    async showHistory(req, res) {
+        try {
+            console.log('📧 Affichage historique des campagnes');
+
+            // Récupérer toutes les campagnes (groupées par subject)
+            const campaignsQuery = `
+                SELECT 
+                    MIN(id) as id,
+                    subject as name,
+                    email_type,
+                    status,
+                    MIN(created_at) as created_at,
+                    COUNT(*) as recipients_count,
+                    SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent_count,
+                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_count
+                FROM email_logs 
+                WHERE email_type IN ('campaign', 'promotional', 'newsletter')
+                GROUP BY subject, email_type, status
+                ORDER BY MIN(created_at) DESC
+                LIMIT 50
+            `;
+
+            const [campaigns] = await sequelize.query(campaignsQuery);
+
+            // Formatage des données
+            const formattedCampaigns = campaigns.map(campaign => ({
+                id: campaign.id,
+                name: campaign.name,
+                status: campaign.status,
+                type: campaign.email_type,
+                created_at: campaign.created_at,
+                recipients: parseInt(campaign.recipients_count),
+                sent: parseInt(campaign.sent_count),
+                failed: parseInt(campaign.failed_count),
+                success_rate: campaign.recipients_count > 0 
+                    ? Math.round((campaign.sent_count / campaign.recipients_count) * 100)
+                    : 0
+            }));
+
+            // Statistiques globales
+            const totalSent = formattedCampaigns.reduce((sum, c) => sum + c.sent, 0);
+            const totalFailed = formattedCampaigns.reduce((sum, c) => sum + c.failed, 0);
+            const avgSuccessRate = formattedCampaigns.length > 0
+                ? Math.round(formattedCampaigns.reduce((sum, c) => sum + c.success_rate, 0) / formattedCampaigns.length)
+                : 0;
+
+            res.render('admin/email-history', {
+                title: 'Historique des Campagnes',
+                campaigns: formattedCampaigns,
+                stats: {
+                    total: formattedCampaigns.length,
+                    sent: totalSent,
+                    failed: totalFailed,
+                    successRate: avgSuccessRate
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur historique email:', error);
+            res.status(500).render('error', {
+                message: 'Erreur lors du chargement de l\'historique',
+                error: error
+            });
+        }
+    },
+
+    // ==========================================
+    // 💾 GESTION DES BROUILLONS
+    // ==========================================
     async saveDraft(req, res) {
         try {
-            const {
-                name,
-                subject,
-                content,
-                preheader,
-                fromName,
-                template
-            } = req.body;
+            const { subject, content, preheader, recipients } = req.body;
 
-            console.log('💾 Sauvegarde brouillon:', { name, subject });
+            if (!subject || !content) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Sujet et contenu requis'
+                });
+            }
 
-            // TODO: Implémenter sauvegarde en base de données
-            // Pour l'instant, on simule la sauvegarde
-            const draftData = {
-                id: Date.now(),
-                name: name || 'Brouillon sans nom',
-                subject,
-                content,
-                preheader,
-                fromName,
-                template,
-                status: 'draft',
-                createdBy: req.session.user?.id,
-                createdAt: new Date()
-            };
-
-            // Dans une vraie implémentation :
-            // const draft = await EmailCampaign.create(draftData);
-
-            console.log('✅ Brouillon sauvegardé avec succès');
+            // Sauvegarder comme template
+            const template = await EmailTemplate.create({
+                template_name: `Brouillon - ${subject}`,
+                subject: subject,
+                html_content: content,
+                text_content: preheader || '',
+                variables: { recipients: recipients || 'all' },
+                is_active: false // Brouillon = inactif
+            });
 
             res.json({
                 success: true,
-                message: 'Brouillon sauvegardé avec succès',
-                draftId: draftData.id
+                message: 'Brouillon sauvegardé',
+                draftId: template.id
             });
 
         } catch (error) {
@@ -119,49 +179,52 @@ export const emailController = {
         }
     },
 
-    /**
-     * Envoyer un email de test
-     */
+    // ==========================================
+    // 📤 ENVOI D'EMAIL DE TEST
+    // ==========================================
     async sendTest(req, res) {
         try {
-            const { email, subject, content, template } = req.body;
+            const { testEmail, subject, content, preheader } = req.body;
 
-            if (!email || !subject) {
+            if (!testEmail || !subject || !content) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Email et sujet requis'
+                    message: 'Email de test, sujet et contenu requis'
                 });
             }
 
             // Validation email
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(email)) {
+            if (!emailRegex.test(testEmail)) {
                 return res.status(400).json({
                     success: false,
                     message: 'Adresse email invalide'
                 });
             }
 
-            console.log(`📧 Envoi email de test à ${email}`);
+            // Remplacer les variables par des données de test
+            const testContent = content
+                .replace(/\{\{first_name\}\}/g, 'Test')
+                .replace(/\{\{last_name\}\}/g, 'User')
+                .replace(/\{\{email\}\}/g, testEmail)
+                .replace(/\{\{company_name\}\}/g, 'CrystosJewel')
+                .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'))
+                .replace(/\{\{unsubscribe_url\}\}/g, `${process.env.BASE_URL}/newsletter/unsubscribe?email=${testEmail}`);
 
-            // Utiliser le service d'email
-            const { sendTestEmail } = await import('../services/mailService.js');
-            
-            const result = await sendTestEmail(email, {
-                subject,
-                content,
-                template,
-                senderName: 'CrystosJewel Test'
-            });
+            // Envoi via le service mail
+            const result = await mailService.sendRawEmail(
+                testEmail,
+                `[TEST] ${subject}`,
+                testContent,
+                preheader
+            );
 
             if (result.success) {
-                console.log('✅ Email de test envoyé avec succès');
                 res.json({
                     success: true,
-                    message: `Email de test envoyé avec succès à ${email}`
+                    message: `Email de test envoyé à ${testEmail}`
                 });
             } else {
-                console.error('❌ Échec envoi email test:', result.error);
                 res.status(500).json({
                     success: false,
                     message: result.error || 'Erreur lors de l\'envoi du test'
@@ -177,148 +240,167 @@ export const emailController = {
         }
     },
 
-    /**
-     * Envoyer une campagne email
-     */
+    // ==========================================
+    // 📤 ENVOI DE CAMPAGNE
+    // ==========================================
     async sendCampaign(req, res) {
         try {
-            const {
-                name,
-                subject,
-                content,
-                preheader,
-                fromName,
-                template,
-                recipientType,
-                selectedCustomerIds
-            } = req.body;
+            const { subject, content, preheader, recipients, scheduleDate } = req.body;
 
-            if (!subject || !content) {
+            if (!subject || !content || !recipients) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Sujet et contenu requis'
+                    message: 'Sujet, contenu et destinataires requis'
                 });
             }
 
-            console.log(`🚀 Envoi campagne "${name}" - Type: ${recipientType}`);
-
-            // Déterminer les destinataires
-            let whereClause = {
-                email: { [Op.not]: null }
-            };
+            // Définir les destinataires
+            let recipientList = [];
             
-            switch (recipientType) {
-                case 'newsletter':
-                    whereClause.newsletter = true;
-                    break;
-                case 'vip':
-                    // Clients avec 3+ commandes
-                    const vipEmails = await sequelize.query(`
-                        SELECT DISTINCT customer_email as email
-                        FROM orders 
-                        WHERE customer_email IS NOT NULL
-                        GROUP BY customer_email 
-                        HAVING COUNT(*) >= 3
-                        UNION
-                        SELECT DISTINCT client_email as email
-                        FROM orders 
-                        WHERE client_email IS NOT NULL
-                        GROUP BY client_email 
-                        HAVING COUNT(*) >= 3
-                    `, { type: sequelize.QueryTypes.SELECT });
-                    
-                    const vipEmailList = vipEmails.map(row => row.email);
-                    if (vipEmailList.length > 0) {
-                        whereClause.email = { [Op.in]: vipEmailList };
-                    } else {
-                        whereClause.id = -1; // Aucun résultat
+            if (recipients === 'all') {
+                // Tous les clients et utilisateurs
+                const customers = await Customer.findAll({
+                    attributes: ['email', 'first_name', 'last_name'],
+                    where: {
+                        email: { [Op.ne]: null }
                     }
-                    break;
-                case 'with-orders':
-                    const orderEmails = await sequelize.query(`
-                        SELECT DISTINCT customer_email as email FROM orders WHERE customer_email IS NOT NULL
-                        UNION
-                        SELECT DISTINCT client_email as email FROM orders WHERE client_email IS NOT NULL
-                    `, { type: sequelize.QueryTypes.SELECT });
-                    
-                    const orderEmailList = orderEmails.map(row => row.email);
-                    if (orderEmailList.length > 0) {
-                        whereClause.email = { [Op.in]: orderEmailList };
-                    } else {
-                        whereClause.id = -1; // Aucun résultat
+                });
+                
+                const users = await User.findAll({
+                    attributes: ['email', 'firstName', 'lastName'],
+                    where: {
+                        email: { [Op.ne]: null }
                     }
-                    break;
-                case 'all':
-                default:
-                    // Tous les clients avec email
-                    break;
+                });
+
+                recipientList = [
+                    ...customers.map(c => ({
+                        email: c.email,
+                        firstName: c.first_name,
+                        lastName: c.last_name
+                    })),
+                    ...users.map(u => ({
+                        email: u.email,
+                        firstName: u.firstName,
+                        lastName: u.lastName
+                    }))
+                ];
+            } else if (recipients === 'customers') {
+                const customers = await Customer.findAll({
+                    attributes: ['email', 'first_name', 'last_name'],
+                    where: {
+                        email: { [Op.ne]: null }
+                    }
+                });
+                
+                recipientList = customers.map(c => ({
+                    email: c.email,
+                    firstName: c.first_name,
+                    lastName: c.last_name
+                }));
+            } else if (recipients === 'users') {
+                const users = await User.findAll({
+                    attributes: ['email', 'firstName', 'lastName'],
+                    where: {
+                        email: { [Op.ne]: null }
+                    }
+                });
+                
+                recipientList = users.map(u => ({
+                    email: u.email,
+                    firstName: u.firstName,
+                    lastName: u.lastName
+                }));
             }
 
-            // Si des clients spécifiques sont sélectionnés
-            if (selectedCustomerIds && selectedCustomerIds.length > 0) {
-                whereClause.id = { [Op.in]: selectedCustomerIds };
+            // Filtrer les doublons par email
+            const uniqueRecipients = recipientList.filter((recipient, index, self) =>
+                index === self.findIndex(r => r.email === recipient.email)
+            );
+
+            console.log(`📧 Envoi campagne à ${uniqueRecipients.length} destinataires`);
+
+            // Envoi en lot
+            const batchSize = 10;
+            let sentCount = 0;
+            let failedCount = 0;
+
+            for (let i = 0; i < uniqueRecipients.length; i += batchSize) {
+                const batch = uniqueRecipients.slice(i, i + batchSize);
+                
+                const emailPromises = batch.map(async (recipient) => {
+                    try {
+                        // Personnaliser le contenu
+                        const personalizedContent = content
+                            .replace(/\{\{first_name\}\}/g, recipient.firstName || 'Cher client')
+                            .replace(/\{\{last_name\}\}/g, recipient.lastName || '')
+                            .replace(/\{\{email\}\}/g, recipient.email)
+                            .replace(/\{\{company_name\}\}/g, 'CrystosJewel')
+                            .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'))
+                            .replace(/\{\{unsubscribe_url\}\}/g, `${process.env.BASE_URL}/newsletter/unsubscribe?email=${recipient.email}`);
+
+                        const result = await mailService.sendRawEmail(
+                            recipient.email,
+                            subject,
+                            personalizedContent,
+                            preheader
+                        );
+
+                        // Log de l'envoi
+                        await EmailLog.create({
+                            recipient_email: recipient.email,
+                            subject: subject,
+                            email_type: 'campaign',
+                            status: result.success ? 'sent' : 'failed',
+                            error_message: result.success ? null : result.error,
+                            sent_at: result.success ? new Date() : null
+                        });
+
+                        if (result.success) {
+                            sentCount++;
+                        } else {
+                            failedCount++;
+                        }
+
+                        return result;
+                    } catch (error) {
+                        console.error(`❌ Erreur envoi pour ${recipient.email}:`, error);
+                        failedCount++;
+                        
+                        await EmailLog.create({
+                            recipient_email: recipient.email,
+                            subject: subject,
+                            email_type: 'campaign',
+                            status: 'failed',
+                            error_message: error.message
+                        });
+                        
+                        return { success: false };
+                    }
+                });
+
+                await Promise.all(emailPromises);
+                
+                // Pause entre les lots
+                if (i + batchSize < uniqueRecipients.length) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
             }
 
-            const recipients = await Customer.findAll({
-                where: whereClause,
-                attributes: ['id', 'firstName', 'lastName', 'email']
+            console.log(`✅ Campagne terminée: ${sentCount} envoyés, ${failedCount} échecs`);
+
+            res.json({
+                success: true,
+                message: `Campagne envoyée avec succès`,
+                stats: {
+                    total: uniqueRecipients.length,
+                    sent: sentCount,
+                    failed: failedCount,
+                    successRate: uniqueRecipients.length > 0 
+                        ? Math.round((sentCount / uniqueRecipients.length) * 100)
+                        : 0
+                }
             });
-
-            if (recipients.length === 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Aucun destinataire trouvé pour les critères sélectionnés'
-                });
-            }
-
-            console.log(`📊 ${recipients.length} destinataires trouvés`);
-
-            // Envoyer les emails par batch
-            const { sendBulkEmail } = await import('../services/mailService.js');
-            
-            const campaignData = {
-                name: name || 'Campagne sans nom',
-                subject,
-                content,
-                preheader,
-                fromName: fromName || 'CrystosJewel',
-                template
-            };
-
-            const result = await sendBulkEmail(recipients, campaignData);
-
-            if (result.success) {
-                console.log(`✅ Campagne envoyée: ${result.sentCount}/${recipients.length}`);
-
-                // TODO: Sauvegarder la campagne en base
-                // await EmailCampaign.create({
-                //     name: campaignData.name,
-                //     subject,
-                //     content,
-                //     preheader,
-                //     from_name: fromName,
-                //     template,
-                //     status: 'sent',
-                //     recipient_type: recipientType,
-                //     sent_count: result.sentCount,
-                //     created_by: req.session.user?.id
-                // });
-
-                res.json({
-                    success: true,
-                    message: `Campagne envoyée avec succès à ${result.sentCount} destinataires`,
-                    sentCount: result.sentCount,
-                    errorCount: result.errorCount,
-                    totalRecipients: recipients.length
-                });
-            } else {
-                res.status(500).json({
-                    success: false,
-                    message: 'Erreur lors de l\'envoi de la campagne',
-                    sentCount: result.sentCount || 0,
-                    errorCount: result.errorCount || recipients.length
-                });
-            }
 
         } catch (error) {
             console.error('❌ Erreur envoi campagne:', error);
@@ -329,209 +411,128 @@ export const emailController = {
         }
     },
 
-    /**
-     * Afficher l'historique des campagnes
-     */
-    async showHistory(req, res) {
-        try {
-            console.log('📋 Chargement historique des campagnes...');
-
-        
-
-           
-            const campaigns = await EmailCampaign.findAll({
-                order: [['created_at', 'DESC']],
-                include: [
-                    {
-                        model: Customer,
-                        as: 'creator',
-                        attributes: ['firstName', 'lastName']
-                    }
-                ]
-            });
-
-            res.render('admin/email-history', {
-                title: 'Historique des Emails - CrystosJewel',
-                campaigns,
-                user: req.session.user
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur chargement historique:', error);
-            res.status(500).render('error', { 
-                message: 'Erreur lors du chargement de l\'historique',
-                error: error 
-            });
-        }
-    },
-
-    /**
-     * Récupérer les statistiques des emails
-     */
+    // ==========================================
+    // 📊 STATISTIQUES DES EMAILS
+    // ==========================================
     async getEmailStats(req, res) {
         try {
-            // TODO: Calculer les vraies statistiques
-            const stats = {
-                totalCampaigns: 12,
-                totalSent: 2847,
-                avgOpenRate: 24.5,
-                avgClickRate: 5.8,
-                lastCampaign: {
-                    name: 'Newsletter Janvier',
-                    sentAt: new Date(),
-                    recipients: 245
+            const { period = '30' } = req.query;
+            
+            const daysAgo = new Date();
+            daysAgo.setDate(daysAgo.getDate() - parseInt(period));
+
+            const statsQuery = `
+                SELECT 
+                    email_type,
+                    status,
+                    COUNT(*) as count,
+                    DATE(created_at) as date
+                FROM email_logs 
+                WHERE created_at >= $1
+                GROUP BY email_type, status, DATE(created_at)
+                ORDER BY date DESC
+            `;
+
+            const [stats] = await sequelize.query(statsQuery, {
+                bind: [daysAgo]
+            });
+
+            // Statistiques globales
+            const totalEmails = await EmailLog.count({
+                where: {
+                    created_at: { [Op.gte]: daysAgo }
                 }
-            };
+            });
+
+            const sentEmails = await EmailLog.count({
+                where: {
+                    created_at: { [Op.gte]: daysAgo },
+                    status: 'sent'
+                }
+            });
+
+            const failedEmails = await EmailLog.count({
+                where: {
+                    created_at: { [Op.gte]: daysAgo },
+                    status: 'failed'
+                }
+            });
 
             res.json({
                 success: true,
-                stats
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur stats emails:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors du calcul des statistiques'
-            });
-        }
-    },
-
-    /**
-     * Dupliquer une campagne
-     */
-    async duplicateCampaign(req, res) {
-        try {
-            const { campaignId } = req.params;
-
-            // TODO: Récupérer et dupliquer la campagne
-            console.log(`📋 Duplication campagne ${campaignId}`);
-
-            res.json({
-                success: true,
-                message: 'Campagne dupliquée avec succès',
-                newCampaignId: Date.now()
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur duplication:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la duplication'
-            });
-        }
-    },
-
-    /**
-     * Supprimer une campagne
-     */
-    async deleteCampaign(req, res) {
-        try {
-            const { campaignId } = req.params;
-
-            // TODO: Supprimer la campagne
-            console.log(`🗑️ Suppression campagne ${campaignId}`);
-
-            res.json({
-                success: true,
-                message: 'Campagne supprimée avec succès'
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur suppression:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la suppression'
-            });
-        }
-    },
-
-    /**
-     * Prévisualiser une campagne
-     */
-    async previewCampaign(req, res) {
-        try {
-            const { campaignId } = req.params;
-
-            // TODO: Récupérer la campagne et générer l'aperçu
-            console.log(`👁️ Aperçu campagne ${campaignId}`);
-
-            res.render('admin/email-preview', {
-                title: 'Aperçu Email',
-                campaign: {
-                    id: campaignId,
-                    subject: 'Aperçu de la campagne',
-                    content: '<h1>Contenu de la campagne</h1>'
+                stats: {
+                    total: totalEmails,
+                    sent: sentEmails,
+                    failed: failedEmails,
+                    successRate: totalEmails > 0 ? Math.round((sentEmails / totalEmails) * 100) : 0,
+                    daily: stats
                 }
             });
 
         } catch (error) {
-            console.error('❌ Erreur aperçu:', error);
-            res.status(500).render('error', {
-                message: 'Erreur lors de l\'aperçu'
+            console.error('❌ Erreur stats email:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la récupération des statistiques'
             });
         }
     },
 
-    /**
-     * API pour récupérer les clients
-     */
+    // ==========================================
+    // 👥 RÉCUPÉRER LES CLIENTS
+    // ==========================================
     async getCustomers(req, res) {
         try {
-            const { filter, search } = req.query;
+            const { type = 'all' } = req.query;
 
-            let whereClause = {
-                email: { [Op.not]: null }
-            };
+            let customers = [];
+            let users = [];
 
-            // Appliquer les filtres
-            if (filter === 'newsletter') {
-                whereClause.newsletter = true;
+            if (type === 'all' || type === 'customers') {
+                customers = await Customer.findAll({
+                    attributes: ['id', 'email', 'first_name', 'last_name', 'created_at'],
+                    where: {
+                        email: { [Op.ne]: null }
+                    },
+                    order: [['created_at', 'DESC']]
+                });
             }
 
-            // Appliquer la recherche
-            if (search) {
-                whereClause[Op.or] = [
-                    { firstName: { [Op.iLike]: `%${search}%` } },
-                    { lastName: { [Op.iLike]: `%${search}%` } },
-                    { email: { [Op.iLike]: `%${search}%` } }
-                ];
+            if (type === 'all' || type === 'users') {
+                users = await User.findAll({
+                    attributes: ['id', 'email', 'firstName', 'lastName', 'created_at'],
+                    where: {
+                        email: { [Op.ne]: null }
+                    },
+                    order: [['created_at', 'DESC']]
+                });
             }
 
-            const customers = await Customer .findAll({
-                where: whereClause,
-                attributes: ['id', 'firstName', 'lastName', 'email', 'newsletter'],
-                order: [['firstName', 'ASC']],
-                limit: 100
-            });
-
-            // Ajouter les infos de commandes
-            const customersWithOrders = await Promise.all(
-                customers.map(async (customer) => {
-                    const orderCount = await Order.count({
-                        where: { 
-                            [Op.or]: [
-                                { customer_email: customer.email },
-                                { client_email: customer.email }
-                            ]
-                        }
-                    });
-                    
-                    return {
-                        id: customer.id,
-                        name: `${customer.firstName} ${customer.lastName}`,
-                        email: customer.email,
-                        newsletter: customer.newsletter || false,
-                        hasOrders: orderCount > 0,
-                        type: orderCount >= 3 ? 'vip' : 'regular',
-                        orderCount
-                    };
-                })
-            );
+            const allCustomers = [
+                ...customers.map(c => ({
+                    id: c.id,
+                    email: c.email,
+                    firstName: c.first_name,
+                    lastName: c.last_name,
+                    fullName: `${c.first_name} ${c.last_name}`,
+                    type: 'customer',
+                    createdAt: c.created_at
+                })),
+                ...users.map(u => ({
+                    id: u.id,
+                    email: u.email,
+                    firstName: u.firstName,
+                    lastName: u.lastName,
+                    fullName: `${u.firstName} ${u.lastName}`,
+                    type: 'user',
+                    createdAt: u.created_at
+                }))
+            ];
 
             res.json({
                 success: true,
-                customers: customersWithOrders
+                customers: allCustomers,
+                total: allCustomers.length
             });
 
         } catch (error) {
@@ -543,458 +544,145 @@ export const emailController = {
         }
     },
 
-    /**
-     * Marquer un email comme ouvert (tracking)
-     */
-    async trackOpen(req, res) {
+    // ==========================================
+    // 🎯 GESTION DES CAMPAGNES
+    // ==========================================
+    async previewCampaign(req, res) {
         try {
-            const { campaignId, customerEmail } = req.params;
-
-            // TODO: Enregistrer l'ouverture
-            console.log(`📊 Tracking ouverture: ${customerEmail} - ${campaignId}`);
-
-            // Retourner un pixel transparent
-            const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+            const { campaignId } = req.params;
             
-            res.set({
-                'Content-Type': 'image/gif',
-                'Content-Length': pixel.length,
-                'Cache-Control': 'no-cache, no-store, must-revalidate',
-                'Pragma': 'no-cache',
-                'Expires': '0'
+            const campaign = await EmailLog.findByPk(campaignId);
+            
+            if (!campaign) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Campagne non trouvée'
+                });
+            }
+
+            res.json({
+                success: true,
+                campaign: {
+                    id: campaign.id,
+                    subject: campaign.subject,
+                    status: campaign.status,
+                    createdAt: campaign.created_at,
+                    sentAt: campaign.sent_at
+                }
             });
-            
-            res.send(pixel);
 
         } catch (error) {
-            console.error('❌ Erreur tracking ouverture:', error);
-            res.status(500).send();
+            console.error('❌ Erreur preview campagne:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la prévisualisation'
+            });
         }
     },
 
-    /**
-     * Tracker un clic (tracking)
-     */
+    async duplicateCampaign(req, res) {
+        try {
+            const { campaignId } = req.params;
+            
+            const campaign = await EmailLog.findByPk(campaignId);
+            
+            if (!campaign) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Campagne non trouvée'
+                });
+            }
+
+            res.json({
+                success: true,
+                message: 'Campagne dupliquée',
+                duplicatedCampaign: {
+                    subject: `Copie de ${campaign.subject}`,
+                    content: 'Contenu original...' // À implémenter
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur duplication campagne:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la duplication'
+            });
+        }
+    },
+
+    async deleteCampaign(req, res) {
+        try {
+            const { campaignId } = req.params;
+            
+            const deleted = await EmailLog.destroy({
+                where: { id: campaignId }
+            });
+
+            if (deleted) {
+                res.json({
+                    success: true,
+                    message: 'Campagne supprimée'
+                });
+            } else {
+                res.status(404).json({
+                    success: false,
+                    message: 'Campagne non trouvée'
+                });
+            }
+
+        } catch (error) {
+            console.error('❌ Erreur suppression campagne:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la suppression'
+            });
+        }
+    },
+
+    // ==========================================
+    // 📈 TRACKING DES EMAILS
+    // ==========================================
+    async trackOpen(req, res) {
+        try {
+            const { campaignId, customerEmail } = req.params;
+            
+            // Log de l'ouverture
+            console.log(`📧 Email ouvert - Campagne: ${campaignId}, Email: ${customerEmail}`);
+            
+            // Retourner une image pixel transparente
+            const pixel = Buffer.from(
+                'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+                'base64'
+            );
+            
+            res.writeHead(200, {
+                'Content-Type': 'image/png',
+                'Content-Length': pixel.length,
+                'Cache-Control': 'no-cache, no-store, must-revalidate'
+            });
+            
+            res.end(pixel);
+
+        } catch (error) {
+            console.error('❌ Erreur tracking ouverture:', error);
+            res.status(500).end();
+        }
+    },
+
     async trackClick(req, res) {
         try {
             const { campaignId, customerEmail, linkId } = req.params;
-            const { url } = req.query;
-
-            // TODO: Enregistrer le clic
-            console.log(`📊 Tracking clic: ${customerEmail} - ${campaignId} - ${linkId}`);
-
-            // Rediriger vers l'URL originale
-            if (url) {
-                res.redirect(decodeURIComponent(url));
-            } else {
-                res.redirect('/');
-            }
+            
+            // Log du clic
+            console.log(`🔗 Lien cliqué - Campagne: ${campaignId}, Email: ${customerEmail}, Lien: ${linkId}`);
+            
+            // Rediriger vers l'URL originale (à définir selon vos besoins)
+            res.redirect('/');
 
         } catch (error) {
             console.error('❌ Erreur tracking clic:', error);
             res.redirect('/');
-        }
-    },
-
-    /**
-     * API pour récupérer les bijoux (pour les blocs produits)
-     */
-    async getJewelsForEmail(req, res) {
-        try {
-            const { Jewel, JewelImage } = await import('../models/index.js');
-            
-            const jewels = await Jewel.findAll({
-                where: {
-                    is_active: true,
-                    stock: { [Op.gt]: 0 }
-                },
-                include: [
-                    {
-                        model: JewelImage,
-                        as: 'additionalImages',
-                        attributes: ['image_path'],
-                        limit: 1
-                    }
-                ],
-                attributes: ['id', 'name', 'price', 'discounted_price', 'slug'],
-                order: [['created_at', 'DESC']],
-                limit: 20
-            });
-
-            const jewelData = jewels.map(jewel => ({
-                id: jewel.id,
-                name: jewel.name,
-                price: jewel.discounted_price || jewel.price,
-                originalPrice: jewel.discounted_price ? jewel.price : null,
-                image: jewel.additionalImages?.[0]?.image_path || '/images/placeholder-image.jpg',
-                url: `/bijoux/${jewel.slug}`
-            }));
-
-            res.json({
-                success: true,
-                jewels: jewelData
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur récupération bijoux:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la récupération des bijoux'
-            });
-        }
-    },
-
-    /**
-     * Upload d'image pour l'éditeur
-     */
-    async uploadImage(req, res) {
-        try {
-            if (!req.file) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Aucune image fournie'
-                });
-            }
-
-            // Créer le dossier emails s'il n'existe pas
-            const fs = await import('fs');
-            const path = await import('path');
-            const uploadDir = path.join(process.cwd(), 'public', 'uploads', 'emails');
-            
-            if (!fs.existsSync(uploadDir)) {
-                fs.mkdirSync(uploadDir, { recursive: true });
-            }
-
-            // Sauvegarder l'image
-            const imagePath = `/uploads/emails/${req.file.filename}`;
-            
-            res.json({
-                success: true,
-                imageUrl: imagePath,
-                message: 'Image uploadée avec succès'
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur upload image:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de l\'upload'
-            });
-        }
-    },
-
-    /**
-     * Prévisualiser un email avec des données de test
-     */
-    async previewEmail(req, res) {
-        try {
-            const { content, subject, preheader } = req.body;
-            
-            // Remplacer les variables par des données de test
-            const testContent = content
-                .replace(/\{\{first_name\}\}/g, 'Marie')
-                .replace(/\{\{last_name\}\}/g, 'Dupont')
-                .replace(/\{\{email\}\}/g, 'marie.dupont@example.com')
-                .replace(/\{\{company_name\}\}/g, 'Test Company')
-                .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'))
-                .replace(/\{\{unsubscribe_url\}\}/g, '#');
-
-            res.json({
-                success: true,
-                preview: {
-                    subject: subject || 'Aperçu du sujet',
-                    preheader: preheader || 'Aperçu du preheader',
-                    content: testContent
-                }
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur aperçu:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la génération de l\'aperçu'
-            });
-        }
-    },
-
-    /**
-     * Gérer la désinscription newsletter
-     */
-    async unsubscribeNewsletter(req, res) {
-        try {
-            const { email, token } = req.query;
-            
-            if (email) {
-                // Mettre à jour le statut newsletter
-                await Customer
-                .update(
-                    { newsletter: false },
-                    { where: { email: email } }
-                );
-                
-                res.render('newsletter/unsubscribed', {
-                    title: 'Désabonnement réussi',
-                    email: email,
-                    message: 'Vous avez été désabonné(e) avec succès de notre newsletter.'
-                });
-            } else {
-                res.render('newsletter/unsubscribe-form', {
-                    title: 'Se désabonner',
-                    message: 'Entrez votre adresse email pour vous désabonner'
-                });
-            }
-        } catch (error) {
-            console.error('❌ Erreur désinscription:', error);
-            res.render('error', {
-                message: 'Erreur lors de la désinscription'
-            });
-        }
-    },
-
-    /**
-     * Traitement du formulaire de désinscription
-     */
-    async processUnsubscribe(req, res) {
-        try {
-            const { email } = req.body;
-            
-            if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                return res.render('newsletter/unsubscribe-form', {
-                    title: 'Se désabonner',
-                    error: 'Adresse email invalide'
-                });
-            }
-
-            const user = await Customer
-            .findOne({ where: { email } });
-            
-            if (user) {
-                await Customer
-                .update(
-                    { newsletter: false },
-                    { where: { email } }
-                );
-                
-                res.render('newsletter/unsubscribed', {
-                    title: 'Désabonnement réussi',
-                    email: email,
-                    message: 'Vous avez été désabonné(e) avec succès de notre newsletter.'
-                });
-            } else {
-                res.render('newsletter/unsubscribe-form', {
-                    title: 'Se désabonner',
-                    error: 'Cette adresse email n\'est pas inscrite à notre newsletter'
-                });
-            }
-
-        } catch (error) {
-            console.error('❌ Erreur traitement désinscription:', error);
-            res.render('error', {
-                message: 'Erreur lors de la désinscription'
-            });
-        }
-    },
-
-    /**
-     * Éditer une campagne existante
-     */
-    async editCampaign(req, res) {
-        try {
-            const { campaignId } = req.params;
-
-            // TODO: Récupérer la campagne depuis la base
-            console.log(`✏️ Édition campagne ${campaignId}`);
-
-            // Pour l'instant, rediriger vers l'éditeur avec des paramètres
-            res.redirect(`/admin/email-editor?edit=${campaignId}`);
-
-        } catch (error) {
-            console.error('❌ Erreur édition campagne:', error);
-            res.status(500).render('error', {
-                message: 'Erreur lors de l\'édition'
-            });
-        }
-    },
-
-    /**
-     * Programmer l'envoi d'une campagne
-     */
-    async scheduleCampaign(req, res) {
-        try {
-            const {
-                campaignId,
-                scheduledDate,
-                scheduledTime
-            } = req.body;
-
-            if (!scheduledDate || !scheduledTime) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Date et heure de programmation requises'
-                });
-            }
-
-            const scheduledAt = new Date(`${scheduledDate}T${scheduledTime}`);
-            
-            if (scheduledAt <= new Date()) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'La date de programmation doit être dans le futur'
-                });
-            }
-
-            // TODO: Implémenter la programmation en base
-            console.log(`📅 Programmation campagne ${campaignId} pour ${scheduledAt}`);
-
-            res.json({
-                success: true,
-                message: 'Campagne programmée avec succès',
-                scheduledAt: scheduledAt
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur programmation:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la programmation'
-            });
-        }
-    },
-
-    /**
-     * Obtenir les templates d'emails prédéfinis
-     */
-    async getEmailTemplates(req, res) {
-        try {
-            const templates = [
-                {
-                    id: 'welcome',
-                    name: 'Email de bienvenue',
-                    description: 'Template pour accueillir les nouveaux clients',
-                    category: 'transactionnel',
-                    preview: '/images/templates/welcome-preview.jpg'
-                },
-                {
-                    id: 'newsletter',
-                    name: 'Newsletter mensuelle',
-                    description: 'Template pour les newsletters régulières',
-                    category: 'marketing',
-                    preview: '/images/templates/newsletter-preview.jpg'
-                },
-                {
-                    id: 'promo',
-                    name: 'Email promotionnel',
-                    description: 'Template pour les offres spéciales',
-                    category: 'marketing',
-                    preview: '/images/templates/promo-preview.jpg'
-                },
-                {
-                    id: 'abandoned-cart',
-                    name: 'Panier abandonné',
-                    description: 'Template pour récupérer les paniers abandonnés',
-                    category: 'transactionnel',
-                    preview: '/images/templates/cart-preview.jpg'
-                }
-            ];
-
-            res.json({
-                success: true,
-                templates
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur récupération templates:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la récupération des templates'
-            });
-        }
-    },
-
-    /**
-     * Exporter une campagne
-     */
-    async exportCampaign(req, res) {
-        try {
-            const { campaignId } = req.params;
-            const { format } = req.query; // html, pdf, etc.
-
-            // TODO: Récupérer la campagne et générer l'export
-            console.log(`📤 Export campagne ${campaignId} en ${format}`);
-
-            if (format === 'html') {
-                res.setHeader('Content-Type', 'text/html');
-                res.setHeader('Content-Disposition', `attachment; filename="campagne-${campaignId}.html"`);
-                res.send('<h1>Contenu de la campagne</h1>');
-            } else {
-                res.status(400).json({
-                    success: false,
-                    message: 'Format d\'export non supporté'
-                });
-            }
-
-        } catch (error) {
-            console.error('❌ Erreur export:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de l\'export'
-            });
-        }
-    },
-
-    /**
-     * Obtenir les métriques détaillées d'une campagne
-     */
-    async getCampaignMetrics(req, res) {
-        try {
-            const { campaignId } = req.params;
-
-            // TODO: Calculer les vraies métriques depuis la base
-            const metrics = {
-                campaignId: campaignId,
-                sentCount: 245,
-                deliveredCount: 240,
-                openCount: 98,
-                clickCount: 23,
-                unsubscribeCount: 2,
-                bounceCount: 5,
-                openRate: 40.8,
-                clickRate: 9.6,
-                unsubscribeRate: 0.8,
-                bounceRate: 2.0,
-                timeline: {
-                    sent: new Date('2025-01-15T09:00:00'),
-                    firstOpen: new Date('2025-01-15T09:15:00'),
-                    lastOpen: new Date('2025-01-16T18:30:00')
-                },
-                topLinks: [
-                    { url: '/bijoux/colliers', clicks: 15 },
-                    { url: '/bijoux/bagues', clicks: 8 }
-                ],
-                deviceStats: {
-                    mobile: 60,
-                    desktop: 35,
-                    tablet: 5
-                },
-                locationStats: {
-                    'France': 180,
-                    'Belgique': 35,
-                    'Suisse': 20,
-                    'Canada': 10
-                }
-            };
-
-            res.json({
-                success: true,
-                metrics
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur métriques campagne:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la récupération des métriques'
-            });
         }
     }
 };
