@@ -100,92 +100,64 @@ export const emailController = {
         try {
             console.log('📧 Affichage historique des campagnes');
 
-            let campaigns = [];
-            let stats = { total: 0, sent: 0, failed: 0, successRate: 0 };
+            // Récupérer toutes les campagnes (groupées par subject)
+            const campaignsQuery = `
+                SELECT 
+                    MIN(id) as id,
+                    subject as name,
+                    email_type,
+                    status,
+                    MIN(created_at) as created_at,
+                    COUNT(*) as recipients_count,
+                    SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent_count,
+                    SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_count
+                FROM email_logs 
+                WHERE email_type IN ('campaign', 'promotional', 'newsletter')
+                GROUP BY subject, email_type, status
+                ORDER BY MIN(created_at) DESC
+                LIMIT 50
+            `;
 
-            try {
-                // Vérifier si la table email_logs existe
-                const [tableExists] = await sequelize.query(`
-                    SELECT EXISTS (
-                        SELECT FROM information_schema.tables 
-                        WHERE table_schema = 'public' 
-                        AND table_name = 'email_logs'
-                    );
-                `);
+            const [campaigns] = await sequelize.query(campaignsQuery);
 
-                if (tableExists[0].exists) {
-                    // Récupérer les campagnes si la table existe
-                    const campaignsQuery = `
-                        SELECT 
-                            MIN(id) as id,
-                            subject as name,
-                            email_type,
-                            status,
-                            MIN(created_at) as created_at,
-                            COUNT(*) as recipients_count,
-                            SUM(CASE WHEN status = 'sent' THEN 1 ELSE 0 END) as sent_count,
-                            SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed_count
-                        FROM email_logs 
-                        WHERE email_type IN ('campaign', 'promotional', 'newsletter')
-                        GROUP BY subject, email_type, status
-                        ORDER BY MIN(created_at) DESC
-                        LIMIT 50
-                    `;
+            // Formatage des données
+            const formattedCampaigns = campaigns.map(campaign => ({
+                id: campaign.id,
+                name: campaign.name,
+                status: campaign.status,
+                type: campaign.email_type,
+                created_at: campaign.created_at,
+                recipients: parseInt(campaign.recipients_count),
+                sent: parseInt(campaign.sent_count),
+                failed: parseInt(campaign.failed_count),
+                success_rate: campaign.recipients_count > 0 
+                    ? Math.round((campaign.sent_count / campaign.recipients_count) * 100)
+                    : 0
+            }));
 
-                    const [campaignsResult] = await sequelize.query(campaignsQuery);
-                    
-                    campaigns = campaignsResult.map(campaign => ({
-                        id: campaign.id || 0,
-                        name: campaign.name || 'Campagne sans nom',
-                        status: campaign.status || 'unknown',
-                        type: campaign.email_type || 'campaign',
-                        created_at: campaign.created_at || new Date(),
-                        recipients: parseInt(campaign.recipients_count) || 0,
-                        sent: parseInt(campaign.sent_count) || 0,
-                        failed: parseInt(campaign.failed_count) || 0,
-                        success_rate: campaign.recipients_count > 0 
-                            ? Math.round((campaign.sent_count / campaign.recipients_count) * 100)
-                            : 0
-                    }));
-
-                    // Calculer les statistiques
-                    const totalSent = campaigns.reduce((sum, c) => sum + (c.sent || 0), 0);
-                    const totalFailed = campaigns.reduce((sum, c) => sum + (c.failed || 0), 0);
-                    const avgSuccessRate = campaigns.length > 0
-                        ? Math.round(campaigns.reduce((sum, c) => sum + (c.success_rate || 0), 0) / campaigns.length)
-                        : 0;
-
-                    stats = {
-                        total: campaigns.length || 0,
-                        sent: totalSent || 0,
-                        failed: totalFailed || 0,
-                        successRate: avgSuccessRate || 0
-                    };
-                }
-            } catch (dbError) {
-                console.log('⚠️ Tables email pas encore créées:', dbError.message);
-                campaigns = [];
-                stats = { total: 0, sent: 0, failed: 0, successRate: 0 };
-            }
-
-            console.log('📊 Stats campagnes:', stats);
-            console.log(`📧 ${campaigns.length} campagnes trouvées`);
+            // Statistiques globales
+            const totalSent = formattedCampaigns.reduce((sum, c) => sum + c.sent, 0);
+            const totalFailed = formattedCampaigns.reduce((sum, c) => sum + c.failed, 0);
+            const avgSuccessRate = formattedCampaigns.length > 0
+                ? Math.round(formattedCampaigns.reduce((sum, c) => sum + c.success_rate, 0) / formattedCampaigns.length)
+                : 0;
 
             res.render('admin/email-history', {
                 title: 'Historique des Campagnes',
-                campaigns: campaigns,
-                stats: stats
+                campaigns: formattedCampaigns,
+                stats: {
+                    total: formattedCampaigns.length,
+                    sent: totalSent,
+                    failed: totalFailed,
+                    successRate: avgSuccessRate
+                }
             });
 
         } catch (error) {
             console.error('❌ Erreur historique email:', error);
-            
-            // En cas d'erreur, rendu avec données vides
-            res.render('admin/email-history', {
-                title: 'Historique des Campagnes',
-                campaigns: [],
-                stats: { total: 0, sent: 0, failed: 0, successRate: 0 },
-                error: 'Les tables email ne sont pas encore créées. Exécutez le script SQL d\'installation.'
+            res.status(500).render('error', {
+                message: 'Erreur lors du chargement de l\'historique',
+                error: error
             });
         }
     },

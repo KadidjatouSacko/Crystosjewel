@@ -1,30 +1,25 @@
-// REMPLACEZ le début de votre router.js par ceci (jusqu'à "ROUTES PRINCIPALES")
-
 import { Router } from "express";
 import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 import multer from "multer";
+import express from "express";
+
+// Imports des modèles
 import { Jewel } from "./models/jewelModel.js";
 import { Category } from "./models/categoryModel.js";
 import { Material } from "./models/MaterialModel.js";
-import express from "express";
-
 import { sequelize } from "./models/sequelize-client.js";
 import { Cart } from "./models/cartModel.js";
 import { Type } from "./models/TypeModel.js";
 import { JewelImage } from "./models/jewelImage.js";
-
-// Imports des contrôleurs EXISTANTS
-import { emailManagementController } from "./controlleurs/emailManagementController.js";
-// Ajoutez ces lignes APRÈS l'import pour tester :
-console.log('🔍 Test import emailManagementController:', emailManagementController);
-console.log('🔍 showAdminPage existe?', typeof emailManagementController?.showAdminPage);
-import { adminEmailsController } from './controlleurs/adminEmailsController.js';
-import { mainControlleur } from "./controlleurs/mainControlleur.js";
-import{ customerManagementController}from "./controlleurs/customerManagementController.js";
 import { Op } from 'sequelize';
+import { PromoCode } from "./models/Promocode.js";
+
+// Imports des contrôleurs PRINCIPAUX (UN SEUL IMPORT PAR CONTRÔLEUR)
+import { mainControlleur } from "./controlleurs/mainControlleur.js";
+import { customerManagementController } from "./controlleurs/customerManagementController.js";
 import { baguesControlleur } from "./controlleurs/baguesControlleur.js";
 import { braceletsControlleur } from "./controlleurs/braceletsControlleur.js";
 import { featuredController } from "./controlleurs/featuredController.js";
@@ -41,21 +36,24 @@ import { adminOrdersController } from "./controlleurs/adminOrdersController.js";
 import { SettingsController } from './controlleurs/SettingsController.js';
 import { jewelryController } from "./controlleurs/jewelryController.js";
 import { categoryController } from './controlleurs/categoryController.js';
-import  { sendTestMail } from "./services/mailService.js";
+import { sendTestMail } from "./services/mailService.js";
 import { promoAdminController } from "./controlleurs/promoAdminController.js";
-
 import { guestOrderController } from './controlleurs/guestOrderController.js';
+import { emailManagementController } from "./controlleurs/emailManagementController.js";
 
+// CONTROLLERS EMAIL - CHOISISSEZ UN SEUL SYSTÈME
+
+import emailAdminController from './controlleurs/emailAdminController.js';
+// Middlewares d'authentification
+import { isAdmin, isAuthenticated } from './middleware/authMiddleware.js';
+
+// Middlewares pour les commandes invités
 import { 
   guestOrderMiddleware, 
   cartNotEmptyMiddleware, 
   validateGuestOrderMiddleware 
 } from './middleware/guestOrderMiddleware.js';
-// import { uploadCategoryImage } from '../../index.js'; // Import depuis votre app.js
-import { PromoCode } from "./models/Promocode.js";
 
-// Middlewares
-import { isAdmin, isAuthenticated } from './middleware/authMiddleware.js';
 
 const storageHome = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -3546,208 +3544,122 @@ router.get('/customer-stats',isAdmin,
    customerManagementController.getCustomerStats);
 
 
-
-router.get('/admin/emails', isAdmin, emailManagementController.showAdminPage);
-router.get('/admin/emails/editor', isAdmin, emailManagementController.showEmailEditor);  
-router.get('/admin/emails/history', isAdmin, emailManagementController.showEmailHistory);
-
-// API
-// router.post('/admin/emails/campaigns/send', isAdmin, emailManagementController.createAndSendCampaign);
-// router.post('/admin/emails/campaigns/test', isAdmin, emailManagementController.sendTestEmail);
-router.get('/admin/api/customers', isAdmin, emailManagementController.getCustomers);
-router.get('/admin/api/campaigns/history', isAdmin, emailManagementController.getCampaignHistory);
-
-// **Page principale de l'éditeur d'emails**
-router.get('/admin/email-editor', isAdmin, emailController.showEmailEditor);
-
-// **Gestion des brouillons**
-router.post('/admin/emails/campaigns/draft', isAdmin, emailController.saveDraft);
-
-// **Envoi d'emails de test**
-router.post('/admin/emails/campaigns/test', isAdmin, emailController.sendTest);
-
-// **Envoi de campagnes**
-router.post('/admin/emails/campaigns/send', isAdmin, emailController.sendCampaign);
-
-// **Historique des campagnes**
-router.get('/admin/emails/history', isAdmin, emailController.showHistory);
-
-// **Statistiques des emails**
-router.get('/admin/api/emails/stats', isAdmin, emailController.getEmailStats);
-
-
-
-// À ajouter dans app/router.js
-
-import emailController from './controlleurs/emailController.js';
-
 // ==========================================
-// 📧 ROUTES COMPLÈTES POUR L'ÉDITEUR D'EMAILS
+// ROUTES EMAIL ADMIN - SIMPLIFIÉES
 // ==========================================
 
-// **Page principale de l'éditeur d'emails**
-router.get('/admin/email-editor', isAdmin, emailController.showEmailEditor);
+// Pages principales
+router.get('/admin/email-management', isAdmin, emailAdminController.renderEmailManagement);
+router.get('/admin/email-editor', isAdmin, emailAdminController.renderEmailEditor);
 
-// **Gestion des brouillons**
-router.post('/admin/emails/campaigns/draft', isAdmin, emailController.saveDraft);
+// API Templates
+router.post('/admin/email-templates', isAdmin, emailAdminController.createTemplate);
+router.put('/admin/email-templates/:id', isAdmin, emailAdminController.updateTemplate);
+router.post('/admin/email-templates/:id/duplicate', isAdmin, emailAdminController.duplicateTemplate);
+router.put('/admin/email-templates/:id/toggle', isAdmin, emailAdminController.toggleTemplate);
+router.get('/admin/email-templates/:id/preview', isAdmin, emailAdminController.previewTemplate);
 
-// **Envoi d'emails de test**
-router.post('/admin/emails/campaigns/test', isAdmin, emailController.sendTest);
-
-// **Envoi de campagnes**
-router.post('/admin/emails/campaigns/send', isAdmin, emailController.sendCampaign);
-
-// **Historique des campagnes**
-router.get('/admin/emails/history', isAdmin, emailController.showHistory);
-
-// **Statistiques des emails**
-router.get('/admin/api/emails/stats', isAdmin, emailController.getEmailStats);
-
-// **Gestion des campagnes existantes**
-router.get('/admin/emails/:campaignId/preview', isAdmin, emailController.previewCampaign);
-router.post('/admin/emails/:campaignId/duplicate', isAdmin, emailController.duplicateCampaign);
-router.delete('/admin/emails/:campaignId', isAdmin, emailController.deleteCampaign);
-
-// **API pour les clients**
-router.get('/admin/api/customers', isAdmin, emailController.getCustomers);
-
-// **Tracking des emails (sans auth pour les pixels)**
-router.get('/email/track/open/:campaignId/:customerEmail', emailController.trackOpen);
-router.get('/email/track/click/:campaignId/:customerEmail/:linkId', emailController.trackClick);
-
-// **Route pour la désinscription newsletter**
-router.get('/newsletter/unsubscribe', async (req, res) => {
-    try {
-        const { email, token } = req.query;
-        
-        if (email) {
-            // TODO: Implémenter la désinscription
-            await User.update(
-                { newsletter: false },
-                { where: { email: email } }
-            );
-            
-            res.render('newsletter/unsubscribed', {
-                title: 'Désabonnement réussi',
-                email: email
-            });
-        } else {
-            res.render('newsletter/unsubscribe-form', {
-                title: 'Se désabonner'
-            });
-        }
-    } catch (error) {
-        console.error('❌ Erreur désinscription:', error);
-        res.render('error', {
-            message: 'Erreur lors de la désinscription'
-        });
-    }
-});
-
-// **Route pour upload d'images dans l'éditeur**
-router.post('/admin/emails/upload-image', isAdmin, upload.single('image'), async (req, res) => {
+// Upload d'images email
+router.post('/admin/email-editor/upload-image', isAdmin, emailUpload.single('image'), (req, res) => {
     try {
         if (!req.file) {
-            return res.status(400).json({
-                success: false,
-                message: 'Aucune image fournie'
-            });
+            return res.status(400).json({ success: false, message: 'Aucune image fournie' });
         }
 
-        // Sauvegarder l'image
-        const imagePath = `/uploads/emails/${req.file.filename}`;
-        
+        const imageUrl = `/uploads/email-images/${req.file.filename}`;
         res.json({
             success: true,
-            imageUrl: imagePath,
+            imageUrl: imageUrl,
+            originalName: req.file.originalname,
             message: 'Image uploadée avec succès'
         });
-
     } catch (error) {
         console.error('❌ Erreur upload image:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de l\'upload'
-        });
+        res.status(500).json({ success: false, message: 'Erreur lors de l\'upload' });
     }
 });
 
-// **Route pour récupérer les modèles de bijoux**
-router.get('/admin/api/jewels/for-email', isAdmin, async (req, res) => {
+router.post('/admin/email-editor/upload-images', isAdmin, emailUpload.array('images', 10), (req, res) => {
     try {
-        const jewels = await Jewel.findAll({
-            where: {
-                is_active: true,
-                stock: { [Op.gt]: 0 }
-            },
-            include: [
-                {
-                    model: JewelImage,
-                    as: 'additionalImages',
-                    attributes: ['image_path'],
-                    limit: 1
-                }
-            ],
-            attributes: ['id', 'name', 'price', 'discounted_price', 'slug'],
-            order: [['created_at', 'DESC']],
-            limit: 20
-        });
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ success: false, message: 'Aucune image fournie' });
+        }
 
-        const jewelData = jewels.map(jewel => ({
-            id: jewel.id,
-            name: jewel.name,
-            price: jewel.discounted_price || jewel.price,
-            originalPrice: jewel.discounted_price ? jewel.price : null,
-            image: jewel.additionalImages?.[0]?.image_path || '/images/placeholder-image.jpg',
-            url: `/bijoux/${jewel.slug}`
+        const uploadedImages = req.files.map(file => ({
+            url: `/uploads/email-images/${file.filename}`,
+            originalName: file.originalname,
+            size: file.size
         }));
-
-        res.json({
-            success: true,
-            jewels: jewelData
-        });
-
-    } catch (error) {
-        console.error('❌ Erreur récupération bijoux:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de la récupération des bijoux'
-        });
-    }
-});
-
-// **Route pour prévisualiser un email avec des données de test**
-router.post('/admin/emails/preview', isAdmin, (req, res) => {
-    try {
-        const { content, subject, preheader } = req.body;
         
-        // Remplacer les variables par des données de test
-        const testContent = content
-            .replace(/\{\{first_name\}\}/g, 'Marie')
-            .replace(/\{\{last_name\}\}/g, 'Dupont')
-            .replace(/\{\{email\}\}/g, 'marie.dupont@example.com')
-            .replace(/\{\{company_name\}\}/g, 'Test Company')
-            .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'))
-            .replace(/\{\{unsubscribe_url\}\}/g, '#');
-
         res.json({
             success: true,
-            preview: {
-                subject: subject || 'Aperçu du sujet',
-                preheader: preheader || 'Aperçu du preheader',
-                content: testContent
-            }
+            images: uploadedImages,
+            imageUrls: uploadedImages.map(img => img.url),
+            message: `${req.files.length} image(s) uploadée(s) avec succès`
         });
-
     } catch (error) {
-        console.error('❌ Erreur aperçu:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de la génération de l\'aperçu'
-        });
+        console.error('❌ Erreur upload images:', error);
+        res.status(500).json({ success: false, message: 'Erreur lors de l\'upload' });
     }
 });
 
+// Email de test
+router.post('/admin/email-test', isAdmin, emailAdminController.sendTestEmail);
+
+// Logs et historique
+router.get('/admin/email-logs/:id/view', isAdmin, emailAdminController.viewEmailLog);
+router.post('/admin/email-logs/:id/resend', isAdmin, emailAdminController.resendEmail);
+
+// Stats
+router.get('/admin/email-stats', isAdmin, emailAdminController.getEmailStatsAPI);
+
+// Setup initial
+router.post('/admin/email-setup', isAdmin, async (req, res) => {
+    try {
+        const { EmailTemplate } = await import('./models/emailTemplateModel.js');
+        
+        const defaultTemplates = [
+            {
+                template_name: 'Confirmation de Commande',
+                subject: 'Votre commande {{orderNumber}} est confirmée',
+                html_content: '<h2>Bonjour {{customerName}},</h2><p>Votre commande {{orderNumber}} a été confirmée.</p>',
+                email_type: 'order_confirmation',
+                is_active: true
+            }
+        ];
+        
+        let createdCount = 0;
+        
+        for (const templateData of defaultTemplates) {
+            const existing = await EmailTemplate.findOne({
+                where: { template_name: templateData.template_name }
+            });
+            
+            if (!existing) {
+                await EmailTemplate.create({
+                    ...templateData,
+                    created_at: new Date(),
+                    updated_at: new Date()
+                });
+                createdCount++;
+            }
+        }
+        
+        res.json({
+            success: true,
+            message: `Setup terminé ! ${createdCount} template(s) créé(s).`,
+            created: createdCount
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur setup email:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors du setup: ' + error.message
+        });
+    }
+});
+console.log('📧 Routes email admin configurées avec succès');
 
 // Export par défaut
 export default router;
