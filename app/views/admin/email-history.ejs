@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 Historique des Emails - CrystosJewel Admin</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #d89ab3;
+            --primary-dark: #b794a8;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --border: #e2e8f0;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --radius: 12px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, #e2e8f0 100%);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            color: white;
+            padding: 30px;
+            border-radius: var(--radius);
+            margin-bottom: 30px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            transform: translate(50%, -50%);
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        /* Filtres et recherche */
+        .filters-bar {
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            box-shadow: var(--shadow);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .filter-label {
+            font-weight: 600;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .filter-input, .filter-select {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .filter-input:focus, .filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(216, 154, 179, 0.1);
+        }
+
+        /* Grille principale */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 20px;
+        }
+
+        .campaigns-section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
+
+        .analytics-sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Tableau des campagnes */
+        .campaigns-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        .campaigns-table th {
+            background: var(--bg-primary);
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .campaigns-table td {
+            padding: 15px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: middle;
+        }
+
+        .campaigns-table tr:hover {
+            background: var(--bg-primary);
+        }
+
+        .campaign-title {
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 4px;
+        }
+
+        .campaign-subtitle {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-sent { background: #dcfce7; color: #166534; }
+        .status-draft { background: #f3f4f6; color: #374151; }
+        .status-sending { background: #dbeafe; color: #1d4ed8; }
+        .status-failed { background: #fee2e2; color: #dc2626; }
+        .status-scheduled { background: #fef3c7; color: #d97706; }
+
+        .performance-metrics {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .metric {
+            font-size: 12px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .metric-label {
+            color: var(--text-secondary);
+        }
+
+        .metric-value {
+            font-weight: 600;
+        }
+
+        .metric-rate {
+            color: var(--success);
+        }
+
+        /* Boutons d'action */
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 2px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-view { background: #dcfce7; color: #059669; }
+        .btn-edit { background: #fef3c7; color: #d97706; }
+        .btn-duplicate { background: #dbeafe; color: #2563eb; }
+        .btn-delete { background: #fee2e2; color: #dc2626; }
+        .btn-analytics { background: #f3e8ff; color: #7c3aed; }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Widgets analytics */
+        .analytics-widget {
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .widget-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+
+        .stat-item-label {
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        .stat-item-value {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        /* Graphiques */
+        .chart-container {
+            height: 200px;
+            margin: 15px 0;
+        }
+
+        /* Boutons */
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-info {
+            background: var(--info);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Top performers */
+        .top-campaigns {
+            margin-top: 15px;
+        }
+
+        .top-campaign-item {
+            padding: 12px;
+            background: var(--bg-primary);
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid var(--primary);
+        }
+
+        .top-campaign-name {
+            font-weight: 600;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+
+        .top-campaign-stats {
+            font-size: 11px;
+            color: var(--text-secondary);
+            display: flex;
+            gap: 15px;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .pagination-btn {
+            width: 36px;
+            height: 36px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .pagination-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .pagination-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .pagination-info {
+            color: var(--text-secondary);
+            font-size: 14px;
+            margin: 0 15px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .analytics-sidebar {
+                flex-direction: row;
+                overflow-x: auto;
+            }
+            
+            .analytics-widget {
+                min-width: 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+            
+            .filters-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .filter-group {
+                justify-content: space-between;
+            }
+            
+            .campaigns-table {
+                font-size: 13px;
+            }
+            
+            .campaigns-table th,
+            .campaigns-table td {
+                padding: 8px;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.6s ease forwards;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            opacity: 0.3;
+        }
+    </style>
+</head>
+<body>
+    <%- include('../partials/navbarre.ejs') %>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header fade-in">
+            <div class="header-content">
+                <div>
+                    <h1>
+                        <i class="fas fa-history"></i>
+                        Historique des Emails
+                    </h1>
+                    <p style="margin-top: 8px; opacity: 0.9;">Analysez les performances de vos campagnes</p>
+                </div>
+                <div class="header-actions">
+                    <a href="/admin/emails/editor" target="_blank" class="btn btn-success">
+                        <i class="fas fa-plus"></i>
+                        Nouvelle campagne
+                    </a>
+                    <a href="/admin/emails" class="btn btn-secondary">
+                        <i class="fas fa-home"></i>
+                        Retour dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filtres -->
+        <div class="filters-bar fade-in">
+            <div class="filter-group">
+                <label class="filter-label">Recherche :</label>
+                <input type="text" class="filter-input" id="searchInput" placeholder="Nom ou sujet..." onkeyup="filterCampaigns()">
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Statut :</label>
+                <select class="filter-select" id="statusFilter" onchange="filterCampaigns()">
+                    <option value="">Tous les statuts</option>
+                    <option value="sent">Envoyé</option>
+                    <option value="draft">Brouillon</option>
+                    <option value="sending">En cours</option>
+                    <option value="failed">Échec</option>
+                    <option value="scheduled">Programmé</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label class="filter-label">Période :</label>
+                <select class="filter-select" id="periodFilter" onchange="filterCampaigns()">
+                    <option value="">Toutes les périodes</option>
+                    <option value="today">Aujourd'hui</option>
+                    <option value="week">Cette semaine</option>
+                    <option value="month">Ce mois</option>
+                    <option value="quarter">Ce trimestre</option>
+                </select>
+            </div>
+            
+            <div style="margin-left: auto;">
+                <button class="btn btn-info" onclick="exportCampaigns()">
+                    <i class="fas fa-download"></i>
+                    Exporter
+                </button>
+            </div>
+        </div>
+
+        <!-- Contenu principal -->
+        <div class="main-grid">
+            <!-- Liste des campagnes -->
+            <div class="campaigns-section fade-in">
+                <h3 style="font-size: 1.3rem; margin-bottom: 20px; display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-list"></i>
+                    Toutes les campagnes
+                </h3>
+                
+                <div style="overflow-x: auto;">
+                    <table class="campaigns-table">
+                        <thead>
+                            <tr>
+                                <th>Campagne</th>
+                                <th>Statut</th>
+                                <th>Destinataires</th>
+                                <th>Performance</th>
+                                <th>Date d'envoi</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="campaignsTableBody">
+                            <tr>
+                                <td colspan="6">
+                                    <div class="empty-state">
+                                        <div class="spinner" style="width: 32px; height: 32px; margin: 0 auto 15px;"></div>
+                                        Chargement des campagnes...
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination" id="pagination">
+                    <!-- Généré dynamiquement -->
+                </div>
+            </div>
+
+            <!-- Analytics sidebar -->
+            <div class="analytics-sidebar">
+                <!-- Statistiques globales -->
+                <div class="analytics-widget fade-in">
+                    <h4 class="widget-title">
+                        <i class="fas fa-chart-bar"></i>
+                        Statistiques globales
+                    </h4>
+                    
+                    <div class="stat-item">
+                        <span class="stat-item-label">Campagnes envoyées</span>
+                        <span class="stat-item-value" id="totalSent">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-item-label">Emails délivrés</span>
+                        <span class="stat-item-value" id="totalDelivered">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-item-label">Taux d'ouverture moyen</span>
+                        <span class="stat-item-value" id="avgOpenRate">0%</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-item-label">Taux de clic moyen</span>
+                        <span class="stat-item-value" id="avgClickRate">0%</span>
+                    </div>
+                </div>
+
+                <!-- Graphique des performances -->
+                <div class="analytics-widget fade-in">
+                    <h4 class="widget-title">
+                        <i class="fas fa-chart-line"></i>
+                        Tendances (30 jours)
+                    </h4>
+                    
+                    <div class="chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top campagnes -->
+                <div class="analytics-widget fade-in">
+                    <h4 class="widget-title">
+                        <i class="fas fa-trophy"></i>
+                        Meilleures performances
+                    </h4>
+                    
+                    <div class="top-campaigns" id="topCampaigns">
+                        <div class="top-campaign-item">
+                            <div class="top-campaign-name">Newsletter Décembre</div>
+                            <div class="top-campaign-stats">
+                                <span>📧 245 envois</span>
+                                <span>👁️ 78% ouverture</span>
+                                <span>🖱️ 12% clics</span>
+                            </div>
+                        </div>
+                        <div class="top-campaign-item">
+                            <div class="top-campaign-name">Promotion Black Friday</div>
+                            <div class="top-campaign-stats">
+                                <span>📧 412 envois</span>
+                                <span>👁️ 65% ouverture</span>
+                                <span>🖱️ 8% clics</span>
+                            </div>
+                        </div>
+                        <div class="top-campaign-item">
+                            <div class="top-campaign-name">Nouvelle Collection</div>
+                            <div class="top-campaign-stats">
+                                <span>📧 189 envois</span>
+                                <span>👁️ 58% ouverture</span>
+                                <span>🖱️ 15% clics</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions rapides -->
+                <div class="analytics-widget fade-in">
+                    <h4 class="widget-title">
+                        <i class="fas fa-bolt"></i>
+                        Actions rapides
+                    </h4>
+                    
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <button class="btn btn-primary" onclick="createFromBest()" style="width: 100%; font-size: 13px;">
+                            <i class="fas fa-copy"></i>
+                            Dupliquer la meilleure
+                        </button>
+                        <button class="btn btn-secondary" onclick="cleanupDrafts()" style="width: 100%; font-size: 13px;">
+                            <i class="fas fa-trash"></i>
+                            Nettoyer brouillons
+                        </button>
+                        <button class="btn btn-info" onclick="bulkExport()" style="width: 100%; font-size: 13px;">
+                            <i class="fas fa-file-export"></i>
+                            Export complet
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal détails campagne -->
+    <div id="campaignModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; padding: 20px;">
+        <div style="background: white; border-radius: 12px; max-width: 900px; margin: 0 auto; max-height: 90vh; overflow-y: auto;">
+            <div style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                <h3 id="modalTitle">📧 Détails de la campagne</h3>
+                <button onclick="closeCampaignModal()" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+            </div>
+            <div id="modalContent" style="padding: 20px;">
+                <!-- Contenu généré dynamiquement -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let allCampaigns = [];
+        let filteredCampaigns = [];
+        let currentPage = 1;
+        let itemsPerPage = 10;
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('📚 Historique emails initialisé');
+            loadCampaigns();
+            loadAnalytics();
+            initPerformanceChart();
+        });
+
+        // Chargement des campagnes
+        async function loadCampaigns() {
+            try {
+                const response = await fetch('/admin/api/campaigns/history');
+                const data = await response.json();
+                
+                if (data.success) {
+                    allCampaigns = data.campaigns;
+                    filteredCampaigns = [...allCampaigns];
+                    displayCampaigns();
+                    updatePagination();
+                } else {
+                    showError('Erreur lors du chargement des campagnes');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur de connexion');
+            }
+        }
+
+        // Affichage des campagnes
+        function displayCampaigns() {
+            const tbody = document.getElementById('campaignsTableBody');
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const campaignsToShow = filteredCampaigns.slice(startIndex, endIndex);
+            
+            if (campaignsToShow.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="6">
+                            <div class="empty-state">
+                                <i class="fas fa-inbox"></i>
+                                <p>Aucune campagne trouvée</p>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = campaignsToShow.map(campaign => {
+                const openRate = campaign.totalRecipients > 0 ? 
+                    Math.round((campaign.openedCount / campaign.totalRecipients) * 100) : 0;
+                const clickRate = campaign.totalRecipients > 0 ? 
+                    Math.round((campaign.clickedCount / campaign.totalRecipients) * 100) : 0;
+
+                return `
+                    <tr>
+                        <td>
+                            <div class="campaign-title">${campaign.subject}</div>
+                            <div class="campaign-subtitle">${campaign.name || 'Sans nom'}</div>
+                        </td>
+                        <td>
+                            <span class="status-badge status-${campaign.status}">
+                                ${getStatusText(campaign.status)}
+                            </span>
+                        </td>
+                        <td>
+                            <strong>${campaign.totalRecipients || 0}</strong>
+                        </td>
+                        <td>
+                            <div class="performance-metrics">
+                                <div class="metric">
+                                    <span class="metric-label">Ouvertures :</span>
+                                    <span class="metric-value">${campaign.openedCount || 0} <span class="metric-rate">(${openRate}%)</span></span>
+                                </div>
+                                <div class="metric">
+                                    <span class="metric-label">Clics :</span>
+                                    <span class="metric-value">${campaign.clickedCount || 0} <span class="metric-rate">(${clickRate}%)</span></span>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            ${campaign.sentAt ? new Date(campaign.sentAt).toLocaleDateString('fr-FR') : 
+                              new Date(campaign.createdAt).toLocaleDateString('fr-FR')}
+                        </td>
+                        <td>
+                            <button onclick="viewCampaignDetails(${campaign.id})" class="action-btn btn-analytics" title="Analytics détaillées">
+                                <i class="fas fa-chart-line"></i>
+                            </button>
+                            <button onclick="viewCampaign(${campaign.id})" class="action-btn btn-view" title="Voir détails">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${campaign.status === 'draft' ? 
+                                `<button onclick="editCampaign(${campaign.id})" class="action-btn btn-edit" title="Modifier">
+                                    <i class="fas fa-edit"></i>
+                                </button>` : ''
+                            }
+                            <button onclick="duplicateCampaign(${campaign.id})" class="action-btn btn-duplicate" title="Dupliquer">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                            <button onclick="deleteCampaign(${campaign.id})" class="action-btn btn-delete" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Filtrage des campagnes
+        function filterCampaigns() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const status = document.getElementById('statusFilter').value;
+            const period = document.getElementById('periodFilter').value;
+
+            filteredCampaigns = allCampaigns.filter(campaign => {
+                // Filtrage par recherche
+                if (search && !campaign.name?.toLowerCase().includes(search) && 
+                    !campaign.subject?.toLowerCase().includes(search)) {
+                    return false;
+                }
+
+                // Filtrage par statut
+                if (status && campaign.status !== status) {
+                    return false;
+                }
+
+                // Filtrage par période
+                if (period) {
+                    const campaignDate = new Date(campaign.sentAt || campaign.createdAt);
+                    const now = new Date();
+                    
+                    switch(period) {
+                        case 'today':
+                            if (campaignDate.toDateString() !== now.toDateString()) return false;
+                            break;
+                        case 'week':
+                            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+                            if (campaignDate < weekAgo) return false;
+                            break;
+                        case 'month':
+                            if (campaignDate.getMonth() !== now.getMonth() || 
+                                campaignDate.getFullYear() !== now.getFullYear()) return false;
+                            break;
+                        case 'quarter':
+                            const quarterStart = new Date(now.getFullYear(), Math.floor(now.getMonth() / 3) * 3, 1);
+                            if (campaignDate < quarterStart) return false;
+                            break;
+                    }
+                }
+
+                return true;
+            });
+
+            currentPage = 1;
+            displayCampaigns();
+            updatePagination();
+        }
+
+        // Pagination
+        function updatePagination() {
+            const pagination = document.getElementById('pagination');
+            const totalPages = Math.ceil(filteredCampaigns.length / itemsPerPage);
+            
+            if (totalPages <= 1) {
+                pagination.innerHTML = '';
+                return;
+            }
+
+            let paginationHTML = '';
+            
+            // Bouton précédent
+            if (currentPage > 1) {
+                paginationHTML += `<button class="pagination-btn" onclick="goToPage(${currentPage - 1})"><i class="fas fa-chevron-left"></i></button>`;
+            }
+
+            // Numéros de page
+            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                paginationHTML += `<button class="pagination-btn ${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+            }
+
+            // Bouton suivant
+            if (currentPage < totalPages) {
+                paginationHTML += `<button class="pagination-btn" onclick="goToPage(${currentPage + 1})"><i class="fas fa-chevron-right"></i></button>`;
+            }
+
+            // Info
+            const startItem = (currentPage - 1) * itemsPerPage + 1;
+            const endItem = Math.min(currentPage * itemsPerPage, filteredCampaigns.length);
+            paginationHTML += `<span class="pagination-info">${startItem}-${endItem} sur ${filteredCampaigns.length}</span>`;
+
+            pagination.innerHTML = paginationHTML;
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            displayCampaigns();
+            updatePagination();
+        }
+
+        // Actions sur les campagnes
+        function viewCampaign(campaignId) {
+            showCampaignDetails(campaignId);
+        }
+
+        function viewCampaignDetails(campaignId) {
+            window.location.href = `/admin/emails/analytics?campaign=${campaignId}`;
+        }
+
+        function editCampaign(campaignId) {
+            window.open(`/admin/emails/editor?edit=${campaignId}`, '_blank');
+        }
+
+        async function duplicateCampaign(campaignId) {
+            if (!confirm('🔄 Dupliquer cette campagne ?')) return;
+            
+            try {
+                const response = await fetch(`/admin/api/campaigns/${campaignId}/duplicate`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('✅ Campagne dupliquée', 'success');
+                    loadCampaigns();
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showNotification('❌ Erreur lors de la duplication', 'error');
+            }
+        }
+
+        async function deleteCampaign(campaignId) {
+            if (!confirm('🗑️ Supprimer définitivement cette campagne ?')) return;
+            
+            try {
+                const response = await fetch(`/admin/api/campaigns/${campaignId}`, {
+                    method: 'DELETE'
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('✅ Campagne supprimée', 'success');
+                    loadCampaigns();
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showNotification('❌ Erreur lors de la suppression', 'error');
+            }
+        }
+
+        // Modal détails
+        async function showCampaignDetails(campaignId) {
+            try {
+                const response = await fetch(`/admin/api/campaigns/${campaignId}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const campaign = data.campaign;
+                    
+                    document.getElementById('modalTitle').textContent = `📧 ${campaign.subject}`;
+                    document.getElementById('modalContent').innerHTML = `
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+                            <div>
+                                <h4 style="margin-bottom: 15px;">📊 Statistiques</h4>
+                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                    <p><strong>Destinataires :</strong> ${campaign.totalRecipients || 0}</p>
+                                    <p><strong>Envoyés :</strong> ${campaign.stats?.sent || 0}</p>
+                                    <p><strong>Ouverts :</strong> ${campaign.stats?.opened || 0} (${campaign.totalRecipients > 0 ? Math.round((campaign.stats?.opened || 0) / campaign.totalRecipients * 100) : 0}%)</p>
+                                    <p><strong>Cliqués :</strong> ${campaign.stats?.clicked || 0} (${campaign.totalRecipients > 0 ? Math.round((campaign.stats?.clicked || 0) / campaign.totalRecipients * 100) : 0}%)</p>
+                                    <p><strong>Échecs :</strong> ${campaign.stats?.failed || 0}</p>
+                                </div>
+                                
+                                <h4 style="margin: 20px 0 15px;">ℹ️ Informations</h4>
+                                <div style="background: var(--bg-primary); padding: 15px; border-radius: 8px;">
+                                    <p><strong>Nom :</strong> ${campaign.name || 'Sans nom'}</p>
+                                    <p><strong>Statut :</strong> ${getStatusText(campaign.status)}</p>
+                                    <p><strong>Créé le :</strong> ${new Date(campaign.created_at).toLocaleDateString('fr-FR')}</p>
+                                    ${campaign.sent_at ? `<p><strong>Envoyé le :</strong> ${new Date(campaign.sent_at).toLocaleDateString('fr-FR')}</p>` : ''}
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <h4 style="margin-bottom: 15px;">👥 Liste des destinataires</h4>
+                                <div style="max-height: 300px; overflow-y: auto; background: var(--bg-primary); border-radius: 8px; padding: 15px;">
+                                    ${campaign.recipients ? campaign.recipients.map(recipient => `
+                                        <div style="padding: 8px; border-bottom: 1px solid var(--border); font-size: 13px;">
+                                            <div><strong>${recipient.customer || recipient.email}</strong></div>
+                                            <div style="color: var(--text-secondary);">
+                                                ${recipient.status} 
+                                                ${recipient.openedAt ? '• Ouvert' : ''} 
+                                                ${recipient.clickedAt ? '• Cliqué' : ''}
+                                            </div>
+                                        </div>
+                                    `).join('') : '<p>Aucun destinataire</p>'}
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    
+                    document.getElementById('campaignModal').style.display = 'flex';
+                }
+            } catch (error) {
+                showNotification('❌ Erreur lors du chargement des détails', 'error');
+            }
+        }
+
+        function closeCampaignModal() {
+            document.getElementById('campaignModal').style.display = 'none';
+        }
+
+        // Actions rapides
+        function createFromBest() {
+            if (allCampaigns.length === 0) {
+                showNotification('❌ Aucune campagne disponible', 'error');
+                return;
+            }
+            
+            // Trouver la campagne avec le meilleur taux d'ouverture
+            const bestCampaign = allCampaigns.reduce((best, current) => {
+                const bestRate = best.totalRecipients > 0 ? (best.openedCount / best.totalRecipients) : 0;
+                const currentRate = current.totalRecipients > 0 ? (current.openedCount / current.totalRecipients) : 0;
+                return currentRate > bestRate ? current : best;
+            });
+            
+            duplicateCampaign(bestCampaign.id);
+        }
+
+        async function cleanupDrafts() {
+            if (!confirm('🧹 Supprimer tous les brouillons de plus de 30 jours ?')) return;
+            
+            try {
+                const response = await fetch('/admin/emails/cleanup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ type: 'drafts', olderThan: 30 })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification(`✅ ${data.deletedCount || 0} brouillons supprimés`, 'success');
+                    loadCampaigns();
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (error) {
+                showNotification('❌ Erreur lors du nettoyage', 'error');
+            }
+        }
+
+        function bulkExport() {
+            window.location.href = '/admin/emails/export/campaigns';
+        }
+
+        function exportCampaigns() {
+            const format = prompt('Format d\'export :\n1. CSV\n2. Excel\n\nTapez le numéro :');
+            const formats = { '1': 'csv', '2': 'excel' };
+            
+            if (formats[format]) {
+                window.location.href = `/admin/emails/export/campaigns?format=${formats[format]}`;
+            }
+        }
+
+        // Analytics
+        async function loadAnalytics() {
+            try {
+                const response = await fetch('/admin/api/analytics/overview');
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('totalSent').textContent = data.analytics.totalSent || 0;
+                    document.getElementById('totalDelivered').textContent = data.analytics.totalDelivered || 0;
+                    document.getElementById('avgOpenRate').textContent = (data.analytics.avgOpenRate || 0) + '%';
+                    document.getElementById('avgClickRate').textContent = (data.analytics.avgClickRate || 0) + '%';
+                }
+            } catch (error) {
+                console.error('Erreur chargement analytics:', error);
+            }
+        }
+
+        // Graphique
+        function initPerformanceChart() {
+            const ctx = document.getElementById('performanceChart');
+            if (!ctx) return;
+
+            const data = {
+                labels: ['Il y a 30j', '25j', '20j', '15j', '10j', '5j', 'Aujourd\'hui'],
+                datasets: [{
+                    label: 'Emails envoyés',
+                    data: [45, 52, 38, 67, 41, 58, 73],
+                    borderColor: '#d89ab3',
+                    backgroundColor: 'rgba(216, 154, 179, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }, {
+                    label: 'Taux d\'ouverture (%)',
+                    data: [68, 72, 65, 78, 71, 69, 75],
+                    borderColor: '#8b5cf6',
+                    backgroundColor: 'rgba(139, 92, 246, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y1'
+                }]
+            };
+
+            new Chart(ctx, {
+                type: 'line',
+                data: data,
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true },
+                        y1: { type: 'linear', display: false, position: 'right' }
+                    },
+                    plugins: {
+                        legend: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Utilitaires
+        function getStatusText(status) {
+            const statusMap = {
+                'sent': 'Envoyé',
+                'draft': 'Brouillon', 
+                'sending': 'En cours',
+                'failed': 'Échec',
+                'scheduled': 'Programmé'
+            };
+            return statusMap[status] || status;
+        }
+
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed; top: 20px; right: 20px; padding: 15px 20px;
+                border-radius: 8px; color: white; font-weight: 600; z-index: 99999;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                animation: slideIn 0.3s ease;
+            `;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.remove(), 4000);
+        }
+
+        function showError(message) {
+            document.getElementById('campaignsTableBody').innerHTML = `
+                <tr>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="fas fa-exclamation-triangle" style="color: var(--danger);"></i>
+                            <p>${message}</p>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }
+
+        // CSS pour les animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            .spinner {
+                width: 16px; height: 16px; border: 2px solid var(--border);
+                border-top: 2px solid var(--primary); border-radius: 50%;
+                animation: spin 1s linear infinite; display: inline-block;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        console.log('📚 Historique des emails initialisé');
+        console.log('🔍 Fonctionnalités disponibles:');
+        console.log('   • Filtrage par statut et période');
+        console.log('   • Analytics détaillées par campagne');
+        console.log('   • Export des données');
+        console.log('   • Actions groupées');
+    </script>
+</body>
+</html>
