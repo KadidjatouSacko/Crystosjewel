@@ -1,0 +1,1904 @@
+<!-- app/views/admin/email-editor.ejs -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✏️ <%= title %></title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- CKEditor pour l'édition riche -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ckeditor/4.22.1/ckeditor.js"></script>
+    
+    <!-- Color Picker -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/spectrum/1.8.1/spectrum.min.js"></script>
+    
+    <!-- SortableJS pour le drag & drop -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
+    
+    <style>
+        :root {
+            --primary: #d89ab3;
+            --primary-dark: #b794a8;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --border: #e2e8f0;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --radius: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .editor-container {
+            display: grid;
+            grid-template-columns: 320px 1fr 320px;
+            height: 100vh;
+        }
+
+        .sidebar-left, .sidebar-right {
+            background: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .sidebar-right {
+            border-left: 1px solid var(--border);
+            border-right: none;
+        }
+
+        .editor-main {
+            display: flex;
+            flex-direction: column;
+            background: #f1f5f9;
+        }
+
+        .editor-header {
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .editor-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .preview-area {
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            overflow-y: auto;
+        }
+
+        .email-preview {
+            background: white;
+            width: 600px;
+            min-height: 800px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            position: relative;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+            font-size: 14px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(216, 154, 179, 0.1);
+        }
+
+        .template-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .template-card {
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .template-card:hover {
+            border-color: var(--primary);
+            background: var(--bg-primary);
+        }
+
+        .template-card.active {
+            border-color: var(--primary);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .content-blocks {
+            margin-bottom: 25px;
+        }
+
+        .block-item {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px;
+            margin-bottom: 10px;
+            cursor: grab;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .block-item:hover {
+            background: var(--primary);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .block-item:active {
+            cursor: grabbing;
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-info {
+            background: var(--info);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .sidebar-section {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-section:last-child {
+            border-bottom: none;
+        }
+
+        .sidebar-section h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .email-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 20px;
+            border-radius: var(--radius) var(--radius) 0 0;
+        }
+
+        .email-subject {
+            font-size: 1.4rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .email-preheader {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .email-content {
+            padding: 20px;
+            line-height: 1.6;
+            min-height: 400px;
+            position: relative;
+        }
+
+        .email-footer {
+            background: var(--bg-primary);
+            padding: 15px 20px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border-radius: 0 0 var(--radius) var(--radius);
+            border-top: 1px solid var(--border);
+        }
+
+        .variables-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .variable-tag {
+            background: var(--secondary);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .variable-tag:hover {
+            background: #7c3aed;
+            transform: scale(1.05);
+        }
+
+        .recipients-counter {
+            background: var(--success);
+            color: white;
+            padding: 8px 12px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .filter-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .filter-btn {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+
+        /* Éditeur riche */
+        .rich-editor {
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            background: white;
+            min-height: 300px;
+        }
+
+        /* Outils de design */
+        .design-tools {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .tool-group {
+            margin-bottom: 15px;
+        }
+
+        .tool-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .tool-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .color-picker-input {
+            width: 40px;
+            height: 30px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .range-input {
+            width: 100%;
+            margin: 5px 0;
+        }
+
+        .font-controls {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .image-upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .image-upload-zone:hover, .image-upload-zone.dragover {
+            border-color: var(--primary);
+            background: var(--bg-primary);
+        }
+
+        /* Éléments éditables dynamiques */
+        .email-element {
+            position: relative;
+            margin: 10px 0;
+            min-height: 30px;
+            border: 2px dashed transparent;
+            border-radius: 4px;
+            transition: all 0.3s ease;
+        }
+
+        .email-element:hover {
+            border-color: var(--primary);
+            background: rgba(216, 154, 179, 0.05);
+        }
+
+        .email-element.selected {
+            border-color: var(--primary);
+            background: rgba(216, 154, 179, 0.1);
+        }
+
+        .element-toolbar {
+            position: absolute;
+            top: -35px;
+            right: 0;
+            background: var(--text-primary);
+            color: white;
+            padding: 5px;
+            border-radius: 4px;
+            display: none;
+            gap: 5px;
+            z-index: 1000;
+        }
+
+        .email-element:hover .element-toolbar,
+        .email-element.selected .element-toolbar {
+            display: flex;
+        }
+
+        .toolbar-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 4px 6px;
+            border-radius: 2px;
+            font-size: 12px;
+            transition: background 0.2s;
+        }
+
+        .toolbar-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Zone de drop */
+        .drop-zone {
+            min-height: 60px;
+            border: 2px dashed transparent;
+            border-radius: 4px;
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-secondary);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .drop-zone.drag-over {
+            border-color: var(--primary);
+            background: rgba(216, 154, 179, 0.1);
+            color: var(--primary);
+        }
+
+        /* Responsive */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 1200px) {
+            .editor-container {
+                grid-template-columns: 280px 1fr 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .editor-container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+            
+            .sidebar-left, .sidebar-right {
+                max-height: 200px;
+                padding: 15px;
+            }
+        }
+
+        /* Modals */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--radius);
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="editor-container">
+        <!-- Sidebar gauche -->
+        <div class="sidebar-left">
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-cog"></i>
+                    Configuration
+                </h3>
+                
+                <form class="config-form" id="campaignForm">
+                    <div class="form-group">
+                        <label class="form-label">Nom de la campagne</label>
+                        <input type="text" class="form-input" id="campaignName" placeholder="Ma super campagne">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Sujet de l'email</label>
+                        <input type="text" class="form-input" id="emailSubject" placeholder="🎉 Découvrez nos nouveautés !">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Pré-header (optionnel)</label>
+                        <input type="text" class="form-input" id="emailPreheader" placeholder="Texte de prévisualisation">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Nom de l'expéditeur</label>
+                        <input type="text" class="form-input" id="senderName" value="CrystosJewel">
+                    </div>
+                </form>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-palette"></i>
+                    Templates
+                </h3>
+                
+                <div class="template-grid">
+                    <div class="template-card active" data-template="elegant">
+                        <i class="fas fa-gem" style="font-size: 18px; margin-bottom: 5px;"></i>
+                        <div>Élégant</div>
+                    </div>
+                    <div class="template-card" data-template="modern">
+                        <i class="fas fa-rocket" style="font-size: 18px; margin-bottom: 5px;"></i>
+                        <div>Moderne</div>
+                    </div>
+                    <div class="template-card" data-template="classic">
+                        <i class="fas fa-newspaper" style="font-size: 18px; margin-bottom: 5px;"></i>
+                        <div>Classique</div>
+                    </div>
+                    <div class="template-card" data-template="minimal">
+                        <i class="fas fa-minus" style="font-size: 18px; margin-bottom: 5px;"></i>
+                        <div>Minimal</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-cube"></i>
+                    Blocs de contenu
+                </h3>
+                
+                <div class="content-blocks">
+                    <div class="block-item" draggable="true" data-block="title">
+                        <i class="fas fa-heading"></i>
+                        <span>Titre</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="text">
+                        <i class="fas fa-paragraph"></i>
+                        <span>Texte</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="image">
+                        <i class="fas fa-image"></i>
+                        <span>Image</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="button">
+                        <i class="fas fa-mouse-pointer"></i>
+                        <span>Bouton</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="divider">
+                        <i class="fas fa-grip-lines"></i>
+                        <span>Séparateur</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="products">
+                        <i class="fas fa-gem"></i>
+                        <span>Produits</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="social">
+                        <i class="fas fa-share-alt"></i>
+                        <span>Réseaux sociaux</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="spacer">
+                        <i class="fas fa-arrows-alt-v"></i>
+                        <span>Espaceur</span>
+                    </div>
+                    <div class="block-item" draggable="true" data-block="code">
+                        <i class="fas fa-code"></i>
+                        <span>Code promo</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-code"></i>
+                    Variables
+                </h3>
+                
+                <div class="variables-list">
+                    <span class="variable-tag" onclick="insertVariable('{{first_name}}')">{{first_name}}</span>
+                    <span class="variable-tag" onclick="insertVariable('{{last_name}}')">{{last_name}}</span>
+                    <span class="variable-tag" onclick="insertVariable('{{email}}')">{{email}}</span>
+                    <span class="variable-tag" onclick="insertVariable('{{company_name}}')">{{company_name}}</span>
+                    <span class="variable-tag" onclick="insertVariable('{{current_date}}')">{{current_date}}</span>
+                    <span class="variable-tag" onclick="insertVariable('{{unsubscribe_url}}')">{{unsubscribe_url}}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone centrale -->
+        <div class="editor-main">
+            <div class="editor-header">
+                <div class="editor-title">
+                    <i class="fas fa-edit"></i>
+                    Éditeur d'Email Avancé
+                </div>
+                <div class="editor-actions">
+                    <button class="btn btn-secondary" onclick="saveAsDraft()">
+                        <i class="fas fa-save"></i>
+                        Brouillon
+                    </button>
+                    <button class="btn btn-warning" onclick="sendTest()">
+                        <i class="fas fa-flask"></i>
+                        Test
+                    </button>
+                    <button class="btn btn-info" onclick="previewEmail()">
+                        <i class="fas fa-eye"></i>
+                        Aperçu
+                    </button>
+                    <button class="btn btn-success" onclick="sendCampaign()">
+                        <i class="fas fa-paper-plane"></i>
+                        Envoyer
+                    </button>
+                </div>
+            </div>
+
+            <div class="preview-area">
+                <div class="email-preview" id="emailPreview">
+                    <div class="email-header">
+                        <div class="email-subject" id="previewSubject">🎉 Découvrez nos nouveautés !</div>
+                        <div class="email-preheader" id="previewPreheader">Texte de prévisualisation</div>
+                    </div>
+                    
+                    <!-- Zone de contenu dynamique -->
+                    <div class="email-content" id="emailContent">
+                        <!-- Zone de drop initiale -->
+                        <div class="drop-zone" data-drop-index="0">
+                            <i class="fas fa-plus-circle"></i>
+                            Glissez un bloc ici pour commencer
+                        </div>
+                    </div>
+                    
+                    <div class="email-footer">
+                        <p>© 2025 CrystosJewel - Tous droits réservés</p>
+                        <p style="margin-top: 5px;">
+                            <a href="{{unsubscribe_url}}" style="color: #64748b;">Se désabonner</a> | 
+                            <a href="#" style="color: #64748b;">Mettre à jour mes préférences</a>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar droite -->
+        <div class="sidebar-right">
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-paint-brush"></i>
+                    Outils de design
+                </h3>
+                
+                <div class="design-tools">
+                    <div class="tool-group">
+                        <label class="tool-label">Couleur de fond</label>
+                        <input type="color" class="color-picker-input" id="bgColorPicker" value="#ffffff">
+                    </div>
+                    
+                    <div class="tool-group">
+                        <label class="tool-label">Couleur d'accent</label>
+                        <input type="color" class="color-picker-input" id="accentColorPicker" value="#d89ab3">
+                    </div>
+                    
+                    <div class="tool-group">
+                        <label class="tool-label">Police</label>
+                        <select class="form-select" id="fontFamilySelect">
+                            <option value="Arial, sans-serif">Arial</option>
+                            <option value="Georgia, serif">Georgia</option>
+                            <option value="Times New Roman, serif">Times</option>
+                            <option value="Helvetica, sans-serif">Helvetica</option>
+                            <option value="Inter, sans-serif" selected>Inter</option>
+                        </select>
+                    </div>
+                    
+                    <div class="tool-group">
+                        <label class="tool-label">Taille de police (px)</label>
+                        <input type="range" class="range-input" id="fontSizeRange" min="12" max="24" value="16">
+                        <span id="fontSizeValue">16px</span>
+                    </div>
+                </div>
+                
+                <div class="image-upload-zone" onclick="triggerImageUpload()">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 24px; color: var(--text-secondary); margin-bottom: 10px;"></i>
+                    <p>Glissez une image ici<br>ou cliquez pour parcourir</p>
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-users"></i>
+                    Destinataires
+                </h3>
+                
+                <div class="recipients-counter" id="recipientsCounter">
+                    <i class="fas fa-envelope"></i>
+                    0 destinataires sélectionnés
+                </div>
+                
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="newsletter">📧 Newsletter</button>
+                    <button class="filter-btn" data-filter="all">👥 Tous</button>
+                    <button class="filter-btn" data-filter="vip">💎 VIP</button>
+                    <button class="filter-btn" data-filter="with-orders">🛍️ Clients</button>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Rechercher un client</label>
+                    <input type="text" class="form-input" id="clientSearch" placeholder="Nom ou email">
+                </div>
+                
+                <div id="clientsList" style="max-height: 200px; overflow-y: auto; margin-top: 10px;">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        Chargement des clients...
+                    </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-info-circle"></i>
+                    Conseils
+                </h3>
+                
+                <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--radius); font-size: 13px; line-height: 1.5;">
+                    <p style="margin-bottom: 10px;"><strong>📝 Bonnes pratiques :</strong></p>
+                    <ul style="margin-left: 15px;">
+                        <li>Sujet accrocheur (max 50 caractères)</li>
+                        <li>Personnalisez avec des variables</li>
+                        <li>Testez avant d'envoyer</li>
+                        <li>Optimisez pour mobile</li>
+                        <li>Utilisez des images optimisées</li>
+                        <li>Évitez le spam avec un bon ratio texte/images</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal" id="editModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Éditer l'élément</h3>
+                <button class="close-btn" onclick="closeModal('editModal')">&times;</button>
+            </div>
+            <div id="modalBody">
+                <!-- Contenu dynamique -->
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="imageModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Paramètres de l'image</h3>
+                <button class="close-btn" onclick="closeModal('imageModal')">&times;</button>
+            </div>
+            <div id="imageModalBody">
+                <div class="form-group">
+                    <label class="form-label">URL de l'image</label>
+                    <input type="text" class="form-input" id="imageUrl" placeholder="https://...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Texte alternatif</label>
+                    <input type="text" class="form-input" id="imageAlt" placeholder="Description de l'image">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Largeur</label>
+                    <input type="range" class="range-input" id="imageWidth" min="50" max="100" value="100">
+                    <span id="imageWidthValue">100%</span>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Alignement</label>
+                    <select class="form-select" id="imageAlign">
+                        <option value="left">Gauche</option>
+                        <option value="center" selected>Centre</option>
+                        <option value="right">Droite</option>
+                    </select>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="applyImageSettings()">Appliquer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentTemplate = 'elegant';
+        let selectedRecipients = [];
+        let currentFilter = 'newsletter';
+        let allClients = <%- JSON.stringify(customers || []) %>;
+        let currentElement = null;
+        let emailElements = [];
+        let elementCounter = 0;
+
+        // Configuration des templates
+        const templates = {
+            elegant: {
+                headerBg: 'linear-gradient(135deg, #d89ab3, #b794a8)',
+                accentColor: '#d89ab3',
+                fontFamily: 'Georgia, serif',
+                contentBg: '#ffffff'
+            },
+            modern: {
+                headerBg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+                accentColor: '#8b5cf6',
+                fontFamily: 'Inter, Arial, sans-serif',
+                contentBg: '#f8fafc'
+            },
+            classic: {
+                headerBg: 'linear-gradient(135deg, #1e293b, #334155)',
+                accentColor: '#1e293b',
+                fontFamily: 'Times New Roman, serif',
+                contentBg: '#ffffff'
+            },
+            minimal: {
+                headerBg: 'linear-gradient(135deg, #64748b, #475569)',
+                accentColor: '#64748b',
+                fontFamily: 'Helvetica, Arial, sans-serif',
+                contentBg: '#ffffff'
+            }
+        };
+
+        // Configuration des blocs
+        const blockTemplates = {
+            title: {
+                icon: 'heading',
+                html: `<h2 style="color: #d89ab3; margin-bottom: 20px; font-size: 24px;">Nouveau titre</h2>`,
+                editable: true
+            },
+            text: {
+                icon: 'paragraph',
+                html: `<p style="margin-bottom: 15px; line-height: 1.6;">Nouveau paragraphe de texte. Cliquez pour éditer.</p>`,
+                editable: true
+            },
+            image: {
+                icon: 'image',
+                html: `<div style="text-align: center; margin: 20px 0;">
+                    <img src="/images/placeholder-image.jpg" alt="Image" style="max-width: 100%; height: auto; border-radius: 8px;" />
+                </div>`,
+                editable: false
+            },
+            button: {
+                icon: 'mouse-pointer',
+                html: `<div style="text-align: center; margin: 30px 0;">
+                    <a href="#" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                        Nouveau bouton
+                    </a>
+                </div>`,
+                editable: false
+            },
+            divider: {
+                icon: 'grip-lines',
+                html: `<hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;" />`,
+                editable: false
+            },
+            products: {
+                icon: 'gem',
+                html: `<div style="margin: 30px 0;">
+                    <h3 style="color: #d89ab3; margin-bottom: 20px; text-align: center;">Nos Produits</h3>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px;">
+                        <div style="text-align: center; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
+                            <img src="/images/product-placeholder.jpg" alt="Produit" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+                            <h4 style="color: #d89ab3; margin-bottom: 5px; font-size: 16px;">Bijou 1</h4>
+                            <p style="color: #64748b; font-size: 14px; margin: 0;">49,99€</p>
+                        </div>
+                        <div style="text-align: center; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px;">
+                            <img src="/images/product-placeholder.jpg" alt="Produit" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+                            <h4 style="color: #d89ab3; margin-bottom: 5px; font-size: 16px;">Bijou 2</h4>
+                            <p style="color: #64748b; font-size: 14px; margin: 0;">79,99€</p>
+                        </div>
+                    </div>
+                </div>`,
+                editable: false
+            },
+            social: {
+                icon: 'share-alt',
+                html: `<div style="text-align: center; margin: 30px 0;">
+                    <p style="margin-bottom: 15px; color: #64748b;">Suivez-nous :</p>
+                    <div style="display: flex; justify-content: center; gap: 15px;">
+                        <a href="#" style="display: inline-block; width: 40px; height: 40px; background: #3b5998; color: white; border-radius: 50%; line-height: 40px; text-decoration: none;">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" style="display: inline-block; width: 40px; height: 40px; background: #1da1f2; color: white; border-radius: 50%; line-height: 40px; text-decoration: none;">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" style="display: inline-block; width: 40px; height: 40px; background: #e4405f; color: white; border-radius: 50%; line-height: 40px; text-decoration: none;">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                    </div>
+                </div>`,
+                editable: false
+            },
+            spacer: {
+                icon: 'arrows-alt-v',
+                html: `<div style="height: 30px;"></div>`,
+                editable: false
+            },
+            code: {
+                icon: 'code',
+                html: `<div style="text-align: center; margin: 30px 0; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+                    <p style="margin-bottom: 10px; color: #64748b;">Code promo exclusif :</p>
+                    <div style="display: inline-block; background: #d89ab3; color: white; padding: 10px 20px; border-radius: 6px; font-family: monospace; font-size: 18px; font-weight: bold; letter-spacing: 2px;">
+                        NOUVEAU15
+                    </div>
+                    <p style="margin-top: 10px; font-size: 12px; color: #64748b;">Utilisez ce code pour 15% de réduction</p>
+                </div>`,
+                editable: true
+            }
+        };
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('✏️ Éditeur d\'emails avancé CrystosJewel initialisé');
+            
+            initializeEditor();
+            loadClients();
+            setupEventListeners();
+            setupDragAndDrop();
+            loadInitialContent();
+            updatePreview();
+        });
+
+        function initializeEditor() {
+            // Initialiser les color pickers
+            $('#bgColorPicker').spectrum({
+                color: '#ffffff',
+                showInput: true,
+                className: 'full-spectrum',
+                showInitial: true,
+                showPalette: true,
+                showSelectionPalette: true,
+                maxSelectionSize: 10,
+                preferredFormat: 'hex',
+                change: function(color) {
+                    changeBackgroundColor(color.toHexString());
+                }
+            });
+
+            $('#accentColorPicker').spectrum({
+                color: '#d89ab3',
+                showInput: true,
+                className: 'full-spectrum',
+                showInitial: true,
+                showPalette: true,
+                showSelectionPalette: true,
+                maxSelectionSize: 10,
+                preferredFormat: 'hex',
+                change: function(color) {
+                    changeAccentColor(color.toHexString());
+                }
+            });
+
+            // Initialiser les ranges
+            document.getElementById('fontSizeRange').addEventListener('input', function() {
+                const size = this.value;
+                document.getElementById('fontSizeValue').textContent = size + 'px';
+                changeFontSize(size);
+            });
+
+            document.getElementById('imageWidth').addEventListener('input', function() {
+                const width = this.value;
+                document.getElementById('imageWidthValue').textContent = width + '%';
+            });
+        }
+
+        function setupEventListeners() {
+            // Synchronisation des champs
+            document.getElementById('emailSubject').addEventListener('input', updatePreview);
+            document.getElementById('emailPreheader').addEventListener('input', updatePreview);
+            
+            // Templates
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    selectTemplate(this.dataset.template);
+                });
+            });
+
+            // Search clients
+            document.getElementById('clientSearch').addEventListener('input', searchClients);
+
+            // Filter recipients
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    filterRecipients(this.dataset.filter);
+                });
+            });
+
+            // Font family
+            document.getElementById('fontFamilySelect').addEventListener('change', function() {
+                changeFontFamily(this.value);
+            });
+
+            // Upload d'images
+            document.getElementById('imageUpload').addEventListener('change', handleImageUpload);
+        }
+
+        function setupDragAndDrop() {
+            const contentBlocks = document.querySelectorAll('.block-item');
+            const emailContent = document.getElementById('emailContent');
+
+            // Drag des blocs
+            contentBlocks.forEach(block => {
+                block.addEventListener('dragstart', function(e) {
+                    e.dataTransfer.setData('text/plain', this.dataset.block);
+                    this.style.opacity = '0.5';
+                });
+
+                block.addEventListener('dragend', function(e) {
+                    this.style.opacity = '1';
+                });
+            });
+
+            // Drop sur l'email
+            setupDropZones();
+
+            // Sortable pour réorganiser les éléments
+            new Sortable(emailContent, {
+                animation: 150,
+                ghostClass: 'sortable-ghost',
+                chosenClass: 'sortable-chosen',
+                dragClass: 'sortable-drag',
+                filter: '.drop-zone',
+                onMove: function(evt) {
+                    return !evt.related.classList.contains('drop-zone');
+                },
+                onEnd: function(evt) {
+                    updateDropZones();
+                }
+            });
+        }
+
+        function setupDropZones() {
+            const emailContent = document.getElementById('emailContent');
+            
+            // Event listeners pour drop zones
+            emailContent.addEventListener('dragover', handleDragOver);
+            emailContent.addEventListener('drop', handleDrop);
+            emailContent.addEventListener('dragleave', handleDragLeave);
+        }
+
+        function handleDragOver(e) {
+            e.preventDefault();
+            const dropZone = e.target.closest('.drop-zone');
+            if (dropZone) {
+                dropZone.classList.add('drag-over');
+            }
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            const blockType = e.dataTransfer.getData('text/plain');
+            const dropZone = e.target.closest('.drop-zone');
+            
+            if (dropZone && blockType) {
+                const index = parseInt(dropZone.dataset.dropIndex);
+                insertBlock(blockType, index);
+                dropZone.classList.remove('drag-over');
+            }
+        }
+
+        function handleDragLeave(e) {
+            const dropZone = e.target.closest('.drop-zone');
+            if (dropZone) {
+                dropZone.classList.remove('drag-over');
+            }
+        }
+
+        function insertBlock(blockType, index) {
+            if (!blockTemplates[blockType]) {
+                console.error('Type de bloc inconnu:', blockType);
+                return;
+            }
+
+            const template = blockTemplates[blockType];
+            const elementId = 'element-' + (++elementCounter);
+            
+            const elementWrapper = document.createElement('div');
+            elementWrapper.className = 'email-element';
+            elementWrapper.dataset.type = blockType;
+            elementWrapper.dataset.id = elementId;
+            elementWrapper.innerHTML = `
+                <div class="element-toolbar">
+                    ${template.editable ? '<button class="toolbar-btn" onclick="editElement(\'' + elementId + '\')"><i class="fas fa-edit"></i></button>' : ''}
+                    ${blockType === 'image' ? '<button class="toolbar-btn" onclick="editImage(\'' + elementId + '\')"><i class="fas fa-image"></i></button>' : ''}
+                    ${blockType === 'button' ? '<button class="toolbar-btn" onclick="editButton(\'' + elementId + '\')"><i class="fas fa-link"></i></button>' : ''}
+                    <button class="toolbar-btn" onclick="duplicateElement(\'' + elementId + '\')"><i class="fas fa-copy"></i></button>
+                    <button class="toolbar-btn" onclick="deleteElement(\'' + elementId + '\')"><i class="fas fa-trash"></i></button>
+                </div>
+                ${template.html}
+            `;
+
+            // Insérer l'élément
+            const emailContent = document.getElementById('emailContent');
+            const dropZones = emailContent.querySelectorAll('.drop-zone');
+            const targetDropZone = dropZones[index];
+            
+            if (targetDropZone) {
+                emailContent.insertBefore(elementWrapper, targetDropZone);
+            } else {
+                emailContent.appendChild(elementWrapper);
+            }
+
+            // Mettre à jour les drop zones
+            updateDropZones();
+
+            // Animation d'insertion
+            elementWrapper.style.opacity = '0';
+            elementWrapper.style.transform = 'translateY(-10px)';
+            setTimeout(() => {
+                elementWrapper.style.transition = 'all 0.3s ease';
+                elementWrapper.style.opacity = '1';
+                elementWrapper.style.transform = 'translateY(0)';
+            }, 10);
+
+            // Ajouter à la liste des éléments
+            emailElements.push({
+                id: elementId,
+                type: blockType,
+                element: elementWrapper
+            });
+
+            showNotification(`✅ Bloc "${blockType}" ajouté`, 'success');
+        }
+
+        function updateDropZones() {
+            const emailContent = document.getElementById('emailContent');
+            const elements = emailContent.querySelectorAll('.email-element');
+            
+            // Supprimer les anciennes drop zones
+            emailContent.querySelectorAll('.drop-zone').forEach(zone => zone.remove());
+
+            // Ajouter une drop zone avant chaque élément et à la fin
+            elements.forEach((element, index) => {
+                const dropZone = createDropZone(index);
+                emailContent.insertBefore(dropZone, element);
+            });
+
+            // Drop zone finale
+            const finalDropZone = createDropZone(elements.length);
+            finalDropZone.innerHTML = '<i class="fas fa-plus-circle"></i> Ajouter un bloc';
+            emailContent.appendChild(finalDropZone);
+        }
+
+        function createDropZone(index) {
+            const dropZone = document.createElement('div');
+            dropZone.className = 'drop-zone';
+            dropZone.dataset.dropIndex = index;
+            dropZone.innerHTML = '<i class="fas fa-plus"></i>';
+            return dropZone;
+        }
+
+        function loadInitialContent() {
+            // Contenu initial par défaut
+            const initialBlocks = ['title', 'text', 'button'];
+            initialBlocks.forEach((blockType, index) => {
+                setTimeout(() => insertBlock(blockType, index), index * 100);
+            });
+        }
+
+        // Fonctions d'édition
+        function editElement(elementId) {
+            const element = document.querySelector(`[data-id="${elementId}"]`);
+            if (!element) return;
+
+            element.style.transition = 'all 0.3s ease';
+            element.style.opacity = '0';
+            element.style.transform = 'translateX(-20px)';
+            
+            setTimeout(() => {
+                element.remove();
+                updateDropZones();
+                showNotification('✅ Élément supprimé', 'success');
+            }, 300);
+        }
+
+        function applyElementEdit() {
+            if (!currentElement) return;
+
+            const newContent = document.getElementById('elementContent').value;
+            const toolbar = currentElement.querySelector('.element-toolbar').outerHTML;
+            currentElement.innerHTML = toolbar + newContent;
+            
+            closeModal('editModal');
+            showNotification('✅ Élément mis à jour', 'success');
+        }
+
+        function applyImageSettings() {
+            if (!currentElement) return;
+
+            const img = currentElement.querySelector('img');
+            const container = img.parentElement;
+            
+            img.src = document.getElementById('imageUrl').value;
+            img.alt = document.getElementById('imageAlt').value;
+            img.style.maxWidth = document.getElementById('imageWidth').value + '%';
+            container.style.textAlign = document.getElementById('imageAlign').value;
+            
+            closeModal('imageModal');
+            showNotification('✅ Image mise à jour', 'success');
+        }
+
+        // Fonctions de design
+        function changeBackgroundColor(color) {
+            document.getElementById('emailContent').style.backgroundColor = color;
+        }
+
+        function changeAccentColor(color) {
+            const elements = document.querySelectorAll('#emailContent h1, #emailContent h2, #emailContent h3');
+            elements.forEach(el => {
+                el.style.color = color;
+            });
+            
+            const buttons = document.querySelectorAll('#emailContent a[style*="background"]');
+            buttons.forEach(btn => {
+                btn.style.background = `linear-gradient(135deg, ${color}, ${color}dd)`;
+            });
+        }
+
+        function changeFontFamily(font) {
+            document.getElementById('emailContent').style.fontFamily = font;
+        }
+
+        function changeFontSize(size) {
+            document.getElementById('emailContent').style.fontSize = size + 'px';
+        }
+
+        // Gestion des templates
+        function selectTemplate(templateName) {
+            document.querySelectorAll('.template-card').forEach(card => {
+                card.classList.remove('active');
+            });
+            
+            document.querySelector(`[data-template="${templateName}"]`).classList.add('active');
+            currentTemplate = templateName;
+            
+            applyTemplate(templateName);
+        }
+
+        function applyTemplate(templateName) {
+            const template = templates[templateName] || templates.elegant;
+            
+            // Appliquer les styles
+            const emailHeader = document.querySelector('.email-header');
+            const emailContent = document.getElementById('emailContent');
+            
+            emailHeader.style.background = template.headerBg;
+            emailContent.style.backgroundColor = template.contentBg;
+            emailContent.style.fontFamily = template.fontFamily;
+            
+            // Mettre à jour les color pickers
+            $('#accentColorPicker').spectrum('set', template.accentColor);
+            $('#bgColorPicker').spectrum('set', template.contentBg);
+            document.getElementById('fontFamilySelect').value = template.fontFamily;
+            
+            showNotification(`✅ Template "${templateName}" appliqué`, 'success');
+        }
+
+        function updatePreview() {
+            const subject = document.getElementById('emailSubject').value || '🎉 Découvrez nos nouveautés !';
+            const preheader = document.getElementById('emailPreheader').value || 'Texte de prévisualisation';
+            
+            document.getElementById('previewSubject').textContent = subject;
+            document.getElementById('previewPreheader').textContent = preheader;
+        }
+
+        // Gestion des destinataires
+        function loadClients() {
+            displayClients(allClients);
+            updateRecipientsCounter();
+        }
+
+        function filterRecipients(filter) {
+            currentFilter = filter;
+            
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+            
+            let filteredClients = allClients;
+            
+            switch(filter) {
+                case 'newsletter':
+                    filteredClients = allClients.filter(c => c.newsletter);
+                    break;
+                case 'vip':
+                    filteredClients = allClients.filter(c => c.type === 'vip');
+                    break;
+                case 'with-orders':
+                    filteredClients = allClients.filter(c => c.hasOrders);
+                    break;
+                case 'all':
+                default:
+                    filteredClients = allClients;
+            }
+            
+            displayClients(filteredClients);
+            updateRecipientsCounter();
+        }
+
+        function displayClients(clients) {
+            const container = document.getElementById('clientsList');
+            
+            if (clients.length === 0) {
+                container.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">Aucun client trouvé</p>';
+                return;
+            }
+            
+            container.innerHTML = clients.map(client => `
+                <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 5px; font-size: 13px; cursor: pointer; ${selectedRecipients.includes(client.id) ? 'background: var(--bg-primary); border-color: var(--primary);' : ''}" onclick="toggleClient(${client.id})">
+                    <div style="font-weight: 600;">${client.name}</div>
+                    <div style="color: var(--text-secondary); font-size: 11px;">${client.email}</div>
+                    <div style="margin-top: 4px;">
+                        ${client.type === 'vip' ? '<span style="background: #fbbf24; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">VIP</span>' : ''}
+                        ${client.newsletter ? '<span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">Newsletter</span>' : ''}
+                        ${selectedRecipients.includes(client.id) ? '<span style="background: var(--primary); color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">✓</span>' : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function searchClients() {
+            const query = document.getElementById('clientSearch').value.toLowerCase();
+            const filtered = allClients.filter(client => 
+                client.name.toLowerCase().includes(query) || 
+                client.email.toLowerCase().includes(query)
+            );
+            displayClients(filtered);
+        }
+
+        function toggleClient(clientId) {
+            const index = selectedRecipients.indexOf(clientId);
+            if (index > -1) {
+                selectedRecipients.splice(index, 1);
+            } else {
+                selectedRecipients.push(clientId);
+            }
+            updateRecipientsCounter();
+            
+            // Reafficher la liste filtrée actuelle
+            const currentClients = allClients.filter(c => {
+                switch(currentFilter) {
+                    case 'newsletter': return c.newsletter;
+                    case 'vip': return c.type === 'vip';
+                    case 'with-orders': return c.hasOrders;
+                    default: return true;
+                }
+            });
+            displayClients(currentClients);
+        }
+
+        function updateRecipientsCounter() {
+            const counter = document.getElementById('recipientsCounter');
+            const count = selectedRecipients.length > 0 ? selectedRecipients.length : 
+                allClients.filter(c => {
+                    switch(currentFilter) {
+                        case 'newsletter': return c.newsletter;
+                        case 'vip': return c.type === 'vip';
+                        case 'with-orders': return c.hasOrders;
+                        default: return true;
+                    }
+                }).length;
+            
+            counter.innerHTML = `<i class="fas fa-envelope"></i> ${count} destinataires sélectionnés`;
+        }
+
+        function insertVariable(variable) {
+            // Essayer d'insérer dans l'élément actuellement sélectionné
+            if (currentElement && currentElement.dataset.type !== 'image') {
+                const editableContent = currentElement.querySelector('h1, h2, h3, p, div');
+                if (editableContent) {
+                    editableContent.innerHTML += variable;
+                    return;
+                }
+            }
+
+            // Sinon, créer un nouveau bloc de texte avec la variable
+            const elementId = 'element-' + (++elementCounter);
+            const elementWrapper = document.createElement('div');
+            elementWrapper.className = 'email-element';
+            elementWrapper.dataset.type = 'text';
+            elementWrapper.dataset.id = elementId;
+            elementWrapper.innerHTML = `
+                <div class="element-toolbar">
+                    <button class="toolbar-btn" onclick="editElement('${elementId}')"><i class="fas fa-edit"></i></button>
+                    <button class="toolbar-btn" onclick="duplicateElement('${elementId}')"><i class="fas fa-copy"></i></button>
+                    <button class="toolbar-btn" onclick="deleteElement('${elementId}')"><i class="fas fa-trash"></i></button>
+                </div>
+                <p style="margin-bottom: 15px; line-height: 1.6;">${variable}</p>
+            `;
+
+            document.getElementById('emailContent').appendChild(elementWrapper);
+            updateDropZones();
+        }
+
+        // Upload d'images
+        function triggerImageUpload() {
+            document.getElementById('imageUpload').click();
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (!file.type.startsWith('image/')) {
+                showNotification('❌ Veuillez sélectionner une image', 'error');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                // Créer un nouvel élément image avec l'image uploadée
+                insertBlock('image', emailElements.length);
+                
+                // Attendre que l'élément soit créé
+                setTimeout(() => {
+                    const newImage = document.querySelector('.email-element:last-of-type img');
+                    if (newImage) {
+                        newImage.src = e.target.result;
+                        newImage.alt = file.name;
+                        showNotification('✅ Image ajoutée', 'success');
+                    }
+                }, 100);
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Actions principales
+        async function saveAsDraft() {
+            const campaignData = {
+                name: document.getElementById('campaignName').value || 'Brouillon sans nom',
+                subject: document.getElementById('emailSubject').value,
+                content: getEmailHTML(),
+                preheader: document.getElementById('emailPreheader').value,
+                fromName: document.getElementById('senderName').value,
+                template: currentTemplate,
+                status: 'draft'
+            };
+            
+            try {
+                showNotification('💾 Sauvegarde en cours...', 'info');
+                
+                const response = await fetch('/admin/emails/campaigns/draft', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(campaignData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification('✅ Brouillon sauvegardé', 'success');
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Erreur sauvegarde:', error);
+                showNotification('❌ Erreur lors de la sauvegarde', 'error');
+            }
+        }
+
+        async function sendTest() {
+            const email = prompt('Adresse email pour le test :');
+            if (!email) return;
+
+            // Validation email simple
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                showNotification('❌ Adresse email invalide', 'error');
+                return;
+            }
+            
+            const campaignData = {
+                email: email,
+                subject: document.getElementById('emailSubject').value || 'Test Email',
+                content: getEmailHTML(),
+                template: currentTemplate
+            };
+            
+            try {
+                showNotification('📤 Envoi du test en cours...', 'info');
+                
+                const response = await fetch('/admin/emails/campaigns/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(campaignData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification(`✅ Test envoyé à ${email}`, 'success');
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Erreur test:', error);
+                showNotification('❌ Erreur lors de l\'envoi du test', 'error');
+            }
+        }
+
+        function previewEmail() {
+            const modal = document.createElement('div');
+            modal.id = 'previewModal';
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+                background: rgba(0,0,0,0.8); z-index: 10000; padding: 20px;
+                display: flex; align-items: center; justify-content: center;
+            `;
+            
+            // Cloner l'email sans les toolbars
+            const emailClone = document.getElementById('emailPreview').cloneNode(true);
+            emailClone.querySelectorAll('.element-toolbar').forEach(toolbar => toolbar.remove());
+            emailClone.querySelectorAll('.drop-zone').forEach(zone => zone.remove());
+            emailClone.querySelectorAll('.email-element').forEach(el => {
+                el.classList.remove('email-element');
+                el.style.border = 'none';
+                el.style.background = 'transparent';
+            });
+            
+            modal.innerHTML = `
+                <div style="background: white; border-radius: 12px; max-width: 800px; margin: 0 auto; max-height: 90vh; overflow-y: auto; width: 100%;">
+                    <div style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
+                        <h3>🔍 Aperçu de l'email</h3>
+                        <button onclick="closePreview()" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
+                    </div>
+                    <div style="padding: 20px;">
+                        ${emailClone.outerHTML}
+                    </div>
+                    <div style="padding: 20px; border-top: 1px solid var(--border); text-align: center;">
+                        <button class="btn btn-primary" onclick="window.print()">
+                            <i class="fas fa-print"></i> Imprimer
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        }
+
+        function closePreview() {
+            const modal = document.getElementById('previewModal');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function sendCampaign() {
+            // Vérifications
+            const subject = document.getElementById('emailSubject').value;
+            if (!subject) {
+                showNotification('❌ Le sujet est requis', 'error');
+                return;
+            }
+
+            const recipientCount = selectedRecipients.length > 0 ? selectedRecipients.length : 
+                allClients.filter(c => {
+                    switch(currentFilter) {
+                        case 'newsletter': return c.newsletter;
+                        case 'vip': return c.type === 'vip';
+                        case 'with-orders': return c.hasOrders;
+                        default: return true;
+                    }
+                }).length;
+
+            if (recipientCount === 0) {
+                showNotification('❌ Aucun destinataire sélectionné', 'error');
+                return;
+            }
+
+            if (!confirm(`🚀 Voulez-vous vraiment envoyer cette campagne à ${recipientCount} destinataires ?`)) {
+                return;
+            }
+            
+            const campaignData = {
+                name: document.getElementById('campaignName').value || 'Campagne sans nom',
+                subject: subject,
+                content: getEmailHTML(),
+                preheader: document.getElementById('emailPreheader').value,
+                fromName: document.getElementById('senderName').value,
+                template: currentTemplate,
+                recipientType: currentFilter,
+                selectedCustomerIds: selectedRecipients
+            };
+            
+            try {
+                showNotification('🚀 Envoi de la campagne en cours...', 'info');
+                
+                const response = await fetch('/admin/emails/campaigns/send', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(campaignData)
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin/emails/history';
+                    }, 3000);
+                } else {
+                    showNotification(`❌ ${data.message}`, 'error');
+                }
+            } catch (error) {
+                console.error('Erreur envoi:', error);
+                showNotification('❌ Erreur lors de l\'envoi', 'error');
+            }
+        }
+
+        function getEmailHTML() {
+            const emailContent = document.getElementById('emailContent').cloneNode(true);
+            
+            // Nettoyer le HTML
+            emailContent.querySelectorAll('.element-toolbar').forEach(toolbar => toolbar.remove());
+            emailContent.querySelectorAll('.drop-zone').forEach(zone => zone.remove());
+            emailContent.querySelectorAll('.email-element').forEach(el => {
+                el.classList.remove('email-element');
+                el.removeAttribute('data-type');
+                el.removeAttribute('data-id');
+                el.style.border = 'none';
+                el.style.background = 'transparent';
+            });
+            
+            return emailContent.innerHTML;
+        }
+
+        // Gestion des modals
+        function showModal(modalId) {
+            document.getElementById(modalId).classList.add('show');
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).classList.remove('show');
+            currentElement = null;
+        }
+
+        function showNotification(message, type = 'info') {
+            const existing = document.querySelectorAll('.notification');
+            existing.forEach(notif => notif.remove());
+
+            const notification = document.createElement('div');
+            notification.className = 'notification';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 600;
+                z-index: 99999;
+                max-width: 350px;
+                animation: slideIn 0.3s ease;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            `;
+            
+            const bgColors = {
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            };
+            
+            notification.style.background = bgColors[type] || bgColors.info;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px; padding: 0;">×</button>
+                </div>
+            `;
+
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideOut 0.3s ease forwards';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.remove();
+                        }
+                    }, 300);
+                }
+            }, 4000);
+        }
+
+        // Raccourcis clavier
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case 's':
+                        e.preventDefault();
+                        saveAsDraft();
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        sendCampaign();
+                        break;
+                    case 't':
+                        e.preventDefault();
+                        sendTest();
+                        break;
+                    case 'p':
+                        e.preventDefault();
+                        previewEmail();
+                        break;
+                }
+            }
+            
+            if (e.key === 'Escape') {
+                closePreview();
+                document.querySelectorAll('.modal.show').forEach(modal => {
+                    modal.classList.remove('show');
+                });
+            }
+
+            // Supprimer élément sélectionné avec Delete
+            if (e.key === 'Delete' && currentElement) {
+                const elementId = currentElement.dataset.id;
+                if (elementId) {
+                    deleteElement(elementId);
+                }
+            }
+        });
+
+        // Gestion de la sélection d'éléments
+        document.addEventListener('click', function(e) {
+            // Déselectionner tous les éléments
+            document.querySelectorAll('.email-element.selected').forEach(el => {
+                el.classList.remove('selected');
+            });
+
+            // Sélectionner l'élément cliqué
+            const emailElement = e.target.closest('.email-element');
+            if (emailElement) {
+                emailElement.classList.add('selected');
+                currentElement = emailElement;
+            } else {
+                currentElement = null;
+            }
+        });
+
+        // CSS pour les animations
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            .sortable-ghost {
+                opacity: 0.4;
+                background: rgba(216, 154, 179, 0.1);
+            }
+            .sortable-chosen {
+                background: rgba(216, 154, 179, 0.2);
+            }
+            .sortable-drag {
+                transform: rotate(5deg);
+            }
+        `;
+        document.head.appendChild(style);
+
+        console.log('✏️ Éditeur d\'emails CrystosJewel avancé initialisé');
+        console.log('🎯 Fonctionnalités disponibles:');
+        console.log('   - Drag & Drop intelligent');
+        console.log('   - Édition inline complète');
+        console.log('   - Templates adaptatifs');
+        console.log('   - Upload d\'images');
+        console.log('   - Color pickers avancés');
+        console.log('   - Gestion des destinataires');
+        console.log('   - Aperçu temps réel');
+        console.log('🎯 Raccourcis clavier:');
+        console.log('   Ctrl+S : Sauvegarder brouillon');
+        console.log('   Ctrl+Enter : Envoyer campagne');
+        console.log('   Ctrl+T : Envoyer test');
+        console.log('   Ctrl+P : Prévisualiser');
+        console.log('   Delete : Supprimer élément sélectionné');
+        console.log('   Échap : Fermer modals/aperçu');
+    </script>
+</body>
+</html>

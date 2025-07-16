@@ -32,6 +32,331 @@ export async function sendTestMail(to, subject, text) {
   }
 }
 
+export const sendTestEmail = async (email, campaignData) => {
+    try {
+        const transporter = await createTransporter();
+        
+        const { subject, content, template, senderName } = campaignData;
+        
+        // Remplacer les variables de test
+        const processedContent = content
+            .replace(/\{\{first_name\}\}/g, 'Test')
+            .replace(/\{\{last_name\}\}/g, 'User')
+            .replace(/\{\{email\}\}/g, email)
+            .replace(/\{\{company_name\}\}/g, 'Test Company')
+            .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'))
+            .replace(/\{\{unsubscribe_url\}\}/g, '#');
+
+        const htmlContent = `
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>${subject}</title>
+            <style>
+                body { 
+                    margin: 0; 
+                    padding: 20px; 
+                    font-family: 'Inter', Arial, sans-serif; 
+                    background: #f8fafc; 
+                    color: #1e293b;
+                }
+                .email-container {
+                    max-width: 600px;
+                    margin: 0 auto;
+                    background: white;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+                }
+                .test-banner {
+                    background: linear-gradient(135deg, #f59e0b, #d97706);
+                    color: white;
+                    padding: 10px 20px;
+                    text-align: center;
+                    font-weight: 600;
+                    font-size: 14px;
+                }
+                .email-header {
+                    background: linear-gradient(135deg, #d89ab3, #b794a8);
+                    color: white;
+                    padding: 30px 20px;
+                    text-align: center;
+                }
+                .email-content {
+                    padding: 30px 20px;
+                    line-height: 1.6;
+                }
+                .email-footer {
+                    background: #f1f5f9;
+                    padding: 20px;
+                    text-align: center;
+                    font-size: 12px;
+                    color: #64748b;
+                    border-top: 1px solid #e2e8f0;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="email-container">
+                <div class="test-banner">
+                    🧪 EMAIL DE TEST - Ne pas transférer
+                </div>
+                
+                <div class="email-header">
+                    <h1 style="margin: 0; font-size: 24px;">${senderName || 'CrystosJewel'}</h1>
+                </div>
+                
+                <div class="email-content">
+                    ${processedContent}
+                </div>
+                
+                <div class="email-footer">
+                    <p><strong>Email de test envoyé depuis l'éditeur CrystosJewel</strong></p>
+                    <p>Cet email a été envoyé à ${email} à des fins de test uniquement.</p>
+                </div>
+            </div>
+        </body>
+        </html>
+        `;
+
+        const info = await transporter.sendMail({
+            from: `"${senderName || 'CrystosJewel'} 🧪" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `[TEST] ${subject}`,
+            html: htmlContent
+        });
+
+        console.log('🧪 Email de test envoyé:', info.messageId);
+        return { success: true, messageId: info.messageId };
+
+    } catch (error) {
+        console.error('❌ Erreur envoi email test:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+/**
+ * Envoyer une campagne email en masse
+ */
+export const sendBulkEmail = async (recipients, campaignData) => {
+    try {
+        const transporter = await createTransporter();
+        
+        const { name, subject, content, preheader, fromName, template } = campaignData;
+        
+        console.log(`📤 Envoi campagne "${name}" à ${recipients.length} destinataires`);
+        
+        let sentCount = 0;
+        let errorCount = 0;
+        const batchSize = 10; // Envoyer par lot de 10
+        
+        // Traiter par batch pour éviter le spam
+        for (let i = 0; i < recipients.length; i += batchSize) {
+            const batch = recipients.slice(i, i + batchSize);
+            
+            const emailPromises = batch.map(async (recipient) => {
+                try {
+                    // Personnaliser le contenu pour chaque destinataire
+                    const personalizedContent = content
+                        .replace(/\{\{first_name\}\}/g, recipient.firstName || 'Cher client')
+                        .replace(/\{\{last_name\}\}/g, recipient.lastName || '')
+                        .replace(/\{\{email\}\}/g, recipient.email)
+                        .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'))
+                        .replace(/\{\{unsubscribe_url\}\}/g, `${process.env.BASE_URL}/newsletter/unsubscribe?email=${encodeURIComponent(recipient.email)}`);
+
+                    const htmlContent = await generateEmailTemplate(
+                        personalizedContent,
+                        subject,
+                        preheader,
+                        template,
+                        fromName
+                    );
+
+                    await transporter.sendMail({
+                        from: `"${fromName || 'CrystosJewel'}" <${process.env.MAIL_USER}>`,
+                        to: recipient.email,
+                        subject: subject,
+                        html: htmlContent
+                    });
+
+                    sentCount++;
+                    console.log(`✅ Email envoyé à ${recipient.email}`);
+
+                } catch (error) {
+                    errorCount++;
+                    console.error(`❌ Erreur envoi à ${recipient.email}:`, error.message);
+                }
+            });
+
+            await Promise.all(emailPromises);
+            
+            // Pause entre les batches pour respecter les limites
+            if (i + batchSize < recipients.length) {
+                console.log(`⏳ Pause entre les batches (${i + batchSize}/${recipients.length})`);
+                await new Promise(resolve => setTimeout(resolve, 2000));
+            }
+        }
+
+        console.log(`📊 Campagne terminée: ${sentCount} envoyés, ${errorCount} erreurs`);
+        
+        return {
+            success: true,
+            sentCount,
+            errorCount,
+            totalRecipients: recipients.length
+        };
+
+    } catch (error) {
+        console.error('❌ Erreur campagne email:', error);
+        return { success: false, error: error.message, sentCount: 0, errorCount: recipients.length };
+    }
+};
+
+/**
+ * Générer le template HTML complet
+ */
+const generateEmailTemplate = async (content, subject, preheader, template, fromName) => {
+    const templates = {
+        elegant: {
+            headerBg: 'linear-gradient(135deg, #d89ab3, #b794a8)',
+            accentColor: '#d89ab3',
+            fontFamily: 'Georgia, serif'
+        },
+        modern: {
+            headerBg: 'linear-gradient(135deg, #8b5cf6, #7c3aed)',
+            accentColor: '#8b5cf6',
+            fontFamily: 'Inter, Arial, sans-serif'
+        },
+        classic: {
+            headerBg: 'linear-gradient(135deg, #1e293b, #334155)',
+            accentColor: '#1e293b',
+            fontFamily: 'Times New Roman, serif'
+        },
+        minimal: {
+            headerBg: 'linear-gradient(135deg, #64748b, #475569)',
+            accentColor: '#64748b',
+            fontFamily: 'Helvetica, Arial, sans-serif'
+        }
+    };
+
+    const templateStyle = templates[template] || templates.elegant;
+
+    return `
+    <!DOCTYPE html>
+    <html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${subject}</title>
+        <style>
+            body { 
+                margin: 0; 
+                padding: 20px; 
+                font-family: ${templateStyle.fontFamily}; 
+                background: #f8fafc; 
+                color: #1e293b;
+                line-height: 1.6;
+            }
+            .email-container {
+                max-width: 600px;
+                margin: 0 auto;
+                background: white;
+                border-radius: 12px;
+                overflow: hidden;
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+            .email-header {
+                background: ${templateStyle.headerBg};
+                color: white;
+                padding: 30px 20px;
+                text-align: center;
+            }
+            .email-subject {
+                margin: 0;
+                font-size: 24px;
+                font-weight: 700;
+                margin-bottom: 5px;
+            }
+            .email-preheader {
+                margin: 0;
+                font-size: 14px;
+                opacity: 0.9;
+            }
+            .email-content {
+                padding: 30px 20px;
+            }
+            .email-content h1, .email-content h2, .email-content h3 {
+                color: ${templateStyle.accentColor};
+            }
+            .email-content a {
+                color: ${templateStyle.accentColor};
+                text-decoration: none;
+            }
+            .email-content a:hover {
+                text-decoration: underline;
+            }
+            .btn {
+                display: inline-block;
+                background: ${templateStyle.headerBg};
+                color: white !important;
+                padding: 15px 30px;
+                text-decoration: none;
+                border-radius: 8px;
+                font-weight: 600;
+                margin: 10px 0;
+            }
+            .email-footer {
+                background: #f1f5f9;
+                padding: 20px;
+                text-align: center;
+                font-size: 12px;
+                color: #64748b;
+                border-top: 1px solid #e2e8f0;
+            }
+            .email-footer a {
+                color: #64748b;
+                text-decoration: none;
+            }
+            
+            /* Responsive */
+            @media (max-width: 600px) {
+                body { padding: 10px; }
+                .email-container { border-radius: 8px; }
+                .email-header, .email-content { padding: 20px 15px; }
+                .email-subject { font-size: 20px; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="email-container">
+            <div class="email-header">
+                <h1 class="email-subject">${subject}</h1>
+                ${preheader ? `<p class="email-preheader">${preheader}</p>` : ''}
+            </div>
+            
+            <div class="email-content">
+                ${content}
+            </div>
+            
+            <div class="email-footer">
+                <p>© ${new Date().getFullYear()} ${fromName || 'CrystosJewel'} - Tous droits réservés</p>
+                <p style="margin-top: 10px;">
+                    <a href="{{unsubscribe_url}}">Se désabonner</a> | 
+                    <a href="${process.env.BASE_URL}">Visiter notre site</a>
+                </p>
+                <p style="margin-top: 15px; font-size: 11px; color: #9ca3af;">
+                    Vous recevez cet email car vous êtes inscrit à notre newsletter.<br>
+                    Si vous ne souhaitez plus recevoir nos emails, cliquez sur "Se désabonner" ci-dessus.
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+    `;
+};
+
 // export const sendWelcomeMail = async (userEmail, firstName) => {
 //   try {
 //     const htmlContent = `
