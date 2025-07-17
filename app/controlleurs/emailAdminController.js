@@ -55,11 +55,17 @@ const emailAdminController = {
                 offset
             };
 
+            const customers = await sequelize.query(`SELECT * FROM customers`, {
+    type: QueryTypes.SELECT
+});
+
             res.render('admin/email-management', {
                 title: 'Gestion des Emails',
                 templates,
                 recentEmails,
                 stats,
+                customers: [],
+                recentCampaigns: recentEmails,
                 templateStats,
                 pagination,
                 success: req.session.flashMessage?.type === 'success' ? req.session.flashMessage.message : null,

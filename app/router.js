@@ -3659,7 +3659,98 @@ router.post('/admin/email-setup', isAdmin, async (req, res) => {
         });
     }
 });
-console.log('📧 Routes email admin configurées avec succès');
+
+// Routes pour l'éditeur d'emails
+router.get('/admin/email-editor', isAdmin, (req, res) => {
+    res.render('email-editor', { 
+        title: 'Éditeur d\'Emails',
+        user: req.session.user 
+    });
+});
+
+router.post('/admin/emails/save-draft', isAdmin, async (req, res) => {
+    try {
+        // Logique de sauvegarde du brouillon
+        console.log('💾 Sauvegarde brouillon:', req.body);
+        res.json({ success: true, message: 'Brouillon sauvegardé' });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+});
+
+router.post('/admin/emails/send-test', isAdmin, async (req, res) => {
+    try {
+        const { email, subject, content } = req.body;
+        
+        // Utilise votre mailService existant
+        const { transporter } = await import('./services/mailService.js');
+        
+        await transporter.sendMail({
+            from: `"CrystosJewel Test" <${process.env.MAIL_USER}>`,
+            to: email,
+            subject: `[TEST] ${subject}`,
+            html: content
+        });
+        
+        res.json({ success: true, message: 'Email de test envoyé' });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+});
+
+router.post('/admin/emails/send-campaign', isAdmin, async (req, res) => {
+    try {
+        const { subject, content, recipientType } = req.body;
+        
+        // Récupérer les clients selon le filtre
+        const customers = await getCustomersByFilter(recipientType);
+        
+        let sentCount = 0;
+        for (const customer of customers) {
+            try {
+                const { transporter } = await import('./services/mailService.js');
+                
+                const personalizedContent = content
+                    .replace(/{{firstName}}/g, customer.first_name)
+                    .replace(/{{lastName}}/g, customer.last_name)
+                    .replace(/{{email}}/g, customer.email);
+                
+                await transporter.sendMail({
+                    from: `"CrystosJewel" <${process.env.MAIL_USER}>`,
+                    to: customer.email,
+                    subject: subject,
+                    html: personalizedContent
+                });
+                
+                sentCount++;
+            } catch (emailError) {
+                console.error(`Erreur envoi à ${customer.email}:`, emailError);
+            }
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `Campagne envoyée à ${sentCount} destinataires` 
+        });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+});
+
+router.get('/admin/api/customers', isAdmin, async (req, res) => {
+    try {
+        // Récupérer vos clients depuis votre base de données
+        const customers = await Customer.findAll({
+            attributes: ['id', 'first_name', 'last_name', 'email', 'newsletter_subscribed'],
+            order: [['created_at', 'DESC']]
+        });
+        
+        res.json({ success: true, customers });
+    } catch (error) {
+        res.json({ success: false, message: error.message });
+    }
+});
+
 
 // Export par défaut
 export default router;

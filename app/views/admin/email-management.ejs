@@ -3,30 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title || 'Gestion des Emails' %> - Administration</title>
+    <title><%= title || 'Gestion des Emails' %></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --primary: #E8B4B8;
-            --primary-dark: #B8868A;
-            --primary-light: #F5D7DA;
-            --secondary: #FDF9F6;
-            --accent: #D4A5A9;
-            --success: #10b981;
-            --danger: #ef4444;
-            --warning: #f59e0b;
-            --info: #3b82f6;
-            --dark: #1f2937;
-            --gray-light: #f8fafc;
-            --gray-medium: #64748b;
-            --white: #ffffff;
-            --border: #e2e8f0;
-            --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --radius: 8px;
-            --radius-lg: 12px;
-            --transition: all 0.2s ease;
+            --primary-color: #d89ab3;
+            --secondary-color: #b794a8;
+            --accent-color: #8b5cf6;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --bg-light: #f8fafc;
+            --bg-white: #ffffff;
+            --border-color: #e2e8f0;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         }
 
         * {
@@ -36,138 +29,35 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--gray-light);
-            color: var(--dark);
-            line-height: 1.6;
-            font-size: 14px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-light) 0%, #e2e8f0 100%);
+            min-height: 100vh;
         }
 
-        .container {
+        .page-container {
             max-width: 1400px;
             margin: 0 auto;
             padding: 20px;
         }
 
-        /* Header */
         .page-header {
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
             color: white;
             padding: 30px;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-md);
+            border-radius: 15px;
             margin-bottom: 30px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .page-header::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(45deg, rgba(255,255,255,0.1) 0%, transparent 100%);
-            pointer-events: none;
-        }
-
-        .header-content {
-            position: relative;
-            z-index: 1;
+            box-shadow: var(--shadow);
         }
 
         .page-title {
-            font-size: 2.5rem;
-            font-weight: 700;
+            font-size: 2rem;
+            font-weight: 600;
             margin-bottom: 10px;
             display: flex;
             align-items: center;
-            justify-content: center;
             gap: 15px;
         }
 
-        .page-subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            margin-bottom: 20px;
-        }
-
-        /* Messages Flash */
-        .flash-message {
-            padding: 15px 20px;
-            border-radius: var(--radius);
-            margin-bottom: 20px;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .flash-success {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            border: 1px solid rgba(16, 185, 129, 0.2);
-        }
-
-        .flash-error {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
-            border: 1px solid rgba(239, 68, 68, 0.2);
-        }
-
-        .flash-warning {
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--warning);
-            border: 1px solid rgba(245, 158, 11, 0.2);
-        }
-
-        /* Quick Actions */
-        .quick-actions {
-            display: flex;
-            gap: 15px;
-            justify-content: center;
-            margin-top: 20px;
-            flex-wrap: wrap;
-        }
-
-        .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 20px;
-            border: none;
-            border-radius: var(--radius);
-            font-weight: 600;
-            text-decoration: none;
-            cursor: pointer;
-            transition: var(--transition);
-            font-size: 14px;
-            border: 2px solid transparent;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, var(--info) 0%, #1d4ed8 100%);
-            color: white;
-        }
-
-        .btn-success {
-            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-            color: white;
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
-            color: white;
-        }
-
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
-        }
-
-        /* Stats Grid */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
@@ -176,970 +66,810 @@
         }
 
         .stat-card {
-            background: white;
+            background: var(--bg-white);
             padding: 25px;
-            border-radius: var(--radius-lg);
+            border-radius: 12px;
             box-shadow: var(--shadow);
-            border-left: 4px solid var(--primary);
-            transition: var(--transition);
+            border-left: 5px solid var(--primary-color);
+            transition: transform 0.3s ease;
         }
 
         .stat-card:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .stat-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
-        }
-
-        .stat-title {
-            font-size: 0.9rem;
-            color: var(--gray-medium);
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            transform: translateY(-5px);
         }
 
         .stat-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 18px;
+            font-size: 24px;
             color: white;
+            margin-bottom: 15px;
         }
 
         .stat-value {
             font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--dark);
+            font-weight: bold;
+            color: var(--text-primary);
             margin-bottom: 5px;
         }
 
-        .stat-trend {
-            font-size: 0.85rem;
-            color: var(--success);
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 14px;
             font-weight: 500;
         }
 
-        /* Email Templates Section */
-        .templates-section {
-            background: white;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow);
-            margin-bottom: 30px;
-            overflow: hidden;
-        }
-
-        .section-header {
-            background: var(--primary-light);
-            padding: 20px 25px;
-            border-bottom: 1px solid var(--border);
+        .action-bar {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            background: var(--bg-white);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(216, 154, 179, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+
+        .main-content {
+            background: var(--bg-white);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
+        }
+
+        .sidebar-content {
+            background: var(--bg-white);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: var(--shadow);
         }
 
         .section-title {
             font-size: 1.3rem;
-            font-weight: 700;
-            color: var(--dark);
-            margin: 0;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .templates-grid {
+        .quick-actions {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 20px;
-            padding: 25px;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
         }
 
-        .template-card {
-            border: 2px solid var(--border);
-            border-radius: var(--radius);
+        .quick-action {
+            background: var(--bg-light);
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
             padding: 20px;
-            transition: var(--transition);
+            text-align: center;
             cursor: pointer;
-            position: relative;
-            overflow: hidden;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            color: var(--text-primary);
         }
 
-        .template-card:hover {
-            border-color: var(--primary);
-            box-shadow: var(--shadow-md);
+        .quick-action:hover {
+            border-color: var(--primary-color);
+            background: var(--primary-color);
+            color: white;
             transform: translateY(-2px);
         }
 
-        .template-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 15px;
+        .quick-action-icon {
+            font-size: 32px;
+            margin-bottom: 10px;
         }
 
-        .template-title {
-            font-size: 1.1rem;
+        .quick-action-title {
             font-weight: 600;
-            color: var(--dark);
-        }
-
-        .template-status {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .status-active {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-        }
-
-        .status-draft {
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--warning);
-        }
-
-        .status-inactive {
-            background: rgba(107, 114, 128, 0.1);
-            color: var(--gray-medium);
-        }
-
-        .template-description {
-            color: var(--gray-medium);
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-        }
-
-        .template-meta {
-            display: flex;
-            gap: 15px;
-            margin-bottom: 15px;
-            font-size: 0.85rem;
-            color: var(--gray-medium);
-        }
-
-        .template-actions {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-        }
-
-        .btn-sm {
-            padding: 6px 12px;
-            font-size: 0.8rem;
-        }
-
-        .btn-outline {
-            background: transparent;
-            border: 1px solid var(--border);
-            color: var(--gray-medium);
-        }
-
-        .btn-outline:hover {
-            background: var(--gray-light);
-            border-color: var(--primary);
-            color: var(--primary);
-            transform: translateY(-1px);
-        }
-
-        /* Recent Emails Table */
-        .recent-emails {
-            background: white;
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow);
-            overflow: hidden;
-        }
-
-        .controls-bar {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            padding: 20px 25px;
-            background: var(--gray-light);
-            border-bottom: 1px solid var(--border);
-            flex-wrap: wrap;
-        }
-
-        .search-wrapper {
-            position: relative;
-            flex: 1;
-            max-width: 300px;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 10px 40px 10px 15px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
             font-size: 14px;
         }
 
-        .search-icon {
-            position: absolute;
-            right: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--gray-medium);
-        }
-
-        .filter-select {
-            padding: 10px 15px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            font-size: 14px;
-            min-width: 150px;
-        }
-
-        .emails-table {
+        .campaigns-table {
             width: 100%;
             border-collapse: collapse;
+            margin-top: 20px;
         }
 
-        .emails-table th {
-            background: var(--gray-light);
+        .campaigns-table th {
+            background: var(--bg-light);
             padding: 15px;
             text-align: left;
             font-weight: 600;
-            color: var(--dark);
-            border-bottom: 1px solid var(--border);
-            white-space: nowrap;
+            color: var(--text-secondary);
+            border-bottom: 2px solid var(--border-color);
         }
 
-        .emails-table td {
+        .campaigns-table td {
             padding: 15px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--border-color);
             vertical-align: middle;
         }
 
-        .emails-table tr:hover {
-            background: var(--gray-light);
+        .campaigns-table tr:hover {
+            background: var(--bg-light);
         }
 
-        .email-subject {
-            font-weight: 600;
-            color: var(--dark);
-            max-width: 300px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        .email-recipient {
-            color: var(--gray-medium);
-            font-size: 0.9rem;
-        }
-
-        .email-template {
-            font-size: 0.8rem;
-            color: var(--gray-medium);
-            background: var(--gray-light);
-            padding: 2px 6px;
-            border-radius: 4px;
-            margin-top: 2px;
-            display: inline-block;
-        }
-
-        .email-date {
-            color: var(--gray-medium);
-            font-size: 0.85rem;
-            white-space: nowrap;
-        }
-
-        .delivery-status {
-            padding: 4px 8px;
+        .status-badge {
+            padding: 4px 12px;
             border-radius: 12px;
-            font-size: 0.8rem;
+            font-size: 11px;
             font-weight: 600;
-            white-space: nowrap;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .status-sent {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
+            background: #dcfce7;
+            color: #166534;
         }
 
-        .status-pending {
-            background: rgba(245, 158, 11, 0.1);
-            color: var(--warning);
+        .status-draft {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .status-sending {
+            background: #dbeafe;
+            color: #1d4ed8;
         }
 
         .status-failed {
-            background: rgba(239, 68, 68, 0.1);
-            color: var(--danger);
+            background: #fee2e2;
+            color: #dc2626;
         }
 
-        /* Loading and Empty States */
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid var(--border);
-            border-radius: 50%;
-            border-top-color: var(--primary);
-            animation: spin 1s ease-in-out infinite;
+        .btn-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 2px;
+            transition: all 0.3s ease;
         }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
+        .btn-view {
+            background: #d1fae5;
+            color: #059669;
         }
 
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--gray-medium);
+        .btn-view:hover {
+            background: #6ee7b7;
+            transform: scale(1.1);
         }
 
-        .empty-icon {
-            font-size: 3rem;
-            margin-bottom: 15px;
-            opacity: 0.5;
+        .btn-edit {
+            background: #fef3c7;
+            color: #d97706;
         }
 
-        /* Pagination */
-        .pagination-container {
+        .btn-edit:hover {
+            background: #fcd34d;
+            transform: scale(1.1);
+        }
+
+        .btn-copy {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+
+        .btn-copy:hover {
+            background: #93c5fd;
+            transform: scale(1.1);
+        }
+
+        .info-box {
+            background: var(--bg-light);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+
+        .info-row {
             display: flex;
             justify-content: space-between;
-            align-items: center;
-            padding: 20px 25px;
-            background: var(--gray-light);
-            border-top: 1px solid var(--border);
+            margin-bottom: 10px;
         }
 
-        .pagination-info {
-            font-size: 0.9rem;
-            color: var(--gray-medium);
+        .info-row:last-child {
+            margin-bottom: 0;
         }
 
-        .pagination {
+        .info-label {
+            font-weight: 600;
+        }
+
+        .tools-section {
             display: flex;
-            gap: 5px;
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .page-link {
-            padding: 8px 12px;
-            border: 1px solid var(--border);
-            border-radius: var(--radius);
-            text-decoration: none;
-            color: var(--dark);
-            transition: var(--transition);
-        }
-
-        .page-link:hover {
-            background: var(--primary-light);
-            border-color: var(--primary);
-        }
-
-        .page-link.active {
-            background: var(--primary);
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
             color: white;
-            border-color: var(--primary);
+            font-weight: 600;
+            z-index: 9999;
+            animation: slideInRight 0.3s ease;
+            max-width: 350px;
         }
 
-        /* Responsive */
+        .notification.success {
+            background: var(--success-color);
+        }
+
+        .notification.error {
+            background: var(--danger-color);
+        }
+
+        .notification.warning {
+            background: var(--warning-color);
+        }
+
+        .notification.info {
+            background: var(--accent-color);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
+        @media (max-width: 1200px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
         @media (max-width: 768px) {
-            .container {
+            .page-container {
                 padding: 10px;
             }
-
-            .page-title {
-                font-size: 2rem;
+            
+            .action-bar {
                 flex-direction: column;
-                gap: 10px;
+                gap: 15px;
             }
-
+            
             .quick-actions {
-                flex-direction: column;
-                align-items: center;
+                grid-template-columns: 1fr;
             }
 
             .stats-grid {
                 grid-template-columns: 1fr;
             }
-
-            .templates-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .controls-bar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-
-            .search-wrapper {
-                max-width: none;
-            }
-
-            .emails-table {
-                font-size: 0.8rem;
-            }
-
-            .emails-table th,
-            .emails-table td {
-                padding: 10px 8px;
-            }
-
-            .section-header {
-                flex-direction: column;
-                gap: 15px;
-                align-items: flex-start;
-            }
-
-            .template-actions {
-                justify-content: center;
-            }
-        }
-
-        /* Animation */
-        .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
-        }
-
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
     </style>
 </head>
 <body>
-    <%- include('../partials/navbarre') %>
+    <%- include('../partials/navbarre.ejs') %>
 
-    <div class="container">
-        <!-- Flash Messages -->
-        <% if (locals.success) { %>
-            <div class="flash-message flash-success">
-                <i class="fas fa-check-circle"></i>
-                <%= success %>
-            </div>
-        <% } %>
-        
-        <% if (locals.error) { %>
-            <div class="flash-message flash-error">
-                <i class="fas fa-exclamation-triangle"></i>
-                <%= error %>
-            </div>
-        <% } %>
-
+    <div class="page-container">
         <!-- Header -->
         <div class="page-header">
-            <div class="header-content">
-                <h1 class="page-title">
-                    <i class="fas fa-envelope"></i>
-                    Gestion des Emails
-                </h1>
-                <p class="page-subtitle">
-                    Gérez tous vos templates d'emails et suivez les envois en temps réel
-                </p>
-                <div class="quick-actions">
-                    <a href="/admin/email-templates/create" class="btn btn-primary">
-                        <i class="fas fa-plus"></i>
-                        Nouveau Template
-                    </a>
-                    <a href="/admin/email-editor" class="btn btn-success">
-                        <i class="fas fa-edit"></i>
-                        Éditeur d'Email
-                    </a>
-                    <a href="/admin/email-logs/export" class="btn btn-warning">
-                        <i class="fas fa-download"></i>
-                        Exporter Logs
-                    </a>
-                </div>
-            </div>
+            <h1 class="page-title">
+                <i class="fas fa-envelope-open-text"></i>
+                Gestion des Emails
+            </h1>
+            <p>Créez et gérez vos campagnes d'emails avec notre éditeur avancé</p>
         </div>
 
-        <!-- Stats Dashboard -->
+        <!-- Statistiques -->
         <div class="stats-grid">
             <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">Emails Envoyés</span>
-                    <div class="stat-icon" style="background: var(--success);">
-                        <i class="fas fa-paper-plane"></i>
-                    </div>
+                <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);">
+                    <i class="fas fa-paper-plane"></i>
                 </div>
-                <div class="stat-value"><%= locals.stats ? stats.totalSent : 0 %></div>
-                <div class="stat-trend">
-                    <% if (locals.stats && stats.monthlyGrowth > 0) { %>
-                        +<%= stats.monthlyGrowth %>% ce mois
-                    <% } else { %>
-                        Données en cours...
-                    <% } %>
-                </div>
+                <div class="stat-value"><%= stats.totalCampaigns || 0 %></div>
+                <div class="stat-label">Campagnes créées</div>
             </div>
 
             <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">Templates Actifs</span>
-                    <div class="stat-icon" style="background: var(--info);">
-                        <i class="fas fa-file-alt"></i>
-                    </div>
+                <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                    <i class="fas fa-envelope"></i>
                 </div>
-                <div class="stat-value"><%= locals.templates ? templates.filter(t => t.is_active).length : 0 %></div>
-                <div class="stat-trend">
-                    <%= locals.templates ? templates.length : 0 %> total
-                </div>
+                <div class="stat-value"><%= stats.totalSent || 0 %></div>
+                <div class="stat-label">Emails envoyés</div>
             </div>
 
             <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">Taux de Livraison</span>
-                    <div class="stat-icon" style="background: var(--primary);">
-                        <i class="fas fa-check-circle"></i>
-                    </div>
+                <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                    <i class="fas fa-eye"></i>
                 </div>
-                <div class="stat-value">
-                    <% if (locals.stats && stats.totalSent > 0) { %>
-                        <%= ((stats.totalSent - stats.totalFailed) / stats.totalSent * 100).toFixed(1) %>%
-                    <% } else { %>
-                        ---%
-                    <% } %>
-                </div>
-                <div class="stat-trend">Optimisé</div>
+                <div class="stat-value"><%= stats.avgOpenRate || 0 %>%</div>
+                <div class="stat-label">Taux d'ouverture moyen</div>
             </div>
 
             <div class="stat-card">
-                <div class="stat-header">
-                    <span class="stat-title">En Attente</span>
-                    <div class="stat-icon" style="background: var(--warning);">
-                        <i class="fas fa-clock"></i>
-                    </div>
+                <div class="stat-icon" style="background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);">
+                    <i class="fas fa-layer-group"></i>
                 </div>
-                <div class="stat-value"><%= locals.stats ? stats.pending : 0 %></div>
-                <div class="stat-trend">En traitement</div>
+                <div class="stat-value"><%= stats.activeTemplates || 0 %></div>
+                <div class="stat-label">Templates actifs</div>
             </div>
         </div>
 
-        <!-- Templates Section -->
-        <div class="templates-section">
-            <div class="section-header">
-                <h2 class="section-title">
-                    <i class="fas fa-templates"></i>
-                    Templates d'Emails
-                </h2>
-                <a href="/admin/email-templates/create" class="btn btn-sm btn-primary">
-                    <i class="fas fa-plus"></i>
-                    Nouveau
-                </a>
-            </div>
-            <div class="templates-grid">
-                <% if (locals.templates && templates.length > 0) { %>
-                    <% templates.forEach(template => { %>
-                        <div class="template-card fade-in">
-                            <div class="template-header">
-                                <h3 class="template-title"><%= template.template_name %></h3>
-                                <span class="template-status status-<%= template.is_active ? 'active' : 'inactive' %>">
-                                    <%= template.is_active ? 'Actif' : 'Inactif' %>
-                                </span>
-                            </div>
-                            <div class="template-description">
-                                Sujet: <%= template.subject %>
-                            </div>
-                            <div class="template-meta">
-                                <span>
-                                    <i class="fas fa-calendar"></i> 
-                                    Modifié le <%= new Date(template.updated_at).toLocaleDateString('fr-FR') %>
-                                </span>
-                                <% if (locals.templateStats && templateStats[template.id]) { %>
-                                    <span>
-                                        <i class="fas fa-chart-bar"></i> 
-                                        <%= templateStats[template.id].usage || 0 %> utilisations
-                                    </span>
-                                <% } %>
-                            </div>
-                            <div class="template-actions">
-                                <a href="/admin/email-templates/<%= template.id %>/edit" class="btn btn-sm btn-primary">
-                                    <i class="fas fa-edit"></i> Modifier
-                                </a>
-                                <button class="btn btn-sm btn-outline" onclick="previewTemplate(<%= template.id %>)">
-                                    <i class="fas fa-eye"></i> Aperçu
-                                </button>
-                                <button class="btn btn-sm btn-outline" onclick="duplicateTemplate(<%= template.id %>)">
-                                    <i class="fas fa-copy"></i> Dupliquer
-                                </button>
-                                <% if (!template.is_active) { %>
-                                    <button class="btn btn-sm btn-outline" onclick="toggleTemplate(<%= template.id %>, true)">
-                                        <i class="fas fa-play"></i> Activer
-                                    </button>
-                                <% } else { %>
-                                    <button class="btn btn-sm btn-outline" onclick="toggleTemplate(<%= template.id %>, false)">
-                                        <i class="fas fa-pause"></i> Désactiver
-                                    </button>
-                                <% } %>
-                            </div>
-                        </div>
-                    <% }); %>
-                <% } else { %>
-                    <div class="empty-state">
-                        <div class="empty-icon">
-                            <i class="fas fa-file-alt"></i>
-                        </div>
-                        <h3>Aucun template trouvé</h3>
-                        <p>Commencez par créer votre premier template d'email</p>
-                        <a href="/admin/email-templates/create" class="btn btn-primary">
-                            <i class="fas fa-plus"></i>
-                            Créer un template
-                        </a>
-                    </div>
-                <% } %>
-            </div>
+        <!-- Barre d'actions -->
+        <div class="action-bar">
+            <h3>Actions rapides</h3>
+            <button onclick="openEmailEditor()" class="btn btn-primary">
+                <i class="fas fa-plus"></i>
+                Nouvelle campagne
+            </button>
         </div>
 
-        <!-- Recent Emails -->
-        <div class="recent-emails">
-            <div class="section-header">
-                <h2 class="section-title">
+        <!-- Contenu principal -->
+        <div class="content-grid">
+            <!-- Zone principale -->
+            <div class="main-content">
+                <h3 class="section-title">
+                    <i class="fas fa-rocket"></i>
+                    Démarrage rapide
+                </h3>
+                
+                <div class="quick-actions">
+                    <a href="#" class="quick-action" onclick="openEmailEditor()">
+                        <div class="quick-action-icon">✏️</div>
+                        <div class="quick-action-title">Éditeur avancé</div>
+                    </a>
+                    
+                    <a href="#" class="quick-action" onclick="openTemplateSelector()">
+                        <div class="quick-action-icon">📄</div>
+                        <div class="quick-action-title">Partir d'un template</div>
+                    </a>
+                    
+                    <a href="#" class="quick-action" onclick="openHistory()">
+                        <div class="quick-action-icon">📚</div>
+                        <div class="quick-action-title">Dupliquer une campagne</div>
+                    </a>
+                    
+                    <a href="#" class="quick-action" onclick="sendTestEmail()">
+                        <div class="quick-action-icon">🧪</div>
+                        <div class="quick-action-title">Envoyer un test</div>
+                    </a>
+                </div>
+
+                <!-- Tableau des campagnes récentes -->
+                <h3 class="section-title">
                     <i class="fas fa-history"></i>
-                    Emails Récents
-                </h2>
-                <button class="btn btn-sm btn-outline" onclick="refreshEmails()">
-                    <i class="fas fa-sync-alt"></i>
-                    Actualiser
-                </button>
-            </div>
-            <div class="controls-bar">
-                <div class="search-wrapper">
-                    <input type="text" class="search-input" placeholder="Rechercher par destinataire ou sujet..." id="emailSearch" onkeyup="filterEmails()">
-                    <i class="fas fa-search search-icon"></i>
-                </div>
-                <select class="filter-select" id="statusFilter" onchange="filterEmails()">
-                    <option value="">Tous les statuts</option>
-                    <option value="sent">Envoyés</option>
-                    <option value="pending">En attente</option>
-                    <option value="failed">Échecs</option>
-                </select>
-                <select class="filter-select" id="typeFilter" onchange="filterEmails()">
-                    <option value="">Tous les types</option>
-                    <option value="order_confirmation">Confirmation commande</option>
-                    <option value="order_shipped">Expédition</option>
-                    <option value="welcome">Bienvenue</option>
-                    <option value="newsletter">Newsletter</option>
-                    <option value="cart_abandonment">Panier abandonné</option>
-                </select>
-            </div>
-            <div id="emailsTableContainer">
-                <table class="emails-table">
-                    <thead>
-                        <tr>
-                            <th>Destinataire</th>
-                            <th>Sujet</th>
-                            <th>Type</th>
-                            <th>Statut</th>
-                            <th>Date</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="emailsTableBody">
-                        <% if (locals.recentEmails && recentEmails.length > 0) { %>
-                            <% recentEmails.forEach(email => { %>
-                                <tr class="fade-in email-row" 
-                                    data-recipient="<%= email.recipient_email.toLowerCase() %>"
-                                    data-subject="<%= email.subject.toLowerCase() %>"
-                                    data-status="<%= email.status %>"
-                                    data-type="<%= email.email_type %>">
-                                    <td>
-                                        <div class="email-recipient"><%= email.recipient_email %></div>
-                                        <% if (email.template_name) { %>
-                                            <div class="email-template">via <%= email.template_name %></div>
-                                        <% } %>
-                                    </td>
-                                    <td>
-                                        <div class="email-subject" title="<%= email.subject %>"><%= email.subject %></div>
-                                    </td>
-                                    <td>
-                                        <span style="text-transform: capitalize; color: var(--gray-medium);">
-                                            <%= getTypeLabel(email.email_type) %>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="delivery-status status-<%= email.status %>">
-                                            <%= getStatusLabel(email.status) %>
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <div class="email-date">
-                                            <%= new Date(email.sent_at || email.created_at).toLocaleDateString('fr-FR') %>
-                                            <%= new Date(email.sent_at || email.created_at).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) %>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <div style="display: flex; gap: 5px;">
-                                            <button class="btn btn-sm btn-outline" onclick="viewEmail(<%= email.id %>)" title="Voir l'email">
+                    Campagnes récentes
+                </h3>
+
+                <div style="overflow-x: auto;">
+                    <table class="campaigns-table">
+                        <thead>
+                            <tr>
+                                <th>Campagne</th>
+                                <th>Statut</th>
+                                <th>Destinataires</th>
+                                <th>Ouvertures</th>
+                                <th>Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% if (recentEmails && recentEmails.length > 0) { %>
+  <% recentEmails.forEach(campaign => { %>
+
+                                    <tr>
+                                        <td>
+                                            <div style="font-weight: 600; color: var(--text-primary); margin-bottom: 4px;">
+                                                <%= campaign.subject %>
+                                            </div>
+                                            <div style="font-size: 12px; color: var(--text-secondary);">
+                                                <%= campaign.name || 'Sans nom' %>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="status-badge status-<%= campaign.status %>">
+                                                <%= campaign.status === 'sent' ? 'Envoyé' : 
+                                                    campaign.status === 'draft' ? 'Brouillon' :
+                                                    campaign.status === 'sending' ? 'En cours' : campaign.status %>
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <strong><%= campaign.total_recipients || 0 %></strong>
+                                        </td>
+                                        <td>
+                                            <% const openRate = campaign.total_recipients > 0 ? Math.round((campaign.opened_count / campaign.total_recipients) * 100) : 0 %>
+                                            <strong><%= campaign.opened_count || 0 %></strong>
+                                            <span style="color: var(--text-secondary); font-size: 12px;">(<%= openRate %>%)</span>
+                                        </td>
+                                        <td style="font-size: 12px; color: var(--text-secondary);">
+                                            <%= new Date(campaign.created_at).toLocaleDateString('fr-FR') %>
+                                        </td>
+                                        <td>
+                                            <button onclick="viewCampaign(<%= campaign.id %>)" class="btn-icon btn-view" title="Voir détails">
                                                 <i class="fas fa-eye"></i>
                                             </button>
-                                            <% if (email.status === 'failed') { %>
-                                                <button class="btn btn-sm btn-outline" onclick="resendEmail(<%= email.id %>)" title="Renvoyer">
-                                                    <i class="fas fa-redo"></i>
+                                            <% if (campaign.status === 'draft') { %>
+                                                <button onclick="editCampaign(<%= campaign.id %>)" class="btn-icon btn-edit" title="Modifier">
+                                                    <i class="fas fa-edit"></i>
                                                 </button>
                                             <% } %>
-                                        </div>
+                                            <button onclick="duplicateCampaign(<%= campaign.id %>)" class="btn-icon btn-copy" title="Dupliquer">
+                                                <i class="fas fa-copy"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                <% }); %>
+                            <% } else { %>
+                                <tr>
+                                    <td colspan="6" style="padding: 40px; text-align: center; color: var(--text-secondary);">
+                                        <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 16px; display: block;"></i>
+                                        <p>Aucune campagne créée pour le moment</p>
+                                        <button onclick="openEmailEditor()" class="btn btn-primary" style="margin-top: 15px;">
+                                            <i class="fas fa-plus"></i> Créer votre première campagne
+                                        </button>
                                     </td>
                                 </tr>
-                            <% }); %>
-                        <% } else { %>
-                            <tr>
-                                <td colspan="6" class="empty-state">
-                                    <div class="empty-icon">
-                                        <i class="fas fa-inbox"></i>
-                                    </div>
-                                    <h3>Aucun email trouvé</h3>
-                                    <p>Les emails envoyés apparaîtront ici</p>
-                                </td>
-                            </tr>
-                        <% } %>
-                    </tbody>
-                </table>
+                            <% } %>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-            
-            <!-- Pagination -->
-            <% if (locals.pagination && pagination.totalPages > 1) { %>
-                <div class="pagination-container">
-                    <div class="pagination-info">
-                        Affichage de <%= pagination.offset + 1 %> à <%= Math.min(pagination.offset + pagination.limit, pagination.total) %> 
-                        sur <%= pagination.total %> emails
+
+            <!-- Barre latérale -->
+            <div class="sidebar-content">
+                <h3 class="section-title">
+                    <i class="fas fa-users"></i>
+                    Clients disponibles
+                </h3>
+                
+                <div class="info-box">
+                    <div class="info-row">
+                        <span class="info-label">Total clients :</span>
+                        <strong><%= customers ? customers.length : 0 %></strong>
                     </div>
-                    <div class="pagination">
-                        <% if (pagination.currentPage > 1) { %>
-                            <a href="?page=<%= pagination.currentPage - 1 %>" class="page-link">
-                                <i class="fas fa-chevron-left"></i>
-                            </a>
-                        <% } %>
-                        
-                        <% for (let i = Math.max(1, pagination.currentPage - 2); i <= Math.min(pagination.totalPages, pagination.currentPage + 2); i++) { %>
-                            <a href="?page=<%= i %>" class="page-link <%= i === pagination.currentPage ? 'active' : '' %>">
-                                <%= i %>
-                            </a>
-                        <% } %>
-                        
-                        <% if (pagination.currentPage < pagination.totalPages) { %>
-                            <a href="?page=<%= pagination.currentPage + 1 %>" class="page-link">
-                                <i class="fas fa-chevron-right"></i>
-                            </a>
-                        <% } %>
+                    <div class="info-row">
+                        <span class="info-label">Abonnés newsletter :</span>
+                        <strong>
+                            <% const newsletterCount = customers ? customers.filter(c => c.marketing_opt_in).length : 0 %>
+                            <%= newsletterCount %>
+                        </strong>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Clients VIP :</span>
+                        <strong>
+                            <% const vipCount = customers ? customers.filter(c => c.total_spent >= 1000).length : 0 %>
+                            <%= vipCount %>
+                        </strong>
                     </div>
                 </div>
-            <% } %>
+
+                <h3 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Performances
+                </h3>
+                
+                <div style="margin-bottom: 25px;">
+                    <canvas id="performanceChart" width="400" height="200"></canvas>
+                </div>
+
+                <h3 class="section-title">
+                    <i class="fas fa-tools"></i>
+                    Outils
+                </h3>
+                
+                <div class="tools-section">
+                    <button onclick="exportCampaigns()" class="btn btn-secondary">
+                        <i class="fas fa-download"></i>
+                        Exporter les campagnes
+                    </button>
+                    
+                    <button onclick="cleanupCampaigns()" class="btn btn-warning">
+                        <i class="fas fa-broom"></i>
+                        Nettoyer les anciennes
+                    </button>
+                    
+                    <button onclick="emailSettings()" class="btn" style="background: var(--accent-color); color: white;">
+                        <i class="fas fa-cog"></i>
+                        Paramètres emails
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // Fonctions utilitaires pour les labels
-        function getStatusLabel(status) {
-            const labels = {
-                'sent': 'Envoyé',
-                'pending': 'En attente',
-                'failed': 'Échec'
-            };
-            return labels[status] || status;
+        // Variables globales
+        const emailEditor = {
+            customers: <%- JSON.stringify(customers || []) %>,
+            templates: <%- JSON.stringify(templates || []) %>,
+            campaigns: <%- JSON.stringify(recentCampaigns || []) %>
+        };
+
+        // Fonctions principales
+        function openEmailEditor() {
+            window.open('/admin/emails/editor', '_blank', 'width=1400,height=900,scrollbars=yes');
         }
 
-        function getTypeLabel(type) {
-            const labels = {
-                'order_confirmation': 'Confirmation commande',
-                'order_shipped': 'Expédition',
-                'welcome': 'Bienvenue',
-                'newsletter': 'Newsletter',
-                'cart_abandonment': 'Panier abandonné',
-                'promo': 'Promotion'
-            };
-            return labels[type] || type;
+        function openTemplateSelector() {
+            showNotification('Sélecteur de templates en cours de développement', 'info');
         }
 
-        // Fonctions de filtrage
-        function filterEmails() {
-            const searchTerm = document.getElementById('emailSearch').value.toLowerCase();
-            const statusFilter = document.getElementById('statusFilter').value;
-            const typeFilter = document.getElementById('typeFilter').value;
-            
-            const rows = document.querySelectorAll('.email-row');
-            
-            rows.forEach(row => {
-                const recipient = row.dataset.recipient || '';
-                const subject = row.dataset.subject || '';
-                const status = row.dataset.status || '';
-                const type = row.dataset.type || '';
-                
-                const matchesSearch = recipient.includes(searchTerm) || subject.includes(searchTerm);
-                const matchesStatus = !statusFilter || status === statusFilter;
-                const matchesType = !typeFilter || type === typeFilter;
-                
-                if (matchesSearch && matchesStatus && matchesType) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
+        function openHistory() {
+            window.location.href = '/admin/emails/history';
+        }
+
+        function sendTestEmail() {
+            const email = prompt('Adresse email pour le test :');
+            if (email && isValidEmail(email)) {
+                fetch('/admin/emails/test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        subject: 'Test depuis l\'administration',
+                        content: '<h2>Email de test</h2><p>Ceci est un email de test envoyé depuis l\'interface d\'administration.</p>',
+                        template: 'elegant'
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(`Email de test envoyé à ${email}`, 'success');
+                    } else {
+                        showNotification('Erreur lors de l\'envoi du test', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showNotification('Erreur lors de l\'envoi du test', 'error');
+                });
+            } else if (email) {
+                showNotification('Adresse email invalide', 'error');
+            }
+        }
+
+        function viewCampaign(campaignId) {
+            window.location.href = `/admin/emails/campaigns/${campaignId}`;
+        }
+
+        function editCampaign(campaignId) {
+            window.location.href = `/admin/emails/campaigns/${campaignId}/edit`;
+        }
+
+        function duplicateCampaign(campaignId) {
+            if (confirm('Voulez-vous dupliquer cette campagne ?')) {
+                fetch(`/admin/api/campaigns/${campaignId}/duplicate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification('Campagne dupliquée avec succès', 'success');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showNotification('Erreur lors de la duplication', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showNotification('Erreur lors de la duplication', 'error');
+                });
+            }
+        }
+
+        function exportCampaigns() {
+            window.location.href = '/admin/emails/export';
+        }
+
+        function cleanupCampaigns() {
+            if (confirm('Voulez-vous supprimer les campagnes de plus de 6 mois ?')) {
+                fetch('/admin/api/campaigns/cleanup', {
+                    method: 'POST'
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showNotification(`${data.deletedCount} campagnes supprimées`, 'success');
+                        setTimeout(() => {
+                            window.location.reload();
+                        }, 1000);
+                    } else {
+                        showNotification('Erreur lors du nettoyage', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showNotification('Erreur lors du nettoyage', 'error');
+                });
+            }
+        }
+
+        function emailSettings() {
+            window.location.href = '/admin/settings/emails';
+        }
+
+        // Graphique des performances
+        function initPerformanceChart() {
+            const ctx = document.getElementById('performanceChart');
+            if (!ctx) return;
+
+            const chartData = {
+                labels: ['Jan', 'Fév', 'Mar', 'Avr', 'Mai', 'Juin'],
+                datasets: [{
+                    label: 'Emails envoyés',
+                    data: [120, 190, 300, 250, 220, 180],
+                    borderColor: '#d89ab3',
+                    backgroundColor: 'rgba(216, 154, 179, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Taux d\'ouverture (%)',
+                    data: [65, 72, 68, 75, 71, 69],
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }]
+            };
+
+            new Chart(ctx, {
+                type: 'line',
+                data: chartData,
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: 'Mois'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            grid: {
+                                drawOnChartArea: false,
+                            },
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom'
+                        }
+                    }
                 }
             });
         }
 
-        // Fonctions d'action pour les templates
-        function previewTemplate(id) {
-            window.open(`/admin/email-templates/${id}/preview`, '_blank', 'width=800,height=600');
+        // Utilitaires
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
         }
 
-        function duplicateTemplate(id) {
-            if (confirm('Voulez-vous dupliquer ce template ?')) {
-                fetch(`/admin/email-templates/${id}/duplicate`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Erreur lors de la duplication: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    alert('Erreur lors de la duplication');
-                });
-            }
-        }
-
-        function toggleTemplate(id, activate) {
-            const action = activate ? 'activer' : 'désactiver';
-            if (confirm(`Voulez-vous ${action} ce template ?`)) {
-                fetch(`/admin/email-templates/${id}/toggle`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ is_active: activate })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        location.reload();
-                    } else {
-                        alert('Erreur lors de la modification: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    alert('Erreur lors de la modification');
-                });
-            }
-        }
-
-        // Fonctions d'action pour les emails
-        function viewEmail(id) {
-            window.open(`/admin/email-logs/${id}/view`, '_blank', 'width=800,height=600');
-        }
-
-        function resendEmail(id) {
-            if (confirm('Voulez-vous renvoyer cet email ?')) {
-                fetch(`/admin/email-logs/${id}/resend`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Email renvoyé avec succès');
-                        location.reload();
-                    } else {
-                        alert('Erreur lors du renvoi: ' + data.message);
-                    }
-                })
-                .catch(error => {
-                    console.error('Erreur:', error);
-                    alert('Erreur lors du renvoi');
-                });
-            }
-        }
-
-        function refreshEmails() {
-            location.reload();
-        }
-
-        // Auto-refresh des stats toutes les 30 secondes
-        setInterval(() => {
-            fetch('/admin/email-stats')
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        // Mettre à jour les stats sans recharger la page
-                        updateStats(data.stats);
-                    }
-                })
-                .catch(error => console.error('Erreur refresh stats:', error));
-        }, 30000);
-
-        function updateStats(stats) {
-            // Mise à jour des valeurs des stats
-            const elements = {
-                totalSent: document.querySelector('.stat-card:nth-child(1) .stat-value'),
-                pending: document.querySelector('.stat-card:nth-child(4) .stat-value')
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            
+            const iconMap = {
+                success: 'check-circle',
+                error: 'exclamation-circle',
+                warning: 'exclamation-triangle',
+                info: 'info-circle'
             };
+            
+            const icon = iconMap[type] || 'info-circle';
+            
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas fa-${icon}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
 
-            if (elements.totalSent) elements.totalSent.textContent = stats.totalSent || 0;
-            if (elements.pending) elements.pending.textContent = stats.pending || 0;
+            document.body.appendChild(notification);
+
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.style.animation = 'slideOutRight 0.3s ease forwards';
+                    setTimeout(() => {
+                        if (notification.parentNode) {
+                            notification.parentNode.removeChild(notification);
+                        }
+                    }, 300);
+                }
+            }, 5000);
         }
 
         // Initialisation
         document.addEventListener('DOMContentLoaded', function() {
-            // Animation d'entrée pour les cartes
-            const cards = document.querySelectorAll('.template-card, .stat-card');
-            cards.forEach((card, index) => {
-                setTimeout(() => {
-                    card.classList.add('fade-in');
-                }, index * 100);
-            });
-
-            // Gestion des tooltips pour les boutons
-            const tooltipElements = document.querySelectorAll('[title]');
-            tooltipElements.forEach(el => {
-                el.addEventListener('mouseenter', function() {
-                    // Logique de tooltip personnalisée si nécessaire
-                });
-            });
+            console.log('📧 Page gestion emails initialisée');
+            initPerformanceChart();
         });
     </script>
-
-    <%# 
-    Fonctions helper pour EJS - À ajouter dans votre contrôleur ou middleware
-    Ces fonctions devraient être disponibles dans le contexte EJS
-    %>
-    <%
-    function getTypeLabel(type) {
-        const labels = {
-            'order_confirmation': 'Confirmation commande',
-            'order_shipped': 'Expédition',
-            'welcome': 'Bienvenue',
-            'newsletter': 'Newsletter',
-            'cart_abandonment': 'Panier abandonné',
-            'promo': 'Promotion'
-        };
-        return labels[type] || type;
-    }
-
-    function getStatusLabel(status) {
-        const labels = {
-            'sent': 'Envoyé',
-            'pending': 'En attente',
-            'failed': 'Échec'
-        };
-        return labels[status] || status;
-    }
-    %>
 </body>
 </html>

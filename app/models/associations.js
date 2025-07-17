@@ -21,7 +21,9 @@ import { EmailCampaign } from "./emailCampaignModel.js";
 import { EmailCampaignRecipient } from "./emailCampaignRecipientModel.js";
 import { EmailTracking } from "./EmailTracking.js";
 import { EmailTemplate } from "./EmailTemplate.js";
-
+import { EmailLog } from "./emailLogModel.js";
+import { Campaign } from "./campaignModel.js";
+import { CampaignStats } from "./campaignStatsModel.js";
 
 
 // ===== NOUVEAUX MODÈLES POUR L'ADMINISTRATION =====
@@ -765,6 +767,17 @@ EmailTemplate.addHook('beforeUpdate', async (template, options) => {
 
 console.log('✅ Associations et méthodes des modèles initialisées (avec fonctionnalités admin)');
 
+Campaign.hasMany(EmailLog, { foreignKey: 'campaign_id', as: 'EmailLogs' });
+Campaign.hasOne(CampaignStats, { foreignKey: 'campaign_id', as: 'Stats' });
+
+EmailLog.belongsTo(Campaign, { foreignKey: 'campaign_id', as: 'Campaign' });
+EmailLog.belongsTo(Customer, { foreignKey: 'customer_id', as: 'Customer' });
+
+CampaignStats.belongsTo(Campaign, { foreignKey: 'campaign_id', as: 'Campaign' });
+
+Customer.hasMany(EmailLog, { foreignKey: 'customer_id', as: 'EmailLogs' });
+
+
 
 export { 
   Category, Jewel, Customer, Order, OrderHasJewel, Payment, JewelImage,
@@ -772,7 +785,7 @@ export {
   OrderStatusHistory, OrderTracking, CustomerNotification,
   CustomerCommunicationPreference, Activity, HomeImage, SiteSetting,
   EmailCampaign, EmailCampaignRecipient,
-  EmailTracking, EmailTemplate
+  EmailTracking, EmailTemplate, CampaignStats, Campaign, EmailLog
 };
 
 
