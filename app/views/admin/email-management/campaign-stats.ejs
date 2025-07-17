@@ -1,0 +1,358 @@
+<!-- =============================================
+5. views/admin/email-management/campaign-stats.ejs
+============================================= -->
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - CrystosJewel Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .pink-gold { color: #e91e63; }
+        .bg-pink-gold { background-color: #e91e63; }
+        .hover-pink-gold:hover { background-color: #c2185b; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <%- include('../partials/navbarre.ejs') %>
+    
+    <div class="container mx-auto px-4 py-8">
+        <!-- En-tête -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-3xl font-bold text-gray-800 mb-2">📊 Statistiques Campagne</h1>
+                    <p class="text-gray-600"><%= campaign.name %></p>
+                </div>
+                <a href="/admin/email-management/campaigns" 
+                   class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                    ← Retour aux campagnes
+                </a>
+            </div>
+        </div>
+
+        <!-- Informations campagne -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Informations de la Campagne</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <p class="text-sm text-gray-600">Nom de la campagne</p>
+                    <p class="font-medium text-gray-900"><%= campaign.name %></p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Objet</p>
+                    <p class="font-medium text-gray-900"><%= campaign.subject %></p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Expéditeur</p>
+                    <p class="font-medium text-gray-900"><%= campaign.sender_name %> &lt;<%= campaign.sender_email %>&gt;</p>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Statut</p>
+                    <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                        <%= campaign.status === 'sent' ? 'bg-green-100 text-green-800' : 
+                            campaign.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                            campaign.status === 'sending' ? 'bg-blue-100 text-blue-800' :
+                            campaign.status === 'scheduled' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-red-100 text-red-800' %>">
+                        <%= campaign.status === 'sent' ? 'Envoyée' : 
+                            campaign.status === 'draft' ? 'Brouillon' :
+                            campaign.status === 'sending' ? 'En cours' :
+                            campaign.status === 'scheduled' ? 'Programmée' :
+                            'Échec' %>
+                    </span>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-600">Date de création</p>
+                    <p class="font-medium text-gray-900"><%= new Date(campaign.created_at).toLocaleString('fr-FR') %></p>
+                </div>
+                <% if (campaign.sent_at) { %>
+                <div>
+                    <p class="text-sm text-gray-600">Date d'envoi</p>
+                    <p class="font-medium text-gray-900"><%= new Date(campaign.sent_at).toLocaleString('fr-FR') %></p>
+                </div>
+                <% } %>
+            </div>
+        </div>
+
+        <!-- Statistiques principales -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-blue-100 p-3 rounded-full">
+                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Total Destinataires</p>
+                        <p class="text-2xl font-bold text-gray-900"><%= stats.total_recipients %></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-green-100 p-3 rounded-full">
+                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Emails Envoyés</p>
+                        <p class="text-2xl font-bold text-gray-900"><%= stats.sent_count %></p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-yellow-100 p-3 rounded-full">
+                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Taux d'Ouverture</p>
+                        <p class="text-2xl font-bold text-gray-900"><%= stats.open_rate %>%</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <div class="flex items-center">
+                    <div class="bg-purple-100 p-3 rounded-full">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+                        </svg>
+                    </div>
+                    <div class="ml-4">
+                        <p class="text-sm font-medium text-gray-600">Taux de Clic</p>
+                        <p class="text-2xl font-bold text-gray-900"><%= stats.click_rate %>%</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Détails des performances -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Détails des Envois</h3>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Emails ouverts</span>
+                        <span class="font-medium text-green-600"><%= stats.opened_count %></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Emails cliqués</span>
+                        <span class="font-medium text-blue-600"><%= stats.clicked_count %></span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">Emails échoués</span>
+                        <span class="font-medium text-red-600"><%= stats.failed_count %></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Taux de Performance</h3>
+                <div class="space-y-3">
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm text-gray-600">Taux d'ouverture</span>
+                            <span class="text-sm font-medium"><%= stats.open_rate %>%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-yellow-500 h-2 rounded-full" style="width: <%= stats.open_rate %>%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm text-gray-600">Taux de clic</span>
+                            <span class="text-sm font-medium"><%= stats.click_rate %>%</span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-purple-500 h-2 rounded-full" style="width: <%= stats.click_rate %>%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex justify-between mb-1">
+                            <span class="text-sm text-gray-600">Taux de succès</span>
+                            <span class="text-sm font-medium">
+                                <%= Math.round(((stats.sent_count - stats.failed_count) / stats.total_recipients) * 100) %>%
+                            </span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-green-500 h-2 rounded-full" 
+                                 style="width: <%= Math.round(((stats.sent_count - stats.failed_count) / stats.total_recipients) * 100) %>%"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h3 class="text-lg font-semibold text-gray-800 mb-4">Actions</h3>
+                <div class="space-y-3">
+                    <button onclick="exportData()" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm">
+                        📊 Exporter les données
+                    </button>
+                    <% if (campaign.status === 'draft') { %>
+                    <a href="/admin/email-management/campaigns/<%= campaign.id %>/edit" 
+                       class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm text-center block">
+                        ✏️ Éditer la campagne
+                    </a>
+                    <% } %>
+                    <% if (campaign.status === 'sent') { %>
+                    <button onclick="duplicateCampaign()" 
+                            class="w-full bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded-lg text-sm">
+                        📋 Dupliquer la campagne
+                    </button>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+
+        <!-- Graphique des performances par jour -->
+        <div class="bg-white rounded-lg shadow-md p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Performance par Jour</h3>
+            <canvas id="dailyStatsChart" width="400" height="200"></canvas>
+        </div>
+
+        <!-- Liste des destinataires -->
+        <div class="bg-white rounded-lg shadow-md p-6">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Destinataires (100 derniers)</h3>
+            <% if (recipients && recipients.length > 0) { %>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Client</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Email</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Statut</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Envoyé le</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Ouvert le</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cliqué le</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <% recipients.forEach(recipient => { %>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4 text-sm font-medium text-gray-900">
+                                <%= recipient.first_name ? (recipient.first_name + ' ' + (recipient.last_name || '')) : 'N/A' %>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500"><%= recipient.email %></td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                    <%= recipient.status === 'sent' ? 'bg-green-100 text-green-800' : 
+                                        recipient.status === 'failed' ? 'bg-red-100 text-red-800' :
+                                        'bg-yellow-100 text-yellow-800' %>">
+                                    <%= recipient.status === 'sent' ? 'Envoyé' : 
+                                        recipient.status === 'failed' ? 'Échec' :
+                                        'En attente' %>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                <%= recipient.sent_at ? new Date(recipient.sent_at).toLocaleString('fr-FR') : '-' %>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                <%= recipient.opened_at ? new Date(recipient.opened_at).toLocaleString('fr-FR') : '-' %>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                <%= recipient.clicked_at ? new Date(recipient.clicked_at).toLocaleString('fr-FR') : '-' %>
+                            </td>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+            <% } else { %>
+            <p class="text-gray-500 text-center py-8">Aucun destinataire pour cette campagne.</p>
+            <% } %>
+        </div>
+    </div>
+
+    <script>
+        // Graphique des performances par jour
+        const ctx = document.getElementById('dailyStatsChart').getContext('2d');
+        const dailyStats = <%- JSON.stringify(dailyStats || []) %>;
+        
+        const dates = dailyStats.map(d => new Date(d.date).toLocaleDateString('fr-FR'));
+        const sentData = dailyStats.map(d => parseInt(d.sent_count) || 0);
+        const openedData = dailyStats.map(d => parseInt(d.opened_count) || 0);
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [
+                    {
+                        label: 'Emails Envoyés',
+                        data: sentData,
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    },
+                    {
+                        label: 'Emails Ouverts',
+                        data: openedData,
+                        borderColor: '#e91e63',
+                        backgroundColor: 'rgba(233, 30, 99, 0.1)',
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Fonction d'export
+        function exportData() {
+            window.open(`/admin/email-management/campaigns/<%= campaign.id %>/export?format=csv`, '_blank');
+        }
+
+        // Fonction de duplication
+        async function duplicateCampaign() {
+            if (!confirm('Êtes-vous sûr de vouloir dupliquer cette campagne ?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/email-management/campaigns/<%= campaign.id %>/duplicate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Campagne dupliquée avec succès !');
+                    window.location.href = '/admin/email-management/campaigns';
+                } else {
+                    alert('Erreur: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la duplication');
+            }
+        }
+    </script>
+</body>
+</html>

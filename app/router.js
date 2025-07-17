@@ -39,7 +39,8 @@ import { categoryController } from './controlleurs/categoryController.js';
 import { sendTestMail } from "./services/mailService.js";
 import { promoAdminController } from "./controlleurs/promoAdminController.js";
 import { guestOrderController } from './controlleurs/guestOrderController.js';
-import { emailManagementController } from "./controlleurs/emailManagementController.js";
+import { emailManagementControlleur } from './controlleurs/emailManagementController.js';
+
 
 // CONTROLLERS EMAIL - CHOISISSEZ UN SEUL SYSTÈME
 
@@ -3549,7 +3550,7 @@ router.get('/customer-stats',isAdmin,
 // ==========================================
 
 // Pages principales
-router.get('/admin/email-management', isAdmin, emailAdminController.renderEmailManagement);
+// router.get('/admin/email-management', isAdmin, emailAdminController.renderEmailManagement);
 router.get('/admin/email-editor', isAdmin, emailAdminController.renderEmailEditor);
 
 // API Templates
@@ -3751,6 +3752,17 @@ router.get('/admin/api/customers', isAdmin, async (req, res) => {
     }
 });
 
+// Email Management Routes
+router.get('/admin/email-management', isAdmin, emailManagementControlleur.dashboard);
+router.get('/admin/email-management/campaigns', isAdmin, emailManagementControlleur.listCampaigns);
+router.get('/admin/email-management/campaigns/create', isAdmin, emailManagementControlleur.createCampaign);
+router.post('/admin/email-management/campaigns', isAdmin, emailManagementControlleur.saveCampaign);
+router.get('/admin/email-management/campaigns/:id/stats', isAdmin, emailManagementControlleur.campaignStats);
+router.delete('/admin/email-management/campaigns/:id', isAdmin, emailManagementControlleur.deleteCampaign);
+router.get('/admin/email-management/history', isAdmin, emailManagementControlleur.emailHistory);
+
+// Tracking Routes (publiques)
+router.get('/email/track/:token', emailManagementControlleur.trackEmailOpen);
 
 // Export par défaut
 export default router;

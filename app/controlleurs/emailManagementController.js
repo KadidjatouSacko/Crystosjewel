@@ -1,577 +1,757 @@
-// ===================================
-// app/controlleurs/emailManagementController.js - VERSION CORRIGÉE COMPLÈTE
-// ===================================
-
-import { Customer } from '../models/customerModel.js';
-import { Op } from 'sequelize';
 import { sequelize } from '../models/sequelize-client.js';
-import crypto from 'crypto';
+import { QueryTypes } from 'sequelize';
 
-// ✅ EXPORT DIRECT - Éviter les problèmes de contexte
-export const emailManagementController = {
+export const emailManagementControlleur = {
 
-    // ===================================
-    // PAGE D'ADMINISTRATION PRINCIPALE - CORRIGÉE
-    // ===================================
-    async showAdminPage(req, res) {
+    // Dashboard Email Management
+    async dashboard(req, res) {
         try {
-            console.log('📧 Affichage page administration email');
+            console.log('📧 Chargement dashboard email management');
 
-            // ✅ STATISTIQUES DIRECTES (sans appel à this)
-            const stats = {
-                totalCampaigns: 8,
-                totalSent: 1247,
-                totalDelivered: 1205,
-                totalOpened: 856,
-                totalClicked: 127,
-                totalUnsubscribed: 12,
-                openRate: '71.0',
-                clickRate: '10.2',
-                deliveryRate: '96.6',
-                avgOpenRate: 71.0,
-                activeTemplates: 4
-            };
-            
-            // ✅ RÉCUPÉRATION DES CLIENTS
-            let customers = [];
-            try {
-                customers = await Customer.findAll({
-                    attributes: ['id', 'first_name', 'last_name', 'email', 'marketing_opt_in', 'total_orders', 'total_spent'],
-                    order: [['first_name', 'ASC']],
-                    limit: 500
-                });
-                console.log(`✅ ${customers.length} clients récupérés`);
-            } catch (customerError) {
-                console.log('⚠️ Erreur récupération clients (continuons avec des données vides):', customerError.message);
-                customers = [];
-            }
+            // Stats principales utilisant vos tables existantes
+            const emailStats = await sequelize.query(`
+                SELECT 
+                    COUNT(*) as total_campaigns,
+                    COUNT(CASE WHEN status = 'sent' THEN 1 END) as sent_campaigns,
+                    COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft_campaigns,
+                    COUNT(CASE WHEN status = 'scheduled' THEN 1 END) as scheduled_campaigns
+                FROM email_campaigns
+            `, { type: QueryTypes.SELECT });
 
-            // ✅ CAMPAGNES SIMULÉES
-            const recentCampaigns = [
-                {
-                    id: 1,
-                    name: 'Newsletter Janvier',
-                    subject: 'Découvrez nos nouveautés 2025 !',
-                    status: 'sent',
-                    total_recipients: 245,
-                    total_sent: 245,
-                    total_opened: 178,
-                    total_clicked: 34,
-                    created_at: new Date(),
-                    sent_at: new Date()
-                },
-                {
-                    id: 2,
-                    name: 'Promotion Hiver',
-                    subject: 'Derniers jours : -20% sur tout !',
-                    status: 'sent',
-                    total_recipients: 189,
-                    total_sent: 189,
-                    total_opened: 142,
-                    total_clicked: 28,
-                    created_at: new Date(Date.now() - 86400000),
-                    sent_at: new Date(Date.now() - 86400000)
-                },
-                {
-                    id: 3,
-                    name: 'Brouillon Saint-Valentin',
-                    subject: 'Bijoux parfaits pour la Saint-Valentin',
-                    status: 'draft',
-                    total_recipients: 0,
-                    total_sent: 0,
-                    total_opened: 0,
-                    total_clicked: 0,
-                    created_at: new Date(Date.now() - 3600000)
-                }
-            ];
+            // Stats des recipients
+            const recipientStats = await sequelize.query(`
+                SELECT 
+                    COUNT(DISTINCT email) as total_recipients,
+                    COUNT(CASE WHEN status = 'sent' THEN 1 END) as emails_sent,
+                    COUNT(CASE WHEN status = 'delivered' THEN 1 END) as emails_delivered,
+                    COUNT(CASE WHEN opened_at IS NOT NULL THEN 1 END) as emails_opened,
+                    COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 END) as emails_clicked
+                FROM email_campaign_recipients
+                WHERE created_at >= NOW() - INTERVAL '30 days'
+            `, { type: QueryTypes.SELECT });
 
-            // ✅ TEMPLATES SIMULÉS
-            const templates = [
-                {
-                    id: 1,
-                    name: 'Newsletter Élégante',
-                    subject: 'Actualités CrystosJewel',
-                    is_active: true
-                },
-                {
-                    id: 2,
-                    name: 'Promotion Moderne',
-                    subject: 'Offre spéciale - {{discount}}% de réduction',
-                    is_active: true
-                }
-            ];
+            // Campagnes récentes
+            const recentCampaigns = await sequelize.query(`
+                SELECT 
+                    ec.*,
+                    COUNT(ecr.id) as total_recipients,
+                    COUNT(CASE WHEN ecr.status = 'sent' THEN 1 END) as sent_count,
+                    COUNT(CASE WHEN ecr.opened_at IS NOT NULL THEN 1 END) as opened_count
+                FROM email_campaigns ec
+                LEFT JOIN email_campaign_recipients ecr ON ec.id = ecr.campaign_id
+                GROUP BY ec.id
+                ORDER BY ec.created_at DESC
+                LIMIT 10
+            `, { type: QueryTypes.SELECT });
 
-            console.log(`✅ Rendu de la page avec ${customers.length} clients`);
+            // Données pour graphique (30 derniers jours)
+            const chartData = await sequelize.query(`
+                SELECT 
+                    DATE(sent_at) as date,
+                    COUNT(*) as emails_sent,
+                    COUNT(CASE WHEN opened_at IS NOT NULL THEN 1 END) as emails_opened
+                FROM email_campaign_recipients
+                WHERE sent_at >= NOW() - INTERVAL '30 days'
+                GROUP BY DATE(sent_at)
+                ORDER BY date
+            `, { type: QueryTypes.SELECT });
 
-            // ✅ RENDU DE LA PAGE
-            res.render('admin/email-management', {
-                title: 'Gestion des Emails',
-                stats,
-                campaigns: recentCampaigns,
-                recentCampaigns: recentCampaigns,
-                templates,
-                customers: customers.map(customer => ({
-                    id: customer.id,
-                    name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Client',
-                    email: customer.email,
-                    type: (customer.total_spent || 0) >= 1000 ? 'vip' : 'regular',
-                    hasOrders: (customer.total_orders || 0) > 0,
-                    newsletter: customer.marketing_opt_in || false,
-                    marketing_opt_in: customer.marketing_opt_in || false,
-                    total_spent: customer.total_spent || 0,
-                    total_orders: customer.total_orders || 0
-                })),
-                user: req.session?.user,
-                isAuthenticated: !!req.session?.user,
-                isAdmin: req.session?.user?.role_id === 2
+            // Stats des abonnés
+            const subscriberStats = await sequelize.query(`
+                SELECT 
+                    COUNT(*) as total_customers,
+                    COUNT(CASE WHEN marketing_opt_in = true THEN 1 END) as opted_in,
+                    COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as new_this_week
+                FROM customer
+            `, { type: QueryTypes.SELECT });
+
+            res.render('admin/email-management/dashboard', {
+                title: 'Email Marketing - Dashboard',
+                emailStats: emailStats[0],
+                recipientStats: recipientStats[0],
+                subscriberStats: subscriberStats[0],
+                recentCampaigns,
+                chartData
             });
 
         } catch (error) {
-            console.error('❌ Erreur affichage page admin email:', error);
-            
-            // ✅ FALLBACK - Page d'erreur avec données minimales
-            res.status(500).render('error', {
-                message: 'Erreur lors du chargement de la page des emails',
-                error: error,
-                user: req.session?.user || null,
-                isAuthenticated: !!req.session?.user,
-                isAdmin: false
+            console.error('❌ Erreur dashboard email management:', error);
+            res.status(500).render('error', { 
+                error: 'Erreur lors du chargement du dashboard email'
             });
         }
     },
 
-    // ===================================
-    // ALIAS POUR COMPATIBILITÉ
-    // ===================================
-    async renderEmailManagement(req, res) {
-        return this.showAdminPage(req, res);
-    },
-
-    // ===================================
-    // ÉDITEUR D'EMAILS
-    // ===================================
-    async showEmailEditor(req, res) {
+    // Lister toutes les campagnes
+    async listCampaigns(req, res) {
         try {
-            console.log('✏️ Affichage éditeur email');
-            
-            let customers = [];
-            try {
-                customers = await Customer.findAll({
-                    attributes: ['id', 'first_name', 'last_name', 'email', 'marketing_opt_in', 'total_orders', 'total_spent'],
-                    order: [['first_name', 'ASC']],
-                    limit: 1000
-                });
-            } catch (customerError) {
-                console.log('⚠️ Erreur clients dans éditeur:', customerError.message);
-                customers = [];
+            const { page = 1, status, search } = req.query;
+            const limit = 15;
+            const offset = (page - 1) * limit;
+
+            let whereClause = '';
+            let params = [];
+
+            if (status) {
+                whereClause += ' WHERE ec.status = $' + (params.length + 1);
+                params.push(status);
             }
 
-            res.render('admin/email-editor', {
-                title: 'Éditeur d\'Emails',
-                customers: customers.map(customer => ({
-                    id: customer.id,
-                    name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Client',
-                    email: customer.email,
-                    type: (customer.total_spent || 0) >= 1000 ? 'vip' : 'regular',
-                    hasOrders: (customer.total_orders || 0) > 0,
-                    newsletter: customer.marketing_opt_in || false
-                })),
-                templates: []
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur affichage éditeur:', error);
-            res.status(500).render('error', {
-                message: 'Erreur lors du chargement de l\'éditeur',
-                error: error
-            });
-        }
-    },
-
-    // ===================================
-    // HISTORIQUE DES EMAILS
-    // ===================================
-    async showEmailHistory(req, res) {
-        try {
-            console.log('📚 Affichage historique emails');
-
-            res.render('admin/email-history', {
-                title: 'Historique des Emails',
-                user: req.session?.user,
-                isAuthenticated: !!req.session?.user,
-                isAdmin: req.session?.user?.role_id === 2
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur affichage historique:', error);
-            res.status(500).render('error', {
-                message: 'Erreur lors du chargement de l\'historique',
-                error: error
-            });
-        }
-    },
-
-    // ===================================
-    // RÉCUPÉRER LES CLIENTS (API)
-    // ===================================
-    async getCustomers(req, res) {
-        try {
-            const { type, search } = req.query;
-            
-            let whereConditions = {};
-            
-            // Appliquer les filtres
-            switch (type) {
-                case 'with-orders':
-                    whereConditions.total_orders = { [Op.gt]: 0 };
-                    break;
-                case 'no-orders':
-                    whereConditions.total_orders = { [Op.eq]: 0 };
-                    break;
-                case 'newsletter':
-                    whereConditions.marketing_opt_in = true;
-                    break;
-                case 'vip':
-                    whereConditions.total_spent = { [Op.gte]: 1000 };
-                    break;
-            }
-
-            // Filtre de recherche
             if (search) {
-                whereConditions[Op.or] = [
-                    { first_name: { [Op.iLike]: `%${search}%` } },
-                    { last_name: { [Op.iLike]: `%${search}%` } },
-                    { email: { [Op.iLike]: `%${search}%` } }
-                ];
+                const searchCondition = status ? ' AND ' : ' WHERE ';
+                whereClause += searchCondition + '(ec.name ILIKE $' + (params.length + 1) + ' OR ec.subject ILIKE $' + (params.length + 2) + ')';
+                params.push(`%${search}%`, `%${search}%`);
             }
 
-            const customers = await Customer.findAll({
-                where: whereConditions,
-                attributes: ['id', 'first_name', 'last_name', 'email', 'marketing_opt_in', 'total_orders', 'total_spent'],
-                order: [['first_name', 'ASC']],
-                limit: 100
+            const campaigns = await sequelize.query(`
+                SELECT 
+                    ec.*,
+                    COUNT(ecr.id) as total_recipients,
+                    COUNT(CASE WHEN ecr.status = 'sent' THEN 1 END) as sent_count,
+                    COUNT(CASE WHEN ecr.opened_at IS NOT NULL THEN 1 END) as opened_count,
+                    COUNT(CASE WHEN ecr.clicked_at IS NOT NULL THEN 1 END) as clicked_count,
+                    ROUND(
+                        CASE 
+                            WHEN COUNT(CASE WHEN ecr.status = 'sent' THEN 1 END) > 0 
+                            THEN (COUNT(CASE WHEN ecr.opened_at IS NOT NULL THEN 1 END)::float / COUNT(CASE WHEN ecr.status = 'sent' THEN 1 END)::float) * 100
+                            ELSE 0 
+                        END, 2
+                    ) as open_rate
+                FROM email_campaigns ec
+                LEFT JOIN email_campaign_recipients ecr ON ec.id = ecr.campaign_id
+                ${whereClause}
+                GROUP BY ec.id
+                ORDER BY ec.created_at DESC
+                LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+            `, { 
+                bind: [...params, limit, offset],
+                type: QueryTypes.SELECT 
             });
 
-            res.json({
-                success: true,
-                customers: customers.map(customer => ({
-                    id: customer.id,
-                    name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim() || 'Client',
-                    email: customer.email,
-                    type: (customer.total_spent || 0) >= 1000 ? 'vip' : 'regular',
-                    hasOrders: (customer.total_orders || 0) > 0,
-                    newsletter: customer.marketing_opt_in || false
-                }))
+            const totalCampaigns = await sequelize.query(`
+                SELECT COUNT(*) as count FROM email_campaigns ec ${whereClause}
+            `, { 
+                bind: params,
+                type: QueryTypes.SELECT 
+            });
+
+            const totalPages = Math.ceil(totalCampaigns[0].count / limit);
+
+            res.render('admin/email-management/campaigns-list', {
+                title: 'Gestion des Campagnes Email',
+                campaigns,
+                currentPage: parseInt(page),
+                totalPages,
+                filters: { status, search }
             });
 
         } catch (error) {
-            console.error('❌ Erreur récupération clients:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la récupération des clients'
+            console.error('❌ Erreur liste campagnes:', error);
+            res.status(500).render('error', { 
+                error: 'Erreur lors du chargement des campagnes'
             });
         }
     },
 
-    // ===================================
-    // CRÉER ET ENVOYER UNE CAMPAGNE
-    // ===================================
-    async createAndSendCampaign(req, res) {
+    // Créer une nouvelle campagne
+    async createCampaign(req, res) {
         try {
-            console.log('📧 Création et envoi nouvelle campagne email');
-            
+            // Templates disponibles
+            const templates = await sequelize.query(`
+                SELECT * FROM email_templates 
+                WHERE is_active = true 
+                ORDER BY template_name
+            `, { type: QueryTypes.SELECT });
+
+            // Stats des segments d'audience
+            const audienceStats = await sequelize.query(`
+                SELECT 
+                    COUNT(*) as total_opted_in,
+                    COUNT(CASE WHEN created_at >= NOW() - INTERVAL '7 days' THEN 1 END) as new_customers,
+                    COUNT(CASE WHEN last_order_date >= NOW() - INTERVAL '30 days' THEN 1 END) as recent_buyers,
+                    COUNT(CASE WHEN total_spent >= 500 THEN 1 END) as premium_customers
+                FROM customer 
+                WHERE marketing_opt_in = true
+            `, { type: QueryTypes.SELECT });
+
+            res.render('admin/email-management/campaign-create', {
+                title: 'Créer une Campagne Email',
+                templates,
+                audienceStats: audienceStats[0]
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur création campagne:', error);
+            res.status(500).render('error', { 
+                error: 'Erreur lors du chargement de la création de campagne'
+            });
+        }
+    },
+
+    // Sauvegarder une campagne
+    async saveCampaign(req, res) {
+        try {
             const {
-                name,
-                subject,
-                preheader,
-                fromName,
-                template,
-                content,
-                recipientType,
-                selectedCustomerIds
+                name, subject, content, template_id, sender_name, sender_email,
+                reply_to, audience_segment, scheduled_at, status = 'draft'
             } = req.body;
 
-            // Validation
-            if (!subject || !content) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Le sujet et le contenu sont obligatoires'
-                });
+            console.log('💾 Sauvegarde campagne:', { name, status, audience_segment });
+
+            // Créer la campagne
+            const campaign = await sequelize.query(`
+                INSERT INTO email_campaigns (
+                    name, subject, content, template_id, sender_name, sender_email,
+                    reply_to, status, scheduled_at, tracking_enabled, created_at, updated_at
+                ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW(), NOW())
+                RETURNING *
+            `, {
+                bind: [name, subject, content, template_id || null, sender_name, sender_email, 
+                       reply_to || sender_email, status, scheduled_at || null, true],
+                type: QueryTypes.SELECT
+            });
+
+            const campaignId = campaign[0].id;
+
+            // Ajouter les destinataires selon le segment
+            await this.addRecipientsToCampaign(campaignId, audience_segment);
+
+            // Si envoi immédiat, déclencher l'envoi
+            if (status === 'sending') {
+                // Utiliser votre système d'email existant
+                setTimeout(() => this.sendCampaign(campaignId), 1000);
             }
 
-            // Déterminer les destinataires
-            let recipients = [];
-            
-            try {
-                if (recipientType === 'selected' && selectedCustomerIds?.length > 0) {
-                    recipients = await Customer.findAll({
-                        where: { id: { [Op.in]: selectedCustomerIds } },
-                        attributes: ['id', 'email', 'first_name', 'last_name']
+            res.json({
+                success: true,
+                campaignId,
+                message: 'Campagne créée avec succès'
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur sauvegarde campagne:', error);
+            res.status(500).json({
+                success: false,
+                error: error.message
+            });
+        }
+    },
+
+    // Ajouter des destinataires à une campagne
+    async addRecipientsToCamera(campaignId, segment) {
+        let query = '';
+        let params = [campaignId];
+
+        switch (segment) {
+            case 'all':
+                query = `
+                    INSERT INTO email_campaign_recipients (
+                        campaign_id, email, customer_id, first_name, last_name, 
+                        status, tracking_token, created_at, updated_at
+                    )
+                    SELECT 
+                        $1, email, id, first_name, last_name, 
+                        'pending', 
+                        md5(random()::text || clock_timestamp()::text),
+                        NOW(), NOW()
+                    FROM customer 
+                    WHERE marketing_opt_in = true
+                `;
+                break;
+
+            case 'new_customers':
+                query = `
+                    INSERT INTO email_campaign_recipients (
+                        campaign_id, email, customer_id, first_name, last_name, 
+                        status, tracking_token, created_at, updated_at
+                    )
+                    SELECT 
+                        $1, email, id, first_name, last_name, 
+                        'pending',
+                        md5(random()::text || clock_timestamp()::text),
+                        NOW(), NOW()
+                    FROM customer 
+                    WHERE marketing_opt_in = true 
+                    AND created_at >= NOW() - INTERVAL '7 days'
+                `;
+                break;
+
+            case 'recent_buyers':
+                query = `
+                    INSERT INTO email_campaign_recipients (
+                        campaign_id, email, customer_id, first_name, last_name, 
+                        status, tracking_token, created_at, updated_at
+                    )
+                    SELECT 
+                        $1, email, id, first_name, last_name, 
+                        'pending',
+                        md5(random()::text || clock_timestamp()::text),
+                        NOW(), NOW()
+                    FROM customer 
+                    WHERE marketing_opt_in = true 
+                    AND last_order_date >= NOW() - INTERVAL '30 days'
+                `;
+                break;
+
+            case 'premium':
+                query = `
+                    INSERT INTO email_campaign_recipients (
+                        campaign_id, email, customer_id, first_name, last_name, 
+                        status, tracking_token, created_at, updated_at
+                    )
+                    SELECT 
+                        $1, email, id, first_name, last_name, 
+                        'pending',
+                        md5(random()::text || clock_timestamp()::text),
+                        NOW(), NOW()
+                    FROM customer 
+                    WHERE marketing_opt_in = true 
+                    AND total_spent >= 500
+                `;
+                break;
+        }
+
+        if (query) {
+            await sequelize.query(query, {
+                bind: params,
+                type: QueryTypes.INSERT
+            });
+        }
+    },
+
+    // Envoyer une campagne (utilise votre système d'email existant)
+    async sendCampaign(campaignId) {
+        try {
+            console.log('📧 Envoi campagne:', campaignId);
+
+            // Récupérer la campagne
+            const campaign = await sequelize.query(`
+                SELECT * FROM email_campaigns WHERE id = $1
+            `, {
+                bind: [campaignId],
+                type: QueryTypes.SELECT
+            });
+
+            if (!campaign[0]) throw new Error('Campagne non trouvée');
+
+            // Récupérer les destinataires
+            const recipients = await sequelize.query(`
+                SELECT * FROM email_campaign_recipients 
+                WHERE campaign_id = $1 AND status = 'pending'
+            `, {
+                bind: [campaignId],
+                type: QueryTypes.SELECT
+            });
+
+            // Utiliser votre système d'email existant (comme dans adminOrdersController)
+            const { sendEmail } = await import('../services/mailService.js');
+
+            let sentCount = 0;
+            let failedCount = 0;
+
+            for (const recipient of recipients) {
+                try {
+                    // Personnaliser le contenu
+                    const personalizedContent = this.personalizeEmailContent(
+                        campaign[0].content, 
+                        recipient
+                    );
+
+                    const emailData = {
+                        to: recipient.email,
+                        subject: campaign[0].subject,
+                        html: personalizedContent
+                    };
+
+                    // Envoyer avec votre système existant
+                    await sendEmail(emailData);
+
+                    // Marquer comme envoyé
+                    await sequelize.query(`
+                        UPDATE email_campaign_recipients 
+                        SET status = 'sent', sent_at = NOW(), updated_at = NOW()
+                        WHERE id = $1
+                    `, {
+                        bind: [recipient.id],
+                        type: QueryTypes.UPDATE
                     });
-                } else {
-                    let whereConditions = { email: { [Op.ne]: null } };
+
+                    // Logger dans email_logs
+                    await sequelize.query(`
+                        INSERT INTO email_logs (
+                            customer_id, email_type, recipient_email, subject, 
+                            status, created_at, sent_at
+                        ) VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+                    `, {
+                        bind: [
+                            recipient.customer_id, 
+                            'campaign', 
+                            recipient.email, 
+                            campaign[0].subject, 
+                            'sent'
+                        ],
+                        type: QueryTypes.INSERT
+                    });
+
+                    sentCount++;
+
+                } catch (error) {
+                    console.error(`❌ Erreur envoi à ${recipient.email}:`, error);
                     
-                    switch (recipientType) {
-                        case 'with-orders':
-                            whereConditions.total_orders = { [Op.gt]: 0 };
-                            break;
-                        case 'newsletter':
-                            whereConditions.marketing_opt_in = true;
-                            break;
-                        case 'vip':
-                            whereConditions.total_spent = { [Op.gte]: 1000 };
-                            break;
-                        case 'no-orders':
-                            whereConditions.total_orders = { [Op.eq]: 0 };
-                            break;
-                    }
-
-                    recipients = await Customer.findAll({
-                        where: whereConditions,
-                        attributes: ['id', 'email', 'first_name', 'last_name']
+                    // Marquer comme échec
+                    await sequelize.query(`
+                        UPDATE email_campaign_recipients 
+                        SET status = 'failed', updated_at = NOW()
+                        WHERE id = $1
+                    `, {
+                        bind: [recipient.id],
+                        type: QueryTypes.UPDATE
                     });
+
+                    failedCount++;
                 }
-            } catch (recipientError) {
-                console.log('⚠️ Erreur récupération destinataires, simulation:', recipientError.message);
-                recipients = [{ id: 1, email: 'test@example.com', first_name: 'Test', last_name: 'User' }];
+
+                // Pause entre envois
+                await new Promise(resolve => setTimeout(resolve, 500));
             }
 
-            if (recipients.length === 0) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Aucun destinataire trouvé avec ces critères'
+            // Mettre à jour les stats de la campagne
+            await sequelize.query(`
+                UPDATE email_campaigns 
+                SET 
+                    status = 'sent',
+                    sent_at = NOW(),
+                    total_recipients = $2,
+                    total_sent = $3,
+                    updated_at = NOW()
+                WHERE id = $1
+            `, {
+                bind: [campaignId, recipients.length, sentCount],
+                type: QueryTypes.UPDATE
+            });
+
+            console.log(`✅ Campagne envoyée: ${sentCount} succès, ${failedCount} échecs`);
+
+        } catch (error) {
+            console.error('❌ Erreur envoi campagne:', error);
+            
+            // Marquer la campagne comme échouée
+            await sequelize.query(`
+                UPDATE email_campaigns 
+                SET status = 'failed', updated_at = NOW()
+                WHERE id = $1
+            `, {
+                bind: [campaignId],
+                type: QueryTypes.UPDATE
+            });
+        }
+    },
+
+    // Personnaliser le contenu email
+    personalizeEmailContent(content, recipient) {
+        let personalizedContent = content;
+
+        const variables = {
+            '{{firstName}}': recipient.first_name || '',
+            '{{lastName}}': recipient.last_name || '',
+            '{{email}}': recipient.email,
+            '{{fullName}}': `${recipient.first_name || ''} ${recipient.last_name || ''}`.trim()
+        };
+
+        for (const [placeholder, value] of Object.entries(variables)) {
+            personalizedContent = personalizedContent.replace(
+                new RegExp(placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'),
+                value
+            );
+        }
+
+        // Ajouter tracking
+        personalizedContent += `<img src="${process.env.APP_URL || 'http://localhost:3000'}/email/track/${recipient.tracking_token}" width="1" height="1" style="display:none;" />`;
+
+        return personalizedContent;
+    },
+
+    // Historique des emails
+    async emailHistory(req, res) {
+        try {
+            const { page = 1, customer_id, email_type, status } = req.query;
+            const limit = 20;
+            const offset = (page - 1) * limit;
+
+            let whereClause = '';
+            let params = [];
+
+            if (customer_id) {
+                whereClause += ' WHERE el.customer_id = $' + (params.length + 1);
+                params.push(customer_id);
+            }
+
+            if (email_type) {
+                const condition = params.length > 0 ? ' AND ' : ' WHERE ';
+                whereClause += condition + 'el.email_type = $' + (params.length + 1);
+                params.push(email_type);
+            }
+
+            if (status) {
+                const condition = params.length > 0 ? ' AND ' : ' WHERE ';
+                whereClause += condition + 'el.status = $' + (params.length + 1);
+                params.push(status);
+            }
+
+            const emailHistory = await sequelize.query(`
+                SELECT 
+                    el.*,
+                    c.first_name,
+                    c.last_name,
+                    c.email as customer_email
+                FROM email_logs el
+                LEFT JOIN customer c ON el.customer_id = c.id
+                ${whereClause}
+                ORDER BY el.created_at DESC
+                LIMIT $${params.length + 1} OFFSET $${params.length + 2}
+            `, {
+                bind: [...params, limit, offset],
+                type: QueryTypes.SELECT
+            });
+
+            // Stats pour les filtres
+            const stats = await sequelize.query(`
+                SELECT 
+                    email_type,
+                    status,
+                    COUNT(*) as count
+                FROM email_logs
+                GROUP BY email_type, status
+                ORDER BY email_type, status
+            `, { type: QueryTypes.SELECT });
+
+            res.render('admin/email-management/history', {
+                title: 'Historique des Emails',
+                emailHistory,
+                stats,
+                currentPage: parseInt(page),
+                filters: { customer_id, email_type, status }
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur historique emails:', error);
+            res.status(500).render('error', { 
+                error: 'Erreur lors du chargement de l\'historique'
+            });
+        }
+    },
+
+    // Statistiques détaillées d'une campagne
+    async campaignStats(req, res) {
+        try {
+            const { id } = req.params;
+
+            // Infos de la campagne
+            const campaign = await sequelize.query(`
+                SELECT * FROM email_campaigns WHERE id = $1
+            `, {
+                bind: [id],
+                type: QueryTypes.SELECT
+            });
+
+            if (!campaign[0]) {
+                return res.status(404).render('error', { 
+                    error: 'Campagne non trouvée'
                 });
             }
 
-            // Simuler l'envoi
-            console.log(`📧 SIMULATION - Envoi vers ${recipients.length} destinataires`);
-            console.log(`   Sujet: ${subject}`);
-            console.log(`   Template: ${template}`);
+            // Stats générales
+            const stats = await sequelize.query(`
+                SELECT 
+                    COUNT(*) as total_recipients,
+                    COUNT(CASE WHEN status = 'sent' THEN 1 END) as sent_count,
+                    COUNT(CASE WHEN opened_at IS NOT NULL THEN 1 END) as opened_count,
+                    COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 END) as clicked_count,
+                    COUNT(CASE WHEN status = 'failed' THEN 1 END) as failed_count,
+                    ROUND(
+                        CASE 
+                            WHEN COUNT(CASE WHEN status = 'sent' THEN 1 END) > 0 
+                            THEN (COUNT(CASE WHEN opened_at IS NOT NULL THEN 1 END)::float / COUNT(CASE WHEN status = 'sent' THEN 1 END)::float) * 100
+                            ELSE 0 
+                        END, 2
+                    ) as open_rate,
+                    ROUND(
+                        CASE 
+                            WHEN COUNT(CASE WHEN status = 'sent' THEN 1 END) > 0 
+                            THEN (COUNT(CASE WHEN clicked_at IS NOT NULL THEN 1 END)::float / COUNT(CASE WHEN status = 'sent' THEN 1 END)::float) * 100
+                            ELSE 0 
+                        END, 2
+                    ) as click_rate
+                FROM email_campaign_recipients 
+                WHERE campaign_id = $1
+            `, {
+                bind: [id],
+                type: QueryTypes.SELECT
+            });
 
-            res.json({
-                success: true,
-                message: `Campagne envoyée avec succès vers ${recipients.length} destinataire(s)`,
-                campaignId: Date.now(),
-                recipientCount: recipients.length
+            // Données par jour pour graphique
+            const dailyStats = await sequelize.query(`
+                SELECT 
+                    DATE(sent_at) as date,
+                    COUNT(*) as sent_count,
+                    COUNT(CASE WHEN opened_at IS NOT NULL THEN 1 END) as opened_count
+                FROM email_campaign_recipients
+                WHERE campaign_id = $1 AND sent_at IS NOT NULL
+                GROUP BY DATE(sent_at)
+                ORDER BY date
+            `, {
+                bind: [id],
+                type: QueryTypes.SELECT
+            });
+
+            // Liste des destinataires avec leur statut
+            const recipients = await sequelize.query(`
+                SELECT 
+                    ecr.*,
+                    c.first_name,
+                    c.last_name
+                FROM email_campaign_recipients ecr
+                LEFT JOIN customer c ON ecr.customer_id = c.id
+                WHERE ecr.campaign_id = $1
+                ORDER BY ecr.sent_at DESC
+                LIMIT 100
+            `, {
+                bind: [id],
+                type: QueryTypes.SELECT
+            });
+
+            res.render('admin/email-management/campaign-stats', {
+                title: `Statistiques: ${campaign[0].name}`,
+                campaign: campaign[0],
+                stats: stats[0],
+                dailyStats,
+                recipients
             });
 
         } catch (error) {
-            console.error('❌ Erreur création/envoi campagne:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la création de la campagne'
+            console.error('❌ Erreur stats campagne:', error);
+            res.status(500).render('error', { 
+                error: 'Erreur lors du chargement des statistiques'
             });
         }
     },
 
-    // ===================================
-    // ENVOYER UN EMAIL DE TEST
-    // ===================================
-    async sendTestEmail(req, res) {
+    // Tracking email ouverture (utilise votre table tracking)
+    async trackEmailOpen(req, res) {
         try {
-            const { email, subject, content, template } = req.body;
+            const { token } = req.params;
 
-            if (!email || !subject || !content) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Email, sujet et contenu sont requis'
+            // Trouver le destinataire
+            const recipient = await sequelize.query(`
+                SELECT * FROM email_campaign_recipients 
+                WHERE tracking_token = $1 AND opened_at IS NULL
+            `, {
+                bind: [token],
+                type: QueryTypes.SELECT
+            });
+
+            if (recipient[0]) {
+                // Marquer comme ouvert
+                await sequelize.query(`
+                    UPDATE email_campaign_recipients 
+                    SET opened_at = NOW(), open_count = open_count + 1, updated_at = NOW()
+                    WHERE id = $1
+                `, {
+                    bind: [recipient[0].id],
+                    type: QueryTypes.UPDATE
+                });
+
+                // Logger dans email_tracking
+                await sequelize.query(`
+                    INSERT INTO email_tracking (
+                        campaign_id, customer_email, action_type, 
+                        action_data, user_agent, ip_address, created_at
+                    ) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+                `, {
+                    bind: [
+                        recipient[0].campaign_id,
+                        recipient[0].email,
+                        'open',
+                        JSON.stringify({ tracking_token: token }),
+                        req.headers['user-agent'] || '',
+                        req.ip || req.connection.remoteAddress
+                    ],
+                    type: QueryTypes.INSERT
                 });
             }
 
-            // Simuler l'envoi du test
-            console.log(`📧 [TEST SIMULÉ] Email de test à ${email}:`);
-            console.log(`   Sujet: [TEST] ${subject}`);
-            console.log(`   Template: ${template}`);
-
-            res.json({
-                success: true,
-                message: `Email de test envoyé à ${email}`
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur envoi test:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de l\'envoi du test'
-            });
-        }
-    },
-
-    // ===================================
-    // GESTION DES TEMPLATES
-    // ===================================
-    async getTemplates(req, res) {
-        try {
-            const templates = [
-                {
-                    id: 1,
-                    name: 'Newsletter Élégante',
-                    subject: 'Actualités CrystosJewel',
-                    content: '<h2>Bonjour {{first_name}} !</h2><p>Découvrez nos nouveautés...</p>',
-                    is_active: true
-                },
-                {
-                    id: 2,
-                    name: 'Promotion Moderne',
-                    subject: 'Offre spéciale - {{discount}}% de réduction',
-                    content: '<h2>Offre limitée !</h2><p>Profitez de notre promotion...</p>',
-                    is_active: true
-                }
-            ];
-
-            res.json({
-                success: true,
-                templates
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur récupération templates:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la récupération des templates'
-            });
-        }
-    },
-
-    async createTemplate(req, res) {
-        try {
-            const { name, description, subject, content, type, category } = req.body;
-
-            const template = {
-                id: Date.now(),
-                name,
-                description,
-                subject,
-                content,
-                type: type || 'custom',
-                category,
-                created_at: new Date()
-            };
-
-            console.log(`✅ Template créé (simulation): ${template.name}`);
-
-            res.json({
-                success: true,
-                message: 'Template créé avec succès',
-                template
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur création template:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la création du template'
-            });
-        }
-    },
-
-    // ===================================
-    // HISTORIQUE DES CAMPAGNES (API)
-    // ===================================
-    async getCampaignHistory(req, res) {
-        try {
-            const { page = 1, limit = 20, search } = req.query;
+            // Retourner pixel transparent
+            const pixel = Buffer.from(
+                'R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7',
+                'base64'
+            );
             
-            const allCampaigns = [
-                {
-                    id: 1,
-                    name: 'Newsletter Janvier',
-                    subject: 'Découvrez nos nouveautés 2025 !',
-                    status: 'sent',
-                    totalRecipients: 245,
-                    sentCount: 245,
-                    openedCount: 178,
-                    clickedCount: 34,
-                    sentAt: new Date(),
-                    createdAt: new Date()
-                },
-                {
-                    id: 2,
-                    name: 'Promotion Hiver',
-                    subject: 'Derniers jours : -20% sur tout !',
-                    status: 'sent',
-                    totalRecipients: 189,
-                    sentCount: 189,
-                    openedCount: 142,
-                    clickedCount: 28,
-                    sentAt: new Date(Date.now() - 86400000),
-                    createdAt: new Date(Date.now() - 86400000)
-                },
-                {
-                    id: 3,
-                    name: 'Brouillon Saint-Valentin',
-                    subject: 'Bijoux parfaits pour la Saint-Valentin',
-                    status: 'draft',
-                    totalRecipients: 0,
-                    sentCount: 0,
-                    openedCount: 0,
-                    clickedCount: 0,
-                    sentAt: null,
-                    createdAt: new Date(Date.now() - 3600000)
-                }
-            ];
+            res.writeHead(200, {
+                'Content-Type': 'image/gif',
+                'Content-Length': pixel.length,
+                'Cache-Control': 'no-cache'
+            });
+            res.end(pixel);
 
-            let filteredCampaigns = allCampaigns;
-            
-            if (search) {
-                filteredCampaigns = allCampaigns.filter(campaign =>
-                    campaign.name?.toLowerCase().includes(search.toLowerCase()) ||
-                    campaign.subject?.toLowerCase().includes(search.toLowerCase())
-                );
+        } catch (error) {
+            console.error('❌ Erreur tracking ouverture:', error);
+            res.status(200).end();
+        }
+    },
+
+    // Supprimer une campagne
+    async deleteCampaign(req, res) {
+        try {
+            const { id } = req.params;
+
+            // Vérifier que la campagne existe et n'est pas en cours d'envoi
+            const campaign = await sequelize.query(`
+                SELECT status FROM email_campaigns WHERE id = $1
+            `, {
+                bind: [id],
+                type: QueryTypes.SELECT
+            });
+
+            if (!campaign[0]) {
+                return res.status(404).json({
+                    success: false,
+                    error: 'Campagne non trouvée'
+                });
             }
 
-            const startIndex = (parseInt(page) - 1) * parseInt(limit);
-            const endIndex = startIndex + parseInt(limit);
-            const paginatedCampaigns = filteredCampaigns.slice(startIndex, endIndex);
+            if (campaign[0].status === 'sending') {
+                return res.status(400).json({
+                    success: false,
+                    error: 'Impossible de supprimer une campagne en cours d\'envoi'
+                });
+            }
+
+            // Supprimer les destinataires d'abord
+            await sequelize.query(`
+                DELETE FROM email_campaign_recipients WHERE campaign_id = $1
+            `, {
+                bind: [id],
+                type: QueryTypes.DELETE
+            });
+
+            // Supprimer la campagne
+            await sequelize.query(`
+                DELETE FROM email_campaigns WHERE id = $1
+            `, {
+                bind: [id],
+                type: QueryTypes.DELETE
+            });
 
             res.json({
                 success: true,
-                campaigns: paginatedCampaigns,
-                pagination: {
-                    page: parseInt(page),
-                    limit: parseInt(limit),
-                    total: filteredCampaigns.length,
-                    pages: Math.ceil(filteredCampaigns.length / parseInt(limit))
-                }
+                message: 'Campagne supprimée avec succès'
             });
 
         } catch (error) {
-            console.error('❌ Erreur récupération historique:', error);
+            console.error('❌ Erreur suppression campagne:', error);
             res.status(500).json({
                 success: false,
-                message: 'Erreur lors de la récupération de l\'historique'
-            });
-        }
-    },
-
-    // ===================================
-    // STATISTIQUES (API)
-    // ===================================
-    async getEmailStats(req, res) {
-        try {
-            const stats = {
-                totalCampaigns: 8,
-                totalSent: 1247,
-                totalDelivered: 1205,
-                totalOpened: 856,
-                totalClicked: 127,
-                totalUnsubscribed: 12,
-                openRate: '71.0',
-                clickRate: '10.2',
-                deliveryRate: '96.6',
-                avgOpenRate: 71.0,
-                activeTemplates: 4
-            };
-            
-            res.json({
-                success: true,
-                stats
-            });
-        } catch (error) {
-            console.error('❌ Erreur récupération stats:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la récupération des statistiques'
+                error: error.message
             });
         }
     }

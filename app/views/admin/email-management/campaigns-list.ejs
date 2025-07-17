@@ -1,0 +1,232 @@
+<!-- =============================================
+2. views/admin/email-management/campaigns-list.ejs
+============================================= -->
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - CrystosJewel Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .pink-gold { color: #e91e63; }
+        .bg-pink-gold { background-color: #e91e63; }
+        .hover-pink-gold:hover { background-color: #c2185b; }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <%- include('../partials/navbarre.ejs') %>
+    
+    <div class="container mx-auto px-4 py-8">
+        <!-- En-tête avec filtres -->
+        <div class="mb-8">
+            <div class="flex items-center justify-between mb-4">
+                <h1 class="text-3xl font-bold text-gray-800">📋 Gestion des Campagnes</h1>
+                <a href="/admin/email-management/campaigns/create" 
+                   class="bg-pink-gold hover-pink-gold text-white px-6 py-2 rounded-lg font-semibold">
+                    ✨ Nouvelle Campagne
+                </a>
+            </div>
+
+            <!-- Filtres -->
+            <div class="bg-white rounded-lg shadow-md p-4">
+                <form method="GET" class="flex flex-wrap gap-4 items-end">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Statut</label>
+                        <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-gold">
+                            <option value="">Tous les statuts</option>
+                            <option value="draft" <%= filters.status === 'draft' ? 'selected' : '' %>>Brouillon</option>
+                            <option value="scheduled" <%= filters.status === 'scheduled' ? 'selected' : '' %>>Programmée</option>
+                            <option value="sending" <%= filters.status === 'sending' ? 'selected' : '' %>>En cours</option>
+                            <option value="sent" <%= filters.status === 'sent' ? 'selected' : '' %>>Envoyée</option>
+                            <option value="failed" <%= filters.status === 'failed' ? 'selected' : '' %>>Échec</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Recherche</label>
+                        <input type="text" name="search" value="<%= filters.search || '' %>" 
+                               placeholder="Nom ou objet..." 
+                               class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-gold">
+                    </div>
+                    
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                        🔍 Filtrer
+                    </button>
+                    
+                    <% if (filters.status || filters.search) { %>
+                    <a href="/admin/email-management/campaigns" class="text-gray-600 hover:text-gray-800">
+                        ✖️ Effacer filtres
+                    </a>
+                    <% } %>
+                </form>
+            </div>
+        </div>
+
+        <!-- Liste des campagnes -->
+        <div class="bg-white rounded-lg shadow-md overflow-hidden">
+            <% if (campaigns && campaigns.length > 0) { %>
+            <div class="overflow-x-auto">
+                <table class="min-w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Campagne</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Statut</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Destinataires</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Performance</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                            <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        <% campaigns.forEach(campaign => { %>
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-6 py-4">
+                                <div>
+                                    <div class="text-sm font-medium text-gray-900"><%= campaign.name %></div>
+                                    <div class="text-sm text-gray-500"><%= campaign.subject %></div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex px-2 py-1 text-xs font-semibold rounded-full 
+                                    <%= campaign.status === 'sent' ? 'bg-green-100 text-green-800' : 
+                                        campaign.status === 'draft' ? 'bg-gray-100 text-gray-800' :
+                                        campaign.status === 'sending' ? 'bg-blue-100 text-blue-800' :
+                                        campaign.status === 'scheduled' ? 'bg-yellow-100 text-yellow-800' :
+                                        'bg-red-100 text-red-800' %>">
+                                    <%= campaign.status === 'sent' ? 'Envoyée' : 
+                                        campaign.status === 'draft' ? 'Brouillon' :
+                                        campaign.status === 'sending' ? 'En cours' :
+                                        campaign.status === 'scheduled' ? 'Programmée' :
+                                        'Échec' %>
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                <div>Total: <%= campaign.total_recipients || 0 %></div>
+                                <div class="text-gray-500">Envoyés: <%= campaign.sent_count || 0 %></div>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-900">
+                                <% if (campaign.sent_count > 0) { %>
+                                <div>Ouvertures: <%= campaign.opened_count || 0 %> (<%= campaign.open_rate || 0 %>%)</div>
+                                <div class="text-gray-500">Clics: <%= campaign.clicked_count || 0 %></div>
+                                <% } else { %>
+                                <div class="text-gray-500">-</div>
+                                <% } %>
+                            </td>
+                            <td class="px-6 py-4 text-sm text-gray-500">
+                                <div><%= new Date(campaign.created_at).toLocaleDateString('fr-FR') %></div>
+                                <% if (campaign.sent_at) { %>
+                                <div>Envoyée: <%= new Date(campaign.sent_at).toLocaleDateString('fr-FR') %></div>
+                                <% } %>
+                            </td>
+                            <td class="px-6 py-4 text-right text-sm font-medium">
+                                <div class="flex justify-end gap-2">
+                                    <% if (campaign.status === 'sent') { %>
+                                    <a href="/admin/email-management/campaigns/<%= campaign.id %>/stats" 
+                                       class="text-blue-600 hover:text-blue-900">📊 Stats</a>
+                                    <% } %>
+                                    
+                                    <% if (campaign.status === 'draft') { %>
+                                    <a href="/admin/email-management/campaigns/<%= campaign.id %>/edit" 
+                                       class="text-green-600 hover:text-green-900">✏️ Éditer</a>
+                                    <% } %>
+                                    
+                                    <% if (campaign.status !== 'sending') { %>
+                                    <button onclick="deleteCampaign(<%= campaign.id %>)" 
+                                            class="text-red-600 hover:text-red-900">🗑️ Suppr.</button>
+                                    <% } %>
+                                </div>
+                            </td>
+                        </tr>
+                        <% }); %>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <% if (totalPages > 1) { %>
+            <div class="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200">
+                <div class="flex-1 flex justify-between sm:hidden">
+                    <% if (currentPage > 1) { %>
+                    <a href="?page=<%= currentPage - 1 %>&status=<%= filters.status || '' %>&search=<%= filters.search || '' %>" 
+                       class="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Précédent
+                    </a>
+                    <% } %>
+                    <% if (currentPage < totalPages) { %>
+                    <a href="?page=<%= currentPage + 1 %>&status=<%= filters.status || '' %>&search=<%= filters.search || '' %>" 
+                       class="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                        Suivant
+                    </a>
+                    <% } %>
+                </div>
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700">
+                            Page <span class="font-medium"><%= currentPage %></span> sur <span class="font-medium"><%= totalPages %></span>
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
+                            <% for (let i = 1; i <= totalPages; i++) { %>
+                            <a href="?page=<%= i %>&status=<%= filters.status || '' %>&search=<%= filters.search || '' %>" 
+                               class="relative inline-flex items-center px-4 py-2 border text-sm font-medium 
+                               <%= i === currentPage ? 'bg-pink-gold text-white border-pink-gold' : 'bg-white text-gray-500 border-gray-300 hover:bg-gray-50' %>">
+                                <%= i %>
+                            </a>
+                            <% } %>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+            <% } %>
+
+            <% } else { %>
+            <div class="text-center py-12">
+                <div class="text-gray-500 mb-4">
+                    <svg class="mx-auto h-12 w-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Aucune campagne trouvée</h3>
+                <p class="text-gray-500 mb-4">Commencez par créer votre première campagne email.</p>
+                <a href="/admin/email-management/campaigns/create" 
+                   class="bg-pink-gold hover-pink-gold text-white px-6 py-2 rounded-lg font-semibold">
+                    ✨ Créer une campagne
+                </a>
+            </div>
+            <% } %>
+        </div>
+    </div>
+
+    <script>
+        async function deleteCampaign(id) {
+            if (!confirm('Êtes-vous sûr de vouloir supprimer cette campagne ?')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/admin/email-management/campaigns/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('Campagne supprimée avec succès');
+                    location.reload();
+                } else {
+                    alert('Erreur: ' + result.error);
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                alert('Erreur lors de la suppression');
+            }
+        }
+    </script>
+</body>
+</html>
