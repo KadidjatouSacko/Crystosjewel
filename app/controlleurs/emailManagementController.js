@@ -5,7 +5,7 @@
 
 import { Sequelize } from 'sequelize';
 import { sequelize } from "../models/sequelize-client.js";
-import { Customer } from '../models/CustomerModel.js';
+import { Customer } from "../models/customerModel.js";
 
 export const emailManagementControlleur = {
 
