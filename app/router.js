@@ -3760,7 +3760,6 @@ router.get('/admin/api/customers', isAdmin, async (req, res) => {
 router.get('/admin/email-management', isAdmin, emailManagementControlleur.dashboard);
 router.get('/admin/email-management/campaigns', isAdmin, emailManagementControlleur.listCampaigns);
 router.get('/admin/email-management/campaigns/create', isAdmin, emailManagementControlleur.createCampaignForm);
-
 router.get('/admin/email-management/campaigns/:id', isAdmin, emailManagementControlleur.getCampaign);
 router.get('/admin/email-management/campaigns/:id/stats', isAdmin, emailManagementControlleur.getCampaignStats);
 router.get('/admin/email-management/campaigns/:id/edit', isAdmin, emailManagementControlleur.editCampaignForm);
