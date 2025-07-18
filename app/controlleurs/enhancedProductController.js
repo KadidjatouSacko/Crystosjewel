@@ -13,6 +13,8 @@ import {
     // buildFilterWhereClause,
     // buildOrderClause 
 } from '../utils/productHelpers.js';
+import { emailManagementControlleur } from './emailManagementController.js';
+
 
 export const enhancedProductController = {
     

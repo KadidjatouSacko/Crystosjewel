@@ -1,287 +1,651 @@
-<!-- =============================================
-1. views/admin/email-management/dashboard.ejs
-============================================= -->
+<!-- ========================================
+     📧 TEMPLATE: Email Management Dashboard
+     Fichier: app/views/admin/email-management/dashboard.ejs
+     ======================================== -->
+ <%- include('../../partials/navbarre.ejs') %>
 
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title %> - CrystosJewel Admin</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        .pink-gold { color: #e91e63; }
-        .bg-pink-gold { background-color: #e91e63; }
-        .hover-pink-gold:hover { background-color: #c2185b; }
-    </style>
-</head>
-<body class="bg-gray-50">
-      <%- include('../../partials/navbarre.ejs') %>
-    
-    <div class="container mx-auto px-4 py-8">
-        <!-- En-tête -->
-        <div class="mb-8">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2">📧 Email Marketing</h1>
-            <p class="text-gray-600">Tableau de bord et statistiques</p>
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fas fa-envelope"></i> Gestion des Emails</h1>
+        <div class="admin-actions">
+            <a href="/admin/email-management/campaigns/create" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Nouvelle Campagne
+            </a>
         </div>
+    </div>
 
-        <!-- Statistiques principales -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex items-center">
-                    <div class="bg-blue-100 p-3 rounded-full">
-                        <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Total Campagnes</p>
-                        <p class="text-2xl font-bold text-gray-900"><%= emailStats.total_campaigns %></p>
-                    </div>
-                </div>
+    <!-- Statistiques globales -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon bg-blue">
+                <i class="fas fa-paper-plane"></i>
             </div>
-
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex items-center">
-                    <div class="bg-green-100 p-3 rounded-full">
-                        <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Emails Envoyés</p>
-                        <p class="text-2xl font-bold text-gray-900"><%= recipientStats.emails_sent %></p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex items-center">
-                    <div class="bg-yellow-100 p-3 rounded-full">
-                        <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Emails Ouverts</p>
-                        <p class="text-2xl font-bold text-gray-900"><%= recipientStats.emails_opened %></p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <div class="flex items-center">
-                    <div class="bg-pink-100 p-3 rounded-full">
-                        <svg class="w-6 h-6 pink-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
-                        </svg>
-                    </div>
-                    <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-600">Abonnés Actifs</p>
-                        <p class="text-2xl font-bold text-gray-900"><%= subscriberStats.opted_in %></p>
-                    </div>
-                </div>
+            <div class="stat-content">
+                <h3><%= stats.emailsSent.toLocaleString() %></h3>
+                <p>Emails envoyés</p>
             </div>
         </div>
 
-        <!-- Actions rapides -->
-        <div class="mb-8">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">Actions Rapides</h2>
-                <div class="flex flex-wrap gap-4">
-                    <a href="/admin/email-management/campaigns/create" 
-                       class="bg-pink-gold hover-pink-gold text-white px-6 py-2 rounded-lg font-semibold transition-colors">
-                        ✨ Nouvelle Campagne
-                    </a>
-                    <a href="/admin/email-management/campaigns" 
-                       class="bg-gray-600 hover:bg-gray-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
-                        📋 Gérer les Campagnes
-                    </a>
-                    <a href="/admin/email-management/history" 
-                       class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
-                        📊 Historique
-                    </a>
+        <div class="stat-card">
+            <div class="stat-icon bg-green">
+                <i class="fas fa-envelope-open"></i>
+            </div>
+            <div class="stat-content">
+                <h3><%= stats.openRate %>%</h3>
+                <p>Taux d'ouverture</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon bg-purple">
+                <i class="fas fa-list"></i>
+            </div>
+            <div class="stat-content">
+                <h3><%= stats.totalCampaigns %></h3>
+                <p>Campagnes totales</p>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-icon bg-orange">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <h3><%= stats.subscribedCustomers %></h3>
+                <p>Abonnés newsletter</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation rapide -->
+    <div class="quick-nav">
+        <a href="/admin/email-management/campaigns" class="quick-nav-item">
+            <i class="fas fa-list"></i>
+            <span>Campagnes</span>
+            <small><%= stats.totalCampaigns %> campagnes</small>
+        </a>
+        <a href="/admin/email-management/campaigns/create" class="quick-nav-item">
+            <i class="fas fa-edit"></i>
+            <span>Créer</span>
+            <small>Nouvelle campagne</small>
+        </a>
+        <a href="/admin/email-management/stats" class="quick-nav-item">
+            <i class="fas fa-chart-bar"></i>
+            <span>Statistiques</span>
+            <small>Analytics détaillées</small>
+        </a>
+        <a href="/admin/email-management/history" class="quick-nav-item">
+            <i class="fas fa-history"></i>
+            <span>Historique</span>
+            <small>Emails envoyés</small>
+        </a>
+    </div>
+
+    <!-- Campagnes récentes -->
+    <div class="section">
+        <div class="section-header">
+            <h2>Campagnes récentes</h2>
+            <a href="/admin/email-management/campaigns" class="btn btn-outline">Voir toutes</a>
+        </div>
+        
+        <div class="campaigns-list">
+            <% if (campaigns && campaigns.length === 0) { %>
+                <div class="no-data">
+                    <i class="fas fa-envelope"></i>
+                    <h3>Aucune campagne</h3>
+                    <p>Créez votre première campagne email</p>
+                    <a href="/admin/email-management/campaigns/create" class="btn btn-primary">Créer une campagne</a>
                 </div>
-            </div>
-        </div>
-
-        <!-- Graphiques -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">📈 Activité des 30 derniers jours</h2>
-                <canvas id="emailChart" width="400" height="300"></canvas>
-            </div>
-
-            <div class="bg-white rounded-lg shadow-md p-6">
-                <h2 class="text-xl font-semibold text-gray-800 mb-4">📊 Taux d'ouverture par campagne</h2>
-                <canvas id="openRateChart" width="400" height="300"></canvas>
-            </div>
-        </div>
-
-        <!-- Campagnes récentes -->
-        <div class="bg-white rounded-lg shadow-md p-6">
-            <h2 class="text-xl font-semibold text-gray-800 mb-4">Campagnes Récentes</h2>
-            <% if (recentCampaigns && recentCampaigns.length > 0) { %>
-            <div class="overflow-x-auto">
-                <table class="min-w-full table-auto">
-                    <thead>
-                        <tr class="bg-gray-50">
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Nom</th>
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Statut</th>
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Destinataires</th>
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Envoyés</th>
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Taux d'ouverture</th>
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Date</th>
-                            <th class="px-4 py-2 text-left text-sm font-medium text-gray-600">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% recentCampaigns.forEach(campaign => { %>
-                        <tr class="border-t hover:bg-gray-50">
-                            <td class="px-4 py-2 font-medium text-gray-900"><%= campaign.name %></td>
-                            <td class="px-4 py-2">
-                                <span class="px-2 py-1 text-xs rounded-full 
-                                    <%= campaign.status === 'sent' ? 'bg-green-100 text-green-800' : 
-                                        campaign.status === 'draft' ? 'bg-gray-100 text-gray-800' :
-                                        campaign.status === 'sending' ? 'bg-blue-100 text-blue-800' :
-                                        campaign.status === 'scheduled' ? 'bg-yellow-100 text-yellow-800' :
-                                        'bg-red-100 text-red-800' %>">
-                                    <%= campaign.status === 'sent' ? 'Envoyée' : 
-                                        campaign.status === 'draft' ? 'Brouillon' :
-                                        campaign.status === 'sending' ? 'En cours' :
-                                        campaign.status === 'scheduled' ? 'Programmée' :
-                                        'Échec' %>
+            <% } else if (campaigns && campaigns.length > 0) { %>
+                <% campaigns.forEach(campaign => { %>
+                    <div class="campaign-card">
+                        <div class="campaign-info">
+                            <h4><%= campaign.name %></h4>
+                            <p><%= campaign.subject %></p>
+                            <div class="campaign-meta">
+                                <span class="status status-<%= campaign.status %>">
+                                    <%= helpers.getStatusLabel(campaign.status) %>
                                 </span>
-                            </td>
-                            <td class="px-4 py-2 text-gray-600"><%= campaign.total_recipients || 0 %></td>
-                            <td class="px-4 py-2 text-gray-600"><%= campaign.sent_count || 0 %></td>
-                            <td class="px-4 py-2 text-gray-600">
-                                <% if (campaign.sent_count > 0) { %>
-                                    <%= Math.round((campaign.opened_count / campaign.sent_count) * 100) %>%
-                                <% } else { %>
-                                    -
-                                <% } %>
-                            </td>
-                            <td class="px-4 py-2 text-gray-600">
-                                <%= new Date(campaign.created_at).toLocaleDateString('fr-FR') %>
-                            </td>
-                            <td class="px-4 py-2">
-                                <div class="flex gap-2">
-                                    <% if (campaign.status === 'sent') { %>
-                                    <a href="/admin/email-management/campaigns/<%= campaign.id %>/stats" 
-                                       class="text-blue-600 hover:text-blue-800 text-sm">📊 Stats</a>
+                                <span class="date">
+                                    <% if (campaign.sent_at) { %>
+                                        Envoyée le <%= helpers.formatDate(campaign.sent_at) %>
+                                    <% } else { %>
+                                        Créée le <%= helpers.formatDate(campaign.created_at) %>
                                     <% } %>
-                                    <% if (campaign.status === 'draft') { %>
-                                    <a href="/admin/email-management/campaigns/<%= campaign.id %>/edit" 
-                                       class="text-green-600 hover:text-green-800 text-sm">✏️ Éditer</a>
-                                    <% } %>
-                                </div>
-                            </td>
-                        </tr>
-                        <% }); %>
-                    </tbody>
-                </table>
-            </div>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="campaign-stats">
+                            <div class="stat">
+                                <span class="value"><%= campaign.emails_sent || 0 %></span>
+                                <span class="label">Envoyés</span>
+                            </div>
+                            <div class="stat">
+                                <span class="value"><%= campaign.emails_opened || 0 %></span>
+                                <span class="label">Ouverts</span>
+                            </div>
+                            <div class="stat">
+                                <span class="value"><%= campaign.open_rate || 0 %>%</span>
+                                <span class="label">Ouverture</span>
+                            </div>
+                        </div>
+                        <div class="campaign-actions">
+                            <a href="/admin/email-management/campaigns/<%= campaign.id %>" class="btn btn-sm btn-outline">Voir</a>
+                            <% if (campaign.status === 'draft') { %>
+                                <a href="/admin/email-management/campaigns/<%= campaign.id %>/edit" class="btn btn-sm btn-primary">Éditer</a>
+                            <% } %>
+                            <% if (campaign.status === 'sent') { %>
+                                <a href="/admin/email-management/campaigns/<%= campaign.id %>/stats" class="btn btn-sm btn-info">Stats</a>
+                            <% } %>
+                        </div>
+                    </div>
+                <% }); %>
             <% } else { %>
-            <div class="text-center py-8 text-gray-500">
-                <p>Aucune campagne pour le moment</p>
-                <a href="/admin/email-management/campaigns/create" 
-                   class="text-pink-600 hover:text-pink-800 font-medium">
-                    Créez votre première campagne
-                </a>
-            </div>
+                <div class="loading-message">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Chargement des campagnes...</p>
+                </div>
             <% } %>
         </div>
     </div>
 
-    <script>
-        // Graphique activité emails
-        const emailCtx = document.getElementById('emailChart').getContext('2d');
-        const chartData = <%- JSON.stringify(chartData || []) %>;
+    <!-- Statistiques rapides -->
+    <div class="section">
+        <div class="section-header">
+            <h2>Statistiques rapides</h2>
+        </div>
         
-        const dates = chartData.map(d => new Date(d.date).toLocaleDateString('fr-FR'));
-        const sentData = chartData.map(d => parseInt(d.emails_sent) || 0);
-        const openedData = chartData.map(d => parseInt(d.emails_opened) || 0);
+        <div class="quick-stats">
+            <div class="quick-stat">
+                <div class="quick-stat-icon">📧</div>
+                <div class="quick-stat-content">
+                    <span class="quick-stat-value"><%= stats.emailsSent %></span>
+                    <span class="quick-stat-label">Emails envoyés</span>
+                </div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-icon">📖</div>
+                <div class="quick-stat-content">
+                    <span class="quick-stat-value"><%= stats.emailsOpened %></span>
+                    <span class="quick-stat-label">Emails ouverts</span>
+                </div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-icon">📊</div>
+                <div class="quick-stat-content">
+                    <span class="quick-stat-value"><%= stats.openRate %>%</span>
+                    <span class="quick-stat-label">Taux d'ouverture</span>
+                </div>
+            </div>
+            <div class="quick-stat">
+                <div class="quick-stat-icon">👥</div>
+                <div class="quick-stat-content">
+                    <span class="quick-stat-value"><%= stats.totalCustomers %></span>
+                    <span class="quick-stat-label">Total clients</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-        new Chart(emailCtx, {
-            type: 'line',
-            data: {
-                labels: dates,
-                datasets: [
-                    {
-                        label: 'Emails Envoyés',
-                        data: sentData,
-                        borderColor: '#3b82f6',
-                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                        tension: 0.4
-                    },
-                    {
-                        label: 'Emails Ouverts',
-                        data: openedData,
-                        borderColor: '#e91e63',
-                        backgroundColor: 'rgba(233, 30, 99, 0.1)',
-                        tension: 0.4
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true
-                    }
-                }
-            }
-        });
+<style>
+/* Styles pour le dashboard */
+.admin-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+}
 
-        // Graphique taux d'ouverture
-        const openRateCtx = document.getElementById('openRateChart').getContext('2d');
-        const recentCampaigns = <%- JSON.stringify(recentCampaigns.slice(0, 5) || []) %>;
+.admin-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid #f1f5f9;
+}
+
+.admin-header h1 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.admin-header i {
+    color: #d89ab3;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 20px;
+}
+
+.stat-icon.bg-blue { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+.stat-icon.bg-green { background: linear-gradient(135deg, #10b981, #047857); }
+.stat-icon.bg-purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); }
+.stat-icon.bg-orange { background: linear-gradient(135deg, #f59e0b, #d97706); }
+
+.stat-content h3 {
+    font-size: 24px;
+    font-weight: 700;
+    margin: 0 0 5px 0;
+    color: #1e293b;
+}
+
+.stat-content p {
+    margin: 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.quick-nav {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 30px;
+}
+
+.quick-nav-item {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    text-decoration: none;
+    color: #1e293b;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.quick-nav-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    text-decoration: none;
+    color: #1e293b;
+}
+
+.quick-nav-item i {
+    font-size: 24px;
+    color: #d89ab3;
+    margin-bottom: 10px;
+}
+
+.quick-nav-item span {
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.quick-nav-item small {
+    color: #64748b;
+    font-size: 12px;
+}
+
+.section {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    margin-bottom: 20px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 15px;
+}
+
+.section-header h2 {
+    margin: 0;
+    color: #1e293b;
+    font-size: 20px;
+}
+
+.campaign-card {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    border: 1px solid #f1f5f9;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    transition: all 0.2s ease;
+}
+
+.campaign-card:hover {
+    background-color: #f8fafc;
+    border-color: #d89ab3;
+}
+
+.campaign-card:last-child {
+    margin-bottom: 0;
+}
+
+.campaign-info {
+    flex: 1;
+    margin-right: 20px;
+}
+
+.campaign-info h4 {
+    margin: 0 0 5px 0;
+    color: #1e293b;
+    font-size: 16px;
+}
+
+.campaign-info p {
+    margin: 0 0 10px 0;
+    color: #64748b;
+    font-size: 14px;
+}
+
+.campaign-meta {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.status {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.status-draft { background: #fef3c7; color: #92400e; }
+.status-sent { background: #d1fae5; color: #047857; }
+.status-scheduled { background: #ddd6fe; color: #7c3aed; }
+
+.date {
+    font-size: 12px;
+    color: #9ca3af;
+}
+
+.campaign-stats {
+    display: flex;
+    gap: 15px;
+    margin-right: 20px;
+}
+
+.campaign-stats .stat {
+    text-align: center;
+    min-width: 50px;
+}
+
+.campaign-stats .stat .value {
+    display: block;
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+}
+
+.campaign-stats .stat .label {
+    display: block;
+    font-size: 10px;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.campaign-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.btn-primary { 
+    background: linear-gradient(135deg, #d89ab3, #b794a8); 
+    color: white; 
+}
+
+.btn-info { 
+    background: linear-gradient(135deg, #3b82f6, #1d4ed8); 
+    color: white; 
+}
+
+.btn-outline { 
+    background: transparent; 
+    border: 1px solid #d89ab3; 
+    color: #d89ab3; 
+}
+
+.btn-sm { 
+    padding: 6px 10px; 
+    font-size: 11px; 
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    text-decoration: none;
+}
+
+.btn-outline:hover {
+    background: #d89ab3;
+    color: white;
+}
+
+.no-data {
+    text-align: center;
+    padding: 40px 20px;
+    color: #64748b;
+}
+
+.no-data i {
+    font-size: 48px;
+    color: #d1d5db;
+    margin-bottom: 15px;
+}
+
+.no-data h3 {
+    margin: 0 0 10px 0;
+    color: #374151;
+}
+
+.no-data p {
+    margin: 0 0 20px 0;
+}
+
+.loading-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: #64748b;
+}
+
+.loading-message i {
+    font-size: 24px;
+    margin-bottom: 10px;
+    color: #d89ab3;
+}
+
+.quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.quick-stat {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.quick-stat-icon {
+    font-size: 24px;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.quick-stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.quick-stat-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1;
+}
+
+.quick-stat-label {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .admin-header {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .campaign-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+    
+    .campaign-stats {
+        margin-right: 0;
+    }
+    
+    .campaign-actions {
+        align-self: stretch;
+        justify-content: center;
+    }
+}
+</style>
+
+
+
+<script>
+// Charger les campagnes récentes
+document.addEventListener('DOMContentLoaded', function() {
+    loadRecentCampaigns();
+});
+
+async function loadRecentCampaigns() {
+    try {
+        const response = await fetch('/admin/api/email-campaigns/recent');
+        const data = await response.json();
         
-        const campaignNames = recentCampaigns.map(c => c.name.length > 20 ? c.name.substring(0, 20) + '...' : c.name);
-        const openRates = recentCampaigns.map(c => 
-            c.sent_count > 0 ? Math.round((c.opened_count / c.sent_count) * 100) : 0
-        );
+        if (data.success) {
+            displayRecentCampaigns(data.campaigns);
+        }
+    } catch (error) {
+        console.error('Erreur chargement campagnes:', error);
+    }
+}
 
-        new Chart(openRateCtx, {
-            type: 'bar',
-            data: {
-                labels: campaignNames,
-                datasets: [{
-                    label: 'Taux d\'ouverture (%)',
-                    data: openRates,
-                    backgroundColor: 'rgba(233, 30, 99, 0.6)',
-                    borderColor: '#e91e63',
-                    borderWidth: 1
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        max: 100,
-                        ticks: {
-                            callback: function(value) {
-                                return value + '%';
-                            }
-                        }
-                    }
-                }
-            }
-        });
-    </script>
-</body>
-</html>
+function displayRecentCampaigns(campaigns) {
+    const container = document.getElementById('recent-campaigns');
+    
+    if (campaigns.length === 0) {
+        container.innerHTML = '<p class="no-data">Aucune campagne récente</p>';
+        return;
+    }
+    
+    container.innerHTML = campaigns.map(campaign => `
+        <div class="campaign-card">
+            <div class="campaign-info">
+                <h4>${campaign.name}</h4>
+                <p>${campaign.subject}</p>
+                <div class="campaign-meta">
+                    <span class="status status-${campaign.status}">${getStatusLabel(campaign.status)}</span>
+                    <span class="date">${formatDate(campaign.created_at)}</span>
+                </div>
+            </div>
+            <div class="campaign-stats">
+                <div class="stat">
+                    <span class="value">${campaign.emails_sent || 0}</span>
+                    <span class="label">Envoyés</span>
+                </div>
+                <div class="stat">
+                    <span class="value">${campaign.open_rate || 0}%</span>
+                    <span class="label">Ouverture</span>
+                </div>
+            </div>
+            <div class="campaign-actions">
+                <a href="/admin/email-management/campaigns/${campaign.id}" class="btn btn-sm">Voir</a>
+                ${campaign.status === 'draft' ? `<a href="/admin/email-management/campaigns/${campaign.id}/edit" class="btn btn-sm btn-primary">Éditer</a>` : ''}
+            </div>
+        </div>
+    `).join('');
+}
+
+function getStatusLabel(status) {
+    const labels = {
+        'draft': 'Brouillon',
+        'sent': 'Envoyée',
+        'scheduled': 'Programmée',
+        'cancelled': 'Annulée'
+    };
+    return labels[status] || status;
+}
+
+function formatDate(dateString) {
+    return new Date(dateString).toLocaleDateString('fr-FR');
+}
+</script>
+
+<%- include('../../partials/footer.ejs') %>

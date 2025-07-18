@@ -14,6 +14,8 @@ import { Customer } from '../models/customerModel.js';
 import emailCampaignService from '../services/emailCampaignService.js';
 import fs from 'fs';
 import path from 'path';
+import { emailManagementControlleur } from './emailManagementController.js';
+
 
 export const emailController = {
 

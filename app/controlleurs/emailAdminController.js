@@ -4,6 +4,7 @@ import { EmailLog } from '../models/emailLogModel.js';
 import { Customer } from '../models/customerModel.js';
 import { sequelize } from '../models/sequelize-client.js';
 import { QueryTypes } from 'sequelize';
+import { emailManagementControlleur } from './emailManagementController.js';
 
 const emailAdminController = {
 

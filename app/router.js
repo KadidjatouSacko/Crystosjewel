@@ -3752,17 +3752,40 @@ router.get('/admin/api/customers', isAdmin, async (req, res) => {
     }
 });
 
-// Email Management Routes
+
+// ========================================
+// ROUTES PRINCIPALES EMAIL MANAGEMENT
+// ========================================
+
 router.get('/admin/email-management', isAdmin, emailManagementControlleur.dashboard);
 router.get('/admin/email-management/campaigns', isAdmin, emailManagementControlleur.listCampaigns);
-router.get('/admin/email-management/campaigns/create', isAdmin, emailManagementControlleur.createCampaign);
-router.post('/admin/email-management/campaigns', isAdmin, emailManagementControlleur.saveCampaign);
-router.get('/admin/email-management/campaigns/:id/stats', isAdmin, emailManagementControlleur.campaignStats);
+router.get('/admin/email-management/campaigns/create', isAdmin, emailManagementControlleur.createCampaignForm);
+router.get('/admin/email-management/campaigns/:id', isAdmin, emailManagementControlleur.getCampaign);
+router.get('/admin/email-management/campaigns/:id/stats', isAdmin, emailManagementControlleur.getCampaignStats);
+router.get('/admin/email-management/campaigns/:id/edit', isAdmin, emailManagementControlleur.editCampaignForm);
+router.put('/admin/email-management/campaigns/:id', isAdmin, emailManagementControlleur.updateCampaign);
 router.delete('/admin/email-management/campaigns/:id', isAdmin, emailManagementControlleur.deleteCampaign);
-router.get('/admin/email-management/history', isAdmin, emailManagementControlleur.emailHistory);
+router.post('/admin/email-management/campaigns', isAdmin, emailManagementControlleur.createCampaign);
 
-// Tracking Routes (publiques)
-router.get('/email/track/:token', emailManagementControlleur.trackEmailOpen);
+// API et actions
+router.post('/admin/emails/save-draft', isAdmin, emailManagementControlleur.saveDraft);
+router.post('/admin/emails/send-test', isAdmin, emailManagementControlleur.sendTest);
+router.post('/admin/emails/send-campaign', isAdmin, emailManagementControlleur.sendCampaign);
+router.get('/admin/api/customers', isAdmin, emailManagementControlleur.getCustomers);
+
+// 3. TRACKING CORRIGÉ (utilisez le contrôleur, pas emailTrackingService)
+router.get('/email/track/:campaignId/:customerId', emailManagementControlleur.trackOpen);
+router.get('/email/click/:campaignId/:customerId', emailManagementControlleur.trackClick);
+
+// Stats et historique
+router.get('/admin/email-management/stats', isAdmin, emailManagementControlleur.getStats);
+router.get('/admin/email-management/history', isAdmin, emailManagementControlleur.getHistory);
+router.get('/admin/emails/templates', isAdmin, emailManagementControlleur.getTemplates);
+router.post('/admin/emails/templates', isAdmin, emailManagementControlleur.saveTemplate);
+router.get('/admin/emails/preview/:campaignId', isAdmin, emailManagementControlleur.previewEmail);
+
 
 // Export par défaut
 export default router;
+
+
