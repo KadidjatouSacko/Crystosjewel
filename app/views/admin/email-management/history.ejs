@@ -25,16 +25,17 @@
         </div>
 
         <!-- Statistiques rapides -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <% 
-            const statusCounts = {};
-            if (stats && stats.length > 0) {
-                stats.forEach(stat => {
-                    if (!statusCounts[stat.status]) statusCounts[stat.status] = 0;
-                    statusCounts[stat.status] += parseInt(stat.count);
-                });
-            }
-            %>
+     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+<%
+const statusCounts = {};
+if (typeof stats !== 'undefined' && stats && stats.length > 0) {
+  stats.forEach(stat => {
+    // Votre logique de traitement des stats ici
+    const status = stat.status || 'unknown';
+    statusCounts[status] = (statusCounts[status] || 0) + 1;
+  });
+}
+%>
             
             <div class="bg-white rounded-lg shadow p-4">
                 <div class="text-2xl font-bold text-green-600"><%= statusCounts.sent || 0 %></div>
@@ -59,13 +60,19 @@
             <form method="GET" class="flex flex-wrap gap-4 items-end">
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Type d'Email</label>
-                    <select name="email_type" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-gold">
-                        <option value="">Tous les types</option>
-                        <option value="campaign" <%= filters.email_type === 'campaign' ? 'selected' : '' %>>Campagne</option>
-                        <option value="order_confirmation" <%= filters.email_type === 'order_confirmation' ? 'selected' : '' %>>Confirmation commande</option>
-                        <option value="shipping_notification" <%= filters.email_type === 'shipping_notification' ? 'selected' : '' %>>Notification expédition</option>
-                        <option value="welcome" <%= filters.email_type === 'welcome' ? 'selected' : '' %>>Bienvenue</option>
-                    </select>
+                  <!-- Dans votre fichier history.ejs -->
+<%
+// Définir des valeurs par défaut si filters n'est pas défini
+const currentFilters = typeof filters !== 'undefined' ? filters : {};
+%>
+
+<select name="email_type" class="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-gold">
+  <option value="">Tous les types</option>
+  <option value="campaign" <%= (currentFilters.email_type === 'campaign') ? 'selected' : '' %>>Campagne</option>
+  <option value="order_confirmation" <%= (currentFilters.email_type === 'order_confirmation') ? 'selected' : '' %>>Confirmation commande</option>
+  <option value="shipping_notification" <%= (currentFilters.email_type === 'shipping_notification') ? 'selected' : '' %>>Notification expédition</option>
+  <option value="welcome" <%= (currentFilters.email_type === 'welcome') ? 'selected' : '' %>>Bienvenue</option>
+</select>
                 </div>
                 
                 <div>

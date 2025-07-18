@@ -3760,6 +3760,7 @@ router.get('/admin/api/customers', isAdmin, async (req, res) => {
 router.get('/admin/email-management', isAdmin, emailManagementControlleur.dashboard);
 router.get('/admin/email-management/campaigns', isAdmin, emailManagementControlleur.listCampaigns);
 router.get('/admin/email-management/campaigns/create', isAdmin, emailManagementControlleur.createCampaignForm);
+
 router.get('/admin/email-management/campaigns/:id', isAdmin, emailManagementControlleur.getCampaign);
 router.get('/admin/email-management/campaigns/:id/stats', isAdmin, emailManagementControlleur.getCampaignStats);
 router.get('/admin/email-management/campaigns/:id/edit', isAdmin, emailManagementControlleur.editCampaignForm);
@@ -3783,7 +3784,33 @@ router.get('/admin/email-management/history', isAdmin, emailManagementControlleu
 router.get('/admin/emails/templates', isAdmin, emailManagementControlleur.getTemplates);
 router.post('/admin/emails/templates', isAdmin, emailManagementControlleur.saveTemplate);
 router.get('/admin/emails/preview/:campaignId', isAdmin, emailManagementControlleur.previewEmail);
-
+router.post('/admin/upload/image', isAdmin, upload.single('image'), async (req, res) => {
+  try {
+    // Traitement du fichier uploadé
+    const imageUrl = `/uploads/images/${req.file.filename}`;
+    
+    // Sauvegarder en base si nécessaire
+    const savedImage = await saveImageToDB({
+      name: req.file.originalname,
+      url: imageUrl,
+      size: req.file.size
+    });
+    
+    res.json({
+      success: true,
+      image: {
+        id: savedImage.id,
+        name: savedImage.name,
+        url: savedImage.url
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
 
 // Export par défaut
 export default router;

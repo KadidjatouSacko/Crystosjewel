@@ -130,6 +130,81 @@ export const emailManagementControlleur = {
     }
 },
 
+// Page de création de campagne
+  async renderCreatePage(req, res) {
+    try {
+      // Récupérer les données nécessaires
+      const images = await getUploadedImages(); // Vos images uploadées
+      const stats = await getEmailStats(); // Statistiques d'emails
+      const customers = await getCustomers(); // Liste des clients
+      
+      res.render('admin/email-management/create-advanced', {
+        title: 'Créer une Campagne Email',
+        campaign: {}, // ✅ Objet vide pour création
+        images: images || [],
+        stats: {
+          totalCustomers: 1247,
+          newsletterSubscribers: 892,
+          vipCustomers: 156,
+          recentCustomers: 234,
+          averageOpenRate: '24.5',
+          averageClickRate: '3.8',
+          lastCampaign: '15 jan 2025'
+        },
+        customers: customers || []
+      });
+      
+    } catch (error) {
+      console.error('❌ Erreur rendu page création:', error);
+      res.render('admin/email-management/create-advanced', {
+        title: 'Créer une Campagne Email',
+        campaign: {}, // ✅ Toujours définir campaign
+        images: [],
+        stats: {},
+        customers: [],
+        error: error.message
+      });
+    }
+  },
+
+  // Page d'édition de campagne
+  async renderEditPage(req, res) {
+    try {
+      const { id } = req.params;
+      
+      // Récupérer la campagne existante
+      const campaign = await getCampaignById(id);
+      if (!campaign) {
+        return res.status(404).render('error', {
+          message: 'Campagne non trouvée'
+        });
+      }
+      
+      const images = await getUploadedImages();
+      const stats = await getEmailStats();
+      const customers = await getCustomers();
+      
+      res.render('admin/email-management/create-advanced', {
+        title: 'Éditer la Campagne',
+        campaign: campaign, // ✅ Campagne existante
+        images: images || [],
+        stats: stats || {},
+        customers: customers || []
+      });
+      
+    } catch (error) {
+      console.error('❌ Erreur rendu page édition:', error);
+      res.render('admin/email-management/create-advanced', {
+        title: 'Éditer la Campagne',
+        campaign: {}, // ✅ Fallback
+        images: [],
+        stats: {},
+        customers: [],
+        error: error.message
+      });
+    }
+  },
+
     // ========================================
     // 📧 LISTE DES CAMPAGNES
     // ========================================
