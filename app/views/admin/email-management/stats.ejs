@@ -1,0 +1,40 @@
+<div class="admin-container">
+    <div class="admin-header">
+        <h1><i class="fas fa-chart-bar"></i> Statistiques Email</h1>
+    </div>
+    
+    <div class="stats-cards">
+        <div class="stat-card">
+            <h3>Emails envoyés (30j)</h3>
+            <div class="stat-value">0</div>
+        </div>
+        <div class="stat-card">
+            <h3>Taux d'ouverture moyen</h3>
+            <div class="stat-value">0%</div>
+        </div>
+        <div class="stat-card">
+            <h3>Taux de clic moyen</h3>
+            <div class="stat-value">0%</div>
+        </div>
+        <div class="stat-card">
+            <h3>Campagnes actives</h3>
+            <div class="stat-value">0</div>
+        </div>
+    </div>
+    
+    <div class="chart-placeholder">
+        <p>📈 Graphiques des performances à venir...</p>
+    </div>
+</div>
+
+<style>
+.stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+.stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); text-align: center; }
+.stat-card h3 { margin: 0 0 10px 0; color: #64748b; font-size: 14px; }
+.stat-value { font-size: 32px; font-weight: 700; color: #1e293b; }
+.chart-placeholder { background: white; padding: 60px; text-align: center; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+</style>
+
+<%- include('../../partials/footer.ejs') %>
+</body>
+</html>
