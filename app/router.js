@@ -41,6 +41,7 @@ import { promoAdminController } from "./controlleurs/promoAdminController.js";
 import { guestOrderController } from './controlleurs/guestOrderController.js';
 import { emailManagementControlleur } from './controlleurs/emailManagementController.js';
 import { adminClientController } from './controlleurs/adminClientController.js';
+import {  requireAdmin, loadUserData, clientOnly } from './middleware/authMiddleware.js';
 
 
 // CONTROLLERS EMAIL - CHOISISSEZ UN SEUL SYSTÈME
@@ -385,6 +386,7 @@ const emailUpload = multer({
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
 
 export const router = Router();
 
@@ -1860,7 +1862,7 @@ router.post('/favoris/supprimer/:jewelId', isAuthenticated, async (req, res, nex
 // ==========================================
 
 router.get('/admin/stats', isAdmin, adminStatsController.dashboard);
-router.get('/admin/suivi-client', isAdmin, adminClientController.showClientManagement); // ✅ CORRECT
+router.get('/admin/suivi-client', requireAdmin, adminClientController.showClientManagement);
 
 router.get("/admin/produits", isAdmin, adminStatsController.ShowPageProducts);
 router.get('/admin/bijoux', isAdmin, adminStatsController.findAll);
@@ -3077,17 +3079,7 @@ router.get('/test-panier-db', async (req, res) => {
 });
 
 
-// Middleware de vérification admin (à adapter selon votre système)
-const requireAdmin = (req, res, next) => {
-  if (!req.session?.user?.isAdmin) {
-    req.session.flashMessage = {
-      type: 'error',
-      message: 'Accès administrateur requis'
-    };
-    return res.redirect('/connexion-inscription');
-  }
-  next();
-};
+
 
 // 📊 Page principale d'administration des codes promo
 router.get('/admin/promos', isAdmin, promoAdminController.renderAdminPage);
@@ -3807,7 +3799,6 @@ router.post('/admin/upload/image', isAdmin, upload.single('image'), async (req, 
   }
 });
 
-router.get('/admin/suivi-client', isAdmin, adminClientController.showClientManagement);
 
 // 📝 Ajouter un client
 router.post('/admin/clients/add', isAdmin, adminClientController.addClient);
@@ -3835,7 +3826,8 @@ import { adminEmailController } from './controlleurs/adminEmailController.js';
 // ========================================
 
 // Page principale de gestion des emails
-router.get('/admin/emails', isAdmin, adminEmailController.showEmailManagement);
+router.get('/admin/emails', requireAdmin, adminEmailController.showEmailManagement);
+
 
 // Envoyer un email de test
 router.post('/admin/emails/test', isAdmin, adminEmailController.sendTestEmail);
