@@ -40,6 +40,7 @@ import { sendTestMail } from "./services/mailService.js";
 import { promoAdminController } from "./controlleurs/promoAdminController.js";
 import { guestOrderController } from './controlleurs/guestOrderController.js';
 import { emailManagementControlleur } from './controlleurs/emailManagementController.js';
+import { adminClientController } from './controlleurs/adminClientController.js';
 
 
 // CONTROLLERS EMAIL - CHOISISSEZ UN SEUL SYSTÈME
@@ -1859,7 +1860,8 @@ router.post('/favoris/supprimer/:jewelId', isAuthenticated, async (req, res, nex
 // ==========================================
 
 router.get('/admin/stats', isAdmin, adminStatsController.dashboard);
-router.get('/admin/suivi-client', isAdmin, adminStatsController.getAllClientsStats);
+router.get('/admin/suivi-client', isAdmin, adminClientController.showClientManagement); // ✅ CORRECT
+
 router.get("/admin/produits", isAdmin, adminStatsController.ShowPageProducts);
 router.get('/admin/bijoux', isAdmin, adminStatsController.findAll);
 router.get('/admin/ajouter-bijou', isAdmin, adminStatsController.create);
@@ -3088,33 +3090,33 @@ const requireAdmin = (req, res, next) => {
 };
 
 // 📊 Page principale d'administration des codes promo
-router.get('/admin/promos', requireAdmin, promoAdminController.renderAdminPage);
+router.get('/admin/promos', isAdmin, promoAdminController.renderAdminPage);
 
 // 📝 Page de création d'un nouveau code promo
-router.get('/admin/promos/create', requireAdmin, promoAdminController.renderCreatePage);
+router.get('/admin/promos/create', isAdmin, promoAdminController.renderCreatePage);
 
 // ➕ Traitement de la création d'un code promo
-router.post('/admin/promos/create', requireAdmin, promoAdminController.createPromo);
+router.post('/admin/promos/create', isAdmin, promoAdminController.createPromo);
 
 // 📝 Page d'édition d'un code promo
-router.get('/admin/promos/:id/edit', requireAdmin, promoAdminController.renderEditPage);
+router.get('/admin/promos/:id/edit', isAdmin, promoAdminController.renderEditPage);
 
 // ✏️ Traitement de la modification d'un code promo
-router.post('/admin/promos/:id/edit', requireAdmin, promoAdminController.updatePromo);
+router.post('/admin/promos/:id/edit', isAdmin, promoAdminController.updatePromo);
 
 // 📊 Page de détails d'un code promo
-router.get('/admin/promos/:id', requireAdmin, promoAdminController.renderDetailsPage);
+router.get('/admin/promos/:id', isAdmin, promoAdminController.renderDetailsPage);
 
 // 🗑️ Suppression d'un code promo
-router.post('/admin/promos/:id/delete', requireAdmin, promoAdminController.deletePromo);
+router.post('/admin/promos/:id/delete', isAdmin, promoAdminController.deletePromo);
 
 // 📊 Export CSV des données
-router.get('/admin/promos/export', requireAdmin, promoAdminController.exportData);
+router.get('/admin/promos/export', isAdmin, promoAdminController.exportData);
 
-router.delete('/admin/promos/:id', requireAdmin, promoAdminController.deletePromo);
+router.delete('/admin/promos/:id', isAdmin, promoAdminController.deletePromo);
 
 // 📊 API JSON pour AJAX (optionnel - garde compatibilité)
-router.get('/api/admin/promos/stats', requireAdmin, async (req, res) => {
+router.get('/api/admin/promos/stats', isAdmin, async (req, res) => {
   try {
     const stats = await promoAdminController.getPromoStats();
     res.json({ success: true, stats });
@@ -3470,14 +3472,8 @@ router.get('/guest/orders/:email', async (req, res) => {
   }
 });
 
-router.post('/admin/repair-emails', async (req, res) => {
-    try {
-        await repairMissingEmails();
-        res.json({ success: true, message: 'Emails réparés' });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
+router.post('/admin/emails/repair', isAdmin, adminEmailController.repairMissingEmails);
+
 
 // router.post('/admin/materials/add', isAdmin, jewelControlleur.addMaterial);
 // router.post('/admin/types/add', isAdmin, jewelControlleur.addType);
@@ -3810,6 +3806,49 @@ router.post('/admin/upload/image', isAdmin, upload.single('image'), async (req, 
     });
   }
 });
+
+router.get('/admin/suivi-client', isAdmin, adminClientController.showClientManagement);
+
+// 📝 Ajouter un client
+router.post('/admin/clients/add', isAdmin, adminClientController.addClient);
+
+// ✏️ Modifier un client
+router.put('/admin/clients/:id', isAdmin, adminClientController.updateClient);
+router.post('/admin/clients/:id/update', isAdmin, adminClientController.updateClient); // Fallback pour formulaires
+
+// 🗑️ Supprimer un client
+router.delete('/admin/clients/:id', isAdmin, adminClientController.deleteClient);
+router.post('/admin/clients/:id/delete', isAdmin, adminClientController.deleteClient); // Fallback pour formulaires
+
+// 👁️ Détails d'un client
+router.get('/admin/clients/:id', isAdmin, adminClientController.getClientDetails);
+
+// 📈 Export des clients
+router.get('/admin/clients/export', isAdmin, adminClientController.exportClients);
+
+
+// Import du contrôleur email
+import { adminEmailController } from './controlleurs/adminEmailController.js';
+
+// ========================================
+// 📧 ROUTES EMAIL MANAGEMENT
+// ========================================
+
+// Page principale de gestion des emails
+router.get('/admin/emails', isAdmin, adminEmailController.showEmailManagement);
+
+// Envoyer un email de test
+router.post('/admin/emails/test', isAdmin, adminEmailController.sendTestEmail);
+
+// Réparer les emails manquants
+router.post('/admin/emails/repair', isAdmin, adminEmailController.repairMissingEmails);
+
+// Renvoyer un email pour une commande
+router.post('/admin/emails/resend', isAdmin, adminEmailController.resendOrderEmail);
+
+// Export des logs d'emails
+router.get('/admin/emails/export', isAdmin, adminEmailController.exportEmailLogs);
+
 
 // Export par défaut
 export default router;
