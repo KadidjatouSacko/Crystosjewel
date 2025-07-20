@@ -456,20 +456,27 @@ calculateStatusStats(orders) {
 
 
 getPaymentMethodDisplay(paymentMethod) {
+    console.log(`💳 Conversion méthode paiement: "${paymentMethod}"`);
+    
     const methods = {
         'card': 'Carte bancaire',
         'credit_card': 'Carte bancaire',
         'debit_card': 'Carte de débit',
         'paypal': 'PayPal',
+        'apple': 'Apple Pay',           // ✅ CORRECTION: 'apple' au lieu de 'apple_pay'
+        'apple_pay': 'Apple Pay',       // ✅ GARDER AUSSI POUR COMPATIBILITÉ
+        'google': 'Google Pay',         // ✅ CORRECTION: 'google' au lieu de 'google_pay'
+        'google_pay': 'Google Pay',     // ✅ GARDER AUSSI POUR COMPATIBILITÉ
         'bank_transfer': 'Virement bancaire',
         'check': 'Chèque',
         'cash': 'Espèces',
-        'apple_pay': 'Apple Pay',
-        'google_pay': 'Google Pay',
         'stripe': 'Stripe',
         'klarna': 'Klarna'
     };
-    return methods[paymentMethod] || 'Carte bancaire';
+    
+    const result = methods[paymentMethod] || 'Carte bancaire';
+    console.log(`💳 Résultat: "${result}"`);
+    return result;
 },
 
 async getDashboardData(period = 'month') {
@@ -616,7 +623,7 @@ async getDashboardData(period = 'month') {
         };
 
         // ✅ REQUÊTE CORRIGÉE pour récupérer les commandes avec gestion des invités
-        const ordersQuery = `
+  const ordersQuery = `
     SELECT 
         o.id,
         o.numero_commande,
@@ -638,147 +645,229 @@ async getDashboardData(period = 'month') {
         COALESCE(o.payment_status, 'paid') as payment_status,
         
         o.total,
-        -- ... autres colonnes
+        COALESCE(o.original_total, o.total) as original_total,
+        o.promo_code,
+        COALESCE(o.discount_amount, 0) as discount_amount,
+        COALESCE(o.discount_percent, 0) as discount_percent,
+        COALESCE(o.promo_discount_amount, 0) as promo_discount_amount,
+        COALESCE(o.promo_discount_percent, 0) as promo_discount_percent,
+        COALESCE(o.promo_discount, 0) as promo_discount,
+        COALESCE(o.shipping_method, 'Standard') as shipping_method,
+        COALESCE(o.status, o.status_suivi, 'waiting') as status,
+        o.tracking_number,
+        c.phone,
+        o.shipping_address,
+        o.shipping_city,
+        o.notes,
+        o.customer_id,
+        o.is_guest_order,
+        
+        -- ✅ INFORMATIONS TAILLES ET ARTICLES AVEC NOUVELLES COLONNES
+        (
+            SELECT JSON_AGG(
+                JSON_BUILD_OBJECT(
+                    'nom_article', COALESCE(oi.jewel_name, j.name, jw.name, 'Article'),
+                    'taille', COALESCE(oi.size, 'Standard'),
+                    'quantite', COALESCE(oi.quantity, 1),
+                    'prix', COALESCE(oi.price, j.price_ttc, jw.price_ttc, 0),
+                    'matiere', COALESCE(j.matiere, jw.matiere, ''),
+                    'image', COALESCE(oi.jewel_image, j.image, jw.image, '/images/placeholder.jpg')
+                )
+                ORDER BY oi.id
+            )
+            FROM order_items oi
+            LEFT JOIN jewel j ON oi.jewel_id = j.id
+            LEFT JOIN jewels jw ON oi.jewel_id = jw.id
+            WHERE oi.order_id = o.id
+        ) as articles_details,
+        
+        -- ✅ Fallback amélioré : ORDER_HAS_JEWEL si ORDER_ITEMS est vide
+        (
+            SELECT JSON_AGG(
+                JSON_BUILD_OBJECT(
+                    'nom_article', COALESCE(j.name, jw.name, 'Article'),
+                    'taille', 'Standard',
+                    'quantite', COALESCE(ohj.quantity, 1),
+                    'prix', COALESCE(ohj.unit_price, j.price_ttc, jw.price_ttc, 0),
+                    'matiere', COALESCE(j.matiere, jw.matiere, ''),
+                    'image', COALESCE(j.image, jw.image, '/images/placeholder.jpg')
+                )
+                ORDER BY ohj.jewel_id
+            )
+            FROM order_has_jewel ohj
+            LEFT JOIN jewel j ON ohj.jewel_id = j.id
+            LEFT JOIN jewels jw ON ohj.jewel_id = jw.id
+            WHERE ohj.order_id = o.id
+        ) as articles_details_fallback,
+        
+        -- ✅ COMPTER LES ARTICLES AVEC TAILLES SPÉCIFIÉES (exclut "Standard")
+        (
+            SELECT COUNT(*)
+            FROM order_items oi
+            WHERE oi.order_id = o.id
+            AND oi.size IS NOT NULL 
+            AND oi.size NOT IN ('Standard', '', 'Non spécifiée', 'null')
+        ) as articles_avec_tailles,
+        
+        -- ✅ COMPTER LE TOTAL D'ARTICLES
+        (
+            SELECT COUNT(*)
+            FROM order_items oi
+            WHERE oi.order_id = o.id
+        ) as total_articles_order_items,
+        
+        -- Fallback count pour ORDER_HAS_JEWEL
+        (
+            SELECT COUNT(*)
+            FROM order_has_jewel ohj
+            WHERE ohj.order_id = o.id
+        ) as total_articles_fallback
         
     FROM orders o
     LEFT JOIN customer c ON o.customer_id = c.id
-    WHERE 1=1
     ORDER BY COALESCE(o.created_at, o.order_date, NOW()) DESC
     LIMIT 100
 `;
 
+
         const [ordersResult] = await sequelize.query(ordersQuery);
         
-        // ✅ FORMATAGE DES COMMANDES avec corrections pour les invités
-        const commandes = ordersResult.map(order => {
-            console.log(`📋 Traitement commande #${order.id} ${order.is_guest_order ? '(Invité)' : '(Connecté)'}`);
+        // Formatage des commandes avec gestion des méthodes de paiement
+const commandes = ordersResult.map(order => {
+    console.log(`📋 Traitement commande #${order.id} ${order.is_guest_order ? '(Invité)' : '(Connecté)'}`);
 
-            // ✅ FIX DATES - Protection contre les dates invalides
-            const dateCommande = new Date(order.created_at_safe);
-            const isValidDate = !isNaN(dateCommande.getTime());
-            
-            const formattedDate = isValidDate 
-                ? dateCommande.toLocaleDateString('fr-FR')
-                : new Date().toLocaleDateString('fr-FR');
-            
-            const formattedDateTime = isValidDate
-                ? dateCommande.toLocaleString('fr-FR') 
-                : new Date().toLocaleString('fr-FR');
+    // ✅ FIX DATES - Protection contre les dates invalides
+    const dateCommande = new Date(order.created_at_safe);
+    const isValidDate = !isNaN(dateCommande.getTime());
+    
+    const formattedDate = isValidDate 
+        ? dateCommande.toLocaleDateString('fr-FR')
+        : new Date().toLocaleDateString('fr-FR');
+    
+    const formattedDateTime = isValidDate
+        ? dateCommande.toLocaleString('fr-FR') 
+        : new Date().toLocaleString('fr-FR');
 
-            // Calculs financiers
-            const originalAmount = parseFloat(order.original_total) || parseFloat(order.total) || 0;
-            const discountAmount = Math.max(
-                parseFloat(order.discount_amount) || 0,
-                parseFloat(order.promo_discount_amount) || 0,
-                parseFloat(order.promo_discount) || 0
-            );
-            const discountPercent = Math.max(
-                parseInt(order.discount_percent) || 0,
-                parseInt(order.promo_discount_percent) || 0
-            );
-            const finalAmount = parseFloat(order.total) || 0;
-            
-            const calculatedOriginal = discountAmount > 0 && originalAmount === finalAmount 
-                ? finalAmount + discountAmount 
-                : originalAmount;
+    // Calculs financiers
+    const originalAmount = parseFloat(order.original_total) || parseFloat(order.total) || 0;
+    const discountAmount = Math.max(
+        parseFloat(order.discount_amount) || 0,
+        parseFloat(order.promo_discount_amount) || 0,
+        parseFloat(order.promo_discount) || 0
+    );
+    const discountPercent = Math.max(
+        parseInt(order.discount_percent) || 0,
+        parseInt(order.promo_discount_percent) || 0
+    );
+    const finalAmount = parseFloat(order.total) || 0;
+    
+    const calculatedOriginal = discountAmount > 0 && originalAmount === finalAmount 
+        ? finalAmount + discountAmount 
+        : originalAmount;
 
-            // ✅ TRAITEMENT DES ARTICLES ET TAILLES AMÉLIORÉ
-            let articlesDetails = [];
-            let totalArticles = 0;
-            let articlesAvecTailles = 0;
+    // ✅ TRAITEMENT DES ARTICLES ET TAILLES AMÉLIORÉ
+    let articlesDetails = [];
+    let totalArticles = 0;
+    let articlesAvecTailles = 0;
 
-            // Priorité 1: order_items (plus récent et complet avec nouvelles colonnes)
-            if (order.articles_details && Array.isArray(order.articles_details)) {
-                articlesDetails = order.articles_details;
-                totalArticles = parseInt(order.total_articles_order_items) || 0;
-                articlesAvecTailles = parseInt(order.articles_avec_tailles) || 0;
-                console.log(`   📦 ${totalArticles} articles depuis order_items, ${articlesAvecTailles} avec tailles spécifiées`);
-            }
-            // Fallback: order_has_jewel (ancien système)
-            else if (order.articles_details_fallback && Array.isArray(order.articles_details_fallback)) {
-                articlesDetails = order.articles_details_fallback;
-                totalArticles = parseInt(order.total_articles_fallback) || 0;
-                articlesAvecTailles = 0; // Ancien système sans tailles
-                console.log(`   📦 ${totalArticles} articles depuis order_has_jewel (fallback)`);
-            }
+    // Priorité 1: order_items (plus récent et complet avec nouvelles colonnes)
+    if (order.articles_details && Array.isArray(order.articles_details)) {
+        articlesDetails = order.articles_details;
+        totalArticles = parseInt(order.total_articles_order_items) || 0;
+        articlesAvecTailles = parseInt(order.articles_avec_tailles) || 0;
+        console.log(`   📦 ${totalArticles} articles depuis order_items, ${articlesAvecTailles} avec tailles spécifiées`);
+    }
+    // Fallback: order_has_jewel (ancien système)
+    else if (order.articles_details_fallback && Array.isArray(order.articles_details_fallback)) {
+        articlesDetails = order.articles_details_fallback;
+        totalArticles = parseInt(order.total_articles_fallback) || 0;
+        articlesAvecTailles = 0; // Ancien système sans tailles
+        console.log(`   📦 ${totalArticles} articles depuis order_has_jewel (fallback)`);
+    }
 
-            // Calculer la couverture des tailles
-            const pourcentageCouverture = totalArticles > 0 ? 
-                Math.round((articlesAvecTailles / totalArticles) * 100) : 0;
+    // Calculer la couverture des tailles
+    const pourcentageCouverture = totalArticles > 0 ? 
+        Math.round((articlesAvecTailles / totalArticles) * 100) : 0;
 
-            // ✅ CRÉER L'AFFICHAGE DES TAILLES AMÉLIORÉ
-            let affichageTailles = 'Tailles standards';
-            let detailTailles = [];
+    // ✅ CRÉER L'AFFICHAGE DES TAILLES AMÉLIORÉ
+    let affichageTailles = 'Tailles standards';
+    let detailTailles = [];
 
-            if (articlesDetails && articlesDetails.length > 0) {
-                // Filtrer les tailles spécifiées (exclut "Standard")
-                detailTailles = articlesDetails
-                    .filter(article => article.taille && article.taille !== 'Standard' && article.taille !== 'Non spécifiée')
-                    .map(article => `${article.nom_article} (${article.taille})`);
-                
-                if (detailTailles.length > 0) {
-                    affichageTailles = detailTailles.length <= 2 
-                        ? detailTailles.join(', ')
-                        : `${detailTailles.slice(0, 2).join(', ')} +${detailTailles.length - 2}`;
-                } else if (totalArticles > 0) {
-                    // Tous les articles sont en taille standard
-                    affichageTailles = `${totalArticles} article(s) - Standard`;
-                }
-            }
+    if (articlesDetails && articlesDetails.length > 0) {
+        // Filtrer les tailles spécifiées (exclut "Standard")
+        detailTailles = articlesDetails
+            .filter(article => article.taille && article.taille !== 'Standard' && article.taille !== 'Non spécifiée')
+            .map(article => `${article.nom_article} (${article.taille})`);
+        
+        if (detailTailles.length > 0) {
+            affichageTailles = detailTailles.length <= 2 
+                ? detailTailles.join(', ')
+                : `${detailTailles.slice(0, 2).join(', ')} +${detailTailles.length - 2}`;
+        } else if (totalArticles > 0) {
+            // Tous les articles sont en taille standard
+            affichageTailles = `${totalArticles} article(s) - Standard`;
+        }
+    }
 
-            // ✅ CRÉER L'OBJET SIZESINFO POUR LA VUE
-            const sizesInfo = {
-                totalItems: totalArticles,
-                itemsWithSizes: articlesAvecTailles,
-                sizesDisplay: affichageTailles,
-                hasSizeInfo: articlesAvecTailles > 0,
-                sizesCoverage: pourcentageCouverture,
-                detailArticles: articlesDetails || []
-            };
+    // ✅ CRÉER L'OBJET SIZESINFO POUR LA VUE
+    const sizesInfo = {
+        totalItems: totalArticles,
+        itemsWithSizes: articlesAvecTailles,
+        sizesDisplay: affichageTailles,
+        hasSizeInfo: articlesAvecTailles > 0,
+        sizesCoverage: pourcentageCouverture,
+        detailArticles: articlesDetails || []
+    };
 
-            // ✅ DÉTERMINER LE STATUT DES TAILLES
-            let sizesStatus;
-            if (totalArticles === 0) {
-                sizesStatus = '❓ En développement';
-            } else if (pourcentageCouverture === 100) {
-                sizesStatus = '🎯 Complète';
-            } else if (pourcentageCouverture > 0) {
-                sizesStatus = '📏 Partielle';
-            } else {
-                sizesStatus = '📐 Standard';
-            }
+    // ✅ DÉTERMINER LE STATUT DES TAILLES
+    let sizesStatus;
+    if (totalArticles === 0) {
+        sizesStatus = '❓ En développement';
+    } else if (pourcentageCouverture === 100) {
+        sizesStatus = '🎯 Complète';
+    } else if (pourcentageCouverture > 0) {
+        sizesStatus = '📏 Partielle';
+    } else {
+        sizesStatus = '📐 Standard';
+    }
 
-            return {
-                id: order.id,
-                numero_commande: order.numero_commande || `CMD-${order.id}`,
-                date: formattedDate,
-                dateTime: formattedDateTime,
-                customerName: order.customer_name,
-                customerEmail: order.customer_email,
-                amount: finalAmount,
-                originalAmount: calculatedOriginal,
-                deliveryMode: order.shipping_method,
-                status: adminOrdersController.normalizeStatus(order.status),
-                trackingNumber: order.tracking_number,
-                phone: order.phone,
-                shippingAddress: order.shipping_address,
-                shippingCity: order.shipping_city,
-                notes: order.notes,
-                isGuestOrder: order.is_guest_order,
-                
-                // Codes promo
-                promo_code: order.promo_code,
-                discount_amount: discountAmount,
-                discount_percent: discountPercent,
-                hasDiscount: discountAmount > 0 || order.promo_code,
-                savings: discountAmount,
-                
-                // ✅ INFORMATIONS TAILLES COMPLÈTES
-                sizesInfo: sizesInfo,
-                sizesStatus: sizesStatus,
-                articlesDetails: articlesDetails
-            };
-        });
+    return {
+        id: order.id,
+        numero_commande: order.numero_commande || `CMD-${order.id}`,
+        date: formattedDate,
+        dateTime: formattedDateTime,
+        customerName: order.customer_name,
+        customerEmail: order.customer_email,
+        amount: finalAmount,
+        originalAmount: calculatedOriginal,
+        deliveryMode: order.shipping_method,
+        status: adminOrdersController.normalizeStatus(order.status),
+        trackingNumber: order.tracking_number,
+        phone: order.phone,
+        shippingAddress: order.shipping_address,
+        shippingCity: order.shipping_city,
+        notes: order.notes,
+        isGuestOrder: order.is_guest_order,
+        
+        // ✅ INFORMATIONS PAIEMENT CORRECTES
+        payment_method: order.payment_method,
+        payment_method_display: adminOrdersController.getPaymentMethodDisplay(order.payment_method),
+        payment_status: order.payment_status,
+        
+        // Codes promo
+        promo_code: order.promo_code,
+        discount_amount: discountAmount,
+        discount_percent: discountPercent,
+        hasDiscount: discountAmount > 0 || order.promo_code,
+        savings: discountAmount,
+        
+        // ✅ INFORMATIONS TAILLES COMPLÈTES
+        sizesInfo: sizesInfo,
+        sizesStatus: sizesStatus,
+        articlesDetails: articlesDetails
+    };
+});
+
 
         console.log(`✅ ${commandes.length} commandes traitées avec informations de tailles`);
 
@@ -1201,23 +1290,7 @@ history = historyResult.map(h => ({
     }
 },
 
-// ✅ FONCTION HELPER POUR LES MÉTHODES DE PAIEMENT
-getPaymentMethodDisplay(paymentMethod) {
-    const methods = {
-        'card': 'Carte bancaire',
-        'credit_card': 'Carte bancaire',
-        'debit_card': 'Carte de débit',
-        'paypal': 'PayPal',
-        'apple_pay': 'Apple Pay',
-        'google_pay': 'Google Pay',
-        'bank_transfer': 'Virement bancaire',
-        'check': 'Chèque',
-        'cash': 'Espèces',
-        'stripe': 'Stripe',
-        'klarna': 'Klarna'
-    };
-    return methods[paymentMethod] || 'Carte bancaire';
-},
+
 
     // ========================================
     // ✏️ MODIFICATION D'UNE COMMANDE
@@ -1225,204 +1298,151 @@ getPaymentMethodDisplay(paymentMethod) {
 
 async updateOrder(req, res) {
     const orderId = req.params.id;
-    const { status, tracking_number, notes } = req.body;
+    const { status, tracking_number, notes, internal_notes } = req.body;
     
     try {
-        console.log(`🔄 Mise à jour commande ${orderId}:`, { status, tracking_number, notes });
-
-        // ✅ REQUÊTE MINIMALE - SEULEMENT LES COLONNES QUI EXISTENT
-        const existingOrderQuery = `
-            SELECT 
-                o.*,
-                c.email as customer_table_email,
-                c.first_name,
-                c.last_name,
-                c.phone as customer_table_phone
-            FROM orders o
-            LEFT JOIN customer c ON o.customer_id = c.id
-            WHERE o.id = $1
-        `;
-        
-        console.log('📋 Récupération commande existante...');
-        
-        const [existingResult] = await sequelize.query(existingOrderQuery, { 
-            bind: [orderId]
+        console.log(`🔄 Mise à jour commande ${orderId}:`, {
+            status,
+            tracking_number,
+            notes: notes?.substring(0, 50) + '...',
+            internal_notes: internal_notes?.substring(0, 50) + '...'
         });
-        
-        if (!existingResult || existingResult.length === 0) {
-            console.error(`❌ Commande ${orderId} non trouvée`);
+
+        // ✅ RÉCUPÉRER L'ANCIEN STATUT ET NOTES
+        const [existingOrder] = await sequelize.query(`
+            SELECT 
+                status, 
+                status_suivi, 
+                notes, 
+                internal_notes,
+                tracking_number,
+                customer_email,
+                customer_name
+            FROM orders 
+            WHERE id = $1
+        `, { bind: [orderId] });
+
+        if (existingOrder.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Commande non trouvée'
             });
         }
 
-        const existingOrder = existingResult[0];
-        const oldStatus = existingOrder.status || 'pending';
-        
-        // ✅ CONSTRUCTION SÉCURISÉE DE L'EMAIL
-        let customerEmail = 'Email non renseigné';
-        if (existingOrder.customer_email) {
-            customerEmail = existingOrder.customer_email;
-        } else if (existingOrder.customer_table_email) {
-            customerEmail = existingOrder.customer_table_email;
-        }
-        
-        // ✅ CONSTRUCTION SÉCURISÉE DU NOM
-        let customerName = 'Client inconnu';
-        if (existingOrder.customer_name) {
-            customerName = existingOrder.customer_name;
-        } else if (existingOrder.first_name && existingOrder.last_name) {
-            customerName = `${existingOrder.first_name} ${existingOrder.last_name}`;
-        }
+        const currentOrder = existingOrder[0];
+        const oldStatus = currentOrder.status || currentOrder.status_suivi;
+        const statusChanged = status !== oldStatus;
+        const notesChanged = notes !== currentOrder.notes;
+        const internalNotesChanged = internal_notes !== currentOrder.internal_notes;
+        const trackingChanged = tracking_number !== currentOrder.tracking_number;
 
-        console.log(`📧 Email client: "${customerEmail}"`);
-        console.log(`👤 Nom client: "${customerName}"`);
-        console.log(`🔄 Changement statut: "${oldStatus}" → "${status}"`);
-
-        // ✅ MISE À JOUR EN BASE DE DONNÉES
         await sequelize.transaction(async (t) => {
-            // Mise à jour de la commande
+            // ✅ MISE À JOUR DE LA COMMANDE AVEC TOUTES LES NOTES
             await sequelize.query(`
                 UPDATE orders 
                 SET 
                     status = $2,
+                    status_suivi = $2,
                     tracking_number = $3,
                     notes = $4,
-                    updated_at = CURRENT_TIMESTAMP
+                    internal_notes = $5,
+                    updated_at = NOW() AT TIME ZONE 'Europe/Paris'
                 WHERE id = $1
             `, {
-                bind: [orderId, status, tracking_number || null, notes || null],
+                bind: [orderId, status, tracking_number || null, notes || null, internal_notes || null],
                 transaction: t
             });
 
-            console.log(`✅ Commande ${orderId} mise à jour en base`);
+            // ✅ ENREGISTRER DANS L'HISTORIQUE POUR CHAQUE MODIFICATION AVEC TIMEZONE
+                const adminName = req.session?.user?.first_name || 
+                  req.session?.user?.name || 
+                  req.session?.user?.email?.split('@')[0] || 
+                  (req.session?.customerId ? `User-${req.session.customerId}` : 'Admin');
 
-            // ✅ HISTORIQUE (OPTIONNEL)
-            if (status !== oldStatus) {
-                const adminName = req.session?.user?.email || req.session?.user?.name || 'Admin';
-                
-                try {
-                    await sequelize.query(`
-                        INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
-                        VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
-                    `, {
-                        bind: [
-                            orderId, 
-                            oldStatus, 
-                            status, 
-                            `Statut: ${oldStatus} → ${status}${notes ? `. Notes: ${notes}` : ''}`, 
-                            adminName
-                        ],
-                        transaction: t
-                    });
-                    console.log('✅ Historique ajouté');
-                } catch (historyError) {
-                    console.warn('⚠️ Historique non ajouté (table inexistante):', historyError.message);
-                }
+                console.log(`👤 Modification par: ${adminName}`, {
+                    session_user: req.session?.user,
+                    customerId: req.session?.customerId
+                });
+
+            // Changement de statut
+            if (statusChanged) {
+                await sequelize.query(`
+                    INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
+                    VALUES ($1, $2, $3, $4, $5, NOW() AT TIME ZONE 'Europe/Paris')
+                `, {
+                    bind: [
+                        orderId, 
+                        oldStatus, 
+                        status, 
+                        `Statut modifié: ${oldStatus} → ${status}`,
+                        adminName
+                    ],
+                    transaction: t
+                });
+            }
+
+            // ✅ MODIFICATION DES NOTES CLIENTS
+            if (notesChanged) {
+    const noteText = notes ? `Notes client modifiées: "${notes}"` : 'Notes client supprimées';
+    await sequelize.query(`
+        INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
+        VALUES ($1, $2, $3, $4, $5, NOW() AT TIME ZONE 'Europe/Paris')
+    `, {
+        bind: [orderId, status, status, noteText, adminName],
+        transaction: t
+    });
+}
+
+// ✅ MODIFICATION DES NOTES INTERNES (VERSION CORRIGÉE)
+if (internalNotesChanged) {
+    const internalNoteText = internal_notes ? `Notes internes modifiées: "${internal_notes}"` : 'Notes internes supprimées';
+    await sequelize.query(`
+        INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
+        VALUES ($1, $2, $3, $4, $5, NOW() AT TIME ZONE 'Europe/Paris')
+    `, {
+        bind: [orderId, status, status, internalNoteText, adminName],
+        transaction: t
+    });
+}
+
+            // ✅ MODIFICATION DU TRACKING
+            if (trackingChanged && tracking_number) {
+                await sequelize.query(`
+                    INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
+                    VALUES ($1, $2, $3, $4, $5, NOW() AT TIME ZONE 'Europe/Paris')
+                `, {
+                    bind: [
+                        orderId, 
+                        status, 
+                        status, 
+                        `Numéro de suivi ajouté: ${tracking_number}`,
+                        adminName
+                    ],
+                    transaction: t
+                });
             }
         });
 
-        console.log(`✅ Commande ${orderId} mise à jour: ${oldStatus} → ${status}`);
-
-        // ✅ ENVOI DES NOTIFICATIONS (OPTIONNEL)
-        let notificationResults = {
-            email: { success: false, message: 'Pas de changement' },
-            sms: { success: false, message: 'Pas de changement' },
-            success: false
-        };
-        
-        if (status !== oldStatus && customerEmail && customerEmail !== 'Email non renseigné' && customerEmail.includes('@')) {
-            try {
-                console.log('📧📱 Tentative envoi notifications...');
-                
-                // Import dynamique pour éviter les erreurs
-                const { sendStatusChangeNotifications } = await import('../services/mailService.js');
-                
-                const orderData = {
-                    id: existingOrder.id,
-                    numero_commande: existingOrder.numero_commande || `CMD-${existingOrder.id}`,
-                    tracking_number: tracking_number || existingOrder.tracking_number,
-                    total: existingOrder.total,
-                    customer_name: customerName
-                };
-
-                const statusChangeData = {
-                    oldStatus,
-                    newStatus: status,
-                    updatedBy: req.session?.user?.email || 'Admin'
-                };
-
-                const customerData = {
-                    userEmail: customerEmail,
-                    firstName: existingOrder.first_name || customerName.split(' ')[0] || 'Client',
-                    lastName: existingOrder.last_name || customerName.split(' ').slice(1).join(' ') || '',
-                    phone: existingOrder.customer_table_phone
-                };
-
-                notificationResults = await sendStatusChangeNotifications(orderData, statusChangeData, customerData);
-                
-                console.log('📊 Résultats notifications:', {
-                    email: notificationResults.email.success ? '✅' : '❌',
-                    sms: notificationResults.sms.success ? '✅' : '❌'
-                });
-                
-            } catch (notificationError) {
-                console.error('⚠️ Erreur notifications (non bloquante):', notificationError);
-                notificationResults = {
-                    email: { success: false, error: notificationError.message },
-                    sms: { success: false, error: notificationError.message },
-                    success: false
-                };
-            }
-        } else {
-            console.log('⚠️ Notifications non envoyées:', {
-                statusChanged: status !== oldStatus,
-                hasValidEmail: customerEmail && customerEmail.includes('@'),
-                emailValue: customerEmail
-            });
-        }
-
-        // ✅ RÉPONSE SIMPLE ET COMPLÈTE
-        const response = {
+        res.json({
             success: true,
             message: 'Commande mise à jour avec succès',
-            data: {
-                order: {
-                    id: existingOrder.id,
-                    numero_commande: existingOrder.numero_commande,
-                    status: status,
-                    tracking_number: tracking_number || existingOrder.tracking_number,
-                    customer_email: customerEmail,
-                    customer_name: customerName
-                },
-                statusChanged: status !== oldStatus,
-                notifications: {
-                    emailSent: notificationResults.email.success,
-                    smsSent: notificationResults.sms.success,
-                    anyNotificationSent: notificationResults.success
-                }
+            changes: {
+                status: statusChanged,
+                notes: notesChanged,
+                internal_notes: internalNotesChanged,
+                tracking: trackingChanged
             }
-        };
-
-        console.log('✅ Réponse envoyée:', response.message);
-        res.json(response);
+        });
 
     } catch (error) {
         console.error('❌ Erreur mise à jour commande:', error);
-        console.error('❌ SQL:', error.sql);
-        
         res.status(500).json({
             success: false,
-            message: 'Erreur lors de la mise à jour: ' + error.message,
-            debug: process.env.NODE_ENV === 'development' ? {
-                error: error.message,
-                sql: error.sql,
-                orderId: orderId
-            } : undefined
+            message: 'Erreur lors de la mise à jour: ' + error.message
         });
     }
 },
+
 
 // ========================================
 // 5. SCRIPT DE RÉPARATION DES EMAILS
@@ -1610,22 +1630,29 @@ async sendStatusChangeEmail(order, oldStatus, newStatus, updatedBy) {
         }
     },
 
-     getPaymentMethodDisplay(paymentMethod) {
-        const methods = {
-            'card': 'Carte bancaire',
-            'credit_card': 'Carte bancaire',
-            'debit_card': 'Carte de débit',
-            'paypal': 'PayPal',
-            'bank_transfer': 'Virement bancaire',
-            'check': 'Chèque',
-            'cash': 'Espèces',
-            'apple_pay': 'Apple Pay',
-            'google_pay': 'Google Pay',
-            'stripe': 'Stripe',
-            'klarna': 'Klarna'
-        };
-        return methods[paymentMethod] || 'Carte bancaire';
-    },
+    getPaymentMethodDisplay(paymentMethod) {
+    console.log(`💳 Conversion méthode paiement: "${paymentMethod}"`);
+    
+    const methods = {
+        'card': 'Carte bancaire',
+        'credit_card': 'Carte bancaire',
+        'debit_card': 'Carte de débit',
+        'paypal': 'PayPal',
+        'apple': 'Apple Pay',           // ✅ CORRECTION: 'apple' au lieu de 'apple_pay'
+        'apple_pay': 'Apple Pay',       // ✅ GARDER AUSSI POUR COMPATIBILITÉ
+        'google': 'Google Pay',         // ✅ CORRECTION: 'google' au lieu de 'google_pay'
+        'google_pay': 'Google Pay',     // ✅ GARDER AUSSI POUR COMPATIBILITÉ
+        'bank_transfer': 'Virement bancaire',
+        'check': 'Chèque',
+        'cash': 'Espèces',
+        'stripe': 'Stripe',
+        'klarna': 'Klarna'
+    };
+    
+    const result = methods[paymentMethod] || 'Carte bancaire';
+    console.log(`💳 Résultat: "${result}"`);
+    return result;
+},
 
     // ========================================
     // 📊 EXPORT CSV

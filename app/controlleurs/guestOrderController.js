@@ -154,6 +154,7 @@ async validateOrder(req, res) {
     const isGuest = !userId;
 
     console.log('👤 Type utilisateur:', isGuest ? 'Invité' : 'Connecté', `(ID: ${userId || 'N/A'})`);
+    console.log('💳 Méthode paiement reçue:', paymentMethod);
 
     // ========================================
     // 🔍 ÉTAPE 1: RÉCUPÉRER LES INFORMATIONS CLIENT
@@ -347,7 +348,7 @@ async validateOrder(req, res) {
       discount_amount: discount,
       promo_discount: discount,
       
-      // Paiement
+      // ✅ PAIEMENT CORRIGÉ
       payment_method: paymentMethod || 'card',
       payment_status: 'pending',
       
@@ -367,6 +368,8 @@ async validateOrder(req, res) {
       created_at: new Date(),
       updated_at: new Date()
     };
+
+    console.log(`💳 Sauvegarde payment_method: "${paymentMethod}" pour commande`);
 
     const order = await Order.create(orderData, { transaction });
     console.log('✅ Commande créée avec ID:', order.id);
@@ -506,6 +509,7 @@ async validateOrder(req, res) {
     console.log(`   👤 Client: ${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`);
     console.log(`   📧 Email: ${finalCustomerInfo.email}`);
     console.log(`   📦 Articles: ${cartDetails.items.length}`);
+    console.log(`   💳 Paiement: ${paymentMethod}`);
     if (appliedPromo) {
       console.log(`   🎫 Promo: ${appliedPromo.code} (-${discount.toFixed(2)}€)`);
     }
@@ -523,7 +527,8 @@ async validateOrder(req, res) {
         total: finalTotal,
         isGuest: isGuest,
         itemsCount: cartDetails.items.length,
-        hasPromo: !!appliedPromo
+        hasPromo: !!appliedPromo,
+        payment_method: paymentMethod
       },
       redirectUrl: `/commande/confirmation?orderId=${order.id}&orderNumber=${orderNumber}`
     });
@@ -554,6 +559,7 @@ async validateOrder(req, res) {
     });
   }
 },
+
 
 
   /**

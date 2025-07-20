@@ -99,17 +99,23 @@ function getTimeAgo(dateString) {
 }
 
 // ✅ FONCTION POUR AFFICHER LE MODE DE PAIEMENT
+<%
 function getPaymentMethodDisplay(paymentMethod) {
     const methods = {
         'card': 'Carte bancaire',
-        'credit_card': 'Carte bancaire', 
-        'paypal': 'PayPal',
+        'credit_card': 'Carte bancaire',
+        'paypal': 'PayPal', 
+        'apple': 'Apple Pay',
+        'apple_pay': 'Apple Pay',
+        'google': 'Google Pay',
+        'google_pay': 'Google Pay',
         'bank_transfer': 'Virement bancaire',
         'check': 'Chèque',
         'cash': 'Espèces'
     };
     return methods[paymentMethod] || 'Carte bancaire';
 }
+%>
 
 // ✅ FONCTION POUR CALCULER LES PRIX CORRECTS AVEC PROMO
 function calculateCorrectPrices(commande) {
@@ -1990,34 +1996,35 @@ Paramètres
                 </td>
                 
                 <!-- Paiement -->
-              <td class="payment-info">
-                <div class="payment-method">
-    <% 
-    const paymentMethod = commande.payment_method || 'card';
-    const paymentMethodDisplay = getPaymentMethodDisplay(paymentMethod);
-    %>
-    
-    <span class="payment-icon">
-        <% if (paymentMethod === 'paypal') { %>
-            <i class="fab fa-paypal" style="color: #0070ba;"></i>
-        <% } else if (paymentMethod === 'apple_pay') { %>
-            <i class="fab fa-apple-pay" style="color: #000;"></i>
-        <% } else if (paymentMethod === 'google_pay') { %>
-            <i class="fab fa-google-pay" style="color: #4285f4;"></i>
-        <% } else { %>
-            <i class="fas fa-credit-card" style="color: #6b7280;"></i>
-        <% } %>
-    </span>
-    
-    <%= paymentMethodDisplay %>
-</div>
-
+<td class="payment-info">
+    <div class="payment-method">
+        <% 
+        // Récupérer la méthode de paiement stockée
+        const paymentMethod = commande.payment_method || 'card';
+        console.log('🔍 Payment method pour commande', commande.id, ':', paymentMethod);
+        %>
+        
+        <span class="payment-icon">
+            <% if (paymentMethod === 'paypal') { %>
+                <i class="fab fa-paypal" style="color: #0070ba;"></i>
+            <% } else if (paymentMethod === 'apple' || paymentMethod === 'apple_pay') { %>
+                <i class="fab fa-apple-pay" style="color: #000;"></i>
+            <% } else if (paymentMethod === 'google' || paymentMethod === 'google_pay') { %>
+                <i class="fab fa-google-pay" style="color: #4285f4;"></i>
+            <% } else { %>
+                <i class="fas fa-credit-card" style="color: #6b7280;"></i>
+            <% } %>
+        </span>
+        
+        <%= getPaymentMethodDisplay(paymentMethod) %>
+    </div>
     
     <div class="payment-status paid">
         <i class="fas fa-check-circle"></i>
         Payé
     </div>
 </td>
+
 
 <!-- ✅ FONCTION HELPER À AJOUTER DANS LE TEMPLATE -->
 <%
