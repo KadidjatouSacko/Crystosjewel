@@ -617,107 +617,35 @@ async getDashboardData(period = 'month') {
 
         // ✅ REQUÊTE CORRIGÉE pour récupérer les commandes avec gestion des invités
         const ordersQuery = `
-            SELECT 
-                o.id,
-                o.numero_commande,
-                -- ✅ FIX DATES: Protection contre les dates nulles/invalides
-                COALESCE(o.created_at, o.order_date, NOW()) as created_at_safe,
-                COALESCE(o.order_date, o.created_at, NOW()) as order_date_safe,
-                o.created_at as original_created_at,
-                
-                -- ✅ FIX NOMS/EMAILS pour les invités
-                CASE 
-                    WHEN o.is_guest_order = true AND (o.customer_name IS NULL OR o.customer_name = '') 
-                    THEN 'Client invité'
-                    ELSE COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu')
-                END as customer_name,
-                
-                COALESCE(o.customer_email, c.email, 'email@inconnu.com') as customer_email,
-                
-                o.total,
-                COALESCE(o.original_total, o.total) as original_total,
-                o.promo_code,
-                COALESCE(o.discount_amount, 0) as discount_amount,
-                COALESCE(o.discount_percent, 0) as discount_percent,
-                COALESCE(o.promo_discount_amount, 0) as promo_discount_amount,
-                COALESCE(o.promo_discount_percent, 0) as promo_discount_percent,
-                COALESCE(o.promo_discount, 0) as promo_discount,
-                COALESCE(o.shipping_method, 'Standard') as shipping_method,
-                COALESCE(o.status, o.status_suivi, 'waiting') as status,
-                o.tracking_number,
-                c.phone,
-                o.shipping_address,
-                o.shipping_city,
-                o.notes,
-                o.customer_id,
-                o.is_guest_order,
-                
-                -- ✅ RÉCUPÉRATION DES TAILLES DEPUIS ORDER_ITEMS avec nouvelles colonnes
-                (
-                    SELECT JSON_AGG(
-                        JSON_BUILD_OBJECT(
-                            'nom_article', COALESCE(oi.jewel_name, j.name, jw.name, 'Article'),
-                            'taille', COALESCE(oi.size, 'Standard'),
-                            'quantite', COALESCE(oi.quantity, 1),
-                            'prix', COALESCE(oi.price, j.price_ttc, jw.price_ttc, 0),
-                            'matiere', COALESCE(j.matiere, jw.matiere, ''),
-                            'image', COALESCE(oi.jewel_image, j.image, jw.image, '/images/placeholder.jpg')
-                        )
-                        ORDER BY oi.id
-                    )
-                    FROM order_items oi
-                    LEFT JOIN jewel j ON oi.jewel_id = j.id
-                    LEFT JOIN jewels jw ON oi.jewel_id = jw.id
-                    WHERE oi.order_id = o.id
-                ) as articles_details,
-                
-                -- ✅ Fallback amélioré : ORDER_HAS_JEWEL si ORDER_ITEMS est vide
-                (
-                    SELECT JSON_AGG(
-                        JSON_BUILD_OBJECT(
-                            'nom_article', COALESCE(j.name, jw.name, 'Article'),
-                            'taille', 'Standard',
-                            'quantite', COALESCE(ohj.quantity, 1),
-                            'prix', COALESCE(ohj.unit_price, j.price_ttc, jw.price_ttc, 0),
-                            'matiere', COALESCE(j.matiere, jw.matiere, ''),
-                            'image', COALESCE(j.image, jw.image, '/images/placeholder.jpg')
-                        )
-                        ORDER BY ohj.jewel_id
-                    )
-                    FROM order_has_jewel ohj
-                    LEFT JOIN jewel j ON ohj.jewel_id = j.id
-                    LEFT JOIN jewels jw ON ohj.jewel_id = jw.id
-                    WHERE ohj.order_id = o.id
-                ) as articles_details_fallback,
-                
-                -- ✅ COMPTER LES ARTICLES AVEC TAILLES SPÉCIFIÉES (exclut "Standard")
-                (
-                    SELECT COUNT(*)
-                    FROM order_items oi
-                    WHERE oi.order_id = o.id
-                    AND oi.size IS NOT NULL 
-                    AND oi.size NOT IN ('Standard', '', 'Non spécifiée', 'null')
-                ) as articles_avec_tailles,
-                
-                -- ✅ COMPTER LE TOTAL D'ARTICLES
-                (
-                    SELECT COUNT(*)
-                    FROM order_items oi
-                    WHERE oi.order_id = o.id
-                ) as total_articles_order_items,
-                
-                -- Fallback count pour ORDER_HAS_JEWEL
-                (
-                    SELECT COUNT(*)
-                    FROM order_has_jewel ohj
-                    WHERE ohj.order_id = o.id
-                ) as total_articles_fallback
-                
-            FROM orders o
-            LEFT JOIN customer c ON o.customer_id = c.id
-            ORDER BY COALESCE(o.created_at, o.order_date, NOW()) DESC
-            LIMIT 100
-        `;
+    SELECT 
+        o.id,
+        o.numero_commande,
+        COALESCE(o.created_at, o.order_date, NOW()) as created_at_safe,
+        COALESCE(o.order_date, o.created_at, NOW()) as order_date_safe,
+        o.created_at as original_created_at,
+        
+        -- ✅ FIX NOMS/EMAILS pour les invités
+        CASE 
+            WHEN o.is_guest_order = true AND (o.customer_name IS NULL OR o.customer_name = '') 
+            THEN 'Client invité'
+            ELSE COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu')
+        END as customer_name,
+        
+        COALESCE(o.customer_email, c.email, 'email@inconnu.com') as customer_email,
+        
+        -- ✅ RÉCUPÉRATION CORRECTE DU PAYMENT_METHOD
+        COALESCE(o.payment_method, 'card') as payment_method,
+        COALESCE(o.payment_status, 'paid') as payment_status,
+        
+        o.total,
+        -- ... autres colonnes
+        
+    FROM orders o
+    LEFT JOIN customer c ON o.customer_id = c.id
+    WHERE 1=1
+    ORDER BY COALESCE(o.created_at, o.order_date, NOW()) DESC
+    LIMIT 100
+`;
 
         const [ordersResult] = await sequelize.query(ordersQuery);
         
@@ -973,59 +901,34 @@ async getDashboardData(period = 'month') {
 async getOrderDetails(req, res) {
     try {
         const { id } = req.params;
-        console.log(`🔍 Récupération détails commande #${id}`);
+        console.log(`🔍 Récupération détails commande #${id} avec tailles, paiement et historique`);
 
         // ========================================
-        // 📋 RÉCUPÉRER LA COMMANDE AVEC DATES FORMATÉES
+        // 📋 ÉTAPE 1: RÉCUPÉRER LES DÉTAILS DE LA COMMANDE
         // ========================================
         const orderQuery = `
             SELECT 
                 o.*,
+                -- ✅ GESTION CORRECTE DES NOMS ET EMAILS
                 CASE 
-                    WHEN o.is_guest_order = true THEN o.customer_name
-                    ELSE COALESCE(
-                        o.customer_name, 
-                        CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name)),
-                        'Client inconnu'
-                    )
+                    WHEN o.is_guest_order = true AND (o.customer_name IS NULL OR o.customer_name = '') 
+                    THEN 'Client invité'
+                    ELSE COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu')
                 END as customer_name,
-                CASE 
-                    WHEN o.is_guest_order = true THEN o.customer_email
-                    ELSE COALESCE(o.customer_email, c.email, 'N/A')
-                END as customer_email,
-                CASE 
-                    WHEN o.is_guest_order = true THEN o.customer_phone
-                    ELSE COALESCE(o.shipping_phone, c.phone, 'N/A')
-                END as phone,
-                CASE 
-                    WHEN o.is_guest_order = true THEN COALESCE(o.shipping_address, o.delivery_address)
-                    ELSE COALESCE(o.shipping_address, c.address, 'N/A')
-                END as shipping_address,
-                COALESCE(o.status, 'waiting') as current_status,
+                COALESCE(o.customer_email, c.email, 'email@inconnu.com') as customer_email,
+                c.phone as customer_phone,
+                COALESCE(o.shipping_address, c.address, 'Adresse non spécifiée') as shipping_address,
+                COALESCE(o.status, o.status_suivi, 'waiting') as current_status,
                 COALESCE(o.payment_method, 'card') as payment_method,
-                COALESCE(o.payment_status, 'pending') as payment_status,
-                -- ✅ FORMATAGE DES DATES
-                CASE 
-                    WHEN o.created_at IS NOT NULL THEN 
-                        TO_CHAR(o.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris', 'DD/MM/YYYY à HH24:MI')
-                    ELSE 'Date inconnue'
-                END as formatted_datetime,
-                CASE 
-                    WHEN o.created_at IS NOT NULL THEN 
-                        TO_CHAR(o.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris', 'DD/MM/YYYY')
-                    ELSE 'Date inconnue'
-                END as formatted_date
+                COALESCE(o.payment_status, 'pending') as payment_status
             FROM orders o
-            LEFT JOIN customer c ON o.customer_id = c.id AND o.is_guest_order = false
+            LEFT JOIN customer c ON o.customer_id = c.id
             WHERE o.id = $1
         `;
 
-        const orderResult = await sequelize.query(orderQuery, { 
-            bind: [id],
-            type: sequelize.QueryTypes.SELECT 
-        });
+        const [orderResult] = await sequelize.query(orderQuery, { bind: [id] });
         
-        if (!orderResult || orderResult.length === 0) {
+        if (orderResult.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Commande non trouvée'
@@ -1033,136 +936,287 @@ async getOrderDetails(req, res) {
         }
 
         const order = orderResult[0];
-        console.log(`📋 Commande: ${order.numero_commande} - ${order.formatted_datetime}`);
+        console.log(`📋 Commande trouvée: ${order.numero_commande || order.id} - Client: ${order.customer_name}`);
 
         // ========================================
-        // 📦 RÉCUPÉRER LES ARTICLES AVEC GESTION ROBUSTE DES TAILLES
+        // 🛍️ ÉTAPE 2: RÉCUPÉRER LES ARTICLES AVEC TAILLES
         // ========================================
-        
-        // D'abord, vérifier si la colonne size existe
-        const checkColumnQuery = `
-            SELECT column_name 
-            FROM information_schema.columns 
-            WHERE table_name = 'order_items' 
-            AND column_name = 'size'
-        `;
-        
-        const columnCheck = await sequelize.query(checkColumnQuery, { 
-            type: sequelize.QueryTypes.SELECT 
-        });
-        
-        const hasSizeColumn = columnCheck.length > 0;
-        console.log(`📏 Colonne 'size' dans order_items: ${hasSizeColumn ? 'OUI' : 'NON'}`);
-
-        // Construire la requête selon la présence de la colonne size
-        const itemsQuery = `
+        let itemsQuery = `
             SELECT 
-                oi.id,
-                oi.quantity,
-                oi.price,
-                oi.jewel_id,
-                ${hasSizeColumn ? 'oi.size' : 'NULL as size'},
-                j.name as jewel_name,
-                j.image as jewel_image,
-                j.price_ttc as current_price,
-                j.slug as jewel_slug,
-                j.stock as current_stock,
-                (oi.quantity * oi.price) as item_total
+                oi.*,
+                COALESCE(oi.jewel_name, j.name, jw.name, 'Article supprimé') as jewel_name,
+                COALESCE(oi.jewel_image, j.image, jw.image, '/images/placeholder.jpg') as jewel_image,
+                COALESCE(j.description, jw.description, '') as description,
+                COALESCE(j.matiere, jw.matiere, 'N/A') as matiere,
+                COALESCE(j.carat, jw.carat) as carat,
+                COALESCE(j.poids, jw.poids) as poids,
+                COALESCE(c.name, 'Bijoux') as category_name,
+                COALESCE(oi.price, j.price_ttc, jw.price_ttc, 0) as unit_price,
+                (COALESCE(oi.quantity, 1) * COALESCE(oi.price, j.price_ttc, jw.price_ttc, 0)) as total_price,
+                COALESCE(oi.size, 'Standard') as size_commandee
             FROM order_items oi
             LEFT JOIN jewel j ON oi.jewel_id = j.id
+            LEFT JOIN jewels jw ON oi.jewel_id = jw.id
+            LEFT JOIN category c ON COALESCE(j.category_id, jw.category_id) = c.id
             WHERE oi.order_id = $1
-            ORDER BY oi.id ASC
+            ORDER BY oi.id
         `;
 
-        const itemsResult = await sequelize.query(itemsQuery, { 
-            bind: [id],
-            type: sequelize.QueryTypes.SELECT 
-        });
+        let [itemsResult] = await sequelize.query(itemsQuery, { bind: [id] });
 
-        // ✅ TRAITEMENT DES ARTICLES AVEC TAILLES
-        const processedItems = itemsResult.map(item => {
-            const size = item.size && item.size !== 'null' && item.size.trim() !== '' 
-                ? item.size 
-                : null;
+        // Fallback si order_items est vide
+        if (itemsResult.length === 0) {
+            console.log('⚠️ order_items vide, utilisation de order_has_jewel...');
+            itemsQuery = `
+                SELECT 
+                    ohj.order_id,
+                    ohj.jewel_id as jewel_id,
+                    ohj.quantity,
+                    ohj.unit_price as price,
+                    COALESCE(j.name, jw.name, 'Article supprimé') as jewel_name,
+                    COALESCE(j.image, jw.image, '/images/placeholder.jpg') as jewel_image,
+                    COALESCE(j.description, jw.description, '') as description,
+                    COALESCE(j.matiere, jw.matiere, 'N/A') as matiere,
+                    COALESCE(j.carat, jw.carat) as carat,
+                    COALESCE(j.poids, jw.poids) as poids,
+                    COALESCE(c.name, 'Bijoux') as category_name,
+                    COALESCE(ohj.unit_price, j.price_ttc, jw.price_ttc, 0) as unit_price,
+                    (COALESCE(ohj.quantity, 1) * COALESCE(ohj.unit_price, j.price_ttc, jw.price_ttc, 0)) as total_price,
+                    'Standard' as size_commandee
+                FROM order_has_jewel ohj
+                LEFT JOIN jewel j ON ohj.jewel_id = j.id
+                LEFT JOIN jewels jw ON ohj.jewel_id = jw.id
+                LEFT JOIN category c ON COALESCE(j.category_id, jw.category_id) = c.id
+                WHERE ohj.order_id = $1
+                ORDER BY ohj.jewel_id
+            `;
+            [itemsResult] = await sequelize.query(itemsQuery, { bind: [id] });
+        }
+
+        // ✅ TRAITEMENT DES ARTICLES
+        const processedItems = itemsResult.map(item => ({
+            id: item.id || item.jewel_id,
+            jewel_id: item.jewel_id,
+            name: item.jewel_name,
+            image: item.jewel_image,
+            description: item.description,
+            price: parseFloat(item.unit_price || 0),
+            quantity: parseInt(item.quantity || 1),
+            total: parseFloat(item.total_price || 0),
+            size: item.size_commandee || 'Standard',
+            sizeDisplay: item.size_commandee && item.size_commandee !== 'Standard' 
+                ? `Taille: ${item.size_commandee}`
+                : 'Taille standard',
+            hasSizeInfo: item.size_commandee && item.size_commandee !== 'Standard',
+            matiere: item.matiere,
+            carat: item.carat,
+            poids: item.poids,
+            category: item.category_name
+        }));
+
+        console.log(`🛍️ ${processedItems.length} articles trouvés`);
+
+        // ========================================
+        // 📝 ÉTAPE 3: RÉCUPÉRER L'HISTORIQUE DES MODIFICATIONS
+        // ========================================
+        let history = [];
+        try {
+         const historyQuery = `
+    SELECT 
+        old_status,
+        new_status,
+        notes,
+        updated_by,
+        created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris' as created_at_local,
+        created_at as created_at_utc
+    FROM order_status_history 
+    WHERE order_id = $1
+    ORDER BY created_at DESC
+`;
+
+const [historyResult] = await sequelize.query(historyQuery, { bind: [id] });
+
+history = historyResult.map(h => ({
+    old_status: adminOrdersController.translateStatus(h.old_status),
+    new_status: adminOrdersController.translateStatus(h.new_status),
+    notes: h.notes,
+    updated_by: h.updated_by,
+    created_at: h.created_at_local, // ✅ UTILISER L'HEURE LOCALE
+    created_at_utc: h.created_at_utc,
+    formatted_date: new Date(h.created_at_local).toLocaleString('fr-FR', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        timeZone: 'Europe/Paris' // ✅ FORCER TIMEZONE FRANÇAISE
+    })
+}));
+
             
-            return {
-                id: item.id,
-                name: item.jewel_name || 'Produit supprimé',
-                quantity: item.quantity,
-                price: parseFloat(item.price || 0),
-                size: size || 'Non spécifiée',
-                sizeDisplay: size ? `Taille: ${size}` : 'Taille non spécifiée',
-                hasSizeInfo: !!size,
-                image: item.jewel_image || '/images/default-product.jpg',
-                slug: item.jewel_slug,
-                total: parseFloat(item.item_total || (item.quantity * (item.price || 0))),
-                isDeleted: !item.jewel_name,
-                jewel_id: item.jewel_id,
-                current_stock: item.current_stock || 0
-            };
-        });
-
-        console.log(`📦 ${processedItems.length} articles avec tailles:`, 
-            processedItems.map(item => `${item.name} (${item.sizeDisplay})`).join(', '));
+            console.log(`📝 ${history.length} modifications trouvées dans l'historique`);
+            
+        } catch (historyError) {
+            console.error('⚠️ Erreur récupération historique:', historyError);
+            history = [];
+        }
 
         // ========================================
-        // 💰 CALCULER LES TOTAUX
+        // 🚚 ÉTAPE 4: RÉCUPÉRER LE SUIVI DE LIVRAISON
         // ========================================
-        const originalAmount = parseFloat(order.original_total || order.subtotal || 0);
-        const discountAmount = parseFloat(order.discount_amount || order.promo_discount_amount || 0);
-        const shipping = parseFloat(order.shipping_price || order.delivery_fee || 0);
+        let tracking = [];
+        try {
+            const trackingQuery = `
+                SELECT 
+                    status,
+                    description,
+                    location,
+                    created_at
+                FROM order_tracking 
+                WHERE order_id = $1
+                ORDER BY created_at DESC
+            `;
+            
+            const [trackingResult] = await sequelize.query(trackingQuery, { bind: [id] });
+            
+            tracking = trackingResult.map(t => ({
+                status: t.status,
+                description: t.description,
+                location: t.location,
+                created_at: t.created_at,
+                formatted_date: new Date(t.created_at).toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })
+            }));
+            
+            console.log(`🚚 ${tracking.length} événements de suivi trouvés`);
+            
+        } catch (trackingError) {
+            console.error('⚠️ Erreur récupération suivi:', trackingError);
+            tracking = [];
+        }
+
+        // ========================================
+        // 💰 ÉTAPE 5: CALCULER LES TOTAUX
+        // ========================================
+        const originalAmount = parseFloat(order.original_total || order.subtotal || order.total || 0);
+        const discountAmount = Math.max(
+            parseFloat(order.discount_amount || 0),
+            parseFloat(order.promo_discount_amount || 0),
+            parseFloat(order.promo_discount || 0)
+        );
+        const shippingAmount = parseFloat(order.shipping_price || order.delivery_fee || 0);
         const finalTotal = parseFloat(order.total || 0);
+        
+        // Recalculer le sous-total si nécessaire
+        let calculatedSubtotal = originalAmount;
+        if (originalAmount === 0 && processedItems.length > 0) {
+            calculatedSubtotal = processedItems.reduce((sum, item) => sum + item.total, 0);
+        }
 
         // ========================================
-        // 📄 RÉPONSE AVEC DATES FORMATÉES
+        // 📤 ÉTAPE 6: CONSTRUIRE LA RÉPONSE
         // ========================================
         const response = {
             success: true,
             order: {
                 id: order.id,
-                numero_commande: order.numero_commande || 'N/A',
-                customer_name: order.customer_name || 'Client inconnu',
-                email: order.customer_email || 'N/A',
-                phone: order.phone || 'N/A',
-                shipping_address: order.shipping_address || 'N/A',
-                status: order.current_status || 'waiting',
+                numero_commande: order.numero_commande || `CMD-${order.id}`,
+                customer_name: order.customer_name,
+                customer_email: order.customer_email,
+                customer_phone: order.customer_phone || order.phone,
+                shipping_address: order.shipping_address,
+                shipping_phone: order.shipping_phone || order.customer_phone || order.phone,
                 
-                // ✅ DATES FORMATÉES CORRECTEMENT
-                date: order.formatted_date || 'Date inconnue',
-                dateTime: order.formatted_datetime || 'Date inconnue',
+                // Dates
+                created_at: order.created_at,
+                order_date: order.order_date,
+                date: new Date(order.created_at).toLocaleDateString('fr-FR'),
+                dateTime: new Date(order.created_at).toLocaleString('fr-FR'),
                 
-                payment_method: order.payment_method || 'card',
-                payment_status: order.payment_status || 'pending',
-                delivery_mode: order.delivery_mode || 'standard',
+                // Statut
+                status: adminOrdersController.normalizeStatus(order.current_status),
+                current_status: order.current_status,
+                
+                // Paiement
+                payment_method: order.payment_method,
+                payment_status: order.payment_status,
+                payment_method_display: adminOrdersController.getPaymentMethodDisplay(order.payment_method),
+                
+                // Codes promo
                 promo_code: order.promo_code,
+                discount_amount: discountAmount,
+                discount_percent: parseFloat(order.promo_discount_percent || order.discount_percent || 0),
                 hasDiscount: discountAmount > 0 || order.promo_code,
-                is_guest_order: order.is_guest_order || false
+                
+                // Livraison
+                shipping_method: order.shipping_method || 'Standard',
+                tracking_number: order.tracking_number,
+                
+                // Invité
+                isGuestOrder: order.is_guest_order || false,
+                
+                // Notes
+                notes: order.notes || order.internal_notes,
+                delivery_notes: order.delivery_notes
             },
             items: processedItems,
-            tracking: [],
-            history: [],
+            history: history,
+            tracking: tracking,
             summary: {
-                originalSubtotal: originalAmount,
+                originalSubtotal: calculatedSubtotal,
                 discount: discountAmount,
-                subtotal: originalAmount - discountAmount,
-                shipping: shipping,
-                total: finalTotal,
+                subtotal: calculatedSubtotal - discountAmount,
+                shipping: shippingAmount,
+                total: finalTotal
+            },
+            // Statistiques additionnelles
+            stats: {
                 itemsCount: processedItems.length,
-                totalQuantity: processedItems.reduce((sum, item) => sum + item.quantity, 0)
+                itemsWithSizes: processedItems.filter(item => item.hasSizeInfo).length,
+                totalQuantity: processedItems.reduce((sum, item) => sum + item.quantity, 0),
+                averageItemPrice: processedItems.length > 0 
+                    ? processedItems.reduce((sum, item) => sum + item.price, 0) / processedItems.length
+                    : 0
             }
         };
 
-        console.log(`✅ Commande #${id} récupérée - Date: ${order.formatted_datetime}, ${processedItems.length} articles`);
+        console.log(`✅ Détails complets récupérés pour commande ${order.numero_commande || order.id}`);
         res.json(response);
 
     } catch (error) {
         console.error('❌ Erreur détails commande:', error);
         res.status(500).json({
             success: false,
-            message: 'Erreur lors de la récupération des détails',
-            debug: process.env.NODE_ENV === 'development' ? error.message : undefined
+            message: 'Erreur lors de la récupération des détails: ' + error.message,
+            debug: process.env.NODE_ENV === 'development' ? {
+                error: error.message,
+                stack: error.stack
+            } : undefined
         });
     }
+},
+
+// ✅ FONCTION HELPER POUR LES MÉTHODES DE PAIEMENT
+getPaymentMethodDisplay(paymentMethod) {
+    const methods = {
+        'card': 'Carte bancaire',
+        'credit_card': 'Carte bancaire',
+        'debit_card': 'Carte de débit',
+        'paypal': 'PayPal',
+        'apple_pay': 'Apple Pay',
+        'google_pay': 'Google Pay',
+        'bank_transfer': 'Virement bancaire',
+        'check': 'Chèque',
+        'cash': 'Espèces',
+        'stripe': 'Stripe',
+        'klarna': 'Klarna'
+    };
+    return methods[paymentMethod] || 'Carte bancaire';
 },
 
     // ========================================

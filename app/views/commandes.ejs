@@ -1295,6 +1295,395 @@ function calculateCorrectPrices(commande) {
     border-color: var(--warning);
     color: var(--warning);
 }
+
+/* ✅ STYLES POUR LES STATUTS AVEC COULEURS */
+
+.status-badge, .status {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+/* En attente */
+.status.en-attente, .status-badge.en-attente {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #f59e0b;
+}
+
+/* En préparation */
+.status.preparation, .status-badge.preparation {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #3b82f6;
+}
+
+/* Expédiée */
+.status.expediee, .status-badge.expediee {
+    background: #d1fae5;
+    color: #065f46;
+    border: 1px solid #10b981;
+}
+
+/* Livrée */
+.status.livree, .status-badge.livree {
+    background: #dcfce7;
+    color: #14532d;
+    border: 1px solid #22c55e;
+}
+
+/* Annulée */
+.status.annulee, .status-badge.annulee {
+    background: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #ef4444;
+}
+
+/* Confirmée */
+.status.confirmee, .status-badge.confirmee {
+    background: #e0e7ff;
+    color: #3730a3;
+    border: 1px solid #6366f1;
+}
+
+/* Icône dans les statuts */
+.status i, .status-badge i {
+    font-size: 8px;
+    margin-right: 2px;
+}
+
+/* Effet hover pour les statuts */
+.status:hover, .status-badge:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    transition: all 0.2s ease;
+}
+
+/* ✅ STYLES POUR LA MODALE DÉTAILS */
+
+.order-details-container {
+    max-height: 80vh;
+    overflow-y: auto;
+    padding: 20px;
+}
+
+.order-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #f3f4f6;
+}
+
+.order-title {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.order-title h3 {
+    margin: 0;
+    color: var(--text-dark);
+}
+
+.order-date {
+    font-size: 14px;
+    color: var(--text-medium);
+}
+
+.section {
+    margin-bottom: 25px;
+    background: #f9fafb;
+    border-radius: 8px;
+    padding: 20px;
+}
+
+.section h4 {
+    margin: 0 0 15px 0;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.section h4 i {
+    color: var(--rose-gold);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 10px;
+}
+
+.info-grid > div {
+    background: white;
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+/* Articles */
+.items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.item-row {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.item-image {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 6px;
+}
+
+.item-info {
+    flex: 1;
+}
+
+.item-name {
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+}
+
+.item-details {
+    font-size: 13px;
+    color: var(--text-medium);
+}
+
+.item-total {
+    font-weight: 600;
+    color: var(--rose-gold);
+    font-size: 16px;
+}
+
+/* Totaux */
+.totals-table {
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #f3f4f6;
+}
+
+.total-row:last-child {
+    border-bottom: none;
+}
+
+.total-row.discount {
+    color: var(--success);
+    background: #f0fdf4;
+}
+
+.total-row.final {
+    background: var(--rose-gold-light);
+    color: var(--rose-gold-dark);
+    font-weight: 700;
+    font-size: 16px;
+}
+
+/* Paiement */
+.payment-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+}
+
+.payment-details > div {
+    background: white;
+    padding: 12px;
+    border-radius: 6px;
+}
+
+.payment-status.paid {
+    color: var(--success);
+}
+
+.payment-status.pending {
+    color: var(--warning);
+}
+
+/* Historique */
+.history-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.history-item {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid var(--rose-gold);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.history-action {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.history-date {
+    font-size: 12px;
+    color: var(--text-medium);
+}
+
+.history-details {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.history-user {
+    font-size: 13px;
+    color: var(--text-medium);
+}
+
+.history-notes {
+    font-size: 13px;
+    color: var(--text-dark);
+    background: #f9fafb;
+    padding: 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+}
+
+.no-history {
+    text-align: center;
+    color: var(--text-medium);
+    font-style: italic;
+    padding: 20px;
+}
+
+/* Suivi */
+.tracking-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.tracking-item {
+    background: white;
+    padding: 15px;
+    border-radius: 8px;
+    border-left: 4px solid var(--info);
+}
+
+.tracking-status {
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+}
+
+.tracking-description {
+    color: var(--text-medium);
+    margin-bottom: 8px;
+}
+
+.tracking-date {
+    font-size: 12px;
+    color: var(--text-medium);
+}
+
+.tracking-location {
+    font-size: 12px;
+    color: var(--info);
+    margin-top: 4px;
+}
+
+/* Actions de la modale */
+.modal-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    padding-top: 20px;
+    border-top: 1px solid #f3f4f6;
+    margin-top: 20px;
+}
+
+.btn {
+    padding: 10px 20px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-secondary {
+    background: #f3f4f6;
+    color: var(--text-dark);
+}
+
+.btn-secondary:hover {
+    background: #e5e7eb;
+}
+
+.btn-primary {
+    background: var(--rose-gold);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--rose-gold-dark);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .order-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .item-row {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .modal-actions {
+        flex-direction: column;
+    }
+}
     </style>
 </head>
 
@@ -1601,14 +1990,52 @@ Paramètres
                 </td>
                 
                 <!-- Paiement -->
-                <td class="payment-info">
-                    <div class="payment-method">
-                        💳 Carte bancaire
-                    </div>
-                    <div class="payment-status paid">
-                        ✅ Payé
-                    </div>
-                </td>
+              <td class="payment-info">
+                <div class="payment-method">
+    <% 
+    const paymentMethod = commande.payment_method || 'card';
+    const paymentMethodDisplay = getPaymentMethodDisplay(paymentMethod);
+    %>
+    
+    <span class="payment-icon">
+        <% if (paymentMethod === 'paypal') { %>
+            <i class="fab fa-paypal" style="color: #0070ba;"></i>
+        <% } else if (paymentMethod === 'apple_pay') { %>
+            <i class="fab fa-apple-pay" style="color: #000;"></i>
+        <% } else if (paymentMethod === 'google_pay') { %>
+            <i class="fab fa-google-pay" style="color: #4285f4;"></i>
+        <% } else { %>
+            <i class="fas fa-credit-card" style="color: #6b7280;"></i>
+        <% } %>
+    </span>
+    
+    <%= paymentMethodDisplay %>
+</div>
+
+    
+    <div class="payment-status paid">
+        <i class="fas fa-check-circle"></i>
+        Payé
+    </div>
+</td>
+
+<!-- ✅ FONCTION HELPER À AJOUTER DANS LE TEMPLATE -->
+<%
+function getPaymentMethodDisplay(paymentMethod) {
+    const methods = {
+        'card': 'Carte bancaire',
+        'credit_card': 'Carte bancaire', 
+        'paypal': 'PayPal',
+        'apple_pay': 'Apple Pay',
+        'google_pay': 'Google Pay',
+        'bank_transfer': 'Virement bancaire',
+        'check': 'Chèque',
+        'cash': 'Espèces'
+    };
+    return methods[paymentMethod] || 'Carte bancaire';
+}
+%>
+
                 
                 <!-- ✅ TAILLES CORRIGÉES -->
                 <td class="sizes-info">
@@ -2103,24 +2530,27 @@ function formatCurrency(amount) {
 }
 
 function formatDateTime(dateString) {
-    if (!dateString || typeof dateString === 'string' && dateString.includes('Il y a')) {
-        return 'Date à corriger';
-    }
+    if (!dateString) return 'N/A';
     try {
         const date = new Date(dateString);
-        if (isNaN(date.getTime())) return 'Date invalide';
         return date.toLocaleString('fr-FR', {
-            timeZone: 'Europe/Paris',
             day: '2-digit',
             month: '2-digit', 
             year: 'numeric',
             hour: '2-digit',
-            minute: '2-digit',
-            hour12: false
+            minute: '2-digit'
         });
     } catch (error) {
-        return 'Erreur date';
+        return dateString;
     }
+}
+
+// ✅ FONCTION HELPER POUR FORMATER LES PRIX
+function formatPrice(price) {
+    return parseFloat(price || 0).toLocaleString('fr-FR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
 }
 
 function getTimeAgo(dateString) {
@@ -2210,37 +2640,169 @@ function setupEventListeners() {
 }
 
 // ✅ FONCTION VIEW ORDER DETAILS SIMPLIFIÉE
+// ✅ FONCTION VIEWORDERDETAILS CORRIGÉE
 async function viewOrderDetails(orderId) {
     try {
-        console.log(`🔍 ViewOrderDetails appelé avec orderId: "${orderId}"`);
-        
-        if (!orderId || orderId === 'undefined') {
-            console.error('❌ orderId invalide dans viewOrderDetails');
-            showToast('Erreur: ID de commande invalide', 'error');
-            return;
-        }
-        
-        orderId = String(orderId).trim();
-        console.log(`🔍 Récupération détails commande: ${orderId}`);
+        console.log(`👁️ Affichage détails commande ${orderId}`);
         showLoading();
         
-        const response = await fetch(`/admin/commandes/${orderId}/details`, {
-            method: 'GET',
-            headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }
-        });
-        
-        if (!response.ok) throw new Error(`Erreur HTTP ${response.status}`);
-        
+        const response = await fetch(`/admin/commandes/${orderId}/details`);
         const data = await response.json();
-        if (data.success) {
-            displayOrderDetails(data, orderId);
-            showModal();
-        } else {
-            showToast(data.message || 'Erreur lors du chargement', 'error');
+        
+        if (!data.success) {
+            throw new Error(data.message || 'Erreur lors du chargement');
         }
+        
+        const order = data.order;
+        const items = data.items || [];
+        const history = data.history || [];
+        const tracking = data.tracking || [];
+        
+        // ✅ CONSTRUIRE LE CONTENU DE LA MODALE AVEC PRIX CORRECTS
+        const modalContent = `
+            <div class="order-details-container">
+                <!-- En-tête -->
+                <div class="order-header">
+                    <div class="order-title">
+                        <h3>Commande ${order.numero_commande || order.id}</h3>
+                        <span class="status-badge ${getStatusClass(order.status)}">
+                            ${translateStatus(order.status)}
+                        </span>
+                    </div>
+                    <div class="order-date">
+                        ${formatDateTime(order.created_at)} 
+                        ${order.isGuestOrder ? '<span class="guest-badge">👥 Invité</span>' : ''}
+                    </div>
+                </div>
+                
+                <!-- Informations client -->
+                <div class="section">
+                    <h4><i class="fas fa-user"></i> Informations client</h4>
+                    <div class="info-grid">
+                        <div><strong>Nom:</strong> ${order.customer_name || 'N/A'}</div>
+                        <div><strong>Email:</strong> ${order.customer_email || 'N/A'}</div>
+                        <div><strong>Téléphone:</strong> ${order.customer_phone || order.phone || 'N/A'}</div>
+                        <div><strong>Adresse:</strong> ${order.shipping_address || 'N/A'}</div>
+                    </div>
+                </div>
+                
+                <!-- Articles commandés -->
+                <div class="section">
+                    <h4><i class="fas fa-shopping-bag"></i> Articles commandés</h4>
+                    <div class="items-list">
+                        ${items.map(item => `
+                            <div class="item-row">
+                                <img src="${item.image || '/images/placeholder.jpg'}" alt="${item.name}" class="item-image">
+                               
+                                <div class="item-info">
+                                    <div class="item-name">${item.name}</div>
+                                    <div class="item-details">
+                                        Taille: ${item.size || 'Standard'} | 
+                                        Quantité: ${item.quantity} | 
+                                        Prix unitaire: ${formatPrice(item.price)}€
+                                    </div>
+                                </div>
+                                <div class="item-total">
+                                    ${formatPrice(item.total || (item.price * item.quantity))}€
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <!-- ✅ TOTAUX CORRIGÉS -->
+                <div class="section">
+                    <h4><i class="fas fa-calculator"></i> Récapitulatif financier</h4>
+                    <div class="totals-table">
+                        <div class="total-row">
+                            <span>Sous-total articles:</span>
+                            <span>${formatPrice(data.summary?.originalSubtotal || order.subtotal || 0)}€</span>
+                        </div>
+                        ${data.summary?.discount > 0 ? `
+                            <div class="total-row discount">
+                                <span>Réduction ${order.promo_code ? `(${order.promo_code})` : ''}:</span>
+                                <span>-${formatPrice(data.summary.discount)}€</span>
+                            </div>
+                        ` : ''}
+                        <div class="total-row">
+                            <span>Frais de livraison:</span>
+                            <span>${formatPrice(data.summary?.shipping || order.shipping_price || 0)}€</span>
+                        </div>
+                        <div class="total-row final">
+                            <strong>Total payé:</strong>
+                            <strong>${formatPrice(data.summary?.total || order.total || 0)}€</strong>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ✅ PAIEMENT -->
+                <div class="section">
+                    <h4><i class="fas fa-credit-card"></i> Paiement</h4>
+                    <div class="payment-details">
+                        <div><strong>Méthode:</strong> ${order.payment_method_display || getPaymentMethodDisplay(order.payment_method || 'card')}</div>
+                        <div><strong>Statut:</strong> 
+                            <span class="payment-status ${order.payment_status === 'paid' ? 'paid' : 'pending'}">
+                                ${order.payment_status === 'paid' ? '✅ Payé' : '⏳ En attente'}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- ✅ HISTORIQUE DES MODIFICATIONS -->
+                <div class="section">
+                    <h4><i class="fas fa-history"></i> Historique des modifications</h4>
+                    <div class="history-list">
+                        ${history.length > 0 ? history.map(h => `
+                            <div class="history-item">
+                                <div class="history-header">
+                                    <span class="history-action">${h.old_status} → ${h.new_status}</span>
+                                    <span class="history-date">${formatDateTime(h.created_at)}</span>
+                                </div>
+                                <div class="history-details">
+                                    <div class="history-user">👤 Par: ${h.updated_by || 'Système'}</div>
+                                    ${h.notes ? `<div class="history-notes">📝 ${h.notes}</div>` : ''}
+                                </div>
+                            </div>
+                        `).join('') : '<div class="no-history">Aucune modification enregistrée</div>'}
+                    </div>
+                </div>
+                
+                <!-- Suivi livraison -->
+                ${tracking.length > 0 ? `
+                    <div class="section">
+                        <h4><i class="fas fa-truck"></i> Suivi de livraison</h4>
+                        <div class="tracking-list">
+                            ${tracking.map(t => `
+                                <div class="tracking-item">
+                                    <div class="tracking-status">${t.status}</div>
+                                    <div class="tracking-description">${t.description}</div>
+                                    <div class="tracking-date">${formatDateTime(t.created_at)}</div>
+                                    ${t.location ? `<div class="tracking-location">📍 ${t.location}</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                ` : ''}
+                
+                <!-- Actions -->
+                <div class="modal-actions">
+                    <button class="btn btn-secondary" onclick="closeModal()">
+                        <i class="fas fa-times"></i> Fermer
+                    </button>
+                    <button class="btn btn-primary" onclick="editOrder('${orderId}')">
+                        <i class="fas fa-edit"></i> Modifier
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('modalTitle').textContent = `Détails de la commande ${order.numero_commande || order.id}`;
+        document.getElementById('modalBody').innerHTML = modalContent;
+        showModal();
+        
     } catch (error) {
-        console.error('❌ Erreur détails commande:', error);
-        showToast(`Erreur: ${error.message}`, 'error');
+        console.error('❌ Erreur chargement détails:', error);
+        showToast('Erreur lors du chargement des détails', 'error');
     } finally {
         hideLoading();
     }
