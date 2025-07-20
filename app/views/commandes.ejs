@@ -2950,15 +2950,31 @@ function displayOrderDetails(data, orderId) {
     const safeOrder = order || {};
     const safeItems = items || [];
     const safeSummary = summary || {};
-    const safeModifications = modifications || history || []; // ✅ Utiliser modifications OU history
+    const safeModifications = modifications || history || [];
     const finalOrderId = orderId || safeOrder.id;
     
     const realDate = safeOrder.created_at || safeOrder.order_date || safeOrder.date;
-    const realTrackingNumber = safeOrder.tracking_number || ''; // ✅ TRACKING CORRIGÉ
+    const realTrackingNumber = safeOrder.tracking_number || '';
     
-    console.log(`📊 Affichage détails pour orderId: ${finalOrderId}`);
-    console.log(`📦 Tracking number: "${realTrackingNumber}"`);
-    console.log(`📋 Modifications trouvées: ${safeModifications.length}`);
+    // ✅ UTILISER LES BONNES DONNÉES DE LIVRAISON
+    const deliveryInfo = {
+        // Nom du destinataire (priorité aux données de la commande)
+        name: safeOrder.customer_name || `${safeOrder.customer_first_name || ''} ${safeOrder.customer_last_name || ''}`.trim() || 'Destinataire inconnu',
+        
+        // Email (priorité à celui de la commande)
+        email: safeOrder.customer_email || safeOrder.display_customer_email || safeOrder.email?.final_used || 'Email non renseigné',
+        
+        // Adresse de livraison (PAS l'adresse du compte)
+        address: safeOrder.shipping_address || safeOrder.delivery_address || 'Adresse de livraison non renseignée',
+        city: safeOrder.shipping_city || safeOrder.delivery_city || '',
+        postalCode: safeOrder.shipping_postal_code || safeOrder.delivery_postal_code || '',
+        country: safeOrder.shipping_country || safeOrder.delivery_country || 'France',
+        
+        // Téléphone de livraison (priorité au téléphone de livraison)
+        phone: safeOrder.shipping_phone || safeOrder.delivery_phone || safeOrder.phone || 'Non renseigné'
+    };
+    
+    console.log(`📦 Données de livraison extraites:`, deliveryInfo);
     
     document.getElementById('modalTitle').innerHTML = `<i class="fas fa-receipt"></i> Commande ${safeOrder.numero_commande || 'CMD-' + finalOrderId}`;
 
@@ -2989,220 +3005,167 @@ function displayOrderDetails(data, orderId) {
                     </div>
                     ` : ''}
                     ${safeOrder.internal_notes ? `
-                    <div style="margin-top: 15px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 6px;">
-                        <div style="font-weight: 600; color: #92400e; margin-bottom: 5px;">
-                            <i class="fas fa-sticky-note"></i> Notes internes:
-                        </div>
-                        <div style="color: #78350f; font-size: 14px;">
+                    <div style="padding: 10px 0;">
+                        <span style="color: #64748b; font-weight: 500;">Notes internes:</span>
+                        <div style="background: #fef3c7; padding: 8px; border-radius: 4px; margin-top: 5px; font-size: 14px;">
                             ${safeOrder.internal_notes}
                         </div>
                     </div>
                     ` : ''}
                 </div>
             </div>
-            
-            <!-- Informations client -->
+
+            <!-- ✅ INFORMATIONS DE LIVRAISON CORRIGÉES -->
             <div>
                 <h4 style="color: var(--primary-dark); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-light);">
-                    <i class="fas fa-user"></i> Informations client
+                    <i class="fas fa-shipping-fast"></i> Informations de livraison
                 </h4>
-                <div style="background: #f8fafc; padding: 20px; border-radius: 10px; border-left: 4px solid var(--info);">
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                        <span style="color: #64748b; font-weight: 500;">Nom:</span>
-                        <strong style="color: var(--dark);">${safeOrder.customer_name || 'N/A'}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                        <span style="color: #64748b; font-weight: 500;">Email:</span>
-                        <strong style="color: var(--dark);">${safeOrder.email || 'N/A'}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #e5e7eb;">
-                        <span style="color: #64748b; font-weight: 500;">Téléphone:</span>
-                        <strong style="color: var(--dark);">${safeOrder.shipping_phone || safeOrder.phone || 'N/A'}</strong>
-                    </div>
-                    <div style="display: flex; justify-content: space-between; padding: 10px 0;">
-                        <span style="color: #64748b; font-weight: 500;">Adresse de livraison:</span>
-                        <strong style="color: var(--dark); text-align: right; max-width: 200px;">
-                            ${safeOrder.shipping_address || 'N/A'}
-                            ${safeOrder.shipping_city ? '<br>' + safeOrder.shipping_city : ''}
-                            ${safeOrder.shipping_postal_code ? '<br>' + safeOrder.shipping_postal_code : ''}
-                            ${safeOrder.shipping_country ? '<br>' + safeOrder.shipping_country : ''}
-                        </strong>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- ✅ SECTION HISTORIQUE DES MODIFICATIONS RESTAURÉE -->
-        ${safeModifications.length > 0 ? `
-        <div style="margin-bottom: 25px;">
-            <h4 style="color: #f59e0b; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #fbbf24;">
-                <i class="fas fa-history"></i> Historique des modifications (${safeModifications.length} entrée${safeModifications.length > 1 ? 's' : ''})
-            </h4>
-            <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); padding: 20px; border-radius: 10px; border-left: 4px solid #f59e0b;">
-                <div style="position: relative;">
-                    ${safeModifications.map((mod, index) => `
-                        <div style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: ${index === safeModifications.length - 1 ? '0' : '20px'}; position: relative;">
-                            <div style="width: 12px; height: 12px; background: #f59e0b; border-radius: 50%; margin-top: 6px; z-index: 2; position: relative;">
-                                ${index !== safeModifications.length - 1 ? `<div style="position: absolute; top: 12px; left: 50%; transform: translateX(-50%); width: 2px; height: 20px; background: #cbd5e1;"></div>` : ''}
-                            </div>
-                            <div style="flex: 1; background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); border-left: 3px solid #f59e0b;">
-                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <span style="font-weight: 600; color: #f59e0b; font-size: 14px;">
-                                        <i class="fas fa-edit" style="font-size: 12px; margin-right: 6px;"></i>
-                                        ${mod.modification_type === 'status_change' ? 'Changement de statut' :
-                                          mod.modification_type === 'tracking_added' ? 'Numéro de suivi' :
-                                          mod.modification_type === 'notes_updated' ? 'Notes mises à jour' :
-                                          'Modification'}
-                                    </span>
-                                    <div style="text-align: right;">
-                                        <div style="color: #64748b; font-size: 12px; font-weight: 500;">${getTimeAgo(mod.created_at)}</div>
-                                        <div style="color: #64748b; font-size: 11px;">${formatDateTime(mod.created_at)}</div>
-                                    </div>
-                                </div>
-                                <div style="color: var(--dark); font-size: 14px; margin-bottom: 8px;">
-                                    ${mod.description || 'Modification effectuée'}
-                                </div>
-                                ${mod.old_value && mod.new_value ? `
-                                <div style="display: flex; gap: 15px; font-size: 13px;">
-                                    <div style="color: #ef4444;">
-                                        <strong>Avant:</strong> ${mod.old_value}
-                                    </div>
-                                    <div style="color: #10b981;">
-                                        <strong>Après:</strong> ${mod.new_value}
-                                    </div>
-                                </div>
-                                ` : ''}
-                                <div style="color: #64748b; font-size: 12px; margin-top: 8px;">
-                                    <i class="fas fa-user"></i> Par ${mod.modified_by || 'Admin'}
-                                </div>
-                            </div>
+                <div style="background: #f0f9ff; padding: 20px; border-radius: 10px; border-left: 4px solid #3b82f6;">
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: #1e40af; font-weight: 600; margin-bottom: 5px;">
+                            <i class="fas fa-user"></i> Destinataire
                         </div>
-                    `).join('')}
+                        <div style="color: var(--dark); font-weight: 500;">${deliveryInfo.name}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: #1e40af; font-weight: 600; margin-bottom: 5px;">
+                            <i class="fas fa-envelope"></i> Email
+                        </div>
+                        <div style="color: var(--dark);">${deliveryInfo.email}</div>
+                    </div>
+                    
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: #1e40af; font-weight: 600; margin-bottom: 5px;">
+                            <i class="fas fa-map-marker-alt"></i> Adresse de livraison
+                        </div>
+                        <div style="color: var(--dark); line-height: 1.4;">
+                            ${deliveryInfo.address}
+                            ${deliveryInfo.city ? `<br>${deliveryInfo.postalCode} ${deliveryInfo.city}` : ''}
+                            ${deliveryInfo.country !== 'France' ? `<br>${deliveryInfo.country}` : ''}
+                        </div>
+                    </div>
+                    
+                    ${deliveryInfo.phone !== 'Non renseigné' ? `
+                    <div style="margin-bottom: 15px;">
+                        <div style="color: #1e40af; font-weight: 600; margin-bottom: 5px;">
+                            <i class="fas fa-phone"></i> Téléphone
+                        </div>
+                        <div style="color: var(--dark);">${deliveryInfo.phone}</div>
+                    </div>
+                    ` : ''}
                 </div>
             </div>
         </div>
-        ` : ''}
 
-        <!-- ✅ PRODUITS COMMANDÉS AVEC TAILLES -->
-        ${safeItems.length > 0 ? `
+        <!-- Articles commandés -->
         <div style="margin-bottom: 25px;">
             <h4 style="color: var(--primary-dark); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-light);">
-                <i class="fas fa-gem"></i> Produits commandés (${safeItems.length} article${safeItems.length > 1 ? 's' : ''})
+                <i class="fas fa-box"></i> Articles commandés (${safeItems.length})
             </h4>
-            <div style="display: grid; gap: 15px;">
-                ${safeItems.map(item => `
-                    <div style="display: flex; align-items: center; gap: 20px; padding: 20px; background: #f8fafc; border-radius: 12px; border: 1px solid #e2e8f0; transition: var(--transition);">
-                        <img src="${item.image || '/images/placeholder.jpg'}" 
-                             alt="${item.name || 'Produit'}" 
-                             style="width: 80px; height: 80px; object-fit: cover; border-radius: 10px; border: 2px solid var(--border);"
-                             onerror="this.src='/images/placeholder.jpg'">
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 16px; color: var(--dark); margin-bottom: 8px;">
-                                ${item.name || 'Produit'}
-                            </div>
-                            <div style="color: #64748b; font-size: 14px; margin-bottom: 8px;">
-                                <i class="fas fa-cube"></i> Quantité: <strong>${item.quantity || 1}</strong>
-                                <span style="margin: 0 10px;">•</span>
-                                <i class="fas fa-euro-sign"></i> Prix unitaire: <strong>${safeToFixed(item.price)}€</strong>
-                                ${item.size && item.size !== 'Non spécifiée' ? `
-                                <span style="margin: 0 10px;">•</span>
-                                <i class="fas fa-ruler"></i> Taille: <strong style="color: var(--primary-dark);">${item.size}</strong>
-                                ` : ''}
-                            </div>
-                            ${item.matiere ? `
-                            <div style="color: #64748b; font-size: 13px;">
-                                <i class="fas fa-info"></i> Matière: ${item.matiere}
-                            </div>
-                            ` : ''}
+            <div style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+                ${safeItems.length > 0 ? safeItems.map(item => `
+                    <div style="display: flex; align-items: center; padding: 15px; border-bottom: 1px solid #f1f5f9; transition: background 0.2s;" 
+                         onmouseover="this.style.background='#f8fafc'" onmouseout="this.style.background='white'">
+                        <div style="width: 60px; height: 60px; border-radius: 8px; overflow: hidden; margin-right: 15px; flex-shrink: 0;">
+                            <img src="${item.image || '/images/placeholder.jpg'}" 
+                                 style="width: 100%; height: 100%; object-fit: cover;" 
+                                 alt="${item.name}"
+                                 onerror="this.src='/images/placeholder.jpg'">
                         </div>
-                        <div style="text-align: right;">
-                            <div style="font-weight: 700; font-size: 18px; color: var(--primary-dark);">
-                                ${safeToFixed(safeParseFloat(item.price) * safeParseFloat(item.quantity))}€
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--dark); margin-bottom: 4px;">${item.name || 'Article'}</div>
+                            <div style="color: #64748b; font-size: 14px; margin-bottom: 4px;">
+                                Quantité: <strong>${item.quantity || 1}</strong>
+                                ${item.size && item.size !== 'Non spécifiée' ? ` • Taille: <strong>${item.size}</strong>` : ''}
+                                ${item.matiere ? ` • Matière: <strong>${item.matiere}</strong>` : ''}
                             </div>
-                            <div style="font-size: 12px; color: #64748b;">Total ligne</div>
+                            <div style="color: var(--primary); font-weight: 600;">${(item.price || 0).toFixed(2)} €</div>
+                        </div>
+                        <div style="text-align: right; color: var(--primary-dark); font-weight: 700; font-size: 16px;">
+                            ${(item.total || (item.price * item.quantity) || 0).toFixed(2)} €
+                        </div>
+                    </div>
+                `).join('') : `
+                    <div style="padding: 30px; text-align: center; color: #64748b;">
+                        <i class="fas fa-box-open" style="font-size: 48px; margin-bottom: 15px; opacity: 0.5;"></i>
+                        <div>Aucun article trouvé pour cette commande</div>
+                    </div>
+                `}
+            </div>
+        </div>
+
+        <!-- Résumé financier -->
+        <div style="margin-bottom: 25px;">
+            <h4 style="color: var(--primary-dark); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-light);">
+                <i class="fas fa-calculator"></i> Résumé financier
+            </h4>
+            <div style="background: #f8fafc; padding: 20px; border-radius: 10px; border: 1px solid #e2e8f0;">
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                    <span style="color: #64748b;">Sous-total articles:</span>
+                    <strong>${(safeSummary.originalSubtotal || 0).toFixed(2)} €</strong>
+                </div>
+                ${(safeSummary.discount || 0) > 0 ? `
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #059669;">
+                    <span><i class="fas fa-tag"></i> Réduction:</span>
+                    <strong>-${(safeSummary.discount || 0).toFixed(2)} €</strong>
+                </div>
+                ` : ''}
+                <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                    <span style="color: #64748b;">Frais de livraison:</span>
+                    <strong>${(safeSummary.shipping || 0).toFixed(2)} €</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; padding: 12px 0; border-top: 2px solid var(--primary); margin-top: 10px;">
+                    <span style="color: var(--primary-dark); font-weight: 700; font-size: 18px;">TOTAL:</span>
+                    <strong style="color: var(--primary-dark); font-size: 20px;">${(safeSummary.total || 0).toFixed(2)} €</strong>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historique des modifications (si disponible) -->
+        ${safeModifications.length > 0 ? `
+        <div style="margin-bottom: 25px;">
+            <h4 style="color: var(--primary-dark); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-light);">
+                <i class="fas fa-history"></i> Historique des modifications
+            </h4>
+            <div style="background: #fffbeb; border: 1px solid #fbbf24; border-radius: 10px; padding: 15px;">
+                ${safeModifications.map(mod => `
+                    <div style="padding: 10px 0; border-bottom: 1px solid #fde68a;">
+                        <div style="font-weight: 600; color: #92400e;">
+                            ${mod.type || mod.modification_type || 'Modification'} 
+                            <span style="font-weight: normal; color: #78350f;">
+                                par ${mod.modified_by || mod.updated_by || 'Système'}
+                            </span>
+                        </div>
+                        <div style="color: #78350f; font-size: 14px; margin-top: 5px;">
+                            ${mod.description || mod.notes || 'Aucune description'}
+                        </div>
+                        <div style="color: #a16207; font-size: 12px; margin-top: 5px;">
+                            ${mod.date || new Date(mod.created_at).toLocaleString('fr-FR') || ''}
                         </div>
                     </div>
                 `).join('')}
             </div>
         </div>
         ` : ''}
-        
-        <!-- ✅ RÉCAPITULATIF FINANCIER AVEC CODES PROMO -->
-        <div>
-            <h4 style="color: var(--primary-dark); margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid var(--primary-light);">
-                <i class="fas fa-receipt"></i> Récapitulatif financier
-            </h4>
-            <div style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 25px; border-radius: 12px; border: 2px solid var(--border);">
-                ${safeOrder.promo_code ? `
-                <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                    <span style="color: #6b7280; font-weight: 500;">Sous-total avant réduction:</span>
-                    <strong style="color: var(--dark);">${safeToFixed((safeOrder.subtotal || 0) + (safeOrder.promo_discount_amount || 0))}€</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                    <span style="color: var(--success); font-weight: 500;">
-                        <i class="fas fa-tag"></i> Réduction (${safeOrder.promo_code}):
-                    </span>
-                    <strong style="color: var(--success);">-${safeToFixed(safeOrder.promo_discount_amount)}€</strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                    <span style="color: #6b7280; font-weight: 500;">Sous-total après réduction:</span>
-                    <strong style="color: var(--dark);">${safeToFixed(safeOrder.subtotal || 0)}€</strong>
-                </div>
-                ` : `
-                <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                    <span style="color: #6b7280; font-weight: 500;">Sous-total articles:</span>
-                    <strong style="color: var(--dark);">${safeToFixed(safeSummary.subtotal || safeOrder.subtotal || safeOrder.total)}€</strong>
-                </div>
-                `}
-                <div style="display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #e2e8f0;">
-                    <span style="color: #6b7280; font-weight: 500;">Frais de livraison:</span>
-                    <strong style="color: var(--dark);">
-                        ${safeParseFloat(safeOrder.shipping_price) === 0 ? 'Gratuit' : safeToFixed(safeOrder.shipping_price) + '€'}
-                    </strong>
-                </div>
-                <div style="display: flex; justify-content: space-between; padding: 20px 0; border-top: 3px solid var(--primary); margin-top: 15px;">
-                    <span style="font-weight: 700; font-size: 18px; color: var(--dark);">
-                        <i class="fas fa-calculator"></i> Total final:
-                    </span>
-                    <span style="font-weight: 700; font-size: 22px; color: var(--primary-dark);">
-                        ${safeToFixed(safeOrder.total)}€
-                    </span>
-                </div>
-                ${safeOrder.promo_code ? `
-                <div style="margin-top: 15px; padding: 15px; background: #dcfce7; border-radius: 8px; text-align: center;">
-                    <div style="color: var(--success); font-weight: 600; font-size: 16px;">
-                        <i class="fas fa-tags"></i> Économie réalisée avec le code ${safeOrder.promo_code}
-                    </div>
-                    <div style="color: var(--success); font-size: 24px; font-weight: 700; margin-top: 5px;">
-                        ${safeToFixed(safeOrder.promo_discount_amount)}€
-                    </div>
-                </div>
-                ` : ''}
-            </div>
-        </div>
-        
-        <!-- Actions avec orderId SÉCURISÉ -->
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--border);">
-            <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
-                <button onclick="editOrderDirect('${finalOrderId}')" 
-                        data-order-id="${finalOrderId}"
-                        style="padding: 12px 20px; background: var(--warning); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: var(--transition);">
-                    <i class="fas fa-edit"></i> Modifier cette commande
-                </button>
-                <button onclick="window.print()" 
-                        style="padding: 12px 20px; background: var(--primary); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: var(--transition);">
-                    <i class="fas fa-print"></i> Imprimer
-                </button>
-                <button onclick="closeModal()" 
-                        style="padding: 12px 20px; background: var(--gray-medium); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 500; transition: var(--transition);">
-                    <i class="fas fa-times"></i> Fermer
-                </button>
-            </div>
+
+        <!-- Boutons d'actions -->
+        <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 30px;">
+            <button onclick="closeModal()" 
+                    style="background: #6b7280; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-times"></i> Fermer
+            </button>
+            <button onclick="editOrderDirect('${finalOrderId}')" 
+                    style="background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 500;">
+                <i class="fas fa-edit"></i> Modifier
+            </button>
         </div>
     `;
 
     document.getElementById('modalBody').innerHTML = modalContent;
+    console.log(`✅ Modal affichée pour commande ${finalOrderId} avec adresse: "${deliveryInfo.address}"`);
 }
+
 
 // ✅ FONCTION EDIT ORDER DIRECTE AVEC LOG COMPLET
 function editOrderDirect(orderId) {

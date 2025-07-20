@@ -2647,4 +2647,400 @@ async sendEmail(emailContent) {
         }
     },
 
+    // ========================================
+// 🔍 FONCTION PRINCIPALE - AFFICHAGE AVEC FILTRES
+// ========================================
+async showCommandesWithFilters(req, res) {
+    try {
+        console.log('📋 Affichage commandes avec filtres avancés');
+        
+        // ✅ RÉCUPÉRATION DES PARAMÈTRES DE FILTRAGE
+        const filters = {
+            search: req.query.search || '',
+            status: req.query.status || 'all',
+            date: req.query.date || 'all',
+            promo: req.query.promo || 'all',
+            payment: req.query.payment || 'all',
+            amount: req.query.amount || 'all',
+            sort: req.query.sort || 'newest'
+        };
+        
+        // Pagination
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
+        
+        console.log('🔍 Filtres appliqués:', filters);
+        
+        // ✅ CONSTRUCTION DE LA REQUÊTE SQL DYNAMIQUE
+        let whereClause = 'WHERE 1=1';
+        let joinClause = 'LEFT JOIN customer c ON o.customer_id = c.id';
+        let params = [];
+        let paramIndex = 1;
+        
+        // 🔍 FILTRE DE RECHERCHE (nom, email, numéro de commande)
+        if (filters.search && filters.search.trim()) {
+            const searchTerm = filters.search.trim();
+            whereClause += ` AND (
+                LOWER(o.numero_commande) LIKE LOWER($${paramIndex}) OR
+                LOWER(o.customer_name) LIKE LOWER($${paramIndex}) OR
+                LOWER(o.customer_email) LIKE LOWER($${paramIndex}) OR
+                LOWER(c.first_name) LIKE LOWER($${paramIndex}) OR
+                LOWER(c.last_name) LIKE LOWER($${paramIndex}) OR
+                LOWER(c.email) LIKE LOWER($${paramIndex})
+            )`;
+            params.push(`%${searchTerm}%`);
+            paramIndex++;
+        }
+        
+        // 📊 FILTRE PAR STATUT
+        if (filters.status && filters.status !== 'all') {
+            whereClause += ` AND LOWER(COALESCE(o.status, o.status_suivi, 'waiting')) = LOWER($${paramIndex})`;
+            params.push(filters.status);
+            paramIndex++;
+        }
+        
+        // 📅 FILTRE PAR DATE
+        if (filters.date && filters.date !== 'all') {
+            const now = new Date();
+            let dateStart, dateEnd;
+            
+            switch (filters.date) {
+                case 'today':
+                    dateStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    dateEnd = new Date(dateStart);
+                    dateEnd.setDate(dateEnd.getDate() + 1);
+                    break;
+                case 'yesterday':
+                    dateEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    dateStart = new Date(dateEnd);
+                    dateStart.setDate(dateStart.getDate() - 1);
+                    break;
+                case 'week':
+                    dateStart = new Date(now);
+                    dateStart.setDate(now.getDate() - 7);
+                    dateEnd = now;
+                    break;
+                case 'month':
+                    dateStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                    dateEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                    break;
+                case 'quarter':
+                    const quarter = Math.floor(now.getMonth() / 3);
+                    dateStart = new Date(now.getFullYear(), quarter * 3, 1);
+                    dateEnd = new Date(now.getFullYear(), (quarter + 1) * 3, 1);
+                    break;
+                case 'year':
+                    dateStart = new Date(now.getFullYear(), 0, 1);
+                    dateEnd = new Date(now.getFullYear() + 1, 0, 1);
+                    break;
+            }
+            
+            if (dateStart && dateEnd) {
+                whereClause += ` AND o.created_at >= $${paramIndex} AND o.created_at < $${paramIndex + 1}`;
+                params.push(dateStart.toISOString(), dateEnd.toISOString());
+                paramIndex += 2;
+            }
+        }
+        
+        // 🎫 FILTRE PAR CODE PROMO
+        if (filters.promo && filters.promo !== 'all') {
+            switch (filters.promo) {
+                case 'with_promo':
+                    whereClause += ` AND (o.promo_code IS NOT NULL AND o.promo_code != '')`;
+                    break;
+                case 'without_promo':
+                    whereClause += ` AND (o.promo_code IS NULL OR o.promo_code = '')`;
+                    break;
+                default:
+                    // Filtre par code promo spécifique
+                    whereClause += ` AND UPPER(o.promo_code) = UPPER($${paramIndex})`;
+                    params.push(filters.promo);
+                    paramIndex++;
+            }
+        }
+        
+        // 💳 FILTRE PAR MODE DE PAIEMENT
+        if (filters.payment && filters.payment !== 'all') {
+            whereClause += ` AND LOWER(COALESCE(o.payment_method, 'card')) = LOWER($${paramIndex})`;
+            params.push(filters.payment);
+            paramIndex++;
+        }
+        
+        // 💰 FILTRE PAR MONTANT
+        if (filters.amount && filters.amount !== 'all') {
+            switch (filters.amount) {
+                case 'under_50':
+                    whereClause += ` AND o.total < 50`;
+                    break;
+                case '50_100':
+                    whereClause += ` AND o.total >= 50 AND o.total < 100`;
+                    break;
+                case '100_200':
+                    whereClause += ` AND o.total >= 100 AND o.total < 200`;
+                    break;
+                case '200_500':
+                    whereClause += ` AND o.total >= 200 AND o.total < 500`;
+                    break;
+                case 'over_500':
+                    whereClause += ` AND o.total >= 500`;
+                    break;
+                case 'over_1000':
+                    whereClause += ` AND o.total >= 1000`;
+                    break;
+            }
+        }
+        
+        // ✅ TRI DYNAMIQUE
+        let orderClause = '';
+        switch (filters.sort) {
+            case 'oldest':
+                orderClause = 'ORDER BY o.created_at ASC';
+                break;
+            case 'amount_asc':
+                orderClause = 'ORDER BY o.total ASC';
+                break;
+            case 'amount_desc':
+                orderClause = 'ORDER BY o.total DESC';
+                break;
+            case 'customer_name':
+                orderClause = 'ORDER BY COALESCE(o.customer_name, CONCAT(c.first_name, \' \', c.last_name)) ASC';
+                break;
+            case 'status':
+                orderClause = 'ORDER BY COALESCE(o.status, o.status_suivi) ASC';
+                break;
+            case 'newest':
+            default:
+                orderClause = 'ORDER BY o.created_at DESC';
+        }
+        
+        // ✅ REQUÊTE PRINCIPALE AVEC COMPTAGE
+        const countQuery = `
+            SELECT COUNT(*) as total
+            FROM orders o
+            ${joinClause}
+            ${whereClause}
+        `;
+        
+        const dataQuery = `
+            SELECT 
+                o.id,
+                o.numero_commande,
+                o.customer_id,
+                COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu') as customer_name,
+                COALESCE(o.customer_email, c.email, 'N/A') as customer_email,
+                o.total,
+                o.subtotal,
+                o.promo_code,
+                o.promo_discount_amount,
+                o.payment_method,
+                o.payment_status,
+                COALESCE(o.status, o.status_suivi, 'waiting') as status,
+                o.created_at,
+                o.updated_at,
+                o.tracking_number,
+                o.shipping_address,
+                o.shipping_city,
+                o.shipping_phone,
+                c.phone
+            FROM orders o
+            ${joinClause}
+            ${whereClause}
+            ${orderClause}
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+        `;
+        
+        params.push(limit, offset);
+        
+        console.log('🔍 Requête SQL construite:', { whereClause, orderClause, params });
+        
+        // ✅ EXÉCUTION DES REQUÊTES
+        const sequelize = Order.sequelize;
+        
+        const [countResult] = await sequelize.query(countQuery, {
+            bind: params.slice(0, -2), // Params sans limit/offset
+            type: sequelize.QueryTypes.SELECT
+        });
+        
+        const commandes = await sequelize.query(dataQuery, {
+            bind: params,
+            type: sequelize.QueryTypes.SELECT
+        });
+        
+        const totalCommandes = parseInt(countResult.total);
+        
+        console.log(`✅ ${commandes.length} commandes récupérées sur ${totalCommandes} total`);
+        
+        // ✅ ENRICHISSEMENT DES DONNÉES
+        const enrichedCommandes = commandes.map(commande => ({
+            ...commande,
+            status_display: this.translateStatus(commande.status),
+            amount_display: parseFloat(commande.total || 0).toFixed(2),
+            date_display: new Date(commande.created_at).toLocaleDateString('fr-FR'),
+            datetime_display: new Date(commande.created_at).toLocaleString('fr-FR'),
+            has_promo: !!(commande.promo_code && commande.promo_code.trim()),
+            discount_display: commande.promo_discount_amount ? parseFloat(commande.promo_discount_amount).toFixed(2) : '0.00',
+            payment_method_display: this.getPaymentMethodDisplay(commande.payment_method)
+        }));
+        
+        // ✅ CALCUL DES STATISTIQUES POUR LES FILTRES
+        const stats = this.calculateFilteredStats(enrichedCommandes);
+        
+        // ✅ PAGINATION
+        const totalPages = Math.ceil(totalCommandes / limit);
+        const pagination = {
+            currentPage: page,
+            totalPages: totalPages,
+            totalItems: totalCommandes,
+            itemsPerPage: limit,
+            hasNext: page < totalPages,
+            hasPrev: page > 1,
+            startItem: offset + 1,
+            endItem: Math.min(offset + limit, totalCommandes)
+        };
+        
+        // ✅ DONNÉES POUR LES FILTRES (options dynamiques)
+        const filterOptions = await this.getFilterOptions();
+        
+        console.log(`📊 Statistiques filtrées:`, stats);
+        console.log(`📄 Pagination: page ${page}/${totalPages}, ${totalCommandes} total`);
+        
+        // ✅ RENDU DE LA VUE
+        res.render('commandes', {
+            title: 'Gestion des Commandes',
+            commandes: enrichedCommandes,
+            stats: stats,
+            filters: filters,
+            filterOptions: filterOptions,
+            pagination: pagination,
+            user: req.session.user || null,
+            csrfToken: req.csrfToken ? req.csrfToken() : ''
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur affichage commandes avec filtres:', error);
+        res.status(500).render('error', {
+            title: 'Erreur',
+            message: 'Erreur lors du chargement des commandes',
+            error: process.env.NODE_ENV === 'development' ? error : {}
+        });
+    }
+},
+
+// ========================================
+// 🔧 FONCTIONS HELPER POUR LES FILTRES
+// ========================================
+
+// ✅ RÉCUPÉRATION DES OPTIONS DE FILTRES DYNAMIQUES
+async getFilterOptions() {
+    try {
+        const sequelize = Order.sequelize;
+        
+        // Options de codes promo actifs
+        const [promoCodesResult] = await sequelize.query(`
+            SELECT DISTINCT promo_code 
+            FROM orders 
+            WHERE promo_code IS NOT NULL AND promo_code != '' 
+            ORDER BY promo_code
+        `);
+        
+        const promoCodes = promoCodesResult.map(row => row.promo_code);
+        
+        // Options de modes de paiement
+        const [paymentMethodsResult] = await sequelize.query(`
+            SELECT DISTINCT payment_method 
+            FROM orders 
+            WHERE payment_method IS NOT NULL 
+            ORDER BY payment_method
+        `);
+        
+        const paymentMethods = paymentMethodsResult.map(row => ({
+            value: row.payment_method,
+            display: this.getPaymentMethodDisplay(row.payment_method)
+        }));
+        
+        return {
+            promoCodes,
+            paymentMethods,
+            statusOptions: [
+                { value: 'waiting', display: 'En attente' },
+                { value: 'preparing', display: 'En préparation' },
+                { value: 'shipped', display: 'Expédiée' },
+                { value: 'delivered', display: 'Livrée' },
+                { value: 'cancelled', display: 'Annulée' }
+            ],
+            dateOptions: [
+                { value: 'today', display: 'Aujourd\'hui' },
+                { value: 'yesterday', display: 'Hier' },
+                { value: 'week', display: '7 derniers jours' },
+                { value: 'month', display: 'Ce mois' },
+                { value: 'quarter', display: 'Ce trimestre' },
+                { value: 'year', display: 'Cette année' }
+            ],
+            amountOptions: [
+                { value: 'under_50', display: 'Moins de 50€' },
+                { value: '50_100', display: '50€ - 100€' },
+                { value: '100_200', display: '100€ - 200€' },
+                { value: '200_500', display: '200€ - 500€' },
+                { value: 'over_500', display: 'Plus de 500€' },
+                { value: 'over_1000', display: 'Plus de 1000€' }
+            ],
+            sortOptions: [
+                { value: 'newest', display: 'Plus récentes' },
+                { value: 'oldest', display: 'Plus anciennes' },
+                { value: 'amount_desc', display: 'Montant décroissant' },
+                { value: 'amount_asc', display: 'Montant croissant' },
+                { value: 'customer_name', display: 'Nom client' },
+                { value: 'status', display: 'Statut' }
+            ]
+        };
+        
+    } catch (error) {
+        console.error('❌ Erreur récupération options filtres:', error);
+        return {
+            promoCodes: [],
+            paymentMethods: [],
+            statusOptions: [],
+            dateOptions: [],
+            amountOptions: [],
+            sortOptions: []
+        };
+    }
+},
+
+// ✅ CALCUL DES STATISTIQUES FILTRÉES
+calculateFilteredStats(commandes) {
+    const total = commandes.length;
+    const totalRevenue = commandes.reduce((sum, cmd) => sum + parseFloat(cmd.total || 0), 0);
+    const withPromo = commandes.filter(cmd => cmd.has_promo).length;
+    const totalSavings = commandes.reduce((sum, cmd) => sum + parseFloat(cmd.promo_discount_amount || 0), 0);
+    
+    // Statistiques par statut
+    const statusStats = {
+        waiting: commandes.filter(cmd => cmd.status === 'waiting').length,
+        preparing: commandes.filter(cmd => cmd.status === 'preparing').length,
+        shipped: commandes.filter(cmd => cmd.status === 'shipped').length,
+        delivered: commandes.filter(cmd => cmd.status === 'delivered').length,
+        cancelled: commandes.filter(cmd => cmd.status === 'cancelled').length
+    };
+    
+    // Statistiques par montant
+    const amountStats = {
+        under_50: commandes.filter(cmd => parseFloat(cmd.total) < 50).length,
+        between_50_100: commandes.filter(cmd => parseFloat(cmd.total) >= 50 && parseFloat(cmd.total) < 100).length,
+        between_100_200: commandes.filter(cmd => parseFloat(cmd.total) >= 100 && parseFloat(cmd.total) < 200).length,
+        over_200: commandes.filter(cmd => parseFloat(cmd.total) >= 200).length
+    };
+    
+    return {
+        total,
+        totalRevenue: totalRevenue.toFixed(2),
+        averageOrderValue: total > 0 ? (totalRevenue / total).toFixed(2) : '0.00',
+        withPromo,
+        promoRate: total > 0 ? ((withPromo / total) * 100).toFixed(1) : '0.0',
+        totalSavings: totalSavings.toFixed(2),
+        statusStats,
+        amountStats
+    };
+},
 };

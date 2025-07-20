@@ -141,424 +141,384 @@ export const guestOrderController = {
    * 🛒 Valider et créer la commande (connecté ou invité)
    */
 async validateOrder(req, res) {
-  let transaction;
-  
-  try {
-    console.log('🛒 === DÉBUT VALIDATION COMMANDE COMPLÈTE ===');
-    
-    // Démarrer la transaction
-    transaction = await sequelize.transaction();
-    
-    const { paymentMethod, customerInfo } = req.body;
-    const userId = req.session?.user?.id || req.session?.customerId;
-    const isGuest = !userId;
-
-    console.log('👤 Type utilisateur:', isGuest ? 'Invité' : 'Connecté', `(ID: ${userId || 'N/A'})`);
-    console.log('💳 Méthode paiement reçue:', paymentMethod);
-
-    // ========================================
-    // 🔍 ÉTAPE 1: RÉCUPÉRER LES INFORMATIONS CLIENT
-    // ========================================
-    let finalCustomerInfo;
-    
-    if (isGuest) {
-      // Invité - utiliser les données du formulaire ou de la session
-      finalCustomerInfo = customerInfo || req.session.customerInfo;
-      
-      if (!finalCustomerInfo) {
-        throw new Error('Informations client manquantes pour l\'invité');
-      }
-      
-      console.log('👥 Client invité:', finalCustomerInfo.email);
-    } else {
-      // Utilisateur connecté - récupérer depuis la BDD
-      const customer = await Customer.findByPk(userId, { transaction });
-      if (!customer) {
-        throw new Error('Client connecté non trouvé');
-      }
-      
-      finalCustomerInfo = {
-        firstName: customer.first_name,
-        lastName: customer.last_name,
-        email: customer.email,
-        phone: customer.phone,
-        address: customerInfo?.address || customer.address,
-        deliveryMode: customerInfo?.deliveryMode || 'standard',
-        notes: customerInfo?.notes || ''
-      };
-      
-      console.log('👤 Client connecté:', customer.email);
-    }
-
-    // ========================================
-    // 🛒 ÉTAPE 2: RÉCUPÉRER LE PANIER AVEC TAILLES
-    // ========================================
-    console.log('🛒 Récupération du panier...');
-    const cartDetails = await cartController.getCartDetails(req);
-    
-    if (!cartDetails.items || cartDetails.items.length === 0) {
-      throw new Error('Panier vide');
-    }
-
-    console.log(`📦 Panier: ${cartDetails.items.length} articles, Total: ${cartDetails.totalPrice.toFixed(2)}€`);
-    
-    // Log des tailles pour debug
-    cartDetails.items.forEach(item => {
-      console.log(`   - ${item.jewel.name}: Qté ${item.quantity}, Taille: ${item.size || 'Standard'}, Prix: ${item.jewel.price_ttc}€`);
-    });
-
-    // ========================================
-    // 💰 ÉTAPE 3: CALCULER LES TOTAUX AVEC CODES PROMO
-    // ========================================
-    const appliedPromo = req.session.appliedPromo;
-    let discount = 0;
-    let discountedSubtotal = cartDetails.totalPrice;
-    let discountPercent = 0;
-
-    if (appliedPromo && appliedPromo.discountPercent) {
-      discountPercent = parseFloat(appliedPromo.discountPercent);
-      discount = (cartDetails.totalPrice * discountPercent) / 100;
-      discountedSubtotal = cartDetails.totalPrice - discount;
-      
-      console.log(`🎫 Code promo appliqué: ${appliedPromo.code} (-${discountPercent}% = -${discount.toFixed(2)}€)`);
-    }
-
-    // Calculer frais de livraison
-    const shippingThreshold = 50;
-    const baseDeliveryFee = 5.90;
-    const deliveryFee = discountedSubtotal >= shippingThreshold ? 0 : baseDeliveryFee;
-    const finalTotal = discountedSubtotal + deliveryFee;
-
-    console.log(`💰 Totaux finaux:
-      - Sous-total: ${cartDetails.totalPrice.toFixed(2)}€
-      - Réduction: -${discount.toFixed(2)}€
-      - Après réduction: ${discountedSubtotal.toFixed(2)}€
-      - Livraison: ${deliveryFee.toFixed(2)}€
-      - TOTAL FINAL: ${finalTotal.toFixed(2)}€`);
-
-    // ========================================
-    // 🔍 ÉTAPE 4: VÉRIFIER LE STOCK
-    // ========================================
-    console.log('📦 Vérification du stock...');
-    for (const item of cartDetails.items) {
-      const currentJewel = await Jewel.findByPk(item.jewel.id, { transaction });
-      if (!currentJewel || currentJewel.stock < item.quantity) {
-        throw new Error(`Stock insuffisant pour ${item.jewel.name}. Stock disponible: ${currentJewel?.stock || 0}`);
-      }
-    }
-    console.log('✅ Stock vérifié pour tous les articles');
-
-    // ========================================
-    // 👤 ÉTAPE 5: GÉRER LE CLIENT (CONNECTÉ OU INVITÉ)
-    // ========================================
-    let customerId = userId;
-    
-    if (isGuest) {
-      console.log('👥 Gestion client invité...');
-      
-      // Chercher d'abord par email
-      let existingCustomer = await Customer.findOne({
-        where: { email: finalCustomerInfo.email },
-        transaction
-      });
-
-      if (existingCustomer) {
-        // Client existant - mettre à jour l'adresse si nécessaire
-        if (existingCustomer.address !== finalCustomerInfo.address) {
-          await existingCustomer.update({
-            address: finalCustomerInfo.address,
-            updated_at: new Date()
-          }, { transaction });
-          console.log('👤 Client existant mis à jour:', existingCustomer.id);
-        } else {
-          console.log('👤 Client existant trouvé:', existingCustomer.id);
-        }
-        customerId = existingCustomer.id;
-      } else {
-        // Créer un nouveau client invité
-        const newCustomer = await Customer.create({
-          first_name: finalCustomerInfo.firstName,
-          last_name: finalCustomerInfo.lastName,
-          email: finalCustomerInfo.email,
-          phone: finalCustomerInfo.phone || '',
-          address: finalCustomerInfo.address,
-          password: '$2b$10$guestpassword.dummy.hash.for.guest.accounts',
-          role_id: 2,
-          is_guest: true,
-          email_verified: false,
-          is_email_verified: false,
-          is_email_verified_new: false,
-          email_notifications: true,
-          marketing_opt_in: false,
-          total_orders: 0,
-          total_spent: '0.00',
-          preferred_delivery_mode: 'standard',
-          createdat: new Date(),
-          created_at: new Date(),
-          updated_at: new Date()
-        }, { transaction });
-        
-        customerId = newCustomer.id;
-        console.log('👥 Nouveau client invité créé:', customerId);
-      }
-    }
-
-    // ========================================
-    // 📋 ÉTAPE 6: CRÉER LA COMMANDE
-    // ========================================
-    console.log('📋 Création de la commande...');
-    
-    // Générer numéro de commande unique
-    const orderNumber = 'CMD-' + Date.now() + '-' + crypto.randomBytes(3).toString('hex').toUpperCase();
-
-    const orderData = {
-      // Informations client
-      customer_id: customerId,
-      customer_email: finalCustomerInfo.email,
-      customer_name: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
-      customer_phone: finalCustomerInfo.phone || '',
-      
-      // Numéro de commande
-      numero_commande: orderNumber,
-      
-      // Totaux financiers
-      subtotal: cartDetails.totalPrice,
-      original_total: cartDetails.totalPrice,
-      original_amount: cartDetails.totalPrice,
-      total: finalTotal,
-      
-      // Livraison
-      shipping_price: deliveryFee,
-      delivery_fee: deliveryFee,
-      shipping_address: finalCustomerInfo.address,
-      delivery_address: finalCustomerInfo.address,
-      shipping_phone: finalCustomerInfo.phone || '',
-      delivery_mode: finalCustomerInfo.deliveryMode || 'standard',
-      delivery_notes: finalCustomerInfo.notes || '',
-      
-      // Taxes
-      tax_amount: 0,
-      
-      // Code promo
-      promo_code: appliedPromo?.code || null,
-      promo_code_used: appliedPromo?.code || null,
-      promo_discount_percent: discountPercent,
-      promo_discount_amount: discount,
-      discount_percent: discountPercent,
-      discount_amount: discount,
-      promo_discount: discount,
-      
-      // ✅ PAIEMENT CORRIGÉ
-      payment_method: paymentMethod || 'card',
-      payment_status: 'pending',
-      
-      // Statut
-      status: 'confirmed',
-      
-      // Invité
-      is_guest_order: isGuest,
-      guest_session_id: req.session.guestId || null,
-      
-      // Emails
-      email_confirmation_sent: false,
-      email_shipping_sent: false,
-      
-      // Timestamps
-      order_date: new Date(),
-      created_at: new Date(),
-      updated_at: new Date()
-    };
-
-    console.log(`💳 Sauvegarde payment_method: "${paymentMethod}" pour commande`);
-
-    const order = await Order.create(orderData, { transaction });
-    console.log('✅ Commande créée avec ID:', order.id);
-
-    // ========================================
-    // 📦 ÉTAPE 7: CRÉER LES ARTICLES DE COMMANDE AVEC TOUTES LES DONNÉES
-    // ========================================
-    console.log('📦 Création des articles de commande avec tailles et données complètes...');
-    
-    for (const item of cartDetails.items) {
-      console.log(`   📦 Article: ${item.jewel.name}, Taille: ${item.size || 'Standard'}, Prix: ${item.jewel.price_ttc}€`);
-      
-      // Vérification du prix
-      if (!item.jewel.price_ttc || item.jewel.price_ttc <= 0) {
-        console.warn(`⚠️ Prix invalide pour ${item.jewel.name}: ${item.jewel.price_ttc}`);
-        const currentJewel = await Jewel.findByPk(item.jewel.id, { transaction });
-        item.jewel.price_ttc = currentJewel.price_ttc;
-      }
-
-      // ✅ CRÉATION AVEC TOUTES LES COLONNES OBLIGATOIRES
-      await OrderItem.create({
-        order_id: order.id,
-        jewel_id: item.jewel.id,
-        quantity: item.quantity,
-        price: parseFloat(item.jewel.price_ttc),
-        // ✅ NOUVELLES COLONNES OBLIGATOIRES pour éviter l'erreur
-        size: item.size || 'Standard',
-        jewel_name: item.jewel.name,
-        jewel_image: item.jewel.image || '/images/placeholder.jpg'
-      }, { transaction });
-
-      // Décrémenter le stock
-      await Jewel.decrement('stock', {
-        by: item.quantity,
-        where: { id: item.jewel.id },
-        transaction
-      });
-    }
-
-    console.log('✅ Tous les articles créés avec leurs tailles et données complètes');
-
-    // ========================================
-    // 💾 ÉTAPE 8: VALIDER LA TRANSACTION
-    // ========================================
-    await transaction.commit();
-    transaction = null; // Marquer comme terminée
-    
-    console.log('✅ Transaction validée avec succès');
-
-    // ========================================
-    // 📧 ÉTAPE 9: ENVOI DES EMAILS
-    // ========================================
-    console.log('📧 Préparation et envoi des emails...');
+    const transaction = await sequelize.transaction();
     
     try {
-      // Préparer les données pour l'email avec TOUTES les informations
-      const emailOrderData = {
-        id: order.id,
-        numero_commande: orderNumber,
-        customer_name: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
-        customer_email: finalCustomerInfo.email,
-        shipping_address: finalCustomerInfo.address,
-        shipping_phone: finalCustomerInfo.phone || '',
+        console.log('🛒 Validation commande avec support invités ET utilisateurs connectés');
         
-        // Totaux financiers
-        subtotal: cartDetails.totalPrice,
-        total: finalTotal,
-        shipping_price: deliveryFee,
+        const { paymentMethod, customerInfo } = req.body;
+        const userId = req.session?.user?.id || req.session?.customerId;
+        const isGuest = !userId;
+
+        console.log('👤 Type utilisateur:', isGuest ? 'Invité' : 'Connecté');
+        console.log('📝 Données formulaire reçues:', {
+            paymentMethod,
+            hasCustomerInfo: !!customerInfo,
+            customerInfoFields: customerInfo ? Object.keys(customerInfo) : []
+        });
+
+        // ========================================
+        // 👤 RÉCUPÉRATION DES INFORMATIONS CLIENT
+        // ========================================
+        let finalCustomerInfo;
         
-        // Code promo
-        promo_code: appliedPromo?.code || null,
-        promo_discount_amount: discount,
-        promo_discount_percent: discountPercent,
+        if (isGuest) {
+            // ✅ INVITÉ - utiliser les données du formulaire ou de la session
+            finalCustomerInfo = customerInfo || req.session.customerInfo;
+            
+            if (!finalCustomerInfo) {
+                throw new Error('Informations client manquantes pour invité');
+            }
+            
+            console.log('✅ Invité - Données utilisées:', {
+                source: customerInfo ? 'Formulaire' : 'Session',
+                nom: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
+                email: finalCustomerInfo.email,
+                adresse: finalCustomerInfo.address
+            });
+            
+        } else {
+            // ✅ UTILISATEUR CONNECTÉ - PRIORITÉ AUX DONNÉES DU FORMULAIRE
+            const customer = await Customer.findByPk(userId);
+            if (!customer) {
+                throw new Error('Client connecté non trouvé');
+            }
+            
+            // ✅ PRIORITÉ 1: Données du formulaire (si fournies)
+            // ✅ PRIORITÉ 2: Données de session 
+            // ✅ PRIORITÉ 3: Données du compte (fallback)
+            
+            if (customerInfo && (customerInfo.firstName || customerInfo.address || customerInfo.email)) {
+                // Utiliser les nouvelles données du formulaire
+                finalCustomerInfo = {
+                    firstName: customerInfo.firstName?.trim() || customer.first_name,
+                    lastName: customerInfo.lastName?.trim() || customer.last_name,
+                    email: customerInfo.email?.trim() || customer.email,
+                    phone: customerInfo.phone?.trim() || customer.phone,
+                    address: customerInfo.address?.trim() || customer.address,
+                    city: customerInfo.city?.trim() || customer.city,
+                    postalCode: customerInfo.postalCode?.trim() || customer.postal_code,
+                    deliveryMode: customerInfo.deliveryMode || 'standard',
+                    notes: customerInfo.notes?.trim() || ''
+                };
+                
+                console.log('✅ Utilisateur connecté - Nouvelles données du formulaire utilisées:', {
+                    nom: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
+                    email: finalCustomerInfo.email,
+                    adresse: finalCustomerInfo.address,
+                    ville: finalCustomerInfo.city,
+                    phone: finalCustomerInfo.phone
+                });
+                
+                // ✅ Sauvegarder ces nouvelles données en session
+                req.session.customerInfo = finalCustomerInfo;
+                
+            } else if (req.session.customerInfo) {
+                // Utiliser les données de session
+                finalCustomerInfo = req.session.customerInfo;
+                console.log('✅ Utilisateur connecté - Données de session utilisées');
+                
+            } else {
+                // Fallback sur les données du compte
+                finalCustomerInfo = {
+                    firstName: customer.first_name,
+                    lastName: customer.last_name,
+                    email: customer.email,
+                    phone: customer.phone,
+                    address: customer.address,
+                    city: customer.city || '',
+                    postalCode: customer.postal_code || '',
+                    deliveryMode: 'standard',
+                    notes: ''
+                };
+                
+                console.log('✅ Utilisateur connecté - Données du compte utilisées (fallback)');
+            }
+        }
+
+        // ========================================
+        // 🛒 RÉCUPÉRATION DU PANIER
+        // ========================================
+        const cartDetails = await cartController.getCartDetails(req);
         
-        // Articles AVEC tailles
-        items: cartDetails.items.map(item => ({
-          name: item.jewel.name,
-          quantity: item.quantity,
-          price: item.jewel.price_ttc,
-          size: item.size || 'Standard',
-          total: item.jewel.price_ttc * item.quantity,
-          image: item.jewel.image
-        }))
-      };
+        if (!cartDetails.items || cartDetails.items.length === 0) {
+            throw new Error('Panier vide');
+        }
 
-      const emailCustomerData = {
-        firstName: finalCustomerInfo.firstName,
-        lastName: finalCustomerInfo.lastName,
-        email: finalCustomerInfo.email,
-        phone: finalCustomerInfo.phone,
-        address: finalCustomerInfo.address
-      };
+        console.log(`🛒 Panier: ${cartDetails.items.length} articles, Total: ${cartDetails.totalPrice.toFixed(2)}€`);
 
-      // Importer et envoyer les emails
-      const { sendOrderConfirmationEmails } = await import('../services/mailService.js');
-      
-      const emailResults = await sendOrderConfirmationEmails(
-        finalCustomerInfo.email,
-        finalCustomerInfo.firstName,
-        emailOrderData,
-        emailCustomerData
-      );
-      
-      console.log('📧 Résultats envoi emails:', {
-        client: emailResults.customer.success ? '✅ Envoyé' : `❌ ${emailResults.customer.error}`,
-        admin: emailResults.admin.success ? '✅ Envoyé' : `❌ ${emailResults.admin.error}`
-      });
-      
-    } catch (emailError) {
-      console.error('❌ Erreur envoi emails (commande créée avec succès):', emailError);
-    }
+        // ========================================
+        // 🎫 CALCUL DES TOTAUX AVEC CODES PROMO
+        // ========================================
+        const appliedPromo = req.session.appliedPromo;
+        let discount = 0;
+        let discountedSubtotal = cartDetails.totalPrice;
+        let discountPercent = 0;
 
-    // ========================================
-    // 🧹 ÉTAPE 10: NETTOYAGE DU PANIER ET SESSION
-    // ========================================
-    console.log('🧹 Nettoyage du panier et session...');
-    
-    if (isGuest) {
-      req.session.cart = { items: [] };
-    } else {
-      await Cart.destroy({
-        where: { customer_id: userId }
-      });
-    }
+        if (appliedPromo && appliedPromo.discountPercent) {
+            discountPercent = parseFloat(appliedPromo.discountPercent);
+            discount = (cartDetails.totalPrice * discountPercent) / 100;
+            discountedSubtotal = cartDetails.totalPrice - discount;
+            
+            console.log(`🎫 Code promo appliqué: ${appliedPromo.code} (-${discount.toFixed(2)}€)`);
+        }
 
-    delete req.session.customerInfo;
-    delete req.session.appliedPromo;
+        // Calculer frais de livraison
+        const shippingThreshold = 50;
+        const baseDeliveryFee = 5.90;
+        const deliveryFee = discountedSubtotal >= shippingThreshold ? 0 : baseDeliveryFee;
+        const finalTotal = discountedSubtotal + deliveryFee;
 
-    console.log('✅ Panier et session nettoyés');
+        console.log(`💰 Totaux finaux:`, {
+            sousTotal: cartDetails.totalPrice.toFixed(2),
+            reduction: discount.toFixed(2),
+            sousotalApresReduction: discountedSubtotal.toFixed(2),
+            fraisLivraison: deliveryFee.toFixed(2),
+            totalFinal: finalTotal.toFixed(2)
+        });
 
-    // ========================================
-    // 🎉 ÉTAPE 11: RÉPONSE FINALE
-    // ========================================
-    console.log('🎉 === COMMANDE VALIDÉE AVEC SUCCÈS ===');
-    console.log(`   📋 Numéro: ${orderNumber}`);
-    console.log(`   💰 Total: ${finalTotal.toFixed(2)}€`);
-    console.log(`   👤 Client: ${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`);
-    console.log(`   📧 Email: ${finalCustomerInfo.email}`);
-    console.log(`   📦 Articles: ${cartDetails.items.length}`);
-    console.log(`   💳 Paiement: ${paymentMethod}`);
-    if (appliedPromo) {
-      console.log(`   🎫 Promo: ${appliedPromo.code} (-${discount.toFixed(2)}€)`);
-    }
-    console.log('==========================================');
+        // ========================================
+        // 🆔 GESTION DU CLIENT (INVITÉ OU CONNECTÉ)
+        // ========================================
+        let customerId = userId;
+        
+        if (isGuest) {
+            // Créer ou récupérer le client invité
+            let existingCustomer = await Customer.findOne({
+                where: { email: finalCustomerInfo.email },
+                transaction
+            });
 
-    res.json({
-      success: true,
-      message: appliedPromo 
-        ? `Commande créée avec succès ! Code promo ${appliedPromo.code} appliqué (-${discount.toFixed(2)}€). Un email de confirmation vous a été envoyé.`
-        : 'Commande créée avec succès ! Un email de confirmation vous a été envoyé.',
-      order: {
-        id: order.id,
-        numero: orderNumber,
-        customer_email: finalCustomerInfo.email,
-        total: finalTotal,
-        isGuest: isGuest,
-        itemsCount: cartDetails.items.length,
-        hasPromo: !!appliedPromo,
-        payment_method: paymentMethod
-      },
-      redirectUrl: `/commande/confirmation?orderId=${order.id}&orderNumber=${orderNumber}`
-    });
+            if (existingCustomer) {
+                // Mettre à jour les informations si nécessaire
+                await existingCustomer.update({
+                    first_name: finalCustomerInfo.firstName,
+                    last_name: finalCustomerInfo.lastName,
+                    phone: finalCustomerInfo.phone,
+                    address: finalCustomerInfo.address,
+                    city: finalCustomerInfo.city,
+                    postal_code: finalCustomerInfo.postalCode
+                }, { transaction });
+                
+                customerId = existingCustomer.id;
+                console.log('👤 Client existant mis à jour:', customerId);
+            } else {
+                // Créer un nouveau client
+                const newCustomer = await Customer.create({
+                    first_name: finalCustomerInfo.firstName,
+                    last_name: finalCustomerInfo.lastName,
+                    email: finalCustomerInfo.email,
+                    phone: finalCustomerInfo.phone,
+                    address: finalCustomerInfo.address,
+                    city: finalCustomerInfo.city,
+                    postal_code: finalCustomerInfo.postalCode,
+                    password: null, // Compte invité sans mot de passe
+                    is_guest: true,
+                    is_email_verified: false
+                }, { transaction });
+                
+                customerId = newCustomer.id;
+                console.log('👥 Nouveau client invité créé:', customerId);
+            }
+        }
 
-  } catch (error) {
-    // ========================================
-    // ❌ GESTION D'ERREUR AVEC ROLLBACK
-    // ========================================
-    if (transaction && !transaction.finished) {
-      try {
+        // ========================================
+        // 📋 CRÉATION DE LA COMMANDE AVEC VRAIES DONNÉES
+        // ========================================
+        
+        // Générer numéro de commande unique
+        const orderNumber = 'CMD-' + Date.now() + '-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+
+        console.log(`📋 Création commande: ${orderNumber} pour client ${customerId}`);
+
+        // ✅ CRÉER LA COMMANDE AVEC LES VRAIES DONNÉES DE LIVRAISON
+        const order = await Order.create({
+            numero_commande: orderNumber,
+            customer_id: customerId,
+            
+            // ✅ INFORMATIONS DE CONTACT
+            customer_email: finalCustomerInfo.email,
+            customer_name: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
+            customer_phone: finalCustomerInfo.phone,
+            
+            // ✅ VRAIES DONNÉES DE LIVRAISON (du formulaire)
+            shipping_address: finalCustomerInfo.address,
+            shipping_city: finalCustomerInfo.city || '',
+            shipping_postal_code: finalCustomerInfo.postalCode || '',
+            shipping_phone: finalCustomerInfo.phone,
+            shipping_country: 'France',
+            
+            // ✅ DONNÉES FINANCIÈRES
+            subtotal: cartDetails.totalPrice,
+            promo_discount_amount: discount,
+            promo_discount_percent: discountPercent,
+            promo_code: appliedPromo?.code || null,
+            shipping_price: deliveryFee,
+            total: finalTotal,
+            
+            // ✅ STATUT ET MÉTHODE
+            status: 'confirmed',
+            payment_method: paymentMethod || 'card',
+            payment_status: 'pending',
+            shipping_method: finalCustomerInfo.deliveryMode || 'standard',
+            shipping_notes: finalCustomerInfo.notes,
+            
+            // ✅ MARQUEURS
+            is_guest_order: isGuest,
+            guest_session_id: isGuest ? req.sessionID : null,
+            
+            created_at: new Date()
+        }, { transaction });
+
+        const orderId = order.id;
+        console.log(`✅ Commande créée avec ID: ${orderId}`);
+
+        // ========================================
+        // 📦 CRÉATION DES ORDER_ITEMS
+        // ========================================
+        console.log('📦 Création des order_items...');
+
+        for (const item of cartDetails.items) {
+            await OrderItem.create({
+                order_id: orderId,
+                jewel_id: item.jewel.id,
+                jewel_name: item.jewel.name,
+                jewel_image: item.jewel.image,
+                quantity: item.quantity,
+                price: item.jewel.price_ttc,
+                size: item.size || 'Non spécifiée'
+            }, { transaction });
+        }
+
+        console.log(`📦 ${cartDetails.items.length} order_items créés`);
+
+        // ========================================
+        // 🧹 NETTOYAGE DU PANIER
+        // ========================================
+        if (userId) {
+            await Cart.destroy({
+                where: { customer_id: userId },
+                transaction
+            });
+            console.log('🧹 Panier BDD vidé');
+        } else {
+            req.session.cart = [];
+            console.log('🧹 Panier session vidé');
+        }
+
+        req.session.appliedPromo = null;
+        // ✅ NE PAS supprimer customerInfo pour pouvoir l'afficher dans les emails
+
+        await transaction.commit();
+        console.log('✅ Transaction committée avec succès');
+
+        // ========================================
+        // 📧 ENVOI DES EMAILS (ASYNCHRONE)
+        // ========================================
+        try {
+            console.log('📧 Préparation des emails avec vraies données de livraison...');
+            
+            const emailOrderData = {
+                id: orderId,
+                numero_commande: orderNumber,
+                total: finalTotal,
+                subtotal: cartDetails.totalPrice,
+                promo_discount_amount: discount,
+                shipping_price: deliveryFee,
+                promo_code: appliedPromo?.code || null,
+                
+                // ✅ VRAIES DONNÉES DE LIVRAISON POUR L'EMAIL
+                customer_name: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
+                customer_email: finalCustomerInfo.email,
+                shipping_address: finalCustomerInfo.address,
+                shipping_city: finalCustomerInfo.city,
+                shipping_postal_code: finalCustomerInfo.postalCode,
+                shipping_phone: finalCustomerInfo.phone,
+                
+                items: cartDetails.items.map(item => ({
+                    name: item.jewel.name,
+                    quantity: item.quantity,
+                    price: item.jewel.price_ttc,
+                    size: item.size || 'Standard'
+                }))
+            };
+
+            const emailCustomerData = {
+                firstName: finalCustomerInfo.firstName,
+                lastName: finalCustomerInfo.lastName,
+                email: finalCustomerInfo.email,
+                phone: finalCustomerInfo.phone,
+                address: finalCustomerInfo.address,
+                city: finalCustomerInfo.city,
+                postalCode: finalCustomerInfo.postalCode
+            };
+
+            // Envoi des emails (ne pas attendre pour ne pas bloquer la réponse)
+            sendOrderEmailsAsync(emailOrderData, emailCustomerData);
+
+        } catch (emailError) {
+            console.error('❌ Erreur emails (non bloquante):', emailError);
+        }
+
+        // ========================================
+        // ✅ RÉPONSE DE SUCCÈS
+        // ========================================
+        const successMessage = `Commande ${orderNumber} créée avec succès ! ` +
+            (appliedPromo ? `Code promo ${appliedPromo.code} appliqué (-${discount.toFixed(2)}€). ` : '') +
+            `Confirmation envoyée à ${finalCustomerInfo.email}.`;
+
+        console.log('🎉 === COMMANDE CRÉÉE AVEC SUCCÈS ===');
+        console.log(`   📋 Numéro: ${orderNumber}`);
+        console.log(`   💰 Montant: ${finalTotal.toFixed(2)}€`);
+        console.log(`   👤 Client: ${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`);
+        console.log(`   📧 Email: ${finalCustomerInfo.email}`);
+        console.log(`   📍 Adresse: ${finalCustomerInfo.address}`);
+        console.log(`   🏙️ Ville: ${finalCustomerInfo.city}`);
+        console.log(`   📱 Téléphone: ${finalCustomerInfo.phone}`);
+        if (appliedPromo) {
+            console.log(`   🎫 Code promo: ${appliedPromo.code} (-${discount.toFixed(2)}€)`);
+        }
+        console.log('=====================================');
+
+        return res.json({
+            success: true,
+            message: successMessage,
+            order: {
+                id: orderId,
+                numero: orderNumber,
+                total: finalTotal,
+                customer_email: finalCustomerInfo.email,
+                customer_name: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
+                shipping_address: finalCustomerInfo.address,
+                shipping_city: finalCustomerInfo.city
+            },
+            redirectUrl: `/commande/confirmation/${orderNumber}`
+        });
+
+    } catch (error) {
         await transaction.rollback();
-        console.log('🔄 Transaction annulée suite à l\'erreur');
-      } catch (rollbackError) {
-        console.error('❌ Erreur lors du rollback:', rollbackError);
-      }
+        console.error('❌ Erreur validation commande:', error);
+        
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Erreur lors de la création de la commande'
+        });
     }
-    
-    console.error('❌ Erreur validation commande:', error);
-    console.error('Stack trace:', error.stack);
-    
-    res.status(500).json({
-      success: false,
-      message: error.message || 'Erreur lors de la création de la commande',
-      debug: process.env.NODE_ENV === 'development' ? {
-        error: error.message,
-        stack: error.stack
-      } : undefined
-    });
-  }
 },
+
+// ✅ FONCTION HELPER POUR ENVOI D'EMAILS ASYNCHRONE
+async  sendOrderEmailsAsync(emailOrderData, emailCustomerData) {
+    try {
+        console.log('📧 Envoi des emails de confirmation...');
+        const { sendOrderConfirmationEmails } = await import('../services/mailService.js');
+        await sendOrderConfirmationEmails(emailOrderData, emailCustomerData);
+        console.log('✅ Emails envoyés avec succès');
+    } catch (emailError) {
+        console.error('❌ Erreur envoi emails:', emailError);
+        // Ne pas faire échouer la commande si l'email échoue
+    }
+},
+
 
 
 
