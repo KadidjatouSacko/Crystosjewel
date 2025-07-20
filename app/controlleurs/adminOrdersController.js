@@ -520,389 +520,441 @@ async getDashboardData(period = 'month') {
     // 📊 DASHBOARD PRINCIPAL
     // ========================================
 
-    async showDashboard(req, res) {
-        try {
-            console.log('🎯 Chargement dashboard admin avec gestion des tailles');
-            
-            
-            // Normaliser les statuts avant affichage
-            await adminOrdersController.normalizeOrderStatuses();
+   async showDashboard(req, res) {
+    try {
+        console.log('🎯 Chargement dashboard admin avec gestion des tailles');
+        
+        // Normaliser les statuts avant affichage
+        await adminOrdersController.normalizeOrderStatuses();
 
-            // Récupérer les statistiques générales
-            const statsQuery = `
-                WITH order_stats AS (
-                    SELECT 
-                        COUNT(*) as total_orders,
-                        COUNT(CASE WHEN COALESCE(status, status_suivi) IN ('waiting', 'en attente') THEN 1 END) as waiting_orders,
-                        COUNT(CASE WHEN COALESCE(status, status_suivi) IN ('preparing', 'preparation', 'préparation') THEN 1 END) as preparing_orders,
-                        COUNT(CASE WHEN COALESCE(status, status_suivi) IN ('shipped', 'expediee', 'expédiée') THEN 1 END) as shipped_orders,
-                        COUNT(CASE WHEN COALESCE(status, status_suivi) IN ('delivered', 'livree', 'livrée') THEN 1 END) as delivered_orders,
-                        COUNT(CASE WHEN COALESCE(status, status_suivi) IN ('cancelled', 'annulee', 'annulée') THEN 1 END) as cancelled_orders,
-                        COALESCE(SUM(total), 0) as total_revenue,
-                        COALESCE(SUM(COALESCE(original_total, total)), 0) as revenue_before_discounts,
-                        COUNT(CASE WHEN promo_code IS NOT NULL AND promo_code != '' THEN 1 END) as orders_with_promo,
-                        COALESCE(SUM(COALESCE(discount_amount, promo_discount_amount, promo_discount, 0)), 0) as total_discounts,
-                        COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as orders_last_month,
-                        COALESCE(SUM(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' THEN total ELSE 0 END), 0) as revenue_last_month,
-                        COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' AND promo_code IS NOT NULL THEN 1 END) as promo_orders_last_month
-                    FROM orders
-                ),
-                previous_month AS (
-                    SELECT 
-                        COUNT(*) as orders_prev_month,
-                        COALESCE(SUM(total), 0) as revenue_prev_month,
-                        COUNT(CASE WHEN promo_code IS NOT NULL THEN 1 END) as promo_orders_prev_month
-                    FROM orders 
-                    WHERE created_at >= CURRENT_DATE - INTERVAL '60 days' 
-                    AND created_at < CURRENT_DATE - INTERVAL '30 days'
-                )
+        // Récupérer les statistiques générales
+        const statsQuery = `
+            WITH order_stats AS (
                 SELECT 
-                    sc.*,
-                    pm.orders_prev_month,
-                    pm.revenue_prev_month,
-                    pm.promo_orders_prev_month,
-                    CASE WHEN pm.orders_prev_month > 0 
-                         THEN ROUND(((sc.orders_last_month - pm.orders_prev_month)::NUMERIC / pm.orders_prev_month) * 100, 1)
-                         ELSE 100 END as orders_trend_percent,
-                    CASE WHEN pm.revenue_prev_month > 0 
-                         THEN ROUND(((sc.revenue_last_month - pm.revenue_prev_month) / pm.revenue_prev_month) * 100, 1)
-                         ELSE 100 END as revenue_trend_percent,
-                    CASE WHEN pm.promo_orders_prev_month > 0 
-                         THEN ROUND(((sc.promo_orders_last_month - pm.promo_orders_prev_month)::NUMERIC / pm.promo_orders_prev_month) * 100, 1)
-                         ELSE 100 END as promo_trend_percent
-                FROM order_stats sc, previous_month pm
-            `;
+                    COUNT(*) as total_orders,
+                    COUNT(CASE WHEN COALESCE(status, status_suivi) IN ('waiting', 'en attente') THEN 1 END) as waiting_orders,
+                    COUNT(CASE WHEN COALESCE(status, status_suivi) IN ('preparing', 'preparation', 'préparation') THEN 1 END) as preparing_orders,
+                    COUNT(CASE WHEN COALESCE(status, status_suivi) IN ('shipped', 'expediee', 'expédiée') THEN 1 END) as shipped_orders,
+                    COUNT(CASE WHEN COALESCE(status, status_suivi) IN ('delivered', 'livree', 'livrée') THEN 1 END) as delivered_orders,
+                    COUNT(CASE WHEN COALESCE(status, status_suivi) IN ('cancelled', 'annulee', 'annulée') THEN 1 END) as cancelled_orders,
+                    COALESCE(SUM(total), 0) as total_revenue,
+                    COALESCE(SUM(COALESCE(original_total, total)), 0) as revenue_before_discounts,
+                    COUNT(CASE WHEN promo_code IS NOT NULL AND promo_code != '' THEN 1 END) as orders_with_promo,
+                    COALESCE(SUM(COALESCE(discount_amount, promo_discount_amount, promo_discount, 0)), 0) as total_discounts,
+                    COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as orders_last_month,
+                    COALESCE(SUM(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' THEN total ELSE 0 END), 0) as revenue_last_month,
+                    COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' AND promo_code IS NOT NULL THEN 1 END) as promo_orders_last_month
+                FROM orders
+            ),
+            previous_month AS (
+                SELECT 
+                    COUNT(*) as orders_prev_month,
+                    COALESCE(SUM(total), 0) as revenue_prev_month,
+                    COUNT(CASE WHEN promo_code IS NOT NULL THEN 1 END) as promo_orders_prev_month
+                FROM orders 
+                WHERE created_at >= CURRENT_DATE - INTERVAL '60 days' 
+                AND created_at < CURRENT_DATE - INTERVAL '30 days'
+            )
+            SELECT 
+                sc.*,
+                pm.orders_prev_month,
+                pm.revenue_prev_month,
+                pm.promo_orders_prev_month,
+                CASE WHEN pm.orders_prev_month > 0 
+                     THEN ROUND(((sc.orders_last_month - pm.orders_prev_month)::NUMERIC / pm.orders_prev_month) * 100, 1)
+                     ELSE 100 END as orders_trend_percent,
+                CASE WHEN pm.revenue_prev_month > 0 
+                     THEN ROUND(((sc.revenue_last_month - pm.revenue_prev_month) / pm.revenue_prev_month) * 100, 1)
+                     ELSE 100 END as revenue_trend_percent,
+                CASE WHEN pm.promo_orders_prev_month > 0 
+                     THEN ROUND(((sc.promo_orders_last_month - pm.promo_orders_prev_month)::NUMERIC / pm.promo_orders_prev_month) * 100, 1)
+                     ELSE 100 END as promo_trend_percent
+            FROM order_stats sc, previous_month pm
+        `;
 
-            const [statsResult] = await sequelize.query(statsQuery);
-            const statsData = statsResult[0] || {};
+        const [statsResult] = await sequelize.query(statsQuery);
+        const statsData = statsResult[0] || {};
 
-            // Formater les statistiques
-            const stats = {
-                totalCommandes: {
-                    label: "Total commandes",
-                    value: parseInt(statsData.total_orders) || 0,
-                    trend: parseFloat(statsData.orders_trend_percent) || 0,
-                    direction: (parseFloat(statsData.orders_trend_percent) || 0) >= 0 ? 'up' : 'down',
-                    compared: "vs mois dernier"
-                },
-                chiffreAffaires: {
-                    label: "Chiffre d'affaires",
-                    value: parseFloat(statsData.total_revenue) || 0,
-                    trend: parseFloat(statsData.revenue_trend_percent) || 0,
-                    direction: (parseFloat(statsData.revenue_trend_percent) || 0) >= 0 ? 'up' : 'down',
-                    compared: "vs mois dernier"
-                },
-                codesPromoUtilises: {
-                    label: "Codes promo utilisés",
-                    value: parseInt(statsData.orders_with_promo) || 0,
-                    trend: parseFloat(statsData.promo_trend_percent) || 0,
-                    direction: (parseFloat(statsData.promo_trend_percent) || 0) >= 0 ? 'up' : 'down',
-                    compared: "vs mois dernier"
-                },
-                economiesClients: {
-                    label: "Économies clients",
-                    value: parseFloat(statsData.total_discounts) || 0,
-                    trend: parseFloat(statsData.promo_trend_percent) || 0,
-                    direction: 'down',
-                    compared: "réductions totales"
+        // Formater les statistiques
+        const stats = {
+            totalCommandes: {
+                label: "Total commandes",
+                value: parseInt(statsData.total_orders) || 0,
+                trend: parseFloat(statsData.orders_trend_percent) || 0,
+                direction: (parseFloat(statsData.orders_trend_percent) || 0) >= 0 ? 'up' : 'down',
+                compared: "vs mois dernier"
+            },
+            chiffreAffaires: {
+                label: "Chiffre d'affaires",
+                value: parseFloat(statsData.total_revenue) || 0,
+                trend: parseFloat(statsData.revenue_trend_percent) || 0,
+                direction: (parseFloat(statsData.revenue_trend_percent) || 0) >= 0 ? 'up' : 'down',
+                compared: "vs mois dernier"
+            },
+            codesPromoUtilises: {
+                label: "Codes promo utilisés",
+                value: parseInt(statsData.orders_with_promo) || 0,
+                trend: parseFloat(statsData.promo_trend_percent) || 0,
+                direction: (parseFloat(statsData.promo_trend_percent) || 0) >= 0 ? 'up' : 'down',
+                compared: "vs mois dernier"
+            },
+            economiesClients: {
+                label: "Économies clients",
+                value: parseFloat(statsData.total_discounts) || 0,
+                trend: parseFloat(statsData.promo_trend_percent) || 0,
+                direction: 'down',
+                compared: "réductions totales"
+            }
+        };
+
+        const statusStats = {
+            waiting: parseInt(statsData.waiting_orders) || 0,
+            preparing: parseInt(statsData.preparing_orders) || 0,
+            shipped: parseInt(statsData.shipped_orders) || 0,
+            delivered: parseInt(statsData.delivered_orders) || 0,
+            cancelled: parseInt(statsData.cancelled_orders) || 0
+        };
+
+        // ✅ REQUÊTE CORRIGÉE pour récupérer les commandes avec gestion des invités
+        const ordersQuery = `
+            SELECT 
+                o.id,
+                o.numero_commande,
+                -- ✅ FIX DATES: Protection contre les dates nulles/invalides
+                COALESCE(o.created_at, o.order_date, NOW()) as created_at_safe,
+                COALESCE(o.order_date, o.created_at, NOW()) as order_date_safe,
+                o.created_at as original_created_at,
+                
+                -- ✅ FIX NOMS/EMAILS pour les invités
+                CASE 
+                    WHEN o.is_guest_order = true AND (o.customer_name IS NULL OR o.customer_name = '') 
+                    THEN 'Client invité'
+                    ELSE COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu')
+                END as customer_name,
+                
+                COALESCE(o.customer_email, c.email, 'email@inconnu.com') as customer_email,
+                
+                o.total,
+                COALESCE(o.original_total, o.total) as original_total,
+                o.promo_code,
+                COALESCE(o.discount_amount, 0) as discount_amount,
+                COALESCE(o.discount_percent, 0) as discount_percent,
+                COALESCE(o.promo_discount_amount, 0) as promo_discount_amount,
+                COALESCE(o.promo_discount_percent, 0) as promo_discount_percent,
+                COALESCE(o.promo_discount, 0) as promo_discount,
+                COALESCE(o.shipping_method, 'Standard') as shipping_method,
+                COALESCE(o.status, o.status_suivi, 'waiting') as status,
+                o.tracking_number,
+                c.phone,
+                o.shipping_address,
+                o.shipping_city,
+                o.notes,
+                o.customer_id,
+                o.is_guest_order,
+                
+                -- ✅ RÉCUPÉRATION DES TAILLES DEPUIS ORDER_ITEMS avec nouvelles colonnes
+                (
+                    SELECT JSON_AGG(
+                        JSON_BUILD_OBJECT(
+                            'nom_article', COALESCE(oi.jewel_name, j.name, jw.name, 'Article'),
+                            'taille', COALESCE(oi.size, 'Standard'),
+                            'quantite', COALESCE(oi.quantity, 1),
+                            'prix', COALESCE(oi.price, j.price_ttc, jw.price_ttc, 0),
+                            'matiere', COALESCE(j.matiere, jw.matiere, ''),
+                            'image', COALESCE(oi.jewel_image, j.image, jw.image, '/images/placeholder.jpg')
+                        )
+                        ORDER BY oi.id
+                    )
+                    FROM order_items oi
+                    LEFT JOIN jewel j ON oi.jewel_id = j.id
+                    LEFT JOIN jewels jw ON oi.jewel_id = jw.id
+                    WHERE oi.order_id = o.id
+                ) as articles_details,
+                
+                -- ✅ Fallback amélioré : ORDER_HAS_JEWEL si ORDER_ITEMS est vide
+                (
+                    SELECT JSON_AGG(
+                        JSON_BUILD_OBJECT(
+                            'nom_article', COALESCE(j.name, jw.name, 'Article'),
+                            'taille', 'Standard',
+                            'quantite', COALESCE(ohj.quantity, 1),
+                            'prix', COALESCE(ohj.unit_price, j.price_ttc, jw.price_ttc, 0),
+                            'matiere', COALESCE(j.matiere, jw.matiere, ''),
+                            'image', COALESCE(j.image, jw.image, '/images/placeholder.jpg')
+                        )
+                        ORDER BY ohj.jewel_id
+                    )
+                    FROM order_has_jewel ohj
+                    LEFT JOIN jewel j ON ohj.jewel_id = j.id
+                    LEFT JOIN jewels jw ON ohj.jewel_id = jw.id
+                    WHERE ohj.order_id = o.id
+                ) as articles_details_fallback,
+                
+                -- ✅ COMPTER LES ARTICLES AVEC TAILLES SPÉCIFIÉES (exclut "Standard")
+                (
+                    SELECT COUNT(*)
+                    FROM order_items oi
+                    WHERE oi.order_id = o.id
+                    AND oi.size IS NOT NULL 
+                    AND oi.size NOT IN ('Standard', '', 'Non spécifiée', 'null')
+                ) as articles_avec_tailles,
+                
+                -- ✅ COMPTER LE TOTAL D'ARTICLES
+                (
+                    SELECT COUNT(*)
+                    FROM order_items oi
+                    WHERE oi.order_id = o.id
+                ) as total_articles_order_items,
+                
+                -- Fallback count pour ORDER_HAS_JEWEL
+                (
+                    SELECT COUNT(*)
+                    FROM order_has_jewel ohj
+                    WHERE ohj.order_id = o.id
+                ) as total_articles_fallback
+                
+            FROM orders o
+            LEFT JOIN customer c ON o.customer_id = c.id
+            ORDER BY COALESCE(o.created_at, o.order_date, NOW()) DESC
+            LIMIT 100
+        `;
+
+        const [ordersResult] = await sequelize.query(ordersQuery);
+        
+        // ✅ FORMATAGE DES COMMANDES avec corrections pour les invités
+        const commandes = ordersResult.map(order => {
+            console.log(`📋 Traitement commande #${order.id} ${order.is_guest_order ? '(Invité)' : '(Connecté)'}`);
+
+            // ✅ FIX DATES - Protection contre les dates invalides
+            const dateCommande = new Date(order.created_at_safe);
+            const isValidDate = !isNaN(dateCommande.getTime());
+            
+            const formattedDate = isValidDate 
+                ? dateCommande.toLocaleDateString('fr-FR')
+                : new Date().toLocaleDateString('fr-FR');
+            
+            const formattedDateTime = isValidDate
+                ? dateCommande.toLocaleString('fr-FR') 
+                : new Date().toLocaleString('fr-FR');
+
+            // Calculs financiers
+            const originalAmount = parseFloat(order.original_total) || parseFloat(order.total) || 0;
+            const discountAmount = Math.max(
+                parseFloat(order.discount_amount) || 0,
+                parseFloat(order.promo_discount_amount) || 0,
+                parseFloat(order.promo_discount) || 0
+            );
+            const discountPercent = Math.max(
+                parseInt(order.discount_percent) || 0,
+                parseInt(order.promo_discount_percent) || 0
+            );
+            const finalAmount = parseFloat(order.total) || 0;
+            
+            const calculatedOriginal = discountAmount > 0 && originalAmount === finalAmount 
+                ? finalAmount + discountAmount 
+                : originalAmount;
+
+            // ✅ TRAITEMENT DES ARTICLES ET TAILLES AMÉLIORÉ
+            let articlesDetails = [];
+            let totalArticles = 0;
+            let articlesAvecTailles = 0;
+
+            // Priorité 1: order_items (plus récent et complet avec nouvelles colonnes)
+            if (order.articles_details && Array.isArray(order.articles_details)) {
+                articlesDetails = order.articles_details;
+                totalArticles = parseInt(order.total_articles_order_items) || 0;
+                articlesAvecTailles = parseInt(order.articles_avec_tailles) || 0;
+                console.log(`   📦 ${totalArticles} articles depuis order_items, ${articlesAvecTailles} avec tailles spécifiées`);
+            }
+            // Fallback: order_has_jewel (ancien système)
+            else if (order.articles_details_fallback && Array.isArray(order.articles_details_fallback)) {
+                articlesDetails = order.articles_details_fallback;
+                totalArticles = parseInt(order.total_articles_fallback) || 0;
+                articlesAvecTailles = 0; // Ancien système sans tailles
+                console.log(`   📦 ${totalArticles} articles depuis order_has_jewel (fallback)`);
+            }
+
+            // Calculer la couverture des tailles
+            const pourcentageCouverture = totalArticles > 0 ? 
+                Math.round((articlesAvecTailles / totalArticles) * 100) : 0;
+
+            // ✅ CRÉER L'AFFICHAGE DES TAILLES AMÉLIORÉ
+            let affichageTailles = 'Tailles standards';
+            let detailTailles = [];
+
+            if (articlesDetails && articlesDetails.length > 0) {
+                // Filtrer les tailles spécifiées (exclut "Standard")
+                detailTailles = articlesDetails
+                    .filter(article => article.taille && article.taille !== 'Standard' && article.taille !== 'Non spécifiée')
+                    .map(article => `${article.nom_article} (${article.taille})`);
+                
+                if (detailTailles.length > 0) {
+                    affichageTailles = detailTailles.length <= 2 
+                        ? detailTailles.join(', ')
+                        : `${detailTailles.slice(0, 2).join(', ')} +${detailTailles.length - 2}`;
+                } else if (totalArticles > 0) {
+                    // Tous les articles sont en taille standard
+                    affichageTailles = `${totalArticles} article(s) - Standard`;
                 }
+            }
+
+            // ✅ CRÉER L'OBJET SIZESINFO POUR LA VUE
+            const sizesInfo = {
+                totalItems: totalArticles,
+                itemsWithSizes: articlesAvecTailles,
+                sizesDisplay: affichageTailles,
+                hasSizeInfo: articlesAvecTailles > 0,
+                sizesCoverage: pourcentageCouverture,
+                detailArticles: articlesDetails || []
             };
 
-            const statusStats = {
-                waiting: parseInt(statsData.waiting_orders) || 0,
-                preparing: parseInt(statsData.preparing_orders) || 0,
-                shipped: parseInt(statsData.shipped_orders) || 0,
-                delivered: parseInt(statsData.delivered_orders) || 0,
-                cancelled: parseInt(statsData.cancelled_orders) || 0
+            // ✅ DÉTERMINER LE STATUT DES TAILLES
+            let sizesStatus;
+            if (totalArticles === 0) {
+                sizesStatus = '❓ En développement';
+            } else if (pourcentageCouverture === 100) {
+                sizesStatus = '🎯 Complète';
+            } else if (pourcentageCouverture > 0) {
+                sizesStatus = '📏 Partielle';
+            } else {
+                sizesStatus = '📐 Standard';
+            }
+
+            return {
+                id: order.id,
+                numero_commande: order.numero_commande || `CMD-${order.id}`,
+                date: formattedDate,
+                dateTime: formattedDateTime,
+                customerName: order.customer_name,
+                customerEmail: order.customer_email,
+                amount: finalAmount,
+                originalAmount: calculatedOriginal,
+                deliveryMode: order.shipping_method,
+                status: adminOrdersController.normalizeStatus(order.status),
+                trackingNumber: order.tracking_number,
+                phone: order.phone,
+                shippingAddress: order.shipping_address,
+                shippingCity: order.shipping_city,
+                notes: order.notes,
+                isGuestOrder: order.is_guest_order,
+                
+                // Codes promo
+                promo_code: order.promo_code,
+                discount_amount: discountAmount,
+                discount_percent: discountPercent,
+                hasDiscount: discountAmount > 0 || order.promo_code,
+                savings: discountAmount,
+                
+                // ✅ INFORMATIONS TAILLES COMPLÈTES
+                sizesInfo: sizesInfo,
+                sizesStatus: sizesStatus,
+                articlesDetails: articlesDetails
             };
+        });
 
-            // Récupérer les commandes avec informations complètes de tailles
-            const ordersQuery = `
-                SELECT 
-                    o.id,
-                    o.numero_commande,
-                    o.created_at,
-                    COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu') as customer_name,
-                    COALESCE(o.customer_email, c.email, 'N/A') as customer_email,
-                    o.total,
-                    COALESCE(o.original_total, o.total) as original_total,
-                    o.promo_code,
-                    COALESCE(o.discount_amount, 0) as discount_amount,
-                    COALESCE(o.discount_percent, 0) as discount_percent,
-                    COALESCE(o.promo_discount_amount, 0) as promo_discount_amount,
-                    COALESCE(o.promo_discount_percent, 0) as promo_discount_percent,
-                    COALESCE(o.promo_discount, 0) as promo_discount,
-                    COALESCE(o.shipping_method, 'Standard') as shipping_method,
-                    COALESCE(o.status, o.status_suivi, 'waiting') as status,
-                    o.tracking_number,
-                    c.phone,
-                    o.shipping_address,
-                    o.shipping_city,
-                    o.notes,
-                    o.customer_id,
-                    
-                    -- Récupération des tailles depuis ORDER_ITEMS
-                    (
-                        SELECT JSON_AGG(
-                            JSON_BUILD_OBJECT(
-                                'nom_article', COALESCE(j.name, jw.name, 'Article'),
-                                'taille', COALESCE(oi.size, 'Non spécifiée'),
-                                'quantite', COALESCE(oi.quantity, 1),
-                                'prix', COALESCE(oi.price, j.price_ttc, jw.price_ttc, 0),
-                                'matiere', COALESCE(j.matiere, jw.matiere, ''),
-                                'image', COALESCE(j.image, jw.image, '/images/placeholder.jpg')
-                            )
-                            ORDER BY oi.id
-                        )
-                        FROM order_items oi
-                        LEFT JOIN jewel j ON oi.jewel_id = j.id
-                        LEFT JOIN jewels jw ON oi.jewel_id = jw.id
-                        WHERE oi.order_id = o.id
-                    ) as articles_details,
-                    
-                    -- Fallback : ORDER_HAS_JEWEL si ORDER_ITEMS est vide
-                    (
-                        SELECT JSON_AGG(
-                            JSON_BUILD_OBJECT(
-                                'nom_article', COALESCE(j.name, jw.name, 'Article'),
-                                'taille', 'Non spécifiée',
-                                'quantite', COALESCE(ohj.quantity, 1),
-                                'prix', COALESCE(ohj.unit_price, j.price_ttc, jw.price_ttc, 0),
-                                'matiere', COALESCE(j.matiere, jw.matiere, ''),
-                                'image', COALESCE(j.image, jw.image, '/images/placeholder.jpg')
-                            )
-                            ORDER BY ohj.jewel_id
-                        )
-                        FROM order_has_jewel ohj
-                        LEFT JOIN jewel j ON ohj.jewel_id = j.id
-                        LEFT JOIN jewels jw ON ohj.jewel_id = jw.id
-                        WHERE ohj.order_id = o.id
-                    ) as articles_details_fallback,
-                    
-                    -- Compter les articles avec tailles spécifiées
-                    (
-                        SELECT COUNT(*)
-                        FROM order_items oi
-                        WHERE oi.order_id = o.id
-                        AND oi.size IS NOT NULL 
-                        AND oi.size != '' 
-                        AND oi.size != 'Non spécifiée'
-                    ) as articles_avec_tailles,
-                    
-                    -- Compter le total d'articles
-                    (
-                        SELECT COUNT(*)
-                        FROM order_items oi
-                        WHERE oi.order_id = o.id
-                    ) as total_articles_order_items,
-                    
-                    -- Fallback count pour ORDER_HAS_JEWEL
-                    (
-                        SELECT COUNT(*)
-                        FROM order_has_jewel ohj
-                        WHERE ohj.order_id = o.id
-                    ) as total_articles_fallback
-                    
-                FROM orders o
-                LEFT JOIN customer c ON o.customer_id = c.id
-                ORDER BY o.created_at DESC
-                LIMIT 100
-            `;
+        console.log(`✅ ${commandes.length} commandes traitées avec informations de tailles`);
 
-            const [ordersResult] = await sequelize.query(ordersQuery);
+        // Rendu de la page avec toutes les données
+        res.render('commandes', {
+            title: 'Administration - Suivi des Commandes',
+            user: req.session.user,
+            stats: stats,
+            statusStats: statusStats,
+            commandes: commandes,
+            getStatusClass: adminOrdersController.getStatusClass.bind(adminOrdersController),
+            translateStatus: adminOrdersController.translateStatus.bind(adminOrdersController),
             
-            // Formatage des commandes avec calculs de tailles
-            const commandes = ordersResult.map(order => {
-                console.log(`📋 Traitement commande #${order.id}`);
-
-                // Calculs financiers
-                const originalAmount = parseFloat(order.original_total) || parseFloat(order.total) || 0;
-                const discountAmount = Math.max(
-                    parseFloat(order.discount_amount) || 0,
-                    parseFloat(order.promo_discount_amount) || 0,
-                    parseFloat(order.promo_discount) || 0
-                );
-                const discountPercent = Math.max(
-                    parseInt(order.discount_percent) || 0,
-                    parseInt(order.promo_discount_percent) || 0
-                );
-                const finalAmount = parseFloat(order.total) || 0;
+            // Fonctions helpers pour les tailles dans EJS
+            getTaillesFromOrder: function(commande) {
+                return commande.sizesInfo || null;
+            },
+            
+            formatSizesDisplay: function(sizesInfo) {
+                if (!sizesInfo || !sizesInfo.hasSizeInfo) {
+                    return 'Tailles standards';
+                }
+                return sizesInfo.sizesDisplay || 'Tailles standards';
+            },
+            
+            getSizesCoverageIndicator: function(sizesInfo) {
+                if (!sizesInfo || sizesInfo.totalItems === 0) {
+                    return '❓ En développement';
+                }
                 
-                const calculatedOriginal = discountAmount > 0 && originalAmount === finalAmount 
-                    ? finalAmount + discountAmount 
-                    : originalAmount;
-
-                // Traitement des articles et tailles
-                let articlesDetails = [];
-                let totalArticles = 0;
-                let articlesAvecTailles = 0;
-
-                // Priorité 1: order_items (plus récent et complet)
-                if (order.articles_details && Array.isArray(order.articles_details)) {
-                    articlesDetails = order.articles_details;
-                    totalArticles = parseInt(order.total_articles_order_items) || 0;
-                    articlesAvecTailles = parseInt(order.articles_avec_tailles) || 0;
-                }
-                // Fallback: order_has_jewel (ancien système)
-                else if (order.articles_details_fallback && Array.isArray(order.articles_details_fallback)) {
-                    articlesDetails = order.articles_details_fallback;
-                    totalArticles = parseInt(order.total_articles_fallback) || 0;
-                    articlesAvecTailles = 0; // Ancien système sans tailles
-                }
-
-                // Calculer la couverture des tailles
-                const pourcentageCouverture = totalArticles > 0 ? 
-                    Math.round((articlesAvecTailles / totalArticles) * 100) : 0;
-
-                // Créer l'affichage des tailles
-                let affichageTailles = 'Non spécifiées';
-                let detailTailles = [];
-
-                if (articlesDetails && articlesDetails.length > 0) {
-                    detailTailles = articlesDetails
-                        .filter(article => article.taille && article.taille !== 'Non spécifiée')
-                        .map(article => `${article.nom_article} (${article.taille})`);
-                    
-                    if (detailTailles.length > 0) {
-                        affichageTailles = detailTailles.length <= 3 
-                            ? detailTailles.join(', ')
-                            : `${detailTailles.slice(0, 2).join(', ')} et ${detailTailles.length - 2} autre(s)`;
-                    }
-                }
-
-                // Créer l'objet sizesInfo pour la vue
-                const sizesInfo = {
-                    totalItems: totalArticles,
-                    itemsWithSizes: articlesAvecTailles,
-                    sizesDisplay: affichageTailles,
-                    hasSizeInfo: articlesAvecTailles > 0,
-                    sizesCoverage: pourcentageCouverture,
-                    detailArticles: articlesDetails || []
-                };
-
-                return {
-                    id: order.id,
-                    numero_commande: order.numero_commande || `CMD-${order.id}`,
-                    date: new Date(order.created_at).toLocaleDateString('fr-FR'),
-                    dateTime: new Date(order.created_at).toLocaleString('fr-FR'),
-                    customerName: order.customer_name,
-                    customerEmail: order.customer_email,
-                    amount: finalAmount,
-                    originalAmount: calculatedOriginal,
-                    deliveryMode: order.shipping_method,
-                    status: adminOrdersController.normalizeStatus(order.status),
-                    trackingNumber: order.tracking_number,
-                    phone: order.phone,
-                    shippingAddress: order.shipping_address,
-                    shippingCity: order.shipping_city,
-                    notes: order.notes,
-                    
-                    // Codes promo
-                    promo_code: order.promo_code,
-                    discount_amount: discountAmount,
-                    discount_percent: discountPercent,
-                    hasDiscount: discountAmount > 0 || order.promo_code,
-                    savings: discountAmount,
-                    
-                    // Informations tailles
-                    sizesInfo: sizesInfo,
-                    articlesDetails: articlesDetails
-                };
-            });
-
-            // Rendu de la page avec toutes les données
-            res.render('commandes', {
-                title: 'Administration - Suivi des Commandes',
-                user: req.session.user,
-                stats: stats,
-                statusStats: statusStats,
-                commandes: commandes,
-                getStatusClass: adminOrdersController.getStatusClass.bind(adminOrdersController),
-                translateStatus: adminOrdersController.translateStatus.bind(adminOrdersController),
+                const coverage = sizesInfo.sizesCoverage || 0;
+                if (coverage === 100) return '🎯 Complète';
+                if (coverage > 50) return '📏 Partielle';
+                if (coverage > 0) return '📐 Limitée';
+                return '📐 Standard';
+            },
+            
+            // Helpers existants
+            helpers: {
+                formatDate: (date) => date ? new Date(date).toLocaleDateString('fr-FR') : 'N/A',
+                formatPrice: (price) => (parseFloat(price) || 0).toLocaleString('fr-FR', { 
+                    minimumFractionDigits: 2, 
+                    maximumFractionDigits: 2 
+                }),
                 
-                // Fonctions helpers pour les tailles dans EJS
-                getTaillesFromOrder: function(commande) {
-                    return commande.sizesInfo || null;
+                // Helpers codes promo
+                hasPromoCode: (commande) => !!(commande.promo_code || commande.hasDiscount),
+                getPromoSavings: (commande) => commande.discount_amount > 0 ? `-${commande.discount_amount.toFixed(2)}€` : '',
+                formatPercent: (percent) => percent > 0 ? `${percent}%` : '',
+                formatPromoCode: (promoCode) => promoCode ? promoCode.toUpperCase() : 'Aucun',
+                calculateSavings: (originalAmount, finalAmount) => {
+                    const savings = parseFloat(originalAmount) - parseFloat(finalAmount);
+                    return savings > 0 ? savings.toFixed(2) : '0.00';
                 },
+                hasSignificantDiscount: (discountAmount) => parseFloat(discountAmount) >= 5,
                 
-                formatSizesDisplay: function(sizesInfo) {
-                    if (!sizesInfo || !sizesInfo.hasSizeInfo) {
-                        return 'Non spécifiées';
-                    }
-                    return sizesInfo.sizesDisplay || 'Tailles standards';
+                // ✅ HELPERS POUR LES TAILLES AMÉLIORÉS
+                formatSizes: (sizesInfo) => {
+                    if (!sizesInfo || !sizesInfo.hasSizeInfo) return 'Standards';
+                    return sizesInfo.sizesDisplay;
                 },
-                
-                getSizesCoverageIndicator: function(sizesInfo) {
-                    if (!sizesInfo || sizesInfo.totalItems === 0) {
-                        return '❓ En développement';
-                    }
-                    
+                getSizesCoverage: (sizesInfo) => {
+                    if (!sizesInfo) return 0;
+                    return sizesInfo.sizesCoverage || 0;
+                },
+                getSizesIndicator: (sizesInfo) => {
+                    if (!sizesInfo || sizesInfo.totalItems === 0) return '❓ En développement';
                     const coverage = sizesInfo.sizesCoverage || 0;
                     if (coverage === 100) return '🎯 Complète';
                     if (coverage > 50) return '📏 Partielle';
                     if (coverage > 0) return '📐 Limitée';
-                    return '❓ Aucune';
+                    return '📐 Standard';
                 },
                 
-                // Helpers existants
-                helpers: {
-                    formatDate: (date) => date ? new Date(date).toLocaleDateString('fr-FR') : 'N/A',
-                    formatPrice: (price) => (parseFloat(price) || 0).toLocaleString('fr-FR', { 
-                        minimumFractionDigits: 2, 
-                        maximumFractionDigits: 2 
-                    }),
-                    
-                    // Helpers codes promo
-                    hasPromoCode: (commande) => !!(commande.promo_code || commande.hasDiscount),
-                    getPromoSavings: (commande) => commande.discount_amount > 0 ? `-${commande.discount_amount.toFixed(2)}€` : '',
-                    formatPercent: (percent) => percent > 0 ? `${percent}%` : '',
-                    formatPromoCode: (promoCode) => promoCode ? promoCode.toUpperCase() : 'Aucun',
-                    calculateSavings: (originalAmount, finalAmount) => {
-                        const savings = parseFloat(originalAmount) - parseFloat(finalAmount);
-                        return savings > 0 ? savings.toFixed(2) : '0.00';
-                    },
-                    hasSignificantDiscount: (discountAmount) => parseFloat(discountAmount) >= 5,
-                    
-                    // Helpers pour les tailles
-                    formatSizes: (sizesInfo) => {
-                        if (!sizesInfo || !sizesInfo.hasSizeInfo) return 'Non spécifiées';
-                        return sizesInfo.sizesDisplay;
-                    },
-                    getSizesCoverage: (sizesInfo) => {
-                        if (!sizesInfo) return 0;
-                        return sizesInfo.sizesCoverage || 0;
-                    },
-                    getSizesIndicator: (sizesInfo) => {
-                        if (!sizesInfo || sizesInfo.totalItems === 0) return '❓ En développement';
-                        const coverage = sizesInfo.sizesCoverage || 0;
-                        if (coverage === 100) return '🎯 Complète';
-                        if (coverage > 50) return '📏 Partielle';
-                        if (coverage > 0) return '📐 Limitée';
-                        return '❓ Aucune';
-                    },
-                    
-                    // Helper pour les couleurs des badges
-                    getStatusBadgeColor: (status) => {
-                        const colors = {
-                            'waiting': '#f59e0b',
-                            'preparing': '#3b82f6', 
-                            'shipped': '#10b981',
-                            'delivered': '#059669',
-                            'cancelled': '#ef4444'
-                        };
-                        return colors[status] || '#6b7280';
-                    }
+                // Helper pour différencier les invités
+                isGuestOrder: (commande) => commande.isGuestOrder === true,
+                
+                // Helper pour les couleurs des badges
+                getStatusBadgeColor: (status) => {
+                    const colors = {
+                        'waiting': '#f59e0b',
+                        'preparing': '#3b82f6', 
+                        'shipped': '#10b981',
+                        'delivered': '#059669',
+                        'cancelled': '#ef4444'
+                    };
+                    return colors[status] || '#6b7280';
+                },
+                
+                // Helper pour afficher le type de client
+                getCustomerType: (commande) => {
+                    return commande.isGuestOrder ? '👥 Invité' : '👤 Connecté';
                 }
-            });
+            }
+        });
 
-        } catch (error) {
-            console.error("❌ Erreur dashboard admin:", error);
-            res.status(500).render('error', { 
-                message: 'Erreur lors du chargement des commandes: ' + error.message,
-                user: req.session.user 
-            });
-        }
-    },
+    } catch (error) {
+        console.error("❌ Erreur dashboard admin:", error);
+        res.status(500).render('error', { 
+            message: 'Erreur lors du chargement des commandes: ' + error.message,
+            user: req.session.user 
+        });
+    }
+},
 
     // ========================================
     // 🔍 DÉTAILS D'UNE COMMANDE

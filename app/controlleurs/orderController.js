@@ -958,6 +958,8 @@ async validateOrderAndSave(req, res) {
             console.log(`🎫 Code promo ${promoCodeInfo.code} utilisé (${promoCodeInfo.used_count + 1} fois)`);
         }
 
+        
+
         // ========================================
         // 🧹 ÉTAPE 8: NETTOYAGE DU PANIER
         // ========================================

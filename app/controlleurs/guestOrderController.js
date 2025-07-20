@@ -203,7 +203,7 @@ async validateOrder(req, res) {
     
     // Log des tailles pour debug
     cartDetails.items.forEach(item => {
-      console.log(`   - ${item.jewel.name}: Qté ${item.quantity}, Taille: ${item.size || 'Non spécifiée'}, Prix: ${item.jewel.price_ttc}€`);
+      console.log(`   - ${item.jewel.name}: Qté ${item.quantity}, Taille: ${item.size || 'Standard'}, Prix: ${item.jewel.price_ttc}€`);
     });
 
     // ========================================
@@ -372,9 +372,9 @@ async validateOrder(req, res) {
     console.log('✅ Commande créée avec ID:', order.id);
 
     // ========================================
-    // 📦 ÉTAPE 7: CRÉER LES ARTICLES DE COMMANDE AVEC TAILLES
+    // 📦 ÉTAPE 7: CRÉER LES ARTICLES DE COMMANDE AVEC TOUTES LES DONNÉES
     // ========================================
-    console.log('📦 Création des articles de commande avec tailles...');
+    console.log('📦 Création des articles de commande avec tailles et données complètes...');
     
     for (const item of cartDetails.items) {
       console.log(`   📦 Article: ${item.jewel.name}, Taille: ${item.size || 'Standard'}, Prix: ${item.jewel.price_ttc}€`);
@@ -386,13 +386,17 @@ async validateOrder(req, res) {
         item.jewel.price_ttc = currentJewel.price_ttc;
       }
 
-     await OrderItem.create({
-  order_id: order.id,
-  jewel_id: item.jewel.id,
-  quantity: item.quantity,
-  price: parseFloat(item.jewel.price_ttc)
-  // ✅ Seulement les colonnes qui existent
-}, { transaction });
+      // ✅ CRÉATION AVEC TOUTES LES COLONNES OBLIGATOIRES
+      await OrderItem.create({
+        order_id: order.id,
+        jewel_id: item.jewel.id,
+        quantity: item.quantity,
+        price: parseFloat(item.jewel.price_ttc),
+        // ✅ NOUVELLES COLONNES OBLIGATOIRES pour éviter l'erreur
+        size: item.size || 'Standard',
+        jewel_name: item.jewel.name,
+        jewel_image: item.jewel.image || '/images/placeholder.jpg'
+      }, { transaction });
 
       // Décrémenter le stock
       await Jewel.decrement('stock', {
@@ -402,7 +406,7 @@ async validateOrder(req, res) {
       });
     }
 
-    console.log('✅ Tous les articles créés avec leurs tailles');
+    console.log('✅ Tous les articles créés avec leurs tailles et données complètes');
 
     // ========================================
     // 💾 ÉTAPE 8: VALIDER LA TRANSACTION

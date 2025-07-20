@@ -1042,6 +1042,259 @@ function calculateCorrectPrices(commande) {
             from { transform: translateX(-20px); opacity: 0; }
             to { transform: translateX(0); opacity: 1; }
         }
+
+        /* ✅ STYLES POUR LES COMMANDES CORRIGÉES */
+
+/* Badge pour les invités */
+.guest-badge {
+    background: #f3f4f6;
+    color: #374151;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    margin-left: 5px;
+    font-weight: 500;
+}
+
+/* Informations de date */
+.date-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.date-primary {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.date-time {
+    font-size: 12px;
+    color: var(--text-medium);
+}
+
+/* Informations client */
+.customer-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.customer-name {
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.customer-email {
+    font-size: 12px;
+    color: var(--text-medium);
+}
+
+/* Affichage des tailles */
+.sizes-info {
+    min-width: 120px;
+}
+
+.sizes-display {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sizes-text {
+    font-size: 13px;
+    color: var(--text-dark);
+    line-height: 1.2;
+}
+
+.sizes-indicator {
+    display: flex;
+    align-items: center;
+}
+
+.coverage-badge {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.coverage-badge.complete {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.coverage-badge.partial {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.coverage-badge.standard {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.coverage-badge.development {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* Mobile - Affichage des tailles */
+.sizes-mobile-display {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 2px;
+}
+
+.sizes-coverage {
+    display: flex;
+    align-items: center;
+}
+
+.coverage-complete,
+.coverage-partial,
+.coverage-standard,
+.coverage-development {
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+}
+
+.coverage-complete {
+    background: #d1fae5;
+    color: #065f46;
+}
+
+.coverage-partial {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.coverage-standard {
+    background: #e0e7ff;
+    color: #3730a3;
+}
+
+.coverage-development {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+/* Informations prix */
+.amount-display {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.final-amount {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.promo-info {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.original-amount {
+    font-size: 11px;
+    color: var(--text-medium);
+    text-decoration: line-through;
+}
+
+.promo-code {
+    font-size: 10px;
+    background: var(--success-light);
+    color: var(--success-dark);
+    padding: 1px 4px;
+    border-radius: 3px;
+    align-self: flex-start;
+}
+
+/* Paiement */
+.payment-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.payment-method {
+    font-size: 13px;
+    color: var(--text-dark);
+}
+
+.payment-status {
+    font-size: 11px;
+    font-weight: 500;
+}
+
+.payment-status.paid {
+    color: var(--success);
+}
+
+/* Responsive amélioré */
+@media (max-width: 768px) {
+    .guest-badge {
+        font-size: 9px;
+        padding: 1px 4px;
+    }
+    
+    .sizes-mobile-display {
+        max-width: 100%;
+    }
+    
+    .sizes-text {
+        font-size: 12px;
+        word-break: break-word;
+    }
+}
+
+/* États vides */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-medium);
+}
+
+.empty-state i {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.5;
+}
+
+/* Actions des boutons */
+.action-btn {
+    background: none;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 8px 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text-medium);
+}
+
+.action-btn:hover {
+    background: var(--grey-light);
+    border-color: var(--rose-gold);
+    color: var(--rose-gold);
+}
+
+.action-btn.view:hover {
+    background: var(--info-light);
+    border-color: var(--info);
+    color: var(--info);
+}
+
+.action-btn.edit:hover {
+    background: var(--warning-light);
+    border-color: var(--warning);
+    color: var(--warning);
+}
     </style>
 </head>
 
@@ -1289,165 +1542,266 @@ Paramètres
                     </tr>
                 </thead>
                 <tbody id="commandesTableBody">
-                    <% if (commandes && commandes.length > 0) { %>
-                        <% commandes.forEach(commande => { %>
-                            <% 
-                            // Calculer les prix corrects
-                            const priceInfo = calculateCorrectPrices(commande);
-                            const sizesInfo = commande.sizesInfo || getTaillesFromOrder(commande);
-                            %>
-                            <tr data-order-id="<%= commande.id %>" 
-                                data-status="<%= commande.status %>"
-                                data-promo="<%= commande.promo_code ? 'with-promo' : 'without-promo' %>"
-                                data-date="<%= commande.date %>">
-                                
-                               <!-- N° Commande -->
-                                <td>
-                                    <div class="order-number">
-                                        <%= commande.numero_commande || 'CMD-' + commande.id %>
-                                    </div>
-                                    <% if (commande.tracking_number && commande.tracking_number !== formatDateTime(commande.created_at)) { %>
-                                        <small style="color: var(--gray-medium);">
-                                            📦 <%= commande.tracking_number %>
-                                        </small>
-                                    <% } %>
-                                </td>
-                                
-                                <!-- Date & Heure -->
-                                <td>
-                                    <div style="font-weight: 500;">
-                                        <%= formatDateTime(commande.created_at || commande.order_date || commande.date) %>
-                                    </div>
-                                    <small style="color: var(--gray-medium);">
-                                        <%= getTimeAgo(commande.created_at || commande.order_date || commande.date) %>
-                                    </small>
-                                </td>
-                                
-                                <!-- Client -->
-                                <td>
-                                    <div class="customer-info">
-                                        <div class="customer-name"><%= commande.customer_name || commande.customerName %></div>
-                                        <% if (commande.customer_email && commande.customer_email !== 'N/A') { %>
-                                            <div class="customer-email"><%= commande.customer_email %></div>
-                                        <% } %>
-                                    </div>
-                                </td>
-                                
-                                <!-- Montant & Promo -->
-                                <td>
-                                    <div class="amount-display">
-                                        <% if (priceInfo.hasDiscount) { %>
-                                            <div class="original-price">
-                                                <%= priceInfo.originalAmount.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
-                                            </div>
-                                            <div class="discounted-price">
-                                                <%= priceInfo.finalTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
-                                            </div>
-                                            <div class="discount-amount">
-                                                -<%= priceInfo.discountAmount.toFixed(2) %>€
-                                            </div>
-                                        <% } else { %>
-                                            <div class="amount">
-                                                <%= priceInfo.finalTotal.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) %>€
-                                            </div>
-                                        <% } %>
-                                    </div>
-                                    
-                                    <% if (commande.promo_code) { %>
-                                        <div class="promo-info" style="margin-top: 5px;">
-                                            <i class="fas fa-tag"></i>
-                                            <%= commande.promo_code %>
-                                        </div>
-                                        <% if (commande.promo_discount_percent) { %>
-                                            <div class="discount-percent">
-                                                -<%= commande.promo_discount_percent %>%
-                                            </div>
-                                        <% } %>
-                                    <% } %>
-                                </td>
-                                
-                                <!-- Paiement -->
-                               <!-- Paiement -->
-<td>
-    <div style="display: flex; flex-direction: column; gap: 4px;">
-        <div style="font-weight: 500; color: var(--dark);">
-            <i class="fas fa-credit-card" style="color: var(--info); margin-right: 4px;"></i>
-            <%= commande.payment_method_display || getPaymentMethodDisplay(commande.payment_method) %>
-        </div>
-        <div style="font-size: 0.8rem; color: var(--gray-medium);">
-            <%= commande.payment_status ? 
-                (commande.payment_status === 'paid' ? '✅ Payé' : 
-                 commande.payment_status === 'pending' ? '⏳ En attente' : 
-                 '❌ Échoué') : '✅ Payé' %>
-        </div>
-    </div>
-</td>
-                                
-                                <!-- Tailles -->
-                                <td>
-                                    <% if (sizesInfo && sizesInfo.hasSizeInfo) { %>
-                                        <div class="sizes-info">
-                                            <div class="sizes-summary">
-                                                <i class="fas fa-ruler" style="color: var(--info); margin-right: 4px;"></i>
-                                                <%= formatSizesDisplay(sizesInfo) %>
-                                            </div>
-                                            <div class="sizes-meta">
-                                                <% 
-                                                const coverage = sizesInfo.sizesCoverage || 0;
-                                                let coverageClass = 'no-coverage';
-                                                if (coverage === 100) coverageClass = 'full-coverage';
-                                                else if (coverage > 50) coverageClass = 'partial-coverage';
-                                                else if (coverage > 0) coverageClass = 'limited-coverage';
-                                                %>
-                                                <span class="size-coverage <%= coverageClass %>">
-                                                    <%= sizesInfo.itemsWithSizes %>/<%= sizesInfo.totalItems %>
-                                                </span>
-                                                <span style="font-size: 0.7rem; opacity: 0.8;">
-                                                    <%= getSizesCoverageIndicator(sizesInfo) %>
-                                                </span>
-                                            </div>
-                                        </div>
+                <tbody id="commandesTableBody">
+    <% if (commandes && commandes.length > 0) { %>
+        <% commandes.forEach(commande => { %>
+            <tr data-order-id="<%= commande.id %>" 
+                data-status="<%= commande.status %>"
+                data-promo="<%= commande.promo_code ? 'true' : 'false' %>">
+                
+                <!-- N° Commande -->
+                <td class="order-number">
+                    <div class="numero-commande">
+                        <%= commande.numero_commande %>
+                        <% if (commande.isGuestOrder) { %>
+                            <span class="guest-badge">👥 Invité</span>
+                        <% } %>
+                    </div>
+                </td>
+                
+                <!-- ✅ DATE & HEURE CORRIGÉE -->
+                <td class="order-date">
+                    <div class="date-info">
+                        <div class="date-primary">
+                            <%= commande.date || new Date().toLocaleDateString('fr-FR') %>
+                        </div>
+                        <div class="date-time">
+                            <%= commande.dateTime || new Date().toLocaleString('fr-FR') %>
+                        </div>
+                    </div>
+                </td>
+                
+                <!-- Client -->
+                <td class="customer-info">
+                    <div class="customer-name">
+                        <%= commande.customerName || 'Client inconnu' %>
+                    </div>
+                    <div class="customer-email">
+                        <%= commande.customerEmail || 'email@inconnu.com' %>
+                    </div>
+                </td>
+                
+                <!-- Montant & Promo -->
+                <td class="order-amount">
+                    <div class="amount-display">
+                        <span class="final-amount">
+                            <%= helpers.formatPrice(commande.amount) %>€
+                        </span>
+                        <% if (commande.hasDiscount) { %>
+                            <div class="promo-info">
+                                <span class="original-amount">
+                                    <%= helpers.formatPrice(commande.originalAmount) %>€
+                                </span>
+                                <span class="promo-code">
+                                    <%= commande.promo_code %>
+                                </span>
+                            </div>
+                        <% } %>
+                    </div>
+                </td>
+                
+                <!-- Paiement -->
+                <td class="payment-info">
+                    <div class="payment-method">
+                        💳 Carte bancaire
+                    </div>
+                    <div class="payment-status paid">
+                        ✅ Payé
+                    </div>
+                </td>
+                
+                <!-- ✅ TAILLES CORRIGÉES -->
+                <td class="sizes-info">
+                    <% 
+                    const sizesInfo = commande.sizesInfo || { 
+                        totalItems: 0, 
+                        itemsWithSizes: 0, 
+                        sizesDisplay: 'Non spécifiées',
+                        hasSizeInfo: false,
+                        sizesCoverage: 0
+                    };
+                    %>
+                    
+                    <div class="sizes-display">
+                        <div class="sizes-text">
+                            <%= sizesInfo.sizesDisplay %>
+                        </div>
+                        
+                        <% if (sizesInfo.totalItems > 0) { %>
+                            <div class="sizes-indicator">
+                                <% if (sizesInfo.sizesCoverage === 100) { %>
+                                    <span class="coverage-badge complete">🎯 Complète</span>
+                                <% } else if (sizesInfo.sizesCoverage > 0) { %>
+                                    <span class="coverage-badge partial">📏 Partielle (<%= sizesInfo.sizesCoverage %>%)</span>
+                                <% } else { %>
+                                    <span class="coverage-badge standard">📐 Standard</span>
+                                <% } %>
+                            </div>
+                        <% } else { %>
+                            <div class="sizes-indicator">
+                                <span class="coverage-badge development">❓ En développement</span>
+                            </div>
+                        <% } %>
+                    </div>
+                </td>
+                
+                <!-- Statut -->
+                <td class="order-status">
+                    <span class="status-badge <%= getStatusClass(commande.status) %>">
+                        <%= translateStatus(commande.status) %>
+                    </span>
+                </td>
+                
+                <!-- Actions -->
+                <td class="order-actions">
+                    <button class="action-btn view" 
+                            data-order-id="<%= commande.id %>"
+                            onclick="viewOrderDetails('<%= commande.id %>')">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                    <button class="action-btn edit" 
+                            data-order-id="<%= commande.id %>"
+                            onclick="editOrder('<%= commande.id %>')">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                </td>
+            </tr>
+        <% }) %>
+    <% } else { %>
+        <tr>
+            <td colspan="8" class="empty-state">
+                <i class="fas fa-inbox"></i>
+                <div>Aucune commande trouvée</div>
+            </td>
+        </tr>
+    <% } %>
+</tbody>
+
+<!-- ✅ SECTION MOBILE CORRIGÉE -->
+<div class="mobile-cards">
+    <% if (commandes && commandes.length > 0) { %>
+        <% commandes.forEach(commande => { %>
+            <% 
+            const sizesInfo = commande.sizesInfo || { 
+                totalItems: 0, 
+                itemsWithSizes: 0, 
+                sizesDisplay: 'Non spécifiées',
+                hasSizeInfo: false,
+                sizesCoverage: 0
+            };
+            %>
+            
+            <div class="order-card" 
+                 data-order-id="<%= commande.id %>" 
+                 data-status="<%= commande.status %>">
+                
+                <!-- En-tête de carte -->
+                <div class="order-card-header">
+                    <div class="order-number">
+                        <%= commande.numero_commande %>
+                        <% if (commande.isGuestOrder) { %>
+                            <span class="guest-badge">👥 Invité</span>
+                        <% } %>
+                    </div>
+                    <span class="status-badge <%= getStatusClass(commande.status) %>">
+                        <%= translateStatus(commande.status) %>
+                    </span>
+                </div>
+                
+                <!-- Informations principales -->
+                <div class="order-card-content">
+                    <!-- ✅ DATE CORRIGÉE -->
+                    <div class="info-item">
+                        <strong>📅 Date:</strong>
+                        <span><%= commande.date || new Date().toLocaleDateString('fr-FR') %></span>
+                    </div>
+                    
+                    <div class="info-item">
+                        <strong>🕐 Heure:</strong>
+                        <span><%= commande.dateTime || new Date().toLocaleString('fr-FR') %></span>
+                    </div>
+                    
+                    <!-- Client -->
+                    <div class="info-item">
+                        <strong>👤 Client:</strong>
+                        <span><%= commande.customerName || 'Client inconnu' %></span>
+                        <small class="customer-email">
+                            <%= commande.customerEmail || 'email@inconnu.com' %>
+                        </small>
+                    </div>
+                    
+                    <!-- Montant -->
+                    <div class="info-item">
+                        <strong>💰 Montant:</strong>
+                        <span class="amount">
+                            <%= helpers.formatPrice(commande.amount) %>€
+                            <% if (commande.hasDiscount) { %>
+                                <small class="original-price">
+                                    (était <%= helpers.formatPrice(commande.originalAmount) %>€)
+                                </small>
+                            <% } %>
+                        </span>
+                    </div>
+                    
+                    <!-- ✅ TAILLES CORRIGÉES POUR MOBILE -->
+                    <div class="info-item">
+                        <strong>📏 Tailles:</strong>
+                        <div class="sizes-mobile-display">
+                            <div class="sizes-text">
+                                <%= sizesInfo.sizesDisplay %>
+                            </div>
+                            
+                            <% if (sizesInfo.totalItems > 0) { %>
+                                <div class="sizes-coverage">
+                                    <% if (sizesInfo.sizesCoverage === 100) { %>
+                                        <span class="coverage-complete">🎯 Complète</span>
+                                    <% } else if (sizesInfo.sizesCoverage > 0) { %>
+                                        <span class="coverage-partial">📏 <%= sizesInfo.sizesCoverage %>%</span>
                                     <% } else { %>
-                                        <div class="development-indicator">
-                                            <i class="fas fa-cog"></i>
-                                            En développement
-                                        </div>
+                                        <span class="coverage-standard">📐 Standard</span>
                                     <% } %>
-                                </td>
-                                
-                                <!-- Statut -->
-                                <td>
-                                    <span class="status <%= getStatusClass(commande.status) %>">
-                                        <i class="fas fa-circle" style="font-size: 0.5rem;"></i>
-                                        <%= translateStatus(commande.status) %>
-                                    </span>
-                                </td>
-                                
-                                <!-- Actions -->
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="action-btn view" 
-                                                onclick="viewOrderDetails('<%= commande.id %>')"
-                                                title="Voir les détails">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button class="action-btn edit" 
-                                                onclick="editOrder('<%= commande.id %>')"
-                                                title="Modifier">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        <% }) %>
-                    <% } else { %>
-                        <tr id="no-data-row">
-                            <td colspan="8" class="empty-state">
-                                <i class="fas fa-inbox"></i>
-                                <div>Aucune commande trouvée</div>
-                            </td>
-                        </tr>
+                                </div>
+                            <% } else { %>
+                                <div class="sizes-coverage">
+                                    <span class="coverage-development">❓ En développement</span>
+                                </div>
+                            <% } %>
+                        </div>
+                    </div>
+                    
+                    <!-- Code promo -->
+                    <% if (commande.promo_code) { %>
+                        <div class="info-item">
+                            <strong>🎫 Promo:</strong>
+                            <span class="promo-code"><%= commande.promo_code %></span>
+                        </div>
                     <% } %>
+                </div>
+                
+                <!-- Actions -->
+                <div class="order-card-actions">
+                    <button class="action-btn view" 
+                            data-order-id="<%= commande.id %>"
+                            onclick="viewOrderDetails('<%= commande.id %>')">
+                        <i class="fas fa-eye"></i>
+                        Voir
+                    </button>
+                    <button class="action-btn edit" 
+                            data-order-id="<%= commande.id %>"
+                            onclick="editOrder('<%= commande.id %>')">
+                        <i class="fas fa-edit"></i>
+                        Modifier
+                    </button>
+                </div>
+            </div>
+        <% }) %>
+    <% } else { %>
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <div>Aucune commande trouvée</div>
+        </div>
+    <% } %>
+</div>
                 </tbody>
             </table>
         </div>

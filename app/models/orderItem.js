@@ -47,4 +47,19 @@ OrderItem.init({
   modelName: 'OrderItem',
   tableName: 'order_items',
   timestamps: false,
+  
+  // ✅ Hooks pour remplir automatiquement les données
+  hooks: {
+    beforeCreate: async (orderItem, options) => {
+      // Si jewel_name ou jewel_image manquent, les récupérer
+      if (orderItem.jewel_id && (!orderItem.jewel_name || !orderItem.jewel_image)) {
+        const { Jewel } = await import('./jewelModel.js');
+        const jewel = await Jewel.findByPk(orderItem.jewel_id);
+        if (jewel) {
+          orderItem.jewel_name = orderItem.jewel_name || jewel.name;
+          orderItem.jewel_image = orderItem.jewel_image || jewel.image;
+        }
+      }
+    }
+  }
 });
