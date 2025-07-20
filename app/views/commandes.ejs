@@ -2269,6 +2269,327 @@ function getPaymentMethodDisplay(paymentMethod) {
     <div class="spinner"></div>
 </div>
 
+<!-- ✅ PAGINATION AVANCÉE AVEC FILTRES - À ajouter dans commandes.ejs -->
+
+
+
+<!-- ✅ CSS POUR LA PAGINATION -->
+<style>
+.pagination-section {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 20px;
+    margin-top: 25px;
+}
+
+.pagination-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.results-summary {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #6b7280;
+    font-size: 14px;
+}
+
+.results-summary i {
+    color: #667eea;
+}
+
+.filtered-indicator {
+    background: #fef3c7;
+    color: #92400e;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+.page-size-selector {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.page-size-selector label {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.page-size-selector select {
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+}
+
+.pagination-nav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 16px;
+    background: #f9fafb;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: 1px solid #e5e7eb;
+}
+
+.pagination-btn:hover:not(.disabled) {
+    background: #667eea;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.pagination-btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
+.pagination-numbers {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.pagination-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: #f9fafb;
+    color: #374151;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: 1px solid #e5e7eb;
+}
+
+.pagination-number:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.pagination-number.active {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-color: #667eea;
+    box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+}
+
+.pagination-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    color: #9ca3af;
+    font-weight: bold;
+}
+
+.quick-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.jump-to-page {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+}
+
+.jump-to-page label {
+    color: #6b7280;
+    font-weight: 500;
+}
+
+.jump-to-page input {
+    width: 60px;
+    padding: 6px 10px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    text-align: center;
+    font-size: 14px;
+}
+
+.btn-jump {
+    padding: 6px 10px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-jump:hover {
+    background: #5a67d8;
+    transform: translateY(-1px);
+}
+
+.quick-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.quick-btn {
+    width: 36px;
+    height: 36px;
+    background: #f9fafb;
+    color: #6b7280;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.quick-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .pagination-info {
+        flex-direction: column;
+        gap: 15px;
+        text-align: center;
+    }
+    
+    .pagination-nav {
+        gap: 4px;
+    }
+    
+    .pagination-btn {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
+    
+    .pagination-number {
+        width: 36px;
+        height: 36px;
+        font-size: 14px;
+    }
+    
+    .quick-nav {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .pagination-numbers {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .pagination-numbers {
+        display: none; /* Masquer les numéros sur très petits écrans */
+    }
+    
+    .pagination-nav {
+        justify-content: space-between;
+    }
+    
+    .pagination-btn {
+        flex: 1;
+        justify-content: center;
+        max-width: 120px;
+    }
+}
+</style>
+
+<!-- ✅ JAVASCRIPT POUR LA PAGINATION -->
+<script>
+// ✅ FONCTION POUR CONSTRUIRE L'URL DE PAGINATION
+function buildPaginationUrl(page) {
+    const url = new URL(window.location);
+    url.searchParams.set('page', page);
+    return url.toString();
+}
+
+// ✅ CHANGEMENT DE TAILLE DE PAGE
+function changePageSize(newSize) {
+    const url = new URL(window.location);
+    url.searchParams.set('limit', newSize);
+    url.searchParams.set('page', '1'); // Retour à la première page
+    window.location.href = url.toString();
+}
+
+// ✅ SAUT À UNE PAGE SPÉCIFIQUE
+
+
+// ✅ GESTION DE LA TOUCHE ENTRÉE POUR LE SAUT
+function handleJumpToPage(event) {
+    if (event.key === 'Enter') {
+        event.preventDefault();
+        jumpToPage();
+    }
+}
+
+// ✅ NAVIGATION RAPIDE
+function goToFirstPage() {
+    window.location.href = buildPaginationUrl(1);
+}
+
+
+
+
+</script>
+
+<!-- ✅ FONCTION HELPER EJS POUR CONSTRUIRE LES URLS -->
+<%
+function buildPaginationUrl(page) {
+    const params = new URLSearchParams();
+    
+    // Préserver tous les filtres actuels
+    if (filters) {
+        Object.keys(filters).forEach(key => {
+            if (filters[key] && filters[key] !== 'all' && filters[key] !== '') {
+                params.set(key, filters[key]);
+            }
+        });
+    }
+    
+    // Ajouter la page
+    params.set('page', page);
+    
+    return '/admin/commandes?' + params.toString();
+}
+%>
+
 <script>
 
 console.log('🔍 DEBUG: Vérification des éléments de modal');

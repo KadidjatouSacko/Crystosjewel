@@ -790,12 +790,353 @@
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+        /* Ajoutez ce CSS dans gestionnaire-bijoux.ejs pour corriger tous les problèmes visuels */
+
+/* 1. CORRECTION FORCÉE DE LA NAVBAR ADMIN */
+.admin-navbar {
+    display: block !important;
+    visibility: visible !important;
+    background: linear-gradient(135deg, #7d4b53 0%, #b76e79 100%) !important;
+    border-bottom: 3px solid #e8c2c8 !important;
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 9999 !important;
+    backdrop-filter: blur(10px) !important;
+}
+
+.admin-navbar * {
+    pointer-events: auto !important;
+}
+
+.admin-navbar .navbar-brand {
+    color: white !important;
+    font-weight: 700 !important;
+}
+
+.admin-navbar .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+    font-weight: 500 !important;
+    padding: 10px 16px !important;
+    border-radius: 25px !important;
+    transition: all 0.3s ease !important;
+}
+
+.admin-navbar .nav-link:hover {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Correction des dropdowns */
+.admin-navbar .dropdown-menu {
+    background: rgba(255, 255, 255, 0.98) !important;
+    backdrop-filter: blur(15px) !important;
+    border: 2px solid #e8c2c8 !important;
+    border-radius: 15px !important;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2) !important;
+    padding: 15px 0 !important;
+    margin-top: 10px !important;
+}
+
+.admin-navbar .dropdown-menu.show {
+    display: block !important;
+}
+
+.admin-navbar .dropdown-item {
+    color: #3a3a3a !important;
+    padding: 12px 25px !important;
+    transition: all 0.3s ease !important;
+    font-weight: 500 !important;
+}
+
+.admin-navbar .dropdown-item:hover {
+    background: linear-gradient(135deg, #e8c2c8, #b76e79) !important;
+    color: white !important;
+    transform: translateX(5px) !important;
+}
+
+/* Masquer complètement la navbar client sur cette page */
+.client-navbar {
+    display: none !important;
+}
+
+/* 2. BOUTONS DE MASQUAGE DES BIJOUX */
+.hide-toggle {
+    position: absolute !important;
+    top: 10px !important;
+    left: 10px !important;
+    width: 35px !important;
+    height: 35px !important;
+    border-radius: 50% !important;
+    background: rgba(0, 0, 0, 0.7) !important;
+    color: white !important;
+    border: none !important;
+    cursor: pointer !important;
+    z-index: 10 !important;
+    transition: all 0.3s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 0.9rem !important;
+}
+
+.hide-toggle:hover {
+    background: rgba(0, 0, 0, 0.9) !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3) !important;
+}
+
+/* État masqué */
+.jewelry-card.hidden-jewel {
+    opacity: 0.4 !important;
+    transform: scale(0.95) !important;
+    filter: grayscale(0.7) !important;
+}
+
+.jewelry-card.hidden-jewel .hide-toggle {
+    background: rgba(220, 53, 69, 0.8) !important;
+}
+
+.jewelry-card.hidden-jewel .hide-toggle:hover {
+    background: rgba(220, 53, 69, 1) !important;
+}
+
+/* 3. BADGES DES COMPTEURS */
+.nav-item .badge {
+    position: absolute !important;
+    top: -8px !important;
+    right: -8px !important;
+    background: var(--rose-gold-dark) !important;
+    color: white !important;
+    border-radius: 50% !important;
+    width: 22px !important;
+    height: 22px !important;
+    font-size: 0.75rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: bold !important;
+    border: 2px solid white !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;
+}
+
+/* 4. CORRECTIONS DU MODAL DE RÉDUCTION */
+.modal {
+    backdrop-filter: blur(8px) !important;
+}
+
+.modal-content {
+    border-radius: 20px !important;
+    box-shadow: 0 25px 80px rgba(0,0,0,0.3) !important;
+}
+
+.form-control-custom {
+    border: 2px solid #e8c2c8 !important;
+    border-radius: 10px !important;
+    padding: 12px 15px !important;
+    transition: all 0.3s ease !important;
+}
+
+.form-control-custom:focus {
+    border-color: #b76e79 !important;
+    box-shadow: 0 0 0 0.2rem rgba(183, 110, 121, 0.25) !important;
+}
+
+.btn-primary-custom {
+    background: linear-gradient(135deg, #b76e79, #7d4b53) !important;
+    border: none !important;
+    border-radius: 25px !important;
+    padding: 12px 30px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+}
+
+.btn-primary-custom:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 25px rgba(183, 110, 121, 0.4) !important;
+}
+
+/* 5. ÉTATS DE CHARGEMENT */
+.loading-spinner {
+    position: fixed !important;
+    top: 50% !important;
+    left: 50% !important;
+    transform: translate(-50%, -50%) !important;
+    background: rgba(255, 255, 255, 0.95) !important;
+    padding: 30px !important;
+    border-radius: 15px !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3) !important;
+    z-index: 10000 !important;
+    text-align: center !important;
+}
+
+/* 6. ALERTES AMÉLIORÉES */
+.alert-custom {
+    border-radius: 15px !important;
+    border: none !important;
+    padding: 15px 20px !important;
+    margin-bottom: 20px !important;
+    font-weight: 500 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+}
+
+.alert-success {
+    background: linear-gradient(135deg, #27ae60, #2ecc71) !important;
+    color: white !important;
+}
+
+.alert-danger {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    color: white !important;
+}
+
+.alert-info {
+    background: linear-gradient(135deg, #3498db, #2980b9) !important;
+    color: white !important;
+}
+
+/* 7. ANIMATION DES CARTES */
+.jewelry-card {
+    transition: all 0.3s ease !important;
+}
+
+.jewelry-card:hover {
+    transform: translateY(-5px) scale(1.02) !important;
+    box-shadow: 0 15px 35px rgba(183, 110, 121, 0.2) !important;
+}
+
+/* 8. RESPONSIVE FIXES */
+@media (max-width: 768px) {
+    .hide-toggle {
+        width: 30px !important;
+        height: 30px !important;
+        font-size: 0.8rem !important;
+    }
+    
+    .nav-item .badge {
+        width: 18px !important;
+        height: 18px !important;
+        font-size: 0.65rem !important;
+    }
+    
+    .jewelry-grid {
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)) !important;
+    }
+}
+
+/* 9. ÉTAT FILTRÉ */
+.jewelry-card.filtered-out {
+    display: none !important;
+}
+
+/* 10. CORRECTIONS SPÉCIFIQUES POUR LES PROMOTIONS */
+.banner-sale {
+    background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+    animation: pulse 2s infinite !important;
+    font-weight: bold !important;
+    box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3) !important;
+}
+
+@keyframes pulse {
+    0%, 100% { 
+        transform: scale(1); 
+        opacity: 1; 
+    }
+    50% { 
+        transform: scale(1.05); 
+        opacity: 0.9; 
+    }
+}
     </style>
 </head>
 <body>
     <!-- Navigation Admin -->
     <%- include('partials/navbarre.ejs') %>
     
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Forcer l'affichage de la navbar admin
+    const adminNavbar = document.getElementById('adminNavbar');
+    const clientNav = document.getElementById('clientNav');
+    
+    if (adminNavbar) {
+        adminNavbar.style.display = 'block';
+        adminNavbar.style.visibility = 'visible';
+        adminNavbar.style.opacity = '1';
+        adminNavbar.style.background = 'linear-gradient(135deg, #7d4b53 0%, #b76e79 100%)';
+    }
+    
+    if (clientNav) {
+        clientNav.style.display = 'none';
+    }
+    
+    // Réactiver tous les liens de la navbar
+    const navLinks = adminNavbar?.querySelectorAll('a');
+    if (navLinks) {
+        navLinks.forEach(link => {
+            link.style.pointerEvents = 'auto';
+            link.style.cursor = 'pointer';
+        });
+    }
+    
+    // Réactiver les dropdowns Bootstrap
+    const dropdowns = adminNavbar?.querySelectorAll('[data-bs-toggle="dropdown"]');
+    if (dropdowns) {
+        dropdowns.forEach(dropdown => {
+            dropdown.addEventListener('click', function(e) {
+                e.preventDefault();
+                const menu = this.nextElementSibling;
+                if (menu) {
+                    menu.classList.toggle('show');
+                }
+            });
+        });
+    }
+});
+</script>
+
+<!-- Également, dans le CSS de gestionnaire-bijoux.ejs, ajoutez : -->
+<style>
+/* CORRECTION NAVBAR ADMIN */
+.admin-navbar {
+    position: relative !important;
+    z-index: 9999 !important;
+    background: linear-gradient(135deg, var(--rose-gold-dark) 0%, var(--rose-gold) 100%) !important;
+    display: block !important;
+    visibility: visible !important;
+}
+
+.admin-navbar * {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+}
+
+.admin-navbar .nav-link {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.admin-navbar .nav-link:hover {
+    color: white !important;
+    background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.admin-navbar .dropdown-menu {
+    background: rgba(255, 255, 255, 0.98) !important;
+    border: 2px solid var(--rose-gold-light) !important;
+}
+
+.admin-navbar .dropdown-menu.show {
+    display: block !important;
+}
+
+/* Masquer la navbar client sur cette page */
+.client-navbar {
+    display: none !important;
+}
+
+</style>
+
     <div class="container-fluid">
         <!-- Messages Flash -->
         <% if (success && success.length > 0) { %>
@@ -985,7 +1326,8 @@
                     if (hasDiscount) {
                         // Si il y a une réduction, le prix actuel est déjà réduit
                         // Donc on calcule le prix original
-                        originalPrice = currentPrice / (1 - discountPercentage / 100);
+                            currentPrice = originalPrice * (1 - discountPercentage / 100);
+
                     }
                     
                     // Déterminer le statut du stock
@@ -1458,6 +1800,7 @@
 
         function applyAllFilters() {
             applyFilters();
+            updateCategoryCounters();
         }
 
         function sortCards(cards, sortOrder) {
@@ -1786,71 +2129,37 @@
             }
         }
 
-        async function applyBulkDiscount() {
-            const discountType = document.getElementById('bulkDiscountType').value;
-            const discountValue = parseFloat(document.getElementById('bulkDiscountValue').value);
-            const categoryFilter = document.getElementById('bulkCategoryFilter').value || null;
-            const materialFilter = document.getElementById('bulkMaterialFilter').value || null;
-            const startDate = document.getElementById('bulkStartDate').value || null;
-            const endDate = document.getElementById('bulkEndDate').value || null;
+       async function applyBulkDiscount() {
+    const form = document.getElementById('bulkDiscountForm');
+    const formData = new FormData(form);
+    
+    try {
+        showLoading(true);
+        
+        const response = await fetch('/api/bijoux/bulk-discount', {
+            method: 'POST',
+            body: formData
+        });
 
-            if (!discountValue || discountValue <= 0) {
-                showAlert('error', 'Veuillez entrer une valeur de réduction valide');
-                return;
-            }
-
-            if (discountType === 'percentage' && discountValue > 100) {
-                showAlert('error', 'Le pourcentage ne peut pas dépasser 100%');
-                return;
-            }
-
-            const affectedJewels = getAffectedJewels(categoryFilter, materialFilter);
-            
-            if (affectedJewels.length === 0) {
-                showAlert('error', 'Aucun bijou correspondant aux critères sélectionnés');
-                return;
-            }
-
-            if (!confirm(`Appliquer la réduction à ${affectedJewels.length} bijoux ?`)) {
-                return;
-            }
-
-            const discountData = {
-                type: discountType,
-                value: discountValue,
-                categoryFilter: categoryFilter,
-                materialFilter: materialFilter,
-                startDate: startDate,
-                endDate: endDate
-            };
-
-            try {
-                showLoading(true);
-                
-                const response = await fetch('/api/bijoux/bulk-discount', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(discountData)
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showAlert('success', `Réduction appliquée à ${result.affectedCount} bijoux!`);
-                    closeDiscountManagementModal();
-                    setTimeout(() => window.location.reload(), 1500);
-                } else {
-                    showAlert('error', result.message || 'Erreur lors de l\'application de la réduction');
-                }
-            } catch (error) {
-                console.error('Erreur:', error);
-                showAlert('error', 'Erreur lors de l\'application de la réduction');
-            } finally {
-                showLoading(false);
-            }
+        const result = await response.json();
+        
+        if (result.success) {
+            showAlert('success', `Réduction appliquée à ${result.affectedCount} bijou(x)`);
+            // Recharger les données
+            setTimeout(() => {
+                window.location.reload();
+            }, 1500);
+        } else {
+            showAlert('error', result.message || 'Erreur lors de l\'application');
         }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showAlert('error', 'Erreur de connexion');
+    } finally {
+        showLoading(false);
+        closeBulkDiscountModal();
+    }
+}
 
         async function removeDiscount() {
             if (!currentJewelData) return;
@@ -2168,6 +2477,74 @@
                 }, index * 50);
             });
         });
+function updateCategoryCounters() {
+    const allCards = document.querySelectorAll('.jewelry-card');
+    const counters = {
+        all: 0,
+        rings: 0,
+        necklaces: 0,
+        bracelets: 0,
+        earrings: 0,
+        sale: 0
+    };
+    
+    allCards.forEach(card => {
+        if (card.style.display !== 'none' && !card.classList.contains('filtered-out')) {
+            const category = card.getAttribute('data-category');
+            const hasDiscount = card.getAttribute('data-has-discount') === 'true';
+            
+            counters.all++;
+            
+            if (category === 'Bague') counters.rings++;
+            else if (category === 'Collier') counters.necklaces++;
+            else if (category === 'Bracelet') counters.bracelets++;
+            else if (category === 'Boucles d\'oreilles') counters.earrings++;
+            
+            if (hasDiscount) counters.sale++;
+        }
+    });
+    
+    // Mise à jour des badges
+    document.getElementById('badge-all').textContent = counters.all;
+    document.getElementById('badge-rings').textContent = counters.rings;
+    document.getElementById('badge-necklaces').textContent = counters.necklaces;
+    document.getElementById('badge-bracelets').textContent = counters.bracelets;
+    document.getElementById('badge-earrings').textContent = counters.earrings;
+    document.getElementById('badge-sale').textContent = counters.sale;
+}
+
+async function toggleJewelVisibility(jewelId) {
+    try {
+        const response = await fetch(`/api/bijoux/${jewelId}/toggle-visibility`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            const card = document.querySelector(`[data-jewel-id="${jewelId}"]`);
+            const hideButton = card.querySelector('.hide-toggle i');
+            
+            if (result.isHidden) {
+                card.classList.add('hidden-jewel');
+                hideButton.className = 'fas fa-eye-slash';
+                showAlert('info', 'Bijou masqué du public');
+            } else {
+                card.classList.remove('hidden-jewel');
+                hideButton.className = 'fas fa-eye';
+                showAlert('success', 'Bijou affiché au public');
+            }
+            
+            updateCategoryCounters();
+        }
+    } catch (error) {
+        console.error('Erreur:', error);
+        showAlert('error', 'Erreur lors du masquage');
+    }
+}
 
         console.log('✨ Script du gestionnaire de bijoux chargé');
     </script>

@@ -1749,7 +1749,6 @@ router.get('/admin/gestionnaire-bijoux', isAdmin, jewelControlleur.showJewelryMa
 
 router.post('/api/bijoux/:id/duplicate', isAdmin, jewelControlleur.duplicateJewel);
 router.delete('/api/bijoux/:slug', isAdmin, jewelControlleur.deleteJewelAPI);
-router.post('/api/bijoux/bulk-discount', isAdmin, jewelControlleur.applyBulkDiscount);
 router.get('/api/bijoux/stats', isAdmin, jewelControlleur.getStatsAPI);
 router.get('/api/bijoux/search', isAdmin, jewelControlleur.searchJewelsAPI);
 router.get('/api/categories/:categoryId/types', isAdmin, jewelControlleur.getTypesByCategory);
@@ -2043,88 +2042,7 @@ router.delete('/api/bijoux/:id/discount', async (req, res) => {
     }
 });
 
-// POST /api/bijoux/bulk-discount - Version Sequelize
-router.post('/api/bijoux/bulk-discount', async (req, res) => {
-    try {
-        const { type, value, startDate, endDate, categoryFilter, materialFilter } = req.body;
-        
-        // Validation
-        if (!value || value <= 0) {
-            return res.status(400).json({ success: false, message: 'Valeur de réduction invalide' });
-        }
-        
-        if (type === 'percentage' && value > 100) {
-            return res.status(400).json({ success: false, message: 'Le pourcentage ne peut pas dépasser 100%' });
-        }
-        
-        // Construire les conditions de filtrage
-        const whereConditions = {};
-        const includeConditions = [];
-        
-        if (categoryFilter) {
-            includeConditions.push({
-                model: Category,
-                where: { name: categoryFilter }
-            });
-        }
-        
-        if (materialFilter) {
-            whereConditions.matiere = materialFilter;
-        }
-        
-        let updateData = {
-            discount_start_date: startDate || null,
-            discount_end_date: endDate || null
-        };
-        
-        if (type === 'percentage') {
-            updateData.discount_percentage = value;
-            
-            const result = await Jewel.update(updateData, {
-                where: whereConditions,
-                include: includeConditions.length > 0 ? includeConditions : undefined
-            });
-            
-            res.json({
-                success: true,
-                message: 'Réduction appliquée en masse avec succès',
-                affectedCount: result[0]
-            });
-            
-        } else if (type === 'fixed') {
-            // Pour les montants fixes, traiter chaque bijou individuellement
-            const jewels = await Jewel.findAll({
-                where: { ...whereConditions, price_ttc: { [Op.gt]: 0 } },
-                include: includeConditions.length > 0 ? includeConditions : undefined
-            });
-            
-            if (jewels.length === 0) {
-                return res.status(400).json({ success: false, message: 'Aucun bijou trouvé avec ces critères' });
-            }
-            
-            const updatePromises = jewels.map(jewel => {
-                const discountPercentage = Math.min((value / parseFloat(jewel.price_ttc)) * 100, 100);
-                return jewel.update({
-                    discount_percentage: discountPercentage,
-                    discount_start_date: startDate || null,
-                    discount_end_date: endDate || null
-                });
-            });
-            
-            await Promise.all(updatePromises);
-            
-            res.json({
-                success: true,
-                message: 'Réduction appliquée en masse avec succès',
-                affectedCount: jewels.length
-            });
-        }
-        
-    } catch (error) {
-        console.error('Erreur lors de l\'application de la réduction en masse:', error);
-        res.status(500).json({ success: false, message: 'Erreur serveur' });
-    }
-});
+
 
 
 // Routes pour les métriques temps réel
@@ -3871,6 +3789,596 @@ router.post('/admin/emails/templates', isAdmin, emailController.saveTemplate);
 router.put('/admin/emails/templates/:id', isAdmin, emailController.saveTemplate);
 router.delete('/admin/emails/templates/:id', isAdmin, emailController.deleteTemplate);
 
+
+// ========================================
+// 🎯 ROUTE PRINCIPALE AVEC FILTRES
+// ========================================
+router.get('/admin/commandes', isAdmin, adminOrdersController.showCommandesWithFilters);
+
+// ========================================
+// 📊 ROUTE D'EXPORT AVEC FILTRES
+// ========================================
+router.get('/admin/commandes/export', isAdmin, async (req, res) => {
+    try {
+        console.log('📥 Export commandes avec filtres');
+        
+        // Récupération des mêmes paramètres que la vue principale
+        const filters = {
+            search: req.query.search || '',
+            status: req.query.status || 'all',
+            date: req.query.date || 'all',
+            promo: req.query.promo || 'all',
+            payment: req.query.payment || 'all',
+            amount: req.query.amount || 'all',
+            sort: req.query.sort || 'newest'
+        };
+        
+        const format = req.query.format || 'csv';
+        
+        console.log('📋 Filtres export:', filters);
+        
+        // ✅ MÊME LOGIQUE DE FILTRAGE QUE showCommandesWithFilters
+        let whereClause = 'WHERE 1=1';
+        let joinClause = 'LEFT JOIN customer c ON o.customer_id = c.id';
+        let params = [];
+        let paramIndex = 1;
+        
+        // Reproduction de la logique de filtrage
+        if (filters.search && filters.search.trim()) {
+            const searchTerm = filters.search.trim();
+            whereClause += ` AND (
+                LOWER(o.numero_commande) LIKE LOWER($${paramIndex}) OR
+                LOWER(o.customer_name) LIKE LOWER($${paramIndex}) OR
+                LOWER(o.customer_email) LIKE LOWER($${paramIndex}) OR
+                LOWER(c.first_name) LIKE LOWER($${paramIndex}) OR
+                LOWER(c.last_name) LIKE LOWER($${paramIndex}) OR
+                LOWER(c.email) LIKE LOWER($${paramIndex})
+            )`;
+            params.push(`%${searchTerm}%`);
+            paramIndex++;
+        }
+        
+        if (filters.status && filters.status !== 'all') {
+            whereClause += ` AND LOWER(COALESCE(o.status, o.status_suivi, 'waiting')) = LOWER($${paramIndex})`;
+            params.push(filters.status);
+            paramIndex++;
+        }
+        
+        if (filters.date && filters.date !== 'all') {
+            const now = new Date();
+            let dateStart, dateEnd;
+            
+            switch (filters.date) {
+                case 'today':
+                    dateStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                    dateEnd = new Date(dateStart);
+                    dateEnd.setDate(dateEnd.getDate() + 1);
+                    break;
+                case 'week':
+                    dateStart = new Date(now);
+                    dateStart.setDate(now.getDate() - 7);
+                    dateEnd = now;
+                    break;
+                case 'month':
+                    dateStart = new Date(now.getFullYear(), now.getMonth(), 1);
+                    dateEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+                    break;
+            }
+            
+            if (dateStart && dateEnd) {
+                whereClause += ` AND o.created_at >= $${paramIndex} AND o.created_at < $${paramIndex + 1}`;
+                params.push(dateStart.toISOString(), dateEnd.toISOString());
+                paramIndex += 2;
+            }
+        }
+        
+        if (filters.promo && filters.promo !== 'all') {
+            switch (filters.promo) {
+                case 'with_promo':
+                    whereClause += ` AND (o.promo_code IS NOT NULL AND o.promo_code != '')`;
+                    break;
+                case 'without_promo':
+                    whereClause += ` AND (o.promo_code IS NULL OR o.promo_code = '')`;
+                    break;
+                default:
+                    whereClause += ` AND UPPER(o.promo_code) = UPPER($${paramIndex})`;
+                    params.push(filters.promo);
+                    paramIndex++;
+            }
+        }
+        
+        if (filters.payment && filters.payment !== 'all') {
+            whereClause += ` AND LOWER(COALESCE(o.payment_method, 'card')) = LOWER($${paramIndex})`;
+            params.push(filters.payment);
+            paramIndex++;
+        }
+        
+        if (filters.amount && filters.amount !== 'all') {
+            switch (filters.amount) {
+                case 'under_50':
+                    whereClause += ` AND o.total < 50`;
+                    break;
+                case '50_100':
+                    whereClause += ` AND o.total >= 50 AND o.total < 100`;
+                    break;
+                case '100_200':
+                    whereClause += ` AND o.total >= 100 AND o.total < 200`;
+                    break;
+                case '200_500':
+                    whereClause += ` AND o.total >= 200 AND o.total < 500`;
+                    break;
+                case 'over_500':
+                    whereClause += ` AND o.total >= 500`;
+                    break;
+            }
+        }
+        
+        // Tri
+        let orderClause = 'ORDER BY o.created_at DESC';
+        switch (filters.sort) {
+            case 'oldest':
+                orderClause = 'ORDER BY o.created_at ASC';
+                break;
+            case 'amount_asc':
+                orderClause = 'ORDER BY o.total ASC';
+                break;
+            case 'amount_desc':
+                orderClause = 'ORDER BY o.total DESC';
+                break;
+        }
+        
+        // ✅ REQUÊTE D'EXPORT COMPLÈTE
+        const exportQuery = `
+            SELECT 
+                o.id,
+                o.numero_commande as "Numéro commande",
+                COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu') as "Client",
+                COALESCE(o.customer_email, c.email, 'N/A') as "Email",
+                o.total as "Montant",
+                o.subtotal as "Sous-total",
+                o.promo_code as "Code promo",
+                o.promo_discount_amount as "Réduction",
+                o.payment_method as "Paiement",
+                COALESCE(o.status, o.status_suivi, 'waiting') as "Statut",
+                o.created_at as "Date création",
+                o.shipping_address as "Adresse livraison",
+                o.shipping_city as "Ville",
+                o.shipping_phone as "Téléphone",
+                o.tracking_number as "Numéro suivi"
+            FROM orders o
+            ${joinClause}
+            ${whereClause}
+            ${orderClause}
+        `;
+        
+        const sequelize = Order.sequelize;
+        const commandes = await sequelize.query(exportQuery, {
+            bind: params,
+            type: sequelize.QueryTypes.SELECT
+        });
+        
+        console.log(`📊 ${commandes.length} commandes à exporter`);
+        
+        // ✅ GÉNÉRATION DU FICHIER CSV
+        if (format === 'csv' || !format) {
+            const csvData = generateCSV(commandes);
+            const filename = `commandes_${new Date().toISOString().split('T')[0]}.csv`;
+            
+            res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.setHeader('Content-Length', Buffer.byteLength(csvData, 'utf8'));
+            
+            // BOM UTF-8 pour Excel
+            res.write('\ufeff');
+            res.end(csvData);
+            
+        } else if (format === 'excel') {
+            // TODO: Implémentation Excel si nécessaire
+            const csvData = generateCSV(commandes);
+            const filename = `commandes_${new Date().toISOString().split('T')[0]}.csv`;
+            
+            res.setHeader('Content-Type', 'application/vnd.ms-excel');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            res.write('\ufeff');
+            res.end(csvData);
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur export commandes:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'export'
+        });
+    }
+});
+
+// ========================================
+// 📊 API STATISTIQUES FILTRES (OPTIONNEL)
+// ========================================
+router.get('/api/admin/commandes/stats', isAdmin, async (req, res) => {
+    try {
+        const filters = {
+            search: req.query.search || '',
+            status: req.query.status || 'all',
+            date: req.query.date || 'all',
+            promo: req.query.promo || 'all',
+            payment: req.query.payment || 'all',
+            amount: req.query.amount || 'all'
+        };
+        
+        // Appeler la même logique de filtrage que showCommandesWithFilters
+        // mais retourner seulement les statistiques
+        const stats = await adminOrdersController.getFilteredStats(filters);
+        
+        res.json({
+            success: true,
+            stats: stats
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur API stats:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors du calcul des statistiques'
+        });
+    }
+});
+
+// ========================================
+// 🔧 FONCTION HELPER POUR GÉNÉRATION CSV
+// ========================================
+function generateCSV(data) {
+    if (!data || data.length === 0) {
+        return 'Aucune donnée à exporter\n';
+    }
+    
+    // En-têtes
+    const headers = Object.keys(data[0]);
+    let csv = headers.join(';') + '\n';
+    
+    // Données
+    data.forEach(row => {
+        const values = headers.map(header => {
+            let value = row[header];
+            
+            // Formatage des valeurs
+            if (value === null || value === undefined) {
+                value = '';
+            } else if (typeof value === 'string') {
+                // Échapper les guillemets et entourer de guillemets si nécessaire
+                value = value.replace(/"/g, '""');
+                if (value.includes(';') || value.includes('\n') || value.includes('"')) {
+                    value = `"${value}"`;
+                }
+            } else if (value instanceof Date) {
+                value = value.toLocaleString('fr-FR');
+            } else if (typeof value === 'number') {
+                value = value.toString().replace('.', ','); // Format français
+            }
+            
+            return value;
+        });
+        
+        csv += values.join(';') + '\n';
+    });
+    
+    return csv;
+}
+
+// ========================================
+// 🎯 ROUTE DE COMPATIBILITÉ (ANCIENNE)
+// ========================================
+// Garder l'ancienne route pour la compatibilité
+router.get('/admin/suivi-commandes', isAdmin, (req, res) => {
+    res.redirect('/admin/commandes');
+});
+
+// ========================================
+// 📱 API POUR MISE À JOUR AJAX DES FILTRES
+// ========================================
+router.post('/api/admin/commandes/filter', isAdmin, async (req, res) => {
+    try {
+        const filters = req.body.filters || {};
+        
+        // Appeler la logique de filtrage
+        const result = await adminOrdersController.getFilteredCommandes(filters);
+        
+        res.json({
+            success: true,
+            commandes: result.commandes,
+            stats: result.stats,
+            pagination: result.pagination
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur filtrage AJAX:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors du filtrage'
+        });
+    }
+});
+
+// Dans router.js, ajoutez ces nouvelles routes :
+
+// Route pour masquer/afficher un bijou au public
+router.post('/api/bijoux/:id/toggle-visibility', isAdmin, async (req, res) => {
+    try {
+        const { id } = req.params;
+        
+        const jewel = await Jewel.findByPk(id);
+        if (!jewel) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Bijou non trouvé' 
+            });
+        }
+        
+        // Basculer la visibilité (si le champ existe)
+        const newVisibility = jewel.is_hidden ? false : true;
+        
+        await jewel.update({ 
+            is_hidden: newVisibility 
+        });
+        
+        console.log(`👁️ Bijou ${jewel.name} ${newVisibility ? 'masqué' : 'affiché'}`);
+        
+        res.json({ 
+            success: true, 
+            isHidden: newVisibility,
+            message: newVisibility ? 'Bijou masqué du public' : 'Bijou affiché au public'
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur toggle visibility:', error);
+        
+        // Si l'erreur est due au champ manquant, le créer
+        if (error.message.includes('column "is_hidden" does not exist')) {
+            console.log('⚠️ Champ is_hidden manquant, création en cours...');
+            
+            try {
+                await sequelize.query(`
+                    ALTER TABLE jewel 
+                    ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT FALSE NOT NULL;
+                `);
+                
+                console.log('✅ Champ is_hidden créé avec succès');
+                
+                return res.json({
+                    success: true,
+                    message: 'Champ créé, veuillez réessayer',
+                    needsRetry: true
+                });
+            } catch (createError) {
+                console.error('❌ Erreur création champ:', createError);
+            }
+        }
+        
+        res.status(500).json({ 
+            success: false, 
+            message: 'Erreur serveur' 
+        });
+    }
+});
+
+// Correction de la route de réduction en masse
+router.post('/api/bijoux/bulk-discount', isAdmin, async (req, res) => {
+    try {
+        console.log('📥 Requête de réduction en masse reçue:', req.body);
+        
+        const { 
+            type, 
+            value, 
+            categoryFilter, 
+            materialFilter, 
+            startDate, 
+            endDate 
+        } = req.body;
+
+        // Validation stricte
+        if (!type || !value) {
+            console.log('❌ Données manquantes:', { type, value });
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Type et valeur de réduction requis' 
+            });
+        }
+
+        const numericValue = parseFloat(value);
+        if (isNaN(numericValue) || numericValue <= 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Valeur de réduction invalide' 
+            });
+        }
+
+        if (type === 'percentage' && numericValue > 100) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Le pourcentage ne peut pas dépasser 100%' 
+            });
+        }
+
+        console.log('✅ Validation réussie:', { type, value: numericValue });
+
+        // Construction des conditions WHERE
+        let whereConditions = {};
+        let includeConditions = [];
+        
+        // Filtre par catégorie
+        if (categoryFilter && categoryFilter.trim() !== '') {
+            console.log('🏷️ Filtrage par catégorie:', categoryFilter);
+            
+            includeConditions.push({
+                model: Category,
+                as: 'category',
+                where: { name: categoryFilter },
+                required: true
+            });
+        }
+        
+        // Filtre par matériau
+        if (materialFilter && materialFilter.trim() !== '') {
+            console.log('💎 Filtrage par matériau:', materialFilter);
+            whereConditions.matiere = materialFilter;
+        }
+
+        console.log('🔍 Conditions de recherche:', {
+            where: whereConditions,
+            include: includeConditions
+        });
+
+        // Données de mise à jour
+        const updateData = {
+            discount_percentage: type === 'percentage' ? numericValue : 0,
+            discount_start_date: startDate || null,
+            discount_end_date: endDate || null
+        };
+
+        if (type === 'percentage') {
+            // Mise à jour directe pour les pourcentages
+            console.log('📊 Application de réduction en pourcentage...');
+            
+            const result = await Jewel.update(updateData, {
+                where: whereConditions,
+                include: includeConditions.length > 0 ? includeConditions : undefined
+            });
+            
+            console.log(`✅ ${result[0]} bijoux mis à jour`);
+            
+            res.json({
+                success: true,
+                message: `Réduction de ${numericValue}% appliquée avec succès`,
+                affectedCount: result[0]
+            });
+            
+        } else if (type === 'fixed') {
+            // Pour montant fixe, calculer le pourcentage individuellement
+            console.log('💰 Application de réduction en montant fixe...');
+            
+            const searchOptions = {
+                where: { ...whereConditions, price_ttc: { [Op.gt]: 0 } }
+            };
+            
+            if (includeConditions.length > 0) {
+                searchOptions.include = includeConditions;
+            }
+            
+            const jewels = await Jewel.findAll(searchOptions);
+            
+            if (jewels.length === 0) {
+                return res.status(400).json({ 
+                    success: false, 
+                    message: 'Aucun bijou trouvé avec ces critères' 
+                });
+            }
+            
+            console.log(`💍 ${jewels.length} bijoux trouvés pour mise à jour`);
+            
+            const updatePromises = jewels.map(jewel => {
+                const discountPercentage = Math.min(
+                    (numericValue / parseFloat(jewel.price_ttc)) * 100, 
+                    100
+                );
+                
+                console.log(`Bijou ${jewel.name}: ${jewel.price_ttc}€ → -${discountPercentage.toFixed(2)}%`);
+                
+                return jewel.update({
+                    discount_percentage: discountPercentage,
+                    discount_start_date: startDate || null,
+                    discount_end_date: endDate || null
+                });
+            });
+            
+            await Promise.all(updatePromises);
+            
+            console.log('✅ Tous les bijoux mis à jour');
+            
+            res.json({
+                success: true,
+                message: `Réduction de ${numericValue}€ appliquée avec succès`,
+                affectedCount: jewels.length
+            });
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur lors de l\'application de la réduction en masse:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: `Erreur serveur: ${error.message}` 
+        });
+    }
+});
+
+// Route pour récupérer les bijoux avec filtres (pour AJAX)
+router.get('/api/bijoux/filtered', isAdmin, async (req, res) => {
+    try {
+        const { 
+            category, 
+            material, 
+            search, 
+            page = 1, 
+            limit = 20,
+            showHidden = false 
+        } = req.query;
+
+        let whereConditions = {};
+        
+        // Filtre par visibilité
+        if (showHidden !== 'true') {
+            whereConditions.is_hidden = false;
+        }
+        
+        if (category) {
+            const categoryRecord = await Category.findOne({ where: { name: category } });
+            if (categoryRecord) {
+                whereConditions.category_id = categoryRecord.id;
+            }
+        }
+        
+        if (material) {
+            whereConditions.matiere = material;
+        }
+        
+        if (search) {
+            whereConditions[Op.or] = [
+                { name: { [Op.iLike]: `%${search}%` } },
+                { description: { [Op.iLike]: `%${search}%` } }
+            ];
+        }
+
+        const offset = (parseInt(page) - 1) * parseInt(limit);
+        
+        const { rows: jewels, count } = await Jewel.findAndCountAll({
+            where: whereConditions,
+            include: [
+                {
+                    model: Category,
+                    as: 'category',
+                    attributes: ['id', 'name']
+                }
+            ],
+            order: [['created_at', 'DESC']],
+            limit: parseInt(limit),
+            offset: offset
+        });
+
+        res.json({
+            success: true,
+            jewels,
+            pagination: {
+                total: count,
+                page: parseInt(page),
+                limit: parseInt(limit),
+                pages: Math.ceil(count / parseInt(limit))
+            }
+        });
+        
+    } catch (error) {
+        console.error('Erreur filtres bijoux:', error);
+        res.status(500).json({ success: false, message: 'Erreur serveur' });
+    }
+});
 
 
 // Export par défaut

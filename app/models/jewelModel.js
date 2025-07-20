@@ -18,6 +18,11 @@ Jewel.init({
     type: DataTypes.TEXT,
     allowNull: true
   },
+  is_hidden: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+    allowNull: false
+},
   price_ttc: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
