@@ -99,16 +99,19 @@ function getTimeAgo(dateString) {
 }
 
 // ✅ FONCTION POUR AFFICHER LE MODE DE PAIEMENT
+
+
 <%
+// ✅ FONCTION POUR AFFICHER LE MODE DE PAIEMENT (VERSION COMPLÈTE)
 function getPaymentMethodDisplay(paymentMethod) {
     const methods = {
         'card': 'Carte bancaire',
-        'credit_card': 'Carte bancaire',
-        'paypal': 'PayPal', 
-        'apple': 'Apple Pay',
-        'apple_pay': 'Apple Pay',
-        'google': 'Google Pay',
-        'google_pay': 'Google Pay',
+        'credit_card': 'Carte bancaire', 
+        'paypal': 'PayPal',
+        'apple': 'Apple Pay',           // ✅ AJOUT
+        'apple_pay': 'Apple Pay',       // ✅ AJOUT
+        'google': 'Google Pay',         // ✅ AJOUT
+        'google_pay': 'Google Pay',     // ✅ AJOUT
         'bank_transfer': 'Virement bancaire',
         'check': 'Chèque',
         'cash': 'Espèces'
@@ -116,6 +119,7 @@ function getPaymentMethodDisplay(paymentMethod) {
     return methods[paymentMethod] || 'Carte bancaire';
 }
 %>
+
 
 // ✅ FONCTION POUR CALCULER LES PRIX CORRECTS AVEC PROMO
 function calculateCorrectPrices(commande) {
@@ -1996,32 +2000,35 @@ Paramètres
                 </td>
                 
                 <!-- Paiement -->
-<td class="payment-info">
-    <div class="payment-method">
-        <% 
-        // Récupérer la méthode de paiement stockée
-        const paymentMethod = commande.payment_method || 'card';
-        console.log('🔍 Payment method pour commande', commande.id, ':', paymentMethod);
-        %>
-        
-        <span class="payment-icon">
+<td>
+    <div style="display: flex; flex-direction: column; gap: 4px;">
+        <div style="font-weight: 500; color: var(--dark);">
+            <% 
+            const paymentMethod = commande.payment_method || 'card';
+            %>
+            
+            <!-- Icône selon la méthode -->
             <% if (paymentMethod === 'paypal') { %>
-                <i class="fab fa-paypal" style="color: #0070ba;"></i>
+                <i class="fab fa-paypal" style="color: #0070ba; margin-right: 4px;"></i>
             <% } else if (paymentMethod === 'apple' || paymentMethod === 'apple_pay') { %>
-                <i class="fab fa-apple-pay" style="color: #000;"></i>
+                <i class="fab fa-apple-pay" style="color: #000; margin-right: 4px;"></i>
             <% } else if (paymentMethod === 'google' || paymentMethod === 'google_pay') { %>
-                <i class="fab fa-google-pay" style="color: #4285f4;"></i>
+                <i class="fab fa-google-pay" style="color: #4285f4; margin-right: 4px;"></i>
             <% } else { %>
-                <i class="fas fa-credit-card" style="color: #6b7280;"></i>
+                <i class="fas fa-credit-card" style="color: var(--info); margin-right: 4px;"></i>
             <% } %>
-        </span>
-        
-        <%= getPaymentMethodDisplay(paymentMethod) %>
-    </div>
-    
-    <div class="payment-status paid">
-        <i class="fas fa-check-circle"></i>
-        Payé
+            
+            <%= getPaymentMethodDisplay(paymentMethod) %>
+        </div>
+        <div style="font-size: 0.8rem; color: var(--gray-medium);">
+            <% if (commande.payment_status === 'paid') { %>
+                ✅ Payé
+            <% } else if (commande.payment_status === 'pending') { %>
+                ⏳ En attente
+            <% } else { %>
+                ✅ Payé
+            <% } %>
+        </div>
     </div>
 </td>
 
