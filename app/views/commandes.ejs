@@ -2271,6 +2271,264 @@ function getPaymentMethodDisplay(paymentMethod) {
 
 <script>
 
+console.log('🔍 DEBUG: Vérification des éléments de modal');
+
+// 2. Vérifiez que tous les éléments existent
+document.addEventListener('DOMContentLoaded', function() {
+    // Vérification des éléments modaux
+    const modal = document.getElementById('orderModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+    
+    console.log('📋 Éléments modal trouvés:', {
+        modal: !!modal,
+        modalTitle: !!modalTitle,
+        modalBody: !!modalBody
+    });
+    
+    if (!modal) {
+        console.error('❌ ERREUR: #orderModal non trouvé!');
+    }
+    if (!modalTitle) {
+        console.error('❌ ERREUR: #modalTitle non trouvé!');
+    }
+    if (!modalBody) {
+        console.error('❌ ERREUR: #modalBody non trouvé!');
+    }
+    
+    // Vérification des boutons
+    const viewButtons = document.querySelectorAll('.action-btn.view');
+    const editButtons = document.querySelectorAll('.action-btn.edit');
+    
+    console.log('🔘 Boutons trouvés:', {
+        viewButtons: viewButtons.length,
+        editButtons: editButtons.length
+    });
+    
+    // Test de la fonction showModal
+    window.testModal = function() {
+        console.log('🧪 Test de la modal...');
+        showModal();
+    };
+    
+    console.log('🧪 Pour tester la modal, tapez: testModal() dans la console');
+});
+
+// 3. Version corrigée de viewOrderDetails avec plus de debug
+async function viewOrderDetails(orderId) {
+    try {
+        console.log('🚀 === DÉBUT viewOrderDetails ===');
+        console.log(`📋 orderId reçu: "${orderId}" (type: ${typeof orderId})`);
+        
+        // Validation stricte de l'orderId
+        if (!orderId || orderId === 'undefined' || orderId === 'null' || orderId === '') {
+            console.error('❌ orderId invalide:', orderId);
+            showToast('Erreur: ID de commande invalide', 'error');
+            return;
+        }
+        
+        const cleanOrderId = String(orderId).trim();
+        console.log(`✅ orderId nettoyé: "${cleanOrderId}"`);
+        
+        // Vérifier que la modal existe
+        const modal = document.getElementById('orderModal');
+        if (!modal) {
+            console.error('❌ ERREUR CRITIQUE: Modal #orderModal non trouvée!');
+            alert('Erreur: Modal non trouvée dans le DOM');
+            return;
+        }
+        
+        console.log('📡 Début de la requête fetch...');
+        showLoading();
+        
+        const url = `/admin/commandes/${cleanOrderId}/details`;
+        console.log(`🔗 URL: ${url}`);
+        
+        const response = await fetch(url, {
+            method: 'GET',
+            headers: { 
+                'Accept': 'application/json', 
+                'Content-Type': 'application/json' 
+            }
+        });
+        
+        console.log(`📡 Réponse reçue - Status: ${response.status}`);
+        
+        if (!response.ok) {
+            throw new Error(`Erreur HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        console.log('📊 Données reçues:', {
+            success: data.success,
+            hasOrder: !!data.order,
+            hasItems: !!data.items && data.items.length,
+            orderNumber: data.order?.numero_commande
+        });
+        
+        if (data.success && data.order) {
+            console.log('✅ Données valides, construction de la modal...');
+            await buildAndShowModal(data, cleanOrderId);
+        } else {
+            throw new Error(data.message || 'Données invalides reçues');
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur dans viewOrderDetails:', error);
+        console.error('Stack:', error.stack);
+        showToast(`Erreur: ${error.message}`, 'error');
+    } finally {
+        hideLoading();
+        console.log('🏁 === FIN viewOrderDetails ===');
+    }
+}
+
+// 4. Fonction séparée pour construire et afficher la modal
+async function buildAndShowModal(data, orderId) {
+    try {
+        console.log('🏗️ Construction de la modal...');
+        
+        const { order, items = [], history = [], tracking = [] } = data;
+        
+        // Construction du contenu simple pour tester
+        const modalContent = `
+            <div class="order-details-container">
+                <!-- Test simple -->
+                <div class="order-header">
+                    <h3>Commande ${order.numero_commande || order.id}</h3>
+                    <div>Date: ${formatDateTime(order.created_at) || 'N/A'}</div>
+                </div>
+                
+                <!-- Informations client -->
+                <div class="section">
+                    <h4><i class="fas fa-user"></i> Informations de livraison</h4>
+                    <div>
+                        <p><strong>Nom:</strong> ${order.customer_name || 'N/A'}</p>
+                        <p><strong>Email:</strong> ${order.customer_email || 'N/A'}</p>
+                        <p><strong>Téléphone:</strong> ${order.customer_phone || order.shipping_phone || 'N/A'}</p>
+                        <p><strong>Adresse:</strong> ${order.shipping_address || 'N/A'}</p>
+                    </div>
+                </div>
+                
+                <!-- Articles -->
+                <div class="section">
+                    <h4><i class="fas fa-shopping-bag"></i> Articles (${items.length})</h4>
+                    ${items.map(item => `
+                        <div style="border: 1px solid #eee; padding: 10px; margin: 5px 0;">
+                            <strong>${item.name}</strong><br>
+                            Quantité: ${item.quantity} | Prix: ${formatPrice(item.price || 0)}€
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <!-- Actions -->
+                <div style="margin-top: 20px; text-align: center;">
+                    <button onclick="closeModal()" style="padding: 10px 20px; margin: 5px;">
+                        Fermer
+                    </button>
+                    <button onclick="editOrder('${orderId}')" style="padding: 10px 20px; margin: 5px;">
+                        Modifier
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        // Mise à jour du DOM
+        console.log('📝 Mise à jour du contenu de la modal...');
+        
+        const modalTitle = document.getElementById('modalTitle');
+        const modalBody = document.getElementById('modalBody');
+        
+        if (modalTitle) {
+            modalTitle.textContent = `Commande ${order.numero_commande || order.id}`;
+            console.log('✅ Titre mis à jour');
+        } else {
+            console.error('❌ modalTitle non trouvé');
+        }
+        
+        if (modalBody) {
+            modalBody.innerHTML = modalContent;
+            console.log('✅ Contenu mis à jour');
+        } else {
+            console.error('❌ modalBody non trouvé');
+        }
+        
+        // Affichage de la modal
+        console.log('👁️ Affichage de la modal...');
+        showModal();
+        
+    } catch (error) {
+        console.error('❌ Erreur construction modal:', error);
+        throw error;
+    }
+}
+
+// 5. Version simplifiée et robuste de showModal
+function showModal() {
+    console.log('🎭 showModal appelée');
+    
+    const modal = document.getElementById('orderModal');
+    if (!modal) {
+        console.error('❌ Modal non trouvée dans showModal');
+        alert('Erreur: Modal non trouvée');
+        return false;
+    }
+    
+    try {
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+        console.log('✅ Modal affichée avec succès');
+        return true;
+    } catch (error) {
+        console.error('❌ Erreur affichage modal:', error);
+        return false;
+    }
+}
+
+// 6. Version robuste de closeModal
+function closeModal() {
+    console.log('🎭 closeModal appelée');
+    
+    const modal = document.getElementById('orderModal');
+    if (modal) {
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+        console.log('✅ Modal fermée');
+    } else {
+        console.error('❌ Modal non trouvée dans closeModal');
+    }
+}
+
+// 7. Test de formatPrice et formatDateTime
+function formatPrice(price) {
+    try {
+        return parseFloat(price || 0).toLocaleString('fr-FR', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    } catch (error) {
+        console.error('Erreur formatPrice:', error);
+        return '0,00';
+    }
+}
+
+function formatDateTime(dateString) {
+    try {
+        if (!dateString) return 'N/A';
+        const date = new Date(dateString);
+        return date.toLocaleString('fr-FR');
+    } catch (error) {
+        console.error('Erreur formatDateTime:', error);
+        return 'Date invalide';
+    }
+}
+
+// 8. Export des fonctions globalement
+window.viewOrderDetails = viewOrderDetails;
+window.showModal = showModal;
+window.closeModal = closeModal;
+window.testModal = testModal;
+
     // ✅ SCRIPT ADMIN COMMANDES - SOLUTION DIRECTE POUR orderId
 // Configuration et variables globales
 const config = {

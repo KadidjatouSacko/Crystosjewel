@@ -999,59 +999,40 @@ async showDashboard(req, res) {
 /**
  * ✅ getOrderDetails ULTRA-MINIMAL - Colonnes de base uniquement
  */
+// ✅ FONCTION getOrderDetails COMPLÈTE ET CORRIGÉE
 async getOrderDetails(req, res) {
     try {
         const { id } = req.params;
-        console.log(`🔍 Récupération détails commande #${id} avec informations de livraison`);
+        console.log(`🔍 Récupération détails commande #${id}`);
 
-        // ✅ REQUÊTE CORRIGÉE - Priorité aux informations de livraison
+        // ========================================
+        // 1️⃣ REQUÊTE PRINCIPALE - DÉTAILS COMMANDE
+        // ========================================
         const orderQuery = `
             SELECT 
                 o.*,
+                -- ✅ DONNÉES CLIENT (pour fallback uniquement)
+                c.first_name as customer_first_name,
+                c.last_name as customer_last_name,
+                c.email as customer_table_email,
+                c.address as customer_table_address,
+                c.phone as customer_table_phone,
                 
-                -- ✅ INFORMATIONS DE LIVRAISON (PRIORITÉ)
-                COALESCE(o.shipping_address, o.customer_address, c.address) as shipping_address,
-                COALESCE(o.shipping_city, o.customer_city, c.city) as shipping_city,
-                COALESCE(o.shipping_postal_code, o.customer_postal_code, c.postal_code) as shipping_postal_code,
-                COALESCE(o.shipping_country, o.customer_country, c.country, 'France') as shipping_country,
-                COALESCE(o.shipping_phone, o.customer_phone, c.phone) as shipping_phone,
+                -- ✅ DONNÉES DE LIVRAISON (priorité absolue)
+                COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu') as display_customer_name,
+                COALESCE(o.customer_email, c.email, 'N/A') as display_customer_email,
                 
-                -- ✅ NOM DE LIVRAISON (pas celui du compte)
-                COALESCE(
-                    o.customer_name,                    -- Nom saisi lors de la commande
-                    o.shipping_name,                    -- Nom de livraison spécifique
-                    CONCAT(c.first_name, ' ', c.last_name), -- Fallback compte
-                    'Client inconnu'
-                ) as customer_name,
+                -- ✅ ADRESSE DE LIVRAISON SPÉCIFIQUE
+                o.shipping_address as delivery_address,
+                o.shipping_city as delivery_city,
+                o.shipping_postal_code as delivery_postal_code,
+                o.shipping_country as delivery_country,
+                o.shipping_phone as delivery_phone,
                 
-                -- ✅ EMAIL (priorité à celui de la commande)
-                COALESCE(
-                    o.customer_email,                   -- Email saisi lors de la commande
-                    o.email,                           -- Autre colonne email possible
-                    c.email,                           -- Fallback compte
-                    'Email non renseigné'
-                ) as customer_email,
-                
-                -- ✅ INFORMATIONS SÉPARÉES POUR DEBUG
-                o.customer_name as order_customer_name,
-                o.customer_email as order_customer_email,
-                o.shipping_address as order_shipping_address,
-                o.shipping_city as order_shipping_city,
-                o.shipping_postal_code as order_shipping_postal_code,
-                o.shipping_phone as order_shipping_phone,
-                
-                -- Informations du compte (pour comparaison)
-                c.first_name as account_first_name,
-                c.last_name as account_last_name,
-                c.email as account_email,
-                c.address as account_address,
-                c.city as account_city,
-                c.phone as account_phone,
-                
+                -- ✅ STATUT ET PAIEMENT
                 COALESCE(o.status, o.status_suivi, 'waiting') as current_status,
                 COALESCE(o.payment_method, 'card') as payment_method,
-                COALESCE(o.payment_status, 'paid') as payment_status
-                
+                COALESCE(o.payment_status, 'pending') as payment_status
             FROM orders o
             LEFT JOIN customer c ON o.customer_id = c.id
             WHERE o.id = $1
@@ -1067,49 +1048,220 @@ async getOrderDetails(req, res) {
         }
 
         const order = orderResult[0];
-        
-        // ✅ DEBUG DES INFORMATIONS RÉCUPÉRÉES
-        console.log(`📋 Informations commande #${id}:`, {
-            // Informations de livraison (à utiliser)
-            customer_name: order.customer_name,
-            customer_email: order.customer_email,
-            shipping_address: order.shipping_address,
-            shipping_city: order.shipping_city,
-            shipping_phone: order.shipping_phone,
-            
-            // Informations du compte (pour comparaison)
-            account_name: `${order.account_first_name} ${order.account_last_name}`,
-            account_email: order.account_email,
-            account_address: order.account_address
-        });
 
-        // ... reste du code pour items, history, tracking ...
+        // ========================================
+        // 2️⃣ REQUÊTE ARTICLES - ORDER_ITEMS
+        // ========================================
+        const itemsQuery = `
+            SELECT 
+                oi.id,
+                oi.jewel_id,
+                oi.quantity,
+                oi.price,
+                oi.size,
+                COALESCE(oi.jewel_name, j.name, jw.name, 'Article') as jewel_name,
+                COALESCE(oi.jewel_image, j.image, jw.image, '/images/placeholder.jpg') as jewel_image,
+                COALESCE(j.matiere, jw.matiere, '') as matiere,
+                COALESCE(j.description, jw.description, '') as description
+            FROM order_items oi
+            LEFT JOIN jewel j ON oi.jewel_id = j.id
+            LEFT JOIN jewels jw ON oi.jewel_id = jw.id
+            WHERE oi.order_id = $1
+            ORDER BY oi.id
+        `;
 
-        // ✅ RÉPONSE AVEC INFORMATIONS DE LIVRAISON CORRECTES
+        const [itemsResult] = await sequelize.query(itemsQuery, { bind: [id] });
+
+        // ✅ TRAITEMENT DES ARTICLES (processedItems)
+        const processedItems = itemsResult.map(item => ({
+            id: item.id,
+            jewel_id: item.jewel_id,
+            name: item.jewel_name,
+            quantity: parseInt(item.quantity) || 1,
+            price: parseFloat(item.price) || 0,
+            size: item.size || 'Non spécifiée',
+            image: item.jewel_image || '/images/placeholder.jpg',
+            matiere: item.matiere || '',
+            description: item.description || '',
+            total: (parseFloat(item.price) || 0) * (parseInt(item.quantity) || 1)
+        }));
+
+        console.log(`📦 ${processedItems.length} articles trouvés pour la commande #${id}`);
+
+        // ========================================
+        // 3️⃣ REQUÊTE TRACKING
+        // ========================================
+        const trackingQuery = `
+            SELECT 
+                id,
+                status,
+                description,
+                location,
+                created_at
+            FROM order_tracking 
+            WHERE order_id = $1 
+            ORDER BY created_at DESC
+        `;
+
+        const [trackingResult] = await sequelize.query(trackingQuery, { bind: [id] });
+
+        const tracking = trackingResult.map(t => ({
+            id: t.id,
+            status: t.status,
+            description: t.description,
+            location: t.location,
+            date: new Date(t.created_at).toLocaleString('fr-FR')
+        }));
+
+        // ========================================
+        // 4️⃣ REQUÊTE HISTORIQUE STATUTS
+        // ========================================
+        const historyQuery = `
+            SELECT 
+                id,
+                old_status,
+                new_status,
+                notes,
+                updated_by,
+                created_at
+            FROM order_status_history 
+            WHERE order_id = $1 
+            ORDER BY created_at DESC
+        `;
+
+        const [historyResult] = await sequelize.query(historyQuery, { bind: [id] });
+
+        const history = historyResult.map(h => ({
+            id: h.id,
+            old_status: h.old_status,
+            new_status: h.new_status,
+            notes: h.notes,
+            updated_by: h.updated_by,
+            date: new Date(h.created_at).toLocaleString('fr-FR')
+        }));
+
+        // ========================================
+        // 5️⃣ REQUÊTE MODIFICATIONS
+        // ========================================
+        const modificationsQuery = `
+            SELECT 
+                id,
+                modified_by,
+                modification_type,
+                old_value,
+                new_value,
+                description,
+                created_at
+            FROM order_modifications 
+            WHERE order_id = $1 
+            ORDER BY created_at DESC
+        `;
+
+        const [modificationsResult] = await sequelize.query(modificationsQuery, { bind: [id] });
+
+        const modifications = modificationsResult.map(m => ({
+            id: m.id,
+            modified_by: m.modified_by,
+            type: m.modification_type,
+            old_value: m.old_value,
+            new_value: m.new_value,
+            description: m.description,
+            date: new Date(m.created_at).toLocaleString('fr-FR')
+        }));
+
+        // ========================================
+        // 6️⃣ CALCULS FINANCIERS
+        // ========================================
+        const originalAmount = parseFloat(order.original_total || order.subtotal || order.total || 0);
+        const discountAmount = parseFloat(order.promo_discount_amount || order.discount_amount || 0);
+        const shipping = parseFloat(order.shipping_price || order.delivery_fee || 0);
+        const finalTotal = parseFloat(order.total || 0);
+
+        // ========================================
+        // 7️⃣ FONCTION HELPER POUR STATUTS
+        // ========================================
+        const normalizeStatus = (status) => {
+            const statusMap = {
+                'waiting': 'En attente',
+                'preparing': 'En préparation', 
+                'shipped': 'Expédiée',
+                'delivered': 'Livrée',
+                'cancelled': 'Annulée',
+                'en_attente': 'En attente',
+                'en_preparation': 'En préparation',
+                'expediee': 'Expédiée',
+                'livree': 'Livrée',
+                'annulee': 'Annulée'
+            };
+            return statusMap[status] || status || 'En attente';
+        };
+
+        // ========================================
+        // 8️⃣ FONCTION HELPER POUR MÉTHODES PAIEMENT
+        // ========================================
+        const getPaymentMethodDisplay = (paymentMethod) => {
+            const methods = {
+                'card': 'Carte bancaire',
+                'credit_card': 'Carte bancaire',
+                'debit_card': 'Carte de débit',
+                'paypal': 'PayPal',
+                'bank_transfer': 'Virement bancaire',
+                'check': 'Chèque',
+                'cash': 'Espèces',
+                'apple_pay': 'Apple Pay',
+                'google_pay': 'Google Pay',
+                'stripe': 'Stripe',
+                'klarna': 'Klarna'
+            };
+            return methods[paymentMethod] || 'Carte bancaire';
+        };
+
+        // ========================================
+        // 9️⃣ CONSTRUCTION DE LA RÉPONSE FINALE
+        // ========================================
         const response = {
             success: true,
             order: {
                 ...order,
-                // ✅ INFORMATIONS À AFFICHER DANS LA MODAL
-                customer_name: order.customer_name,           // Nom de livraison
-                customer_email: order.customer_email,         // Email de commande
-                customer_phone: order.shipping_phone,         // Téléphone de livraison
-                
-                // ✅ ADRESSE COMPLÈTE DE LIVRAISON
-                shipping_address: order.shipping_address,
-                shipping_city: order.shipping_city,
-                shipping_postal_code: order.shipping_postal_code,
-                shipping_country: order.shipping_country,
-                
-                // Autres informations
-                status: adminOrdersController.normalizeStatus(order.current_status),
+                status: normalizeStatus(order.current_status),
                 date: new Date(order.created_at).toLocaleDateString('fr-FR'),
                 dateTime: new Date(order.created_at).toLocaleString('fr-FR'),
-                payment_method_display: adminOrdersController.getPaymentMethodDisplay(order.payment_method)
+                hasDiscount: discountAmount > 0 || order.promo_code,
+                payment_method: order.payment_method,
+                payment_status: order.payment_status,
+                payment_method_display: getPaymentMethodDisplay(order.payment_method),
+                
+                // ✅ INFORMATIONS DE LIVRAISON SPÉCIFIQUES
+                customer_name: order.display_customer_name,
+                customer_email: order.display_customer_email,
+                
+                // ✅ ADRESSE DE LIVRAISON (pas l'adresse du compte client)
+                shipping_address: order.delivery_address || order.shipping_address || 'Adresse non renseignée',
+                shipping_city: order.delivery_city || order.shipping_city || '',
+                shipping_postal_code: order.delivery_postal_code || order.shipping_postal_code || '',
+                shipping_country: order.delivery_country || order.shipping_country || 'France',
+                shipping_phone: order.delivery_phone || order.shipping_phone || order.customer_table_phone || '',
+                
+                // ✅ DONNÉES CLIENT (pour référence uniquement)
+                customer_account: {
+                    first_name: order.customer_first_name,
+                    last_name: order.customer_last_name,
+                    email: order.customer_table_email,
+                    address: order.customer_table_address,
+                    phone: order.customer_table_phone
+                },
+                
+                // ✅ EMAIL FINAL À UTILISER
+                email: {
+                    from_order: order.customer_email,
+                    from_customer: order.customer_table_email,
+                    final_used: order.display_customer_email
+                }
             },
-            items: processedItems,
+            items: processedItems, // ✅ VARIABLE MAINTENANT DÉFINIE
             tracking: tracking,
             history: history,
+            modifications: modifications,
             summary: {
                 originalSubtotal: originalAmount,
                 discount: discountAmount,
@@ -1119,14 +1271,24 @@ async getOrderDetails(req, res) {
             }
         };
 
-        console.log(`✅ Détails commande #${id} - Nom livraison: "${response.order.customer_name}"`);
+        console.log(`✅ Détails commande #${id} - ${processedItems.length} articles`);
+        console.log(`📧 Email final: "${response.order.email.final_used}"`);
+        console.log(`📍 Adresse livraison: "${response.order.shipping_address}"`);
+        console.log(`🏠 Ville livraison: "${response.order.shipping_city}"`);
+        console.log(`📞 Téléphone livraison: "${response.order.shipping_phone}"`);
+        
         res.json(response);
 
     } catch (error) {
         console.error('❌ Erreur détails commande:', error);
+        console.error('Stack complet:', error.stack);
         res.status(500).json({
             success: false,
-            message: 'Erreur lors de la récupération des détails: ' + error.message
+            message: 'Erreur lors de la récupération des détails: ' + error.message,
+            debug: {
+                error_message: error.message,
+                error_stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            }
         });
     }
 },
