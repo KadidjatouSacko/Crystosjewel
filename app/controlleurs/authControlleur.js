@@ -1,7 +1,7 @@
 import { Customer } from "../models/customerModel.js";
 import rateLimit from 'express-rate-limit';
 import argon2 from "argon2";
-import  {  sendWelcomeMail} from "../services/mailService.js";
+import  { sendWelcomeEmail} from "../services/mailService.js";
 // import { sendWelcomeMail } from "../utils/mailUtils.js";
 import Sequelize from 'sequelize';
 
@@ -10,7 +10,7 @@ import passwordValidator from "password-validator";
 // Limiteur de tentatives de connexion
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 100,
+  max: 5,
   message: "Trop de tentatives de connexion, veuillez réessayer plus tard"
 });
 
@@ -32,62 +32,37 @@ LoginPage(req, res) {
 },
 
 // Fonction pour la connexion de l'utilisateur
-// Remplacez votre fonction login par celle-ci temporairement
 async login(req, res) {
   const { email, password } = req.body;
 
   try {
-    console.log('🔐 Tentative de connexion pour:', email);
-
-    // Récupérer l'utilisateur SANS relation d'abord
     const customer = await Customer.findOne({ where: { email } });
 
     if (!customer) {
-      console.log('❌ Utilisateur non trouvé:', email);
       return res.render("login", { 
         errorMessage: "Identifiants incorrects", 
         formData: { email }
       });
     }
 
-    console.log('👤 Utilisateur trouvé:', {
-      id: customer.id,
-      email: customer.email,
-      role_id: customer.role_id
-    });
-
     const isValidPassword = await argon2.verify(customer.password, password);
 
     if (!isValidPassword) {
-      console.log('❌ Mot de passe incorrect pour:', email);
       return res.render("login", { 
-        errorMessage: "Identifiants incorrets", 
+        errorMessage: "Identifiants incorrects", 
         formData: { email }
       });
     }
 
-    console.log('✅ Mot de passe correct');
-
-    // ✅ CRÉER UNE SESSION SIMPLE
     req.session.customerId = customer.id;
     req.session.user = {
       id: customer.id,
-      name: customer.first_name,
-      firstName: customer.first_name,
-      lastName: customer.last_name,
+      name: customer.firstname,
       email: customer.email,
-      role_id: customer.role_id,
-      isAdmin: customer.role_id === 2
+      role: customer.role,
+      cartItems: []
     };
 
-    console.log('✅ Session créée:', {
-      customerId: req.session.customerId,
-      userId: req.session.user.id,
-      roleId: req.session.user.role_id,
-      isAdmin: req.session.user.isAdmin
-    });
-
-    // Cookie
     res.cookie("customername", customer.email, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -95,24 +70,15 @@ async login(req, res) {
       sameSite: "strict"
     });
 
-    // Redirection
-    if (customer.role_id === 2) {
-      console.log('🎯 Redirection admin vers dashboard');
-      return res.redirect("/admin/mon-suivi");
-    } else {
-      console.log('🎯 Redirection client vers accueil');
-      return res.redirect("/");
-    }
+    res.redirect("/");
 
   } catch (error) {
-    console.error("❌ Erreur de connexion:", error);
-    console.error("Stack:", error.stack);
+    console.error("Erreur de connexion:", error);
     return res.status(500).render("login", { 
       errorMessage: "Erreur serveur", 
       formData: { email }
     });
-  }
-},
+  }},
 
 // Déconnexion de l'utilisateur
 logout(req, res) {

@@ -454,100 +454,79 @@ const generateEmailTemplate = async (content, subject, preheader, template, from
 //   }
 // };
 
-export const sendWelcomeMail = async (userEmail, firstName) => {
+export const sendWelcomeEmail = async (userEmail, firstName) => {
   try {
     const htmlContent = `
-      <div style="
-        font-family: Arial, sans-serif;
-        color: #3a3a3a;
-        background-color: #fff8f0;
-        max-width: 600px;
-        margin: auto;
-        border-radius: 8px;
-        box-shadow: 0 8px 20px rgba(183, 110, 121, 0.15);
-        overflow: hidden;
-      ">
-        <header style="
-          background: linear-gradient(135deg, #e8c2c8, #b76e79);
-          padding: 20px 0;
-          text-align: center;
-          color: white;
-          font-weight: 300;
-          letter-spacing: 3px;
-          font-size: 2rem;
-          ">
-          Crystos Jewel
-        </header>
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Bienvenue - CrystosJewel</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background: linear-gradient(135deg, #fef7ff 0%, #f3e8ff 100%);">
+        
+        <div style="padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); color: #ffffff; padding: 30px; text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 15px;">✨</div>
+              <h1 style="margin: 0; font-size: 28px; font-weight: bold;">Bienvenue chez CrystosJewel !</h1>
+            </div>
 
-        <nav style="background: #b76e79; text-align: center; padding: 10px 0;">
-          <a href="${process.env.BASE_URL}" style="
-            color: white; 
-            margin: 0 15px; 
-            text-decoration: none; 
-            font-weight: 500;
-            font-size: 1rem;
-            transition: color 0.3s;
-          ">Accueil</a>
-          <a href="${process.env.BASE_URL}/bijoux" style="
-            color: white; 
-            margin: 0 15px; 
-            text-decoration: none; 
-            font-weight: 500;
-            font-size: 1rem;
-            transition: color 0.3s;
-          ">Nos Bijoux</a>
-          <a href="${process.env.BASE_URL}/promos" style="
-            color: white; 
-            margin: 0 15px; 
-            text-decoration: none; 
-            font-weight: 500;
-            font-size: 1rem;
-            transition: color 0.3s;
-          ">Promos</a>
-          <a href="${process.env.BASE_URL}/contact" style="
-            color: white; 
-            margin: 0 15px; 
-            text-decoration: none; 
-            font-weight: 500;
-            font-size: 1rem;
-            transition: color 0.3s;
-          ">Contact</a>
-        </nav>
+            <!-- Contenu -->
+            <div style="padding: 30px;">
+              <p style="margin: 0 0 20px 0; font-size: 18px; color: #1f2937;">
+                Bonjour ${firstName},
+              </p>
+              
+              <p style="margin: 0 0 25px 0; font-size: 16px; color: #1f2937; line-height: 1.6;">
+                Merci de votre inscription chez <strong>CrystosJewel</strong> ! Nous sommes ravis de vous compter parmi nous.
+              </p>
+              
+              <p style="margin: 0 0 25px 0; font-size: 16px; color: #1f2937; line-height: 1.6;">
+                Découvrez notre collection exclusive de bijoux élégants et trouvez la pièce parfaite qui vous ressemble.
+              </p>
+              
+              <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 25px 0;">
+                <h3 style="margin: 0 0 15px 0; color: #1f2937; font-size: 16px;">🎁 Offre de bienvenue</h3>
+                <p style="margin: 0; color: #1f2937; font-size: 14px;">
+                  En tant que nouveau membre, profitez de <strong>10% de réduction</strong> sur votre première commande avec le code <strong>BIENVENUE10</strong>
+                </p>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.BASE_URL}/bijoux" 
+                   style="display: inline-block; background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); color: #ffffff; text-decoration: none; padding: 18px 35px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 6px 20px rgba(168, 85, 247, 0.3);">
+                  💎 Découvrir nos bijoux
+                </a>
+              </div>
+              
+              <p style="margin: 0; font-size: 14px; color: #6b7280; text-align: center;">
+                Si ce n'est pas vous qui avez créé ce compte, ignorez simplement cet email.
+              </p>
+            </div>
 
-        <main style="padding: 20px;">
-          <h2 style="color: #7d4b53; font-weight: 600;">Coucou ${firstName} !</h2>
-          <p>Bienvenue chez <strong>Crystos Jewel</strong>, ta boutique préférée pour des bijoux qui ont du charme sans te ruiner.</p>
-          <p>On est super contents que tu aies rejoint la famille. Ici, on aime bien les paillettes, le fun, et surtout te faire plaisir.</p>
-          <p>Si tu as besoin d'un coup de main ou juste envie de papoter bling-bling, on est là, prêts à répondre !</p>
-          <p>Allez, file découvrir nos merveilles et fais-toi plaisir 💎</p>
-
-          <p style="margin-top: 30px; font-style: italic; color: #b76e79;">L'équipe Crystos Jewel qui brille avec toi ✨</p>
-        </main>
-
-        <footer style="
-          background: #e8c2c8; 
-          padding: 15px 20px; 
-          font-size: 12px; 
-          color: #7d4b53; 
-          text-align: center;
-          border-top: 1px solid #b76e79;
-        ">
-          Tu as reçu ce mail car tu t'es inscrit(e) sur <a href="${process.env.BASE_URL}" style="color:#7d4b53; text-decoration:none;">notre site</a>.  
-          Si ce n'est pas toi, pas de panique, ignore-le simplement.
-        </footer>
-      </div>
+          </div>
+        </div>
+      </body>
+      </html>
     `;
 
     const info = await transporter.sendMail({
-      from: `"Crystos Jewel" <${process.env.MAIL_USER}>`,
+      from: `"CrystosJewel ✨" <${process.env.MAIL_USER}>`,
       to: userEmail,
-      subject: `Bienvenue dans la famille Crystos Jewel, ${firstName} !`,
+      subject: `Bienvenue dans la famille CrystosJewel, ${firstName} !`,
       html: htmlContent,
     });
 
-    console.log("Email envoyé :", info.response);
+    console.log("📧 Email bienvenue envoyé :", info.response);
+    return { success: true, messageId: info.messageId };
+    
   } catch (error) {
-    console.error("Erreur lors de l'envoi du mail :", error);
+    console.error("❌ Erreur email bienvenue :", error);
+    return { success: false, error: error.message };
   }
 };
 
@@ -1830,7 +1809,7 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
             <tr>
               <td style="background-color: #d89ab3; padding: 40px 30px; text-align: center; border-radius: 20px 20px 0 0;">
                 <h1 style="margin: 0 0 8px 0; color: #ffffff; font-size: 32px; font-weight: bold; letter-spacing: 1px; font-family: Arial, sans-serif;">✨ CrystosJewel ✨</h1>
-                <p style="margin: 0; color: rgba(255,255,255,0.95); font-size: 16px; font-family: Arial, sans-serif;">Vos bijoux de rêve depuis 1985</p>
+                <p style="margin: 0; color: rgba(255,255,255,0.95); font-size: 16px; font-family: Arial, sans-serif;">Vos bijoux de rêve </p>
               </td>
             </tr>
 
@@ -2291,20 +2270,17 @@ export const sendAdminOrderNotification = async (orderData, customerData) => {
 // ✅ FONCTION PRINCIPALE - ENVOI SIMULTANÉ CLIENT + ADMIN AVEC RÉDUCTIONS ET TAILLES
 export const sendOrderConfirmationEmails = async (userEmail, firstName, orderData, customerData) => {
   try {
-    console.log('📧 Envoi simultané des emails de confirmation avec tailles...');
+    console.log('📧 Envoi simultané des emails de confirmation...');
     
-    // ✅ DEBUG DES DONNÉES DE COMMANDE REÇUES
-    console.log('🔍 Données de commande reçues:', {
-      subtotal: orderData.subtotal,
-      total: orderData.total,
-      discount: orderData.discount,
-      promo_code: orderData.promo_code,
-      promo_discount_amount: orderData.promo_discount_amount,
-      promo_discount_percent: orderData.promo_discount_percent,
-      deliveryFee: orderData.shipping_price || orderData.deliveryFee,
-      itemsCount: orderData.items ? orderData.items.length : 0,
-      itemsWithSizes: orderData.items ? orderData.items.filter(item => item.size && item.size !== 'Non spécifiée').length : 0
-    });
+    // Vérifier la connexion email avant d'envoyer
+    const isConnected = await verifyEmailConnection();
+    if (!isConnected) {
+      console.error('❌ Connexion email non disponible');
+      return {
+        customer: { success: false, error: 'Connexion email non disponible' },
+        admin: { success: false, error: 'Connexion email non disponible' }
+      };
+    }
     
     const [customerResult, adminResult] = await Promise.allSettled([
       sendOrderConfirmationEmail(userEmail, firstName, orderData),
@@ -2322,9 +2298,9 @@ export const sendOrderConfirmationEmails = async (userEmail, firstName, orderDat
     });
 
     return results;
-        
+    
   } catch (error) {
-    console.error("❌ Erreur lors de l'envoi simultané des emails :", error);
+    console.error('❌ Erreur envoi emails simultané :', error);
     return {
       customer: { success: false, error: error.message },
       admin: { success: false, error: error.message }
@@ -2921,84 +2897,83 @@ export const sendStatusChangeEmail = async (orderData, statusChangeData, custome
 };
 
 
-
-// ✅ FONCTION HELPER POUR TRADUCTION DES STATUTS
-function translateStatus(status) {
-    const statusMap = {
-        'waiting': 'En attente',
-        'preparing': 'En préparation', 
-        'shipped': 'Expédiée',
-        'delivered': 'Livrée',
-        'cancelled': 'Annulée'
-    };
-    return statusMap[status] || status;
-}
+// ✅ FONCTION UTILITAIRE - Traduction des statuts
+const translateStatus = (status) => {
+  const translations = {
+    'pending': 'En attente',
+    'confirmed': 'Confirmée',
+    'processing': 'En préparation',
+    'shipped': 'Expédiée',
+    'delivered': 'Livrée',
+    'cancelled': 'Annulée',
+    'refunded': 'Remboursée'
+  };
+  return translations[status] || status;
+};
 
 // ✅ EMAIL CONFIRMATION DE LIVRAISON
-export const sendDeliveryConfirmationEmail = async (userEmail, firstName, deliveryData) => {
+// ✅ EMAIL LIVRAISON
+const sendDeliveryConfirmationEmail = async (userEmail, firstName, data) => {
   try {
-    const { orderNumber, deliveryDate } = deliveryData;
-
+    const { orderNumber } = data;
+    
     const htmlContent = `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Commande livrée - CrystosJewel</title>
-        <style>body { font-family: Arial, sans-serif; }</style>
       </head>
-      <body style="margin: 0; padding: 20px; background-color: #f0fdf4;">
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f0fdf4;">
         
-        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
-          
-          <!-- Header -->
-          <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 30px 20px; text-align: center;">
-            <div style="font-size: 64px; margin-bottom: 16px;">✅</div>
-            <h1 style="margin: 0; color: white; font-size: 24px; font-weight: bold;">Commande livrée avec succès !</h1>
-            <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.95); font-size: 14px;">CrystosJewel • Livraison confirmée</p>
-          </div>
+        <div style="padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 25px; text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
+              <h1 style="margin: 0; font-size: 24px; font-weight: bold;">Commande livrée !</h1>
+              <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Commande ${orderNumber}</p>
+            </div>
 
-          <!-- Content -->
-          <div style="padding: 30px 25px; text-align: center;">
-            <h2 style="margin: 0 0 15px 0; color: #374151; font-size: 20px;">Bonjour ${firstName} !</h2>
-            <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 16px; line-height: 1.6;">
-              Nous avons le plaisir de vous confirmer que votre commande <strong>${orderNumber}</strong> 
-              a été livrée le <strong>${deliveryDate}</strong> ✨
-            </p>
-
-            <!-- Delivery Info -->
-            <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 2px solid #059669; border-radius: 12px; padding: 25px; margin-bottom: 25px;">
-              <h3 style="margin: 0 0 16px 0; color: #059669; font-size: 18px; font-weight: bold;">
-                🎉 Livraison réussie !
-              </h3>
-              <p style="margin: 0; color: #065f46; font-size: 15px; line-height: 1.5;">
-                Vos bijoux sont maintenant entre vos mains. Nous espérons qu'ils vous plairont autant qu'à nous !
+            <!-- Contenu -->
+            <div style="padding: 25px;">
+              <p style="margin: 0 0 20px 0; font-size: 16px; color: #1f2937;">
+                Bonjour ${firstName},
+              </p>
+              
+              <p style="margin: 0 0 20px 0; font-size: 16px; color: #1f2937; line-height: 1.6;">
+                🎉 Félicitations ! Votre commande <strong>${orderNumber}</strong> a été livrée avec succès.
+              </p>
+              
+              <p style="margin: 0 0 20px 0; font-size: 16px; color: #1f2937; line-height: 1.6;">
+                Nous espérons que vous êtes ravi(e) de vos nouveaux bijoux !
+              </p>
+              
+              <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
+                <h3 style="margin: 0 0 10px 0; color: #065f46; font-size: 16px;">💎 Profitez de vos bijoux</h3>
+                <p style="margin: 0; color: #1f2937; font-size: 14px;">N'hésitez pas à nous envoyer des photos de vos bijoux portés sur nos réseaux sociaux !</p>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.BASE_URL}/avis?order=${orderNumber}" 
+                   style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; margin: 5px;">
+                  ⭐ Laisser un avis
+                </a>
+                <a href="${process.env.BASE_URL}/bijoux" 
+                   style="display: inline-block; background: linear-gradient(135deg, #E8B4B8 0%, #d1a3a8 100%); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; margin: 5px;">
+                  💎 Découvrir nos nouveautés
+                </a>
+              </div>
+              
+              <p style="margin: 0; font-size: 16px; color: #1f2937;">
+                Merci pour votre confiance et à bientôt !<br>
+                L'équipe CrystosJewel
               </p>
             </div>
 
-            <!-- Review Request -->
-            <div style="background: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-              <h4 style="margin: 0 0 12px 0; color: #92400e; font-size: 16px;">💬 Votre avis nous intéresse</h4>
-              <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.5;">
-                Prenez quelques instants pour nous faire part de votre expérience. 
-                Vos commentaires nous aident à nous améliorer !
-              </p>
-            </div>
-
-            <!-- Actions -->
-            <a href="${process.env.BASE_URL}/bijoux" style="display: inline-block; background: linear-gradient(135deg, #059669 0%, #047857 100%); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; margin: 0 8px;">
-              💎 Découvrir nos nouveautés
-            </a>
           </div>
-
-          <!-- Footer -->
-          <div style="background: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb;">
-            <p style="margin: 0; color: #6b7280; font-size: 12px;">
-              Merci de votre confiance ! 
-              <a href="mailto:${process.env.MAIL_USER}" style="color: #059669; text-decoration: none;">${process.env.MAIL_USER}</a>
-            </p>
-          </div>
-
         </div>
       </body>
       </html>
@@ -3007,15 +2982,100 @@ export const sendDeliveryConfirmationEmail = async (userEmail, firstName, delive
     const info = await transporter.sendMail({
       from: `"CrystosJewel ✅" <${process.env.MAIL_USER}>`,
       to: userEmail,
-      subject: `✅ Commande ${orderNumber} livrée avec succès !`,
+      subject: `✅ Votre commande ${orderNumber} a été livrée !`,
       html: htmlContent,
     });
 
-    console.log("📧 Email livraison envoyé:", info.response);
+    console.log("📧 Email livraison envoyé :", info.response);
     return { success: true, messageId: info.messageId };
     
   } catch (error) {
-    console.error("❌ Erreur email livraison:", error);
+    console.error("❌ Erreur email livraison :", error);
+    return { success: false, error: error.message };
+  }
+};
+
+// ✅ EMAIL CHANGEMENT DE STATUT GÉNÉRAL
+const sendGeneralStatusUpdateEmail = async (userEmail, firstName, data) => {
+  try {
+    const { orderNumber, oldStatus, newStatus, updatedBy } = data;
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Mise à jour commande - CrystosJewel</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background: #fef7ff;">
+        
+        <div style="padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); color: #ffffff; padding: 25px; text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 10px;">🔄</div>
+              <h1 style="margin: 0; font-size: 24px; font-weight: bold;">Mise à jour de votre commande</h1>
+              <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Commande ${orderNumber}</p>
+            </div>
+
+            <!-- Contenu -->
+            <div style="padding: 25px;">
+              <p style="margin: 0 0 20px 0; font-size: 16px; color: #1f2937;">
+                Bonjour ${firstName},
+              </p>
+              
+              <p style="margin: 0 0 20px 0; font-size: 16px; color: #1f2937; line-height: 1.6;">
+                Le statut de votre commande <strong>${orderNumber}</strong> a été mis à jour.
+              </p>
+              
+              <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #a855f7;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px;">
+                  <span style="background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                    ${oldStatus}
+                  </span>
+                  <span style="color: #6b7280; font-size: 20px;">→</span>
+                  <span style="background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;">
+                    ${newStatus}
+                  </span>
+                </div>
+                <p style="margin: 0; color: #6b7280; font-size: 12px;">
+                  Mis à jour par ${updatedBy} • ${new Date().toLocaleDateString('fr-FR')}
+                </p>
+              </div>
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.BASE_URL}/commande/suivi?order=${orderNumber}" 
+                   style="display: inline-block; background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); color: #ffffff; text-decoration: none; padding: 15px 30px; border-radius: 12px; font-weight: 600; font-size: 14px;">
+                  👁️ Voir ma commande
+                </a>
+              </div>
+              
+              <p style="margin: 0; font-size: 16px; color: #1f2937;">
+                Merci pour votre confiance !<br>
+                L'équipe CrystosJewel
+              </p>
+            </div>
+
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const info = await transporter.sendMail({
+      from: `"CrystosJewel 🔄" <${process.env.MAIL_USER}>`,
+      to: userEmail,
+      subject: `🔄 Mise à jour de votre commande ${orderNumber}`,
+      html: htmlContent,
+    });
+
+    console.log("📧 Email mise à jour envoyé :", info.response);
+    return { success: true, messageId: info.messageId };
+    
+  } catch (error) {
+    console.error("❌ Erreur email mise à jour :", error);
     return { success: false, error: error.message };
   }
 };
@@ -4216,80 +4276,88 @@ export const sendNewsletterEmail = async (recipientEmail, recipientName, newslet
     }
 };
 
-// Email promotionnel
-export const sendPromotionalEmail = async (recipientEmail, recipientName, promoData) => {
-    try {
-        const { title, description, discount, promoCode, expiryDate, productUrl } = promoData;
 
-        const html = `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>${title}</title>
-            </head>
-            <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8fafc;">
-                <div style="max-width: 600px; margin: 0 auto; background: white;">
-                    <!-- Header avec promotion -->
-                    <div style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; padding: 30px 20px; text-align: center;">
-                        <h1 style="margin: 0; font-size: 32px; font-weight: 800;">🎉 ${title}</h1>
-                        <p style="margin: 15px 0 0; font-size: 18px; opacity: 0.9;">${description}</p>
+export const sendPromotionalEmail = async (userEmail, firstName, promoData) => {
+  try {
+    const { subject, title, description, discount, promoCode, expiryDate } = promoData;
+    
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${subject} - CrystosJewel</title>
+      </head>
+      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background: linear-gradient(135deg, #fef7ff 0%, #f3e8ff 100%);">
+        
+        <div style="padding: 20px;">
+          <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
+            
+            <!-- Header -->
+            <div style="background: linear-gradient(135deg, #E8B4B8 0%, #d1a3a8 100%); color: #ffffff; padding: 30px; text-align: center;">
+              <div style="font-size: 48px; margin-bottom: 15px;">💎</div>
+              <h1 style="margin: 0; font-size: 28px; font-weight: bold;">${title}</h1>
+            </div>
+
+            <!-- Contenu -->
+            <div style="padding: 30px;">
+              <p style="margin: 0 0 20px 0; font-size: 16px; color: #1f2937;">
+                Bonjour ${firstName},
+              </p>
+              
+              <p style="margin: 0 0 25px 0; font-size: 16px; color: #1f2937; line-height: 1.6;">
+                ${description}
+              </p>
+              
+              ${discount > 0 ? `
+                <div style="background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%); color: #92400e; padding: 25px; border-radius: 12px; text-align: center; margin: 25px 0;">
+                  <div style="font-size: 24px; font-weight: bold; margin-bottom: 5px;">
+                    ${discount}% DE RÉDUCTION
+                  </div>
+                  ${promoCode ? `
+                    <div style="background: rgba(255,255,255,0.3); padding: 10px 15px; border-radius: 8px; margin: 10px 0; font-family: 'Courier New', monospace; font-size: 18px; font-weight: bold;">
+                      ${promoCode}
                     </div>
-
-                    <!-- Contenu promotion -->
-                    <div style="padding: 30px 20px; text-align: center;">
-                        <h2 style="color: #1e293b; margin-bottom: 20px;">Bonjour ${recipientName} !</h2>
-                        
-                        <!-- Code promo en évidence -->
-                        <div style="background: #fef3c7; border: 2px dashed #f59e0b; border-radius: 12px; padding: 25px; margin: 25px 0;">
-                            <h3 style="margin: 0 0 10px 0; color: #92400e; font-size: 24px;">
-                                Réduction de ${discount}%
-                            </h3>
-                            <div style="background: #f59e0b; color: white; font-size: 20px; font-weight: 700; padding: 15px; border-radius: 8px; letter-spacing: 2px;">
-                                ${promoCode}
-                            </div>
-                            <p style="margin: 15px 0 0 0; color: #92400e; font-size: 14px;">
-                                Valable jusqu'au ${expiryDate}
-                            </p>
-                        </div>
-
-                        <!-- Bouton CTA -->
-                        <div style="margin: 30px 0;">
-                            <a href="${productUrl || '#'}" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 18px 36px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 18px;">
-                                🛍️ Profiter de l'offre
-                            </a>
-                        </div>
-
-                        <p style="color: #64748b; font-size: 14px; margin-top: 20px;">
-                            Ne ratez pas cette occasion exceptionnelle de découvrir nos plus beaux bijoux !
-                        </p>
-                    </div>
-
-                    <!-- Footer -->
-                    <div style="background: #f1f5f9; padding: 20px; text-align: center; font-size: 12px; color: #64748b;">
-                        <p style="margin: 0 0 10px 0;">© 2025 CrystosJewel - Tous droits réservés</p>
-                        <p style="margin: 0;">
-                            <a href="#" style="color: #64748b; text-decoration: none;">Se désabonner</a> | 
-                            <a href="#" style="color: #64748b; text-decoration: none;">Préférences</a>
-                        </p>
-                    </div>
+                  ` : ''}
+                  <div style="font-size: 12px; opacity: 0.8;">
+                    Valable jusqu'au ${expiryDate}
+                  </div>
                 </div>
-            </body>
-            </html>
-        `;
+              ` : ''}
+              
+              <div style="text-align: center; margin: 30px 0;">
+                <a href="${process.env.BASE_URL}/bijoux" 
+                   style="display: inline-block; background: linear-gradient(135deg, #E8B4B8 0%, #d1a3a8 100%); color: #ffffff; text-decoration: none; padding: 18px 35px; border-radius: 12px; font-weight: 600; font-size: 16px; box-shadow: 0 6px 20px rgba(232, 180, 184, 0.3);">
+                  💎 Découvrir nos bijoux
+                </a>
+              </div>
+              
+              <p style="margin: 0; font-size: 14px; color: #6b7280; text-align: center;">
+                Merci de faire partie de la famille CrystosJewel !
+              </p>
+            </div>
 
-        return await sendEmail({
-            to: recipientEmail,
-            subject: `🎉 ${title} - ${discount}% de réduction !`,
-            html: html,
-            fromName: 'CrystosJewel Promotions'
-        });
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
 
-    } catch (error) {
-        console.error('❌ Erreur email promotionnel:', error);
-        return { success: false, error: error.message };
-    }
+    const info = await transporter.sendMail({
+      from: `"CrystosJewel 💎" <${process.env.MAIL_USER}>`,
+      to: userEmail,
+      subject: subject,
+      html: htmlContent,
+    });
+
+    console.log("📧 Email promotionnel envoyé :", info.response);
+    return { success: true, messageId: info.messageId };
+    
+  } catch (error) {
+    console.error("❌ Erreur email promotionnel :", error);
+    return { success: false, error: error.message };
+  }
 };
 
 // ========================================
@@ -4532,7 +4600,16 @@ export const validateEmail = (email) => {
     return emailRegex.test(email);
 };
 
-
+export const verifyEmailConnection = async () => {
+  try {
+    await transporter.verify();
+    console.log('✅ Configuration email validée');
+    return true;
+  } catch (error) {
+    console.error('❌ Erreur configuration email:', error);
+    return false;
+  }
+};
 
 
 // ========================================

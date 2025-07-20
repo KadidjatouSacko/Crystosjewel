@@ -864,7 +864,7 @@
                             </div>
 
                             <!-- Bouton "Voir le bijou" -->
-                            <a href="/bijou/<%- jewel.id %>" class="view-product-btn" 
+                            <a href="/bijoux/<%- jewel.slug %>" class="view-product-btn" 
                                <%- jewel.stock <= 0 ? 'style="opacity:0.6;pointer-events:none;"' : '' %>>
                                 <% if (jewel.stock <= 0) { %>
                                     <i class="fas fa-eye-slash"></i> Indisponible

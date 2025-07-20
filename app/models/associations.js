@@ -39,16 +39,17 @@ import { GuestSession } from "./GuestSession.js";
 
 
 
-PromoCode.hasMany(Order, {
-  foreignKey: 'promoCodeId',
-  as: 'orders'
-});
+// PromoCode.hasMany(Order, {
+//   foreignKey: 'promoCodeId',
+//   as: 'orders'
+// });
 
-// Une commande peut avoir un seul code promo
-Order.belongsTo(PromoCode, {
-  foreignKey: 'promoCodeId',
-  as: 'promoCode'
-});
+// // Une commande peut avoir un seul code promo
+// Order.belongsTo(PromoCode, {
+//   foreignKey: 'promoCodeId',
+//   as: 'promoCode'
+// });
+
 
 
 

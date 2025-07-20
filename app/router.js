@@ -41,7 +41,6 @@ import { promoAdminController } from "./controlleurs/promoAdminController.js";
 import { guestOrderController } from './controlleurs/guestOrderController.js';
 import { emailManagementControlleur } from './controlleurs/emailManagementController.js';
 import { adminClientController } from './controlleurs/adminClientController.js';
-import {  requireAdmin, loadUserData, clientOnly } from './middleware/authMiddleware.js';
 
 
 // CONTROLLERS EMAIL - CHOISISSEZ UN SEUL SYSTÈME
@@ -386,7 +385,6 @@ const emailUpload = multer({
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
 
 export const router = Router();
 
@@ -1760,12 +1758,12 @@ router.get('/api/categories/:categoryId/types', isAdmin, jewelControlleur.getTyp
 // ROUTES COMMANDES UTILISATEUR (INCHANGÉES)
 // ==========================================
 
-router.get('/commande/recapitulatif', guestOrderMiddleware, orderController.renderOrderSummary);
-router.get('/commande/informations',guestOrderMiddleware, orderController.renderCustomerForm);
-router.post('/commande/informations', guestOrderMiddleware, orderController.saveCustomerInfo);
-router.get('/commande/paiement', orderController.renderPaymentPage); 
-router.get('/commande/confirmation', orderController.renderConfirmation);
-router.post('/commande/valider', orderController.validateOrderAndSave);
+// router.get('/commande/recapitulatif', guestOrderMiddleware, orderController.renderOrderSummary);
+// router.get('/commande/informations',guestOrderMiddleware, orderController.renderCustomerForm);
+// router.post('/commande/informations', guestOrderMiddleware, orderController.saveCustomerInfo);
+// router.get('/commande/paiement', orderController.renderPaymentPage); 
+// router.get('/commande/confirmation', orderController.renderConfirmation);
+// router.post('/commande/valider', orderController.validateOrderAndSave);
 
 router.put('/api/admin/commandes/:orderId/status', isAdmin, adminOrdersController.updateOrderStatus);
 
@@ -1862,7 +1860,7 @@ router.post('/favoris/supprimer/:jewelId', isAuthenticated, async (req, res, nex
 // ==========================================
 
 router.get('/admin/stats', isAdmin, adminStatsController.dashboard);
-router.get('/admin/suivi-client', requireAdmin, adminClientController.showClientManagement);
+router.get('/admin/suivi-client', isAdmin, adminClientController.showClientManagement); // ✅ CORRECT
 
 router.get("/admin/produits", isAdmin, adminStatsController.ShowPageProducts);
 router.get('/admin/bijoux', isAdmin, adminStatsController.findAll);
@@ -3079,7 +3077,17 @@ router.get('/test-panier-db', async (req, res) => {
 });
 
 
-
+// Middleware de vérification admin (à adapter selon votre système)
+const requireAdmin = (req, res, next) => {
+  if (!req.session?.user?.isAdmin) {
+    req.session.flashMessage = {
+      type: 'error',
+      message: 'Accès administrateur requis'
+    };
+    return res.redirect('/connexion-inscription');
+  }
+  next();
+};
 
 // 📊 Page principale d'administration des codes promo
 router.get('/admin/promos', isAdmin, promoAdminController.renderAdminPage);
@@ -3153,13 +3161,33 @@ router.post('/commande/informations',
 );
 
 // Valider et créer la commande
+
 router.post('/commande/valider', 
   guestOrderMiddleware, 
   cartNotEmptyMiddleware,
   validateGuestOrderMiddleware,
-  guestOrderController.validateOrder
+  guestOrderController.validateOrder  // ✅ CHANGEMENT ICI !
 );
 
+// Page de paiement
+router.get('/commande/paiement', 
+  guestOrderMiddleware,
+  guestOrderController.renderPaymentPage
+); 
+
+// Confirmation de commande
+router.get('/commande/confirmation', 
+  guestOrderController.renderConfirmation
+);
+
+// API pour récupérer le panier
+router.get('/api/cart', 
+  guestOrderMiddleware, 
+  cartController.getCartAPI
+);
+
+// Convertir un invité en client enregistré
+router.post('/invite/creer-compte', guestOrderController.convertGuestToCustomer);
 // ========================================
 // 🔄 ROUTES DE CONVERSION INVITÉ
 // ========================================
@@ -3799,6 +3827,7 @@ router.post('/admin/upload/image', isAdmin, upload.single('image'), async (req, 
   }
 });
 
+router.get('/admin/suivi-client', isAdmin, adminClientController.showClientManagement);
 
 // 📝 Ajouter un client
 router.post('/admin/clients/add', isAdmin, adminClientController.addClient);
@@ -3825,21 +3854,23 @@ import { adminEmailController } from './controlleurs/adminEmailController.js';
 // 📧 ROUTES EMAIL MANAGEMENT
 // ========================================
 
-// Page principale de gestion des emails
-router.get('/admin/emails', requireAdmin, adminEmailController.showEmailManagement);
+import {emailController} from "./controlleurs/emailController.js";
 
+router.get('/admin/emails', isAdmin, emailController.index);
+router.post('/admin/emails/test-connection', isAdmin, emailController.testConnection);
+router.post('/admin/emails/send-test', isAdmin, emailController.sendTestEmail);
+router.post('/admin/emails/send-promotional', isAdmin, emailController.sendPromotional);
 
-// Envoyer un email de test
-router.post('/admin/emails/test', isAdmin, adminEmailController.sendTestEmail);
+// ✅ ROUTES HISTORIQUE
+router.get('/admin/emails/history', isAdmin, emailController.getEmailHistory);
+router.get('/admin/emails/stats', isAdmin, emailController.getEmailStats);
 
-// Réparer les emails manquants
-router.post('/admin/emails/repair', isAdmin, adminEmailController.repairMissingEmails);
+// ✅ ROUTES TEMPLATES
+router.get('/admin/emails/templates', isAdmin, emailController.getTemplates);
+router.post('/admin/emails/templates', isAdmin, emailController.saveTemplate);
+router.put('/admin/emails/templates/:id', isAdmin, emailController.saveTemplate);
+router.delete('/admin/emails/templates/:id', isAdmin, emailController.deleteTemplate);
 
-// Renvoyer un email pour une commande
-router.post('/admin/emails/resend', isAdmin, adminEmailController.resendOrderEmail);
-
-// Export des logs d'emails
-router.get('/admin/emails/export', isAdmin, adminEmailController.exportEmailLogs);
 
 
 // Export par défaut

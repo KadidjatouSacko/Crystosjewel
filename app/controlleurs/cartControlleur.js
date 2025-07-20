@@ -814,6 +814,178 @@ async renderCart(req, res) {
   async countCartItems(req) {
     return getCartItemCount(req); // ✅ Utilise la fonction globale
   },
+  
+  // Ajouter cette méthode dans cartController.js
+
+/**
+ * 🛒 Récupérer les détails du panier (connecté ou invité)
+ */
+async getCartDetails(req) {
+  try {
+    const userId = req.session?.user?.id || req.session?.customerId;
+    const isGuest = !userId;
+
+    let cartItems = [];
+    let totalPrice = 0;
+
+    if (isGuest) {
+      // Invité - récupérer depuis la session
+      console.log('🛒 Récupération panier session (invité)');
+      
+      const sessionCart = req.session.cart || { items: [] };
+      
+      for (const item of sessionCart.items) {
+        if (item.jewel && item.jewel.id) {
+          const currentJewel = await Jewel.findByPk(item.jewel.id);
+          
+          if (currentJewel && currentJewel.stock > 0) {
+            const validQuantity = Math.min(item.quantity, currentJewel.stock);
+            
+            cartItems.push({
+              jewelId: currentJewel.id,
+              jewel: {
+                id: currentJewel.id,
+                name: currentJewel.name,
+                description: currentJewel.description || '',
+                price_ttc: parseFloat(currentJewel.price_ttc),
+                image: currentJewel.image,
+                slug: currentJewel.slug,
+                stock: currentJewel.stock
+              },
+              quantity: validQuantity,
+              size: item.size || null // ✅ INCLURE LA TAILLE depuis la session
+            });
+            
+            totalPrice += parseFloat(currentJewel.price_ttc) * validQuantity;
+          }
+        }
+      }
+      
+    } else {
+      // Utilisateur connecté - récupérer depuis la BDD
+      console.log('🛒 Récupération panier BDD (connecté)');
+      
+      const dbCartItems = await Cart.findAll({
+        where: { customer_id: userId },
+        include: [{ 
+          model: Jewel, 
+          as: 'jewel',
+          required: true,
+          attributes: ['id', 'name', 'description', 'price_ttc', 'image', 'slug', 'stock']
+        }]
+      });
+
+      cartItems = dbCartItems.map(item => {
+        const itemTotal = parseFloat(item.jewel.price_ttc) * item.quantity;
+        totalPrice += itemTotal;
+        
+        return {
+          jewelId: item.jewel.id,
+          jewel: {
+            id: item.jewel.id,
+            name: item.jewel.name,
+            description: item.jewel.description || '',
+            price_ttc: parseFloat(item.jewel.price_ttc),
+            image: item.jewel.image,
+            slug: item.jewel.slug,
+            stock: item.jewel.stock
+          },
+          quantity: item.quantity,
+          size: item.size || null // ✅ INCLURE LA TAILLE depuis la BDD
+        };
+      });
+    }
+
+    console.log(`🛒 Panier récupéré: ${cartItems.length} articles, Total: ${totalPrice.toFixed(2)}€`);
+
+    return {
+      items: cartItems,
+      totalPrice: totalPrice,
+      itemCount: cartItems.reduce((total, item) => total + item.quantity, 0),
+      type: isGuest ? 'session' : 'database'
+    };
+
+  } catch (error) {
+    console.error('❌ Erreur récupération panier:', error);
+    return {
+      items: [],
+      totalPrice: 0,
+      itemCount: 0,
+      type: 'error'
+    };
+  }
+},
+/**
+ * 🔍 Déterminer la source du panier
+ */
+async getCartSource(req) {
+  const userId = req.session?.user?.id || req.session?.customerId;
+  
+  if (userId) {
+    return {
+      type: 'database',
+      userId: userId
+    };
+  } else {
+    return {
+      type: 'session',
+      guestId: req.session.guestId || null
+    };
+  }
+},
+
+/**
+ * 📊 Compter les articles dans le panier
+ */
+async getCartItemCount(req) {
+  try {
+    const cartDetails = await this.getCartDetails(req);
+    return cartDetails.itemCount;
+  } catch (error) {
+    console.error('❌ Erreur comptage panier:', error);
+    return 0;
+  }
+},
+
+/**
+ * 📊 API pour récupérer le panier (connecté ou invité)
+ */
+async getCartAPI(req, res) {
+  try {
+    console.log('📡 API panier demandée');
+    
+    const cartDetails = await this.getCartDetails(req);
+
+    if (!cartDetails.items || cartDetails.items.length === 0) {
+      return res.json({ 
+        success: false, 
+        message: 'Panier vide',
+        cart: {
+          items: [],
+          totalPrice: 0,
+          itemCount: 0
+        }
+      });
+    }
+
+    res.json({ 
+      success: true, 
+      cart: {
+        items: cartDetails.items,
+        totalPrice: cartDetails.totalPrice,
+        itemCount: cartDetails.itemCount,
+        type: cartDetails.type
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Erreur API cart:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur lors de la récupération du panier' 
+    });
+  }
+},
 
   /**
    * 🛒 Méthodes dépréciées (pour compatibilité) - SUPPRIMÉES pour éviter confusion

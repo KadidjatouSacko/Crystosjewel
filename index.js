@@ -20,8 +20,6 @@ import methodOverride from 'method-override';
 import { setUserForViews } from './app/middleware/authMiddleware.js';
 import { injectSiteSettings } from './app/middleware/SettingsMiddleware.js';
 import { ensurePromoCodesExist } from './migrations/migratePromoCodes.js';
-import { loadUserData } from './app/middleware/authMiddleware.js'; // ← Ajouter cet import
-
 
 // IMPORTANT: Charger les associations EN PREMIER
 import './app/models/associations.js';
@@ -691,8 +689,6 @@ app.use('/images', (req, res, next) => {
     console.log(`🖼️ Requête image: ${req.url}`);
     next();
 });
-
-app.use(loadUserData);
 
 // ===== ROUTES PRINCIPALES =====
 app.use(router);

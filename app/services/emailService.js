@@ -236,7 +236,7 @@ export const sendBulkEmailService = {
                                 <td style="background-color: #f8fafc; padding: 30px; text-align: center; border-top: 1px solid #e5e7eb;">
                                     <p style="margin: 0 0 15px 0; color: #6b7280; font-size: 14px; line-height: 1.5;">
                                         <strong>${fromName}</strong><br>
-                                        Bijouterie d'exception depuis 1985<br>
+                                        Bijouterie d'exception <br>
                                         📍 123 Avenue des Bijoux, 75001 Paris<br>
                                         📞 01 23 45 67 89
                                     </p>

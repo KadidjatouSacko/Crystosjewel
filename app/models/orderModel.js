@@ -102,6 +102,134 @@ Order.init({
   shipping_notes: {
     type: DataTypes.TEXT,
     allowNull: true
+  }, 
+  is_guest_order: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: false,
+    comment: 'Indique si la commande provient d\'un invité'
+  },
+  guest_session_id: {
+    type: DataTypes.STRING(255),
+    allowNull: true,
+    comment: 'ID de session pour les commandes invités'
+  },
+  
+  // Emails automatiques (manquants)
+  email_confirmation_sent: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: false
+  },
+  email_shipping_sent: {
+    type: DataTypes.BOOLEAN,
+    allowNull: true,
+    defaultValue: false
+  },
+  
+  // Champs de réduction supplémentaires (pour éviter les conflits)
+  discount_amount: {
+    type: DataTypes.DECIMAL(10,2),
+    allowNull: true,
+    defaultValue: 0.00,
+    comment: 'Montant total de réduction'
+  },
+  discount_percent: {
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    defaultValue: 0,
+    comment: 'Pourcentage de réduction global'
+  },
+  promo_discount: {
+    type: DataTypes.DECIMAL(10,2),
+    allowNull: true,
+    defaultValue: 0.00,
+    comment: 'Montant spécifique du code promo'
+  },
+  
+  // Totaux originaux
+  original_total: {
+    type: DataTypes.DECIMAL(10,2),
+    allowNull: true,
+    comment: 'Total avant réductions'
+  },
+  original_amount: {
+    type: DataTypes.DECIMAL(10,2),
+    allowNull: true,
+    comment: 'Montant original de la commande'
+  },
+  
+  // Livraison étendue
+  delivery_address: {
+    type: DataTypes.TEXT,
+    allowNull: true,
+    comment: 'Adresse de livraison complète'
+  },
+  delivery_mode: {
+    type: DataTypes.STRING(50),
+    allowNull: true,
+    defaultValue: 'standard'
+  },
+  delivery_notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  delivery_fee: {
+    type: DataTypes.DECIMAL(10,2),
+    allowNull: true,
+    defaultValue: 0.00
+  },
+  
+  // Code promo utilisé (backup)
+  promo_code_used: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  
+  // Timestamps supplémentaires
+  order_date: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  delivered_at: {
+    type: DataTypes.DATE,
+    allowNull: true
+  },
+  
+  // Paiement
+  payment_method: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  
+  // Sauvegardes client
+  customer_email_backup: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  customer_name_backup: {
+    type: DataTypes.STRING(255),
+    allowNull: true
+  },
+  customer_phone_backup: {
+    type: DataTypes.STRING(50),
+    allowNull: true
+  },
+  
+  // Notes internes
+  notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  internal_notes: {
+    type: DataTypes.TEXT,
+    allowNull: true
+  },
+  
+  // Téléphone client
+  customer_phone: {
+    type: DataTypes.STRING(50),
+    allowNull: true
   }
 }, {
   sequelize,

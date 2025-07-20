@@ -1,5 +1,7 @@
 
 import { Order } from '../models/orderModel.js';
+import { QueryTypes, Op } from 'sequelize';
+
 import { sequelize } from '../models/sequelize-client.js';
 import { sendStatusChangeEmail } from '../services/mailService.js';
 
@@ -921,36 +923,57 @@ async getOrderDetails(req, res) {
         const { id } = req.params;
         console.log(`🔍 Récupération détails commande #${id}`);
 
-        // ✅ D'ABORD: VÉRIFIER LA STRUCTURE DE LA TABLE
-        try {
-            const [tableStructure] = await sequelize.query(`
-                SELECT column_name, data_type 
-                FROM information_schema.columns 
-                WHERE table_name = 'orders' 
-                ORDER BY ordinal_position
-            `);
-            console.log('🔍 Structure table orders:', tableStructure.map(col => col.column_name));
-        } catch (structError) {
-            console.warn('⚠️ Impossible de récupérer la structure:', structError.message);
-        }
-
-        // ✅ REQUÊTE AVEC SEULEMENT o.* ET c.email
+        // ========================================
+        // 📋 RÉCUPÉRER LA COMMANDE AVEC DATES FORMATÉES
+        // ========================================
         const orderQuery = `
             SELECT 
                 o.*,
-                c.email as customer_table_email,
-                c.first_name,
-                c.last_name,
-                c.phone as customer_table_phone
+                CASE 
+                    WHEN o.is_guest_order = true THEN o.customer_name
+                    ELSE COALESCE(
+                        o.customer_name, 
+                        CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name)),
+                        'Client inconnu'
+                    )
+                END as customer_name,
+                CASE 
+                    WHEN o.is_guest_order = true THEN o.customer_email
+                    ELSE COALESCE(o.customer_email, c.email, 'N/A')
+                END as customer_email,
+                CASE 
+                    WHEN o.is_guest_order = true THEN o.customer_phone
+                    ELSE COALESCE(o.shipping_phone, c.phone, 'N/A')
+                END as phone,
+                CASE 
+                    WHEN o.is_guest_order = true THEN COALESCE(o.shipping_address, o.delivery_address)
+                    ELSE COALESCE(o.shipping_address, c.address, 'N/A')
+                END as shipping_address,
+                COALESCE(o.status, 'waiting') as current_status,
+                COALESCE(o.payment_method, 'card') as payment_method,
+                COALESCE(o.payment_status, 'pending') as payment_status,
+                -- ✅ FORMATAGE DES DATES
+                CASE 
+                    WHEN o.created_at IS NOT NULL THEN 
+                        TO_CHAR(o.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris', 'DD/MM/YYYY à HH24:MI')
+                    ELSE 'Date inconnue'
+                END as formatted_datetime,
+                CASE 
+                    WHEN o.created_at IS NOT NULL THEN 
+                        TO_CHAR(o.created_at AT TIME ZONE 'UTC' AT TIME ZONE 'Europe/Paris', 'DD/MM/YYYY')
+                    ELSE 'Date inconnue'
+                END as formatted_date
             FROM orders o
-            LEFT JOIN customer c ON o.customer_id = c.id
+            LEFT JOIN customer c ON o.customer_id = c.id AND o.is_guest_order = false
             WHERE o.id = $1
         `;
 
-        console.log('📋 Exécution requête SQL...');
-        const [orderResult] = await sequelize.query(orderQuery, { bind: [id] });
+        const orderResult = await sequelize.query(orderQuery, { 
+            bind: [id],
+            type: sequelize.QueryTypes.SELECT 
+        });
         
-        if (orderResult.length === 0) {
+        if (!orderResult || orderResult.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Commande non trouvée'
@@ -958,87 +981,134 @@ async getOrderDetails(req, res) {
         }
 
         const order = orderResult[0];
-        console.log('📊 Données brutes récupérées:', Object.keys(order));
+        console.log(`📋 Commande: ${order.numero_commande} - ${order.formatted_datetime}`);
 
-        // ✅ CONSTRUCTION SÉCURISÉE DE L'EMAIL
-        let finalEmail = 'Email non renseigné';
-        if (order.customer_email) {
-            finalEmail = order.customer_email;
-        } else if (order.customer_table_email) {
-            finalEmail = order.customer_table_email;
-        }
+        // ========================================
+        // 📦 RÉCUPÉRER LES ARTICLES AVEC GESTION ROBUSTE DES TAILLES
+        // ========================================
+        
+        // D'abord, vérifier si la colonne size existe
+        const checkColumnQuery = `
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'order_items' 
+            AND column_name = 'size'
+        `;
+        
+        const columnCheck = await sequelize.query(checkColumnQuery, { 
+            type: sequelize.QueryTypes.SELECT 
+        });
+        
+        const hasSizeColumn = columnCheck.length > 0;
+        console.log(`📏 Colonne 'size' dans order_items: ${hasSizeColumn ? 'OUI' : 'NON'}`);
 
-        // ✅ CONSTRUCTION SÉCURISÉE DU NOM
-        let finalName = 'Client inconnu';
-        if (order.customer_name) {
-            finalName = order.customer_name;
-        } else if (order.first_name && order.last_name) {
-            finalName = `${order.first_name} ${order.last_name}`;
-        }
-
-        console.log(`📧 Email final: "${finalEmail}"`);
-        console.log(`👤 Nom final: "${finalName}"`);
-
-        // ✅ RÉCUPÉRATION DES ARTICLES (SIMPLE)
+        // Construire la requête selon la présence de la colonne size
         const itemsQuery = `
             SELECT 
-                oi.*,
+                oi.id,
+                oi.quantity,
+                oi.price,
+                oi.jewel_id,
+                ${hasSizeColumn ? 'oi.size' : 'NULL as size'},
                 j.name as jewel_name,
-                j.image as jewel_image
+                j.image as jewel_image,
+                j.price_ttc as current_price,
+                j.slug as jewel_slug,
+                j.stock as current_stock,
+                (oi.quantity * oi.price) as item_total
             FROM order_items oi
             LEFT JOIN jewel j ON oi.jewel_id = j.id
             WHERE oi.order_id = $1
-            ORDER BY oi.id
+            ORDER BY oi.id ASC
         `;
 
-        const [items] = await sequelize.query(itemsQuery, { bind: [id] });
-        console.log(`📦 ${items.length} articles trouvés`);
+        const itemsResult = await sequelize.query(itemsQuery, { 
+            bind: [id],
+            type: sequelize.QueryTypes.SELECT 
+        });
 
-        // ✅ RÉPONSE ULTRA-SIMPLE
+        // ✅ TRAITEMENT DES ARTICLES AVEC TAILLES
+        const processedItems = itemsResult.map(item => {
+            const size = item.size && item.size !== 'null' && item.size.trim() !== '' 
+                ? item.size 
+                : null;
+            
+            return {
+                id: item.id,
+                name: item.jewel_name || 'Produit supprimé',
+                quantity: item.quantity,
+                price: parseFloat(item.price || 0),
+                size: size || 'Non spécifiée',
+                sizeDisplay: size ? `Taille: ${size}` : 'Taille non spécifiée',
+                hasSizeInfo: !!size,
+                image: item.jewel_image || '/images/default-product.jpg',
+                slug: item.jewel_slug,
+                total: parseFloat(item.item_total || (item.quantity * (item.price || 0))),
+                isDeleted: !item.jewel_name,
+                jewel_id: item.jewel_id,
+                current_stock: item.current_stock || 0
+            };
+        });
+
+        console.log(`📦 ${processedItems.length} articles avec tailles:`, 
+            processedItems.map(item => `${item.name} (${item.sizeDisplay})`).join(', '));
+
+        // ========================================
+        // 💰 CALCULER LES TOTAUX
+        // ========================================
+        const originalAmount = parseFloat(order.original_total || order.subtotal || 0);
+        const discountAmount = parseFloat(order.discount_amount || order.promo_discount_amount || 0);
+        const shipping = parseFloat(order.shipping_price || order.delivery_fee || 0);
+        const finalTotal = parseFloat(order.total || 0);
+
+        // ========================================
+        // 📄 RÉPONSE AVEC DATES FORMATÉES
+        // ========================================
         const response = {
             success: true,
             order: {
                 id: order.id,
-                numero_commande: order.numero_commande || `CMD-${order.id}`,
-                customer_name: finalName,
-                customer_email: finalEmail,
-                status: order.status || 'pending',
-                total: order.total || 0,
-                tracking_number: order.tracking_number || '',
-                notes: order.notes || '',
-                created_at: order.created_at,
-                date: order.created_at ? 
-                    new Date(order.created_at).toLocaleDateString('fr-FR') : 
-                    'Date inconnue',
+                numero_commande: order.numero_commande || 'N/A',
+                customer_name: order.customer_name || 'Client inconnu',
+                email: order.customer_email || 'N/A',
+                phone: order.phone || 'N/A',
+                shipping_address: order.shipping_address || 'N/A',
+                status: order.current_status || 'waiting',
                 
-                // ✅ TOUTES LES COLONNES BRUTES POUR DEBUG
-                _rawData: order
+                // ✅ DATES FORMATÉES CORRECTEMENT
+                date: order.formatted_date || 'Date inconnue',
+                dateTime: order.formatted_datetime || 'Date inconnue',
+                
+                payment_method: order.payment_method || 'card',
+                payment_status: order.payment_status || 'pending',
+                delivery_mode: order.delivery_mode || 'standard',
+                promo_code: order.promo_code,
+                hasDiscount: discountAmount > 0 || order.promo_code,
+                is_guest_order: order.is_guest_order || false
             },
-            items: items.map(item => ({
-                id: item.id,
-                name: item.jewel_name || item.jewel_name || 'Article',
-                quantity: item.quantity || 1,
-                price: item.price_ttc || 0,
-                size: item.size || 'Non spécifiée'
-            }))
+            items: processedItems,
+            tracking: [],
+            history: [],
+            summary: {
+                originalSubtotal: originalAmount,
+                discount: discountAmount,
+                subtotal: originalAmount - discountAmount,
+                shipping: shipping,
+                total: finalTotal,
+                itemsCount: processedItems.length,
+                totalQuantity: processedItems.reduce((sum, item) => sum + item.quantity, 0)
+            }
         };
 
-        console.log(`✅ Réponse préparée pour commande #${id}`);
+        console.log(`✅ Commande #${id} récupérée - Date: ${order.formatted_datetime}, ${processedItems.length} articles`);
         res.json(response);
 
     } catch (error) {
         console.error('❌ Erreur détails commande:', error);
-        console.error('❌ Message:', error.message);
-        console.error('❌ SQL:', error.sql);
-        
         res.status(500).json({
             success: false,
-            message: 'Erreur lors de la récupération des détails: ' + error.message,
-            debug: {
-                error: error.message,
-                sql: error.sql,
-                stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-            }
+            message: 'Erreur lors de la récupération des détails',
+            debug: process.env.NODE_ENV === 'development' ? error.message : undefined
         });
     }
 },
@@ -1624,144 +1694,265 @@ async sendStatusChangeEmail(order, oldStatus, newStatus, updatedBy) {
     // 🔄 MISE À JOUR RAPIDE DE STATUT
     // ========================================
 
-   async updateOrderStatus(req, res) {
-    try {
-      const { orderId } = req.params;
-      const { status: newStatus, trackingNumber, carrier, notes } = req.body;
-      const updatedBy = req.session?.user?.email || 'Admin';
+//    async updateOrderStatus(req, res) {
+//     try {
+//       const { orderId } = req.params;
+//       const { status: newStatus, trackingNumber, carrier, notes } = req.body;
+//       const updatedBy = req.session?.user?.email || 'Admin';
 
-      console.log(`🔄 Mise à jour statut commande ${orderId}:`, {
-        newStatus,
-        trackingNumber,
-        updatedBy
-      });
+//       console.log(`🔄 Mise à jour statut commande ${orderId}:`, {
+//         newStatus,
+//         trackingNumber,
+//         updatedBy
+//       });
 
-      // Récupérer la commande
-      const order = await Order.findByPk(orderId, {
-        include: [
-          {
-            model: User,
-            as: 'customer',
-            attributes: ['first_name', 'last_name', 'email', 'phone']
-          }
-        ]
-      });
+//       // Récupérer la commande
+//       const order = await Order.findByPk(orderId, {
+//         include: [
+//           {
+//             model: User,
+//             as: 'customer',
+//             attributes: ['first_name', 'last_name', 'email', 'phone']
+//           }
+//         ]
+//       });
 
-      if (!order) {
-        return res.status(404).json({
-          success: false,
-          message: 'Commande non trouvée'
-        });
-      }
+//       if (!order) {
+//         return res.status(404).json({
+//           success: false,
+//           message: 'Commande non trouvée'
+//         });
+//       }
 
-      const oldStatus = order.status;
+//       const oldStatus = order.status;
 
-      // Mettre à jour la commande
-      await order.update({
-        status: newStatus,
-        tracking_number: trackingNumber || order.tracking_number,
-        carrier: carrier || order.carrier,
-        notes: notes || order.notes,
-        updated_at: new Date()
-      });
+//       // Mettre à jour la commande
+//       await order.update({
+//         status: newStatus,
+//         tracking_number: trackingNumber || order.tracking_number,
+//         carrier: carrier || order.carrier,
+//         notes: notes || order.notes,
+//         updated_at: new Date()
+//       });
 
-      console.log(`✅ Statut commande ${orderId} mis à jour: ${oldStatus} → ${newStatus}`);
+//       console.log(`✅ Statut commande ${orderId} mis à jour: ${oldStatus} → ${newStatus}`);
 
-      // Préparer les données pour les notifications
-      const orderData = {
-        id: order.id,
-        numero_commande: order.numero_commande || `CMD-${order.id}`,
-        tracking_number: order.tracking_number,
-        total: order.total,
-        subtotal: order.subtotal,
-        customer_name: order.customer ? 
-          `${order.customer.first_name} ${order.customer.last_name}` : 
-          order.customer_name || 'Client'
-      };
+//       // Préparer les données pour les notifications
+//       const orderData = {
+//         id: order.id,
+//         numero_commande: order.numero_commande || `CMD-${order.id}`,
+//         tracking_number: order.tracking_number,
+//         total: order.total,
+//         subtotal: order.subtotal,
+//         customer_name: order.customer ? 
+//           `${order.customer.first_name} ${order.customer.last_name}` : 
+//           order.customer_name || 'Client'
+//       };
 
-      const customerData = {
-        userEmail: order.customer?.email || order.customer_email,
-        firstName: order.customer?.first_name || order.customer_name?.split(' ')[0] || 'Client',
-        lastName: order.customer?.last_name || order.customer_name?.split(' ').slice(1).join(' ') || '',
-        phone: order.customer?.phone || order.customer_phone
-      };
+//       const customerData = {
+//         userEmail: order.customer?.email || order.customer_email,
+//         firstName: order.customer?.first_name || order.customer_name?.split(' ')[0] || 'Client',
+//         lastName: order.customer?.last_name || order.customer_name?.split(' ').slice(1).join(' ') || '',
+//         phone: order.customer?.phone || order.customer_phone
+//       };
 
-      const statusChangeData = {
-        oldStatus,
-        newStatus,
-        updatedBy
-      };
+//       const statusChangeData = {
+//         oldStatus,
+//         newStatus,
+//         updatedBy
+//       };
 
-      // 🆕 ENVOI EMAIL + SMS selon le nouveau statut
-      let notificationResults = {
-        email: { success: false },
-        sms: { success: false },
-        success: false
-      };
+//       // 🆕 ENVOI EMAIL + SMS selon le nouveau statut
+//       let notificationResults = {
+//         email: { success: false },
+//         sms: { success: false },
+//         success: false
+//       };
 
-      try {
-        console.log('📧📱 Envoi notifications changement statut...');
+//       try {
+//         console.log('📧📱 Envoi notifications changement statut...');
         
-        notificationResults = await sendStatusChangeNotifications(
-          orderData,
-          statusChangeData,
-          customerData
-        );
+//         notificationResults = await sendStatusChangeNotifications(
+//           orderData,
+//           statusChangeData,
+//           customerData
+//         );
 
-        console.log('📊 Résultats notifications:', {
-          email: notificationResults.email.success ? '✅' : '❌',
-          sms: notificationResults.sms.success ? '✅' : '❌',
-          customerEmail: customerData.userEmail,
-          customerPhone: customerData.phone ? `${customerData.phone.substring(0, 4)}...` : 'Non disponible'
+//         console.log('📊 Résultats notifications:', {
+//           email: notificationResults.email.success ? '✅' : '❌',
+//           sms: notificationResults.sms.success ? '✅' : '❌',
+//           customerEmail: customerData.userEmail,
+//           customerPhone: customerData.phone ? `${customerData.phone.substring(0, 4)}...` : 'Non disponible'
+//         });
+
+//       } catch (notificationError) {
+//         console.error('❌ Erreur notifications:', notificationError);
+//         notificationResults = {
+//           email: { success: false, error: notificationError.message },
+//           sms: { success: false, error: notificationError.message },
+//           success: false
+//         };
+//       }
+
+//       // Réponse avec détails des notifications
+//       const response = {
+//         success: true,
+//         message: 'Statut de commande mis à jour',
+//         data: {
+//           order: {
+//             id: order.id,
+//             numero_commande: order.numero_commande,
+//             status: order.status,
+//             tracking_number: order.tracking_number,
+//             oldStatus,
+//             newStatus
+//           },
+//           statusChanged: oldStatus !== newStatus,
+//           notifications: {
+//             emailSent: notificationResults.email.success,
+//             smsSent: notificationResults.sms.success,
+//             anyNotificationSent: notificationResults.success,
+//             details: {
+//               email: notificationResults.email,
+//               sms: notificationResults.sms
+//             }
+//           }
+//         }
+//       };
+
+//       res.json(response);
+
+//     } catch (error) {
+//       console.error('❌ Erreur mise à jour statut commande:', error);
+//       res.status(500).json({
+//         success: false,
+//         message: 'Erreur lors de la mise à jour du statut',
+//         error: error.message
+//       });
+//     }
+//   },
+
+async updateOrderStatus(req, res) {
+    try {
+        const { id } = req.params;
+        const { status, tracking_number, admin_notes } = req.body;
+
+        console.log(`🔄 Mise à jour commande #${id}:`, { status, tracking_number });
+
+        // Récupérer la commande existante
+        const existingOrder = await sequelize.query(`
+            SELECT 
+                o.*,
+                COALESCE(o.customer_email, c.email, 'N/A') as customer_email,
+                COALESCE(o.first_name, c.firstName, SPLIT_PART(o.customer_name, ' ', 1)) as first_name,
+                COALESCE(o.last_name, c.lastName, SPLIT_PART(o.customer_name, ' ', 2)) as last_name
+            FROM orders o
+            LEFT JOIN customer c ON o.customer_id = c.id
+            WHERE o.id = $1
+        `, {
+            bind: [id],
+            type: QueryTypes.SELECT
         });
 
-      } catch (notificationError) {
-        console.error('❌ Erreur notifications:', notificationError);
-        notificationResults = {
-          email: { success: false, error: notificationError.message },
-          sms: { success: false, error: notificationError.message },
-          success: false
-        };
-      }
-
-      // Réponse avec détails des notifications
-      const response = {
-        success: true,
-        message: 'Statut de commande mis à jour',
-        data: {
-          order: {
-            id: order.id,
-            numero_commande: order.numero_commande,
-            status: order.status,
-            tracking_number: order.tracking_number,
-            oldStatus,
-            newStatus
-          },
-          statusChanged: oldStatus !== newStatus,
-          notifications: {
-            emailSent: notificationResults.email.success,
-            smsSent: notificationResults.sms.success,
-            anyNotificationSent: notificationResults.success,
-            details: {
-              email: notificationResults.email,
-              sms: notificationResults.sms
-            }
-          }
+        if (!existingOrder.length) {
+            return res.status(404).json({
+                success: false,
+                message: 'Commande non trouvée'
+            });
         }
-      };
 
-      res.json(response);
+        const order = existingOrder[0];
+        const oldStatus = order.status;
+        const customerEmail = order.customer_email;
+
+        // Mettre à jour la commande
+        await sequelize.query(`
+            UPDATE orders 
+            SET 
+                status = $1,
+                tracking_number = $2,
+                admin_notes = $3,
+                updated_at = NOW()
+            WHERE id = $4
+        `, {
+            bind: [status, tracking_number || order.tracking_number, admin_notes || order.admin_notes, id]
+        });
+
+        console.log(`✅ Commande #${id} mise à jour: ${oldStatus} → ${status}`);
+
+        // ✅ ENVOI EMAIL SI STATUT CHANGÉ ET EMAIL DISPONIBLE
+        let emailResult = { success: false, message: 'Aucun email envoyé' };
+        
+        if (status !== oldStatus && customerEmail && customerEmail !== 'N/A' && customerEmail.includes('@')) {
+            try {
+                console.log('📧 Tentative envoi email changement statut...');
+                
+                // Import dynamique du service email
+                const { sendStatusChangeEmail } = await import('../services/mailService.js');
+                
+                const orderData = {
+                    id: order.id,
+                    numero_commande: order.numero_commande || `CMD-${order.id}`,
+                    tracking_number: tracking_number || order.tracking_number,
+                    total: order.total,
+                    customer_name: order.customer_name,
+                    customer_email: customerEmail
+                };
+
+                const statusChangeData = {
+                    oldStatus,
+                    newStatus: status,
+                    updatedBy: req.session?.user?.name || 'Admin'
+                };
+
+                const customerData = {
+                    userEmail: customerEmail,
+                    firstName: order.first_name || order.customer_name?.split(' ')[0] || 'Client',
+                    lastName: order.last_name || order.customer_name?.split(' ').slice(1).join(' ') || ''
+                };
+
+                console.log('📧 Données email:', { orderData: orderData.numero_commande, customerData: customerData.userEmail });
+
+                emailResult = await sendStatusChangeEmail(orderData, statusChangeData, customerData);
+                
+            } catch (emailError) {
+                console.error('⚠️ Erreur envoi email:', emailError);
+                emailResult = { success: false, error: emailError.message };
+            }
+        } else {
+            console.log('⚠️ Email non envoyé:', {
+                statusChanged: status !== oldStatus,
+                hasEmail: !!customerEmail,
+                emailValue: customerEmail,
+                isValidEmail: customerEmail && customerEmail.includes('@')
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Commande mise à jour avec succès',
+            data: {
+                order: {
+                    id: order.id,
+                    numero_commande: order.numero_commande,
+                    status: status,
+                    tracking_number: tracking_number || order.tracking_number,
+                    customer_email: customerEmail
+                },
+                statusChanged: status !== oldStatus,
+                emailSent: emailResult?.success || false,
+                emailDetails: emailResult
+            }
+        });
 
     } catch (error) {
-      console.error('❌ Erreur mise à jour statut commande:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Erreur lors de la mise à jour du statut',
-        error: error.message
-      });
+        console.error('❌ Erreur mise à jour commande:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la mise à jour: ' + error.message
+        });
     }
-  },
-
+},
   /**
    * 🆕 NOUVELLE MÉTHODE - Test des notifications SMS
    */

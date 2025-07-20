@@ -1609,20 +1609,76 @@ async getOrderDetails(req, res) {
         console.log(`🔍 Récupération détails commande #${id} avec tailles et paiement`);
 
         // Détails de la commande AVEC payment_method
-        const orderQuery = `
-            SELECT 
-                o.*,
-                COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu') as customer_name,
-                COALESCE(o.customer_email, c.email, 'N/A') as customer_email,
-                c.phone,
-                COALESCE(o.shipping_address, c.address) as shipping_address,
-                COALESCE(o.status, o.status_suivi, 'waiting') as current_status,
-                COALESCE(o.payment_method, 'card') as payment_method,  -- ✅ AJOUT
-                COALESCE(o.payment_status, 'pending') as payment_status  -- ✅ AJOUT
-            FROM orders o
-            LEFT JOIN customer c ON o.customer_id = c.id
-            WHERE o.id = $1
-        `;
+       const orderQuery = `
+    SELECT 
+        o.*,
+        -- ✅ GÉRER LES COMMANDES D'INVITÉS
+        CASE 
+            WHEN o.is_guest_order = true THEN o.customer_name
+            ELSE COALESCE(
+                o.customer_name, 
+                CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name)),
+                'Client inconnu'
+            )
+        END as customer_name,
+        
+        -- ✅ EMAIL POUR INVITÉS
+        CASE 
+            WHEN o.is_guest_order = true THEN o.customer_email
+            ELSE COALESCE(o.customer_email, c.email, 'N/A')
+        END as customer_email,
+        
+        -- ✅ TÉLÉPHONE POUR INVITÉS  
+        CASE 
+            WHEN o.is_guest_order = true THEN o.customer_phone
+            ELSE COALESCE(o.shipping_phone, c.phone, 'N/A')
+        END as phone,
+        
+        -- ✅ ADRESSE POUR INVITÉS
+        CASE 
+            WHEN o.is_guest_order = true THEN COALESCE(o.shipping_address, o.delivery_address)
+            ELSE COALESCE(o.shipping_address, c.address, 'N/A')
+        END as shipping_address,
+        
+        COALESCE(o.status, 'waiting') as current_status,
+        COALESCE(o.payment_method, 'card') as payment_method,
+        COALESCE(o.payment_status, 'pending') as payment_status
+    FROM orders o
+    LEFT JOIN customer c ON o.customer_id = c.id AND o.is_guest_order = false
+    WHERE o.id = $1
+`;
+
+// 3. Corriger le problème du prix à 0€ dans les OrderItems :
+
+// Dans guestOrderController.validateOrder, vérifier que le prix est bien passé :
+for (const item of cartDetails.items) {
+  console.log('📦 Création OrderItem:', {
+    order_id: order.id,
+    jewel_id: item.jewel.id,
+    quantity: item.quantity,
+    price: item.jewel.price_ttc, // ✅ VÉRIFIER que ce n'est pas 0
+    jewel_name: item.jewel.name
+  });
+
+  // ✅ VÉRIFICATION DU PRIX AVANT CRÉATION
+  if (!item.jewel.price_ttc || item.jewel.price_ttc <= 0) {
+    console.warn(`⚠️ Prix invalide pour ${item.jewel.name}: ${item.jewel.price_ttc}`);
+    // Récupérer le prix depuis la BDD si nécessaire
+    const currentJewel = await Jewel.findByPk(item.jewel.id);
+    item.jewel.price_ttc = currentJewel.price_ttc;
+  }
+
+  await OrderItem.create({
+    order_id: order.id,
+    jewel_id: item.jewel.id,
+    quantity: item.quantity,
+    price: parseFloat(item.jewel.price_ttc), // ✅ S'assurer que c'est un nombre
+    jewel_name: item.jewel.name,
+    jewel_image: item.jewel.image,
+    size: item.size || null
+  }, { transaction });
+}
+
 
         const [orderResult] = await sequelize.query(orderQuery, { bind: [id] });
         

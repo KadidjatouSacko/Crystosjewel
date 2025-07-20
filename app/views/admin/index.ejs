@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - CrystosJewel Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <main class="col-12">
+                <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">
+                        <i class="fas fa-envelope text-primary me-2"></i>
+                        <%= title %>
+                    </h1>
+                    
+                    <!-- Statut de connexion -->
+                    <div class="badge bg-<%= emailConnected ? 'success' : 'danger' %> fs-6">
+                        <i class="fas fa-<%= emailConnected ? 'check-circle' : 'exclamation-circle' %> me-1"></i>
+                        <%= emailConnected ? 'Connexion Email OK' : 'Problème de Connexion' %>
+                    </div>
+                </div>
+
+                <!-- Actions rapides -->
+                <div class="row mb-4">
+                    <div class="col-md-4 mb-3">
+                        <button class="btn btn-primary w-100" onclick="testEmailConnection()">
+                            <i class="fas fa-plug me-2"></i>
+                            Tester Connexion
+                        </button>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <button class="btn btn-info w-100" onclick="sendTestEmail()">
+                            <i class="fas fa-envelope-open me-2"></i>
+                            Email de Test
+                        </button>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <button class="btn btn-warning w-100" data-bs-toggle="modal" data-bs-target="#promotionalModal">
+                            <i class="fas fa-bullhorn me-2"></i>
+                            Email Promotionnel
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Historique récent -->
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Emails Récents</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Destinataire</th>
+                                        <th>Type</th>
+                                        <th>Sujet</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <% if (recentEmails && recentEmails.length > 0) { %>
+                                        <% recentEmails.forEach(email => { %>
+                                        <tr>
+                                            <td><%= new Date(email.created_at).toLocaleDateString('fr-FR') %></td>
+                                            <td><%= email.recipient_email %></td>
+                                            <td><span class="badge bg-secondary"><%= email.email_type %></span></td>
+                                            <td><%= email.subject %></td>
+                                            <td>
+                                                <span class="badge bg-<%= email.status === 'sent' ? 'success' : email.status === 'failed' ? 'danger' : 'warning' %>">
+                                                    <%= email.status %>
+                                                </span>
+                                            </td>
+                                        </tr>
+                                        <% }); %>
+                                    <% } else { %>
+                                        <tr>
+                                            <td colspan="5" class="text-center text-muted">Aucun email récent</td>
+                                        </tr>
+                                    <% } %>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Email Promotionnel -->
+    <div class="modal fade" id="promotionalModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Envoi Email Promotionnel</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form id="promotionalForm">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Sujet</label>
+                            <input type="text" class="form-control" name="subject" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Titre</label>
+                            <input type="text" class="form-control" name="title" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" name="description" rows="3" required></textarea>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Réduction (%)</label>
+                                <input type="number" class="form-control" name="discount" min="0" max="100">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Code Promo</label>
+                                <input type="text" class="form-control" name="promoCode">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Cible</label>
+                            <select class="form-select" name="targetUsers">
+                                <option value="all">Tous les clients</option>
+                                <option value="verified">Clients vérifiés uniquement</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-paper-plane me-1"></i>
+                            Envoyer
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Test de connexion email
+        async function testEmailConnection() {
+            try {
+                showLoading('Test en cours...');
+                
+                const response = await fetch('/admin/emails/test-connection', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                const result = await response.json();
+                hideLoading();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    showAlert('error', result.message);
+                }
+                
+            } catch (error) {
+                hideLoading();
+                showAlert('error', 'Erreur lors du test de connexion');
+            }
+        }
+        
+        // Envoi email de test
+        async function sendTestEmail() {
+            const email = prompt('Adresse email pour le test:');
+            if (!email) return;
+            
+            try {
+                showLoading('Envoi en cours...');
+                
+                const response = await fetch('/admin/emails/send-test', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+                
+                const result = await response.json();
+                hideLoading();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                } else {
+                    showAlert('error', result.message);
+                }
+                
+            } catch (error) {
+                hideLoading();
+                showAlert('error', 'Erreur lors de l\'envoi');
+            }
+        }
+        
+        // Envoi email promotionnel
+        document.getElementById('promotionalForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = Object.fromEntries(formData);
+            
+            try {
+                showLoading('Envoi en cours...');
+                
+                const response = await fetch('/admin/emails/send-promotional', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                hideLoading();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    bootstrap.Modal.getInstance(document.getElementById('promotionalModal')).hide();
+                    this.reset();
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    showAlert('error', result.message);
+                }
+                
+            } catch (error) {
+                hideLoading();
+                showAlert('error', 'Erreur lors de l\'envoi');
+            }
+        });
+        
+        // Fonctions utilitaires
+        function showLoading(message) {
+            const overlay = document.createElement('div');
+            overlay.id = 'loadingOverlay';
+            overlay.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; padding: 20px; border-radius: 8px; text-align: center;">
+                        <div class="spinner-border text-primary mb-2"></div>
+                        <div>${message}</div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(overlay);
+        }
+        
+        function hideLoading() {
+            const overlay = document.getElementById('loadingOverlay');
+            if (overlay) overlay.remove();
+        }
+        
+        function showAlert(type, message) {
+            const alertClass = type === 'success' ? 'alert-success' : 'alert-danger';
+            const alertHtml = `
+                <div class="alert ${alertClass} alert-dismissible fade show" role="alert">
+                    ${message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            const container = document.querySelector('main');
+            container.insertAdjacentHTML('afterbegin', alertHtml);
+            
+            setTimeout(() => {
+                const alert = container.querySelector('.alert');
+                if (alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>
