@@ -683,9 +683,9 @@ async showJewelsByCategory(req, res) {
     };
 
     // Utiliser la vue correspondante selon la catégorie
-    const templateName = categorySlug === 'bagues' ? 'bagues' : 
-                         categorySlug === 'colliers' ? 'colliers' : 
-                         categorySlug === 'bracelets' ? 'bracelets' : 'jewels-category';
+   const templateName = categorySlug === 'bagues' ? 'bagues' : 
+                     categorySlug === 'colliers' ? 'colliers' : 
+                     categorySlug === 'bracelets' ? 'bracelets' : 'bijoux-category';
     
     res.render(templateName, viewData);
 

@@ -4102,7 +4102,7 @@ router.post('/api/admin/commandes/filter', isAdmin, async (req, res) => {
 // Dans router.js, ajoutez ces nouvelles routes :
 
 // Route pour masquer/afficher un bijou au public
-router.post('/api/bijoux/:id/toggle-visibility', isAdmin, async (req, res) => {
+router.post('/api/bijoux/:id/toggle-active', isAdmin, async (req, res) => {
     try {
         const { id } = req.params;
         
@@ -4114,46 +4114,23 @@ router.post('/api/bijoux/:id/toggle-visibility', isAdmin, async (req, res) => {
             });
         }
         
-        // Basculer la visibilité (si le champ existe)
-        const newVisibility = jewel.is_hidden ? false : true;
+        // Basculer is_active (visible sur le site ou non)
+        const newActiveState = !jewel.is_active;
         
         await jewel.update({ 
-            is_hidden: newVisibility 
+            is_active: newActiveState 
         });
         
-        console.log(`👁️ Bijou ${jewel.name} ${newVisibility ? 'masqué' : 'affiché'}`);
+        console.log(`🔄 Bijou ${jewel.name} ${newActiveState ? 'activé' : 'désactivé'}`);
         
         res.json({ 
             success: true, 
-            isHidden: newVisibility,
-            message: newVisibility ? 'Bijou masqué du public' : 'Bijou affiché au public'
+            isActive: newActiveState,
+            message: newActiveState ? 'Bijou activé (visible sur le site)' : 'Bijou désactivé (masqué du site)'
         });
         
     } catch (error) {
-        console.error('❌ Erreur toggle visibility:', error);
-        
-        // Si l'erreur est due au champ manquant, le créer
-        if (error.message.includes('column "is_hidden" does not exist')) {
-            console.log('⚠️ Champ is_hidden manquant, création en cours...');
-            
-            try {
-                await sequelize.query(`
-                    ALTER TABLE jewel 
-                    ADD COLUMN IF NOT EXISTS is_hidden BOOLEAN DEFAULT FALSE NOT NULL;
-                `);
-                
-                console.log('✅ Champ is_hidden créé avec succès');
-                
-                return res.json({
-                    success: true,
-                    message: 'Champ créé, veuillez réessayer',
-                    needsRetry: true
-                });
-            } catch (createError) {
-                console.error('❌ Erreur création champ:', createError);
-            }
-        }
-        
+        console.error('❌ Erreur toggle active:', error);
         res.status(500).json({ 
             success: false, 
             message: 'Erreur serveur' 

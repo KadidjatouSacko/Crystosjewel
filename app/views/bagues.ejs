@@ -3,1457 +3,420 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%- title %> - Éclat Doré</title>
-    <link rel="stylesheet" href="/css/bijoux.css">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
-    <style>
-        /* Variables CSS respectant vos tons */
-        :root {
-            --rose-gold: #b76e79;
-            --rose-gold-light: #e8c2c8;
-            --rose-gold-dark: #7d4b53;
-            --cream: #fff8f0;
-            --dark-text: #3a3a3a;
-            --sidebar-width: 320px;
-        }
-
-        body {
-            overflow-x: hidden;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        /* === EN-TÊTE AVEC FILTRES ET TRI === */
-        .filters-header-section {
-            background: white;
-            border-radius: 12px;
-            padding: 20px;
-            margin: 30px 0;
-            box-shadow: 0 4px 15px rgba(183, 110, 121, 0.08);
-            border: 1px solid rgba(183, 110, 121, 0.1);
-        }
-
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
-
-        .results-count {
-            font-size: 1rem;
-            color: var(--dark-text);
-            font-weight: 600;
-        }
-
-        .header-controls {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-
-        .sort-container {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .sort-label {
-            font-size: 0.85rem;
-            color: var(--rose-gold-dark);
-            font-weight: 600;
-        }
-
-        .sort-select {
-            padding: 8px 12px;
-            border: 1px solid var(--rose-gold-light);
-            border-radius: 6px;
-            background: white;
-            font-size: 0.8rem;
-            font-weight: 500;
-            min-width: 140px;
-        }
-
-        .filters-toggle-btn {
-            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .filters-toggle-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(183, 110, 121, 0.3);
-        }
-
-        .filters-count-badge {
-            background: #e74c3c;
-            color: white;
-            border-radius: 50%;
-            width: 18px;
-            height: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.7rem;
-            font-weight: 700;
-            margin-left: 5px;
-        }
-
-        /* === SIDEBAR FILTRES === */
-        .filters-sidebar {
-            position: fixed;
-            top: 0;
-            right: -100%;
-            width: var(--sidebar-width);
-            height: 100vh;
-            background: white;
-            box-shadow: -5px 0 25px rgba(183, 110, 121, 0.15);
-            transition: right 0.3s ease;
-            z-index: 1000;
-            overflow-y: auto;
-            border-left: 2px solid var(--rose-gold-light);
-        }
-
-        .filters-sidebar.open {
-            right: 0;
-        }
-
-        .filters-sidebar-header {
-            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-            color: white;
-            padding: 15px 20px;
-            position: relative;
-        }
-
-        .filters-sidebar-title {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .close-sidebar-btn {
-            position: absolute;
-            top: 50%;
-            right: 15px;
-            transform: translateY(-50%);
-            background: rgba(255,255,255,0.2);
-            border: none;
-            color: white;
-            width: 30px;
-            height: 30px;
-            border-radius: 50%;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .close-sidebar-btn:hover {
-            background: rgba(255,255,255,0.3);
-            transform: translateY(-50%) scale(1.1);
-        }
-
-        .filters-sidebar-content {
-            padding: 20px;
-        }
-
-        /* Boutons d'action dans la sidebar */
-        .filters-actions {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-            padding-bottom: 15px;
-            border-bottom: 1px solid var(--rose-gold-light);
-        }
-
-        .apply-filters-btn {
-            flex: 1;
-            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-            border: none;
-            color: white;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: all 0.3s ease;
-        }
-
-        .apply-filters-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(183, 110, 121, 0.3);
-        }
-
-        .clear-filters-btn {
-            flex: 1;
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            border: none;
-            color: white;
-            padding: 10px 16px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            transition: all 0.3s ease;
-        }
-
-        .clear-filters-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
-        }
-
-        /* Overlay */
-        .sidebar-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-            opacity: 0;
-            visibility: hidden;
-            transition: all 0.3s ease;
-            z-index: 999;
-        }
-
-        .sidebar-overlay.show {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        /* Groupes de filtres compacts */
-        .filter-group {
-            background: #f9f9f9;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid var(--rose-gold-light);
-        }
-
-        .filter-label {
-            display: block;
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: var(--rose-gold-dark);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .filter-label i {
-            font-size: 0.7rem;
-            color: var(--rose-gold);
-        }
-
-        .filter-select, .filter-input {
-            width: 100%;
-            padding: 6px 8px;
-            border: 1px solid var(--rose-gold-light);
-            border-radius: 4px;
-            background: white;
-            font-size: 0.75rem;
-            color: var(--dark-text);
-            font-weight: 500;
-        }
-
-        .filter-select:focus, .filter-input:focus {
-            outline: none;
-            border-color: var(--rose-gold);
-            box-shadow: 0 0 0 2px rgba(183, 110, 121, 0.1);
-        }
-
-        .price-range-container {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-
-        .price-input {
-            flex: 1;
-            padding: 6px 8px;
-            border: 1px solid var(--rose-gold-light);
-            border-radius: 4px;
-            text-align: center;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-
-        .range-separator {
-            color: var(--rose-gold);
-            font-weight: 700;
-            font-size: 0.9rem;
-        }
-
-        /* === CARTES PRODUITS === */
-        .products-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 40px;
-        }
-
-        .product-card {
-            background: white;
-            border-radius: 12px;
-            overflow: hidden;
-            box-shadow: 0 4px 15px rgba(183, 110, 121, 0.1);
-            transition: all 0.3s ease;
-            border: 1px solid rgba(183, 110, 121, 0.1);
-            position: relative;
-        }
-
-        .product-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 25px rgba(183, 110, 121, 0.15);
-        }
-
-        .product-image {
-            width: 100%;
-            height: 220px;
-            background: var(--cream);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .product-image img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-
-        .product-card:hover .product-image img {
-            transform: scale(1.05);
-        }
-
-        .product-badge {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            background: var(--rose-gold);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 10px;
-            font-size: 0.7rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            z-index: 5;
-        }
-
-        .product-badge.sale {
-            background: #e74c3c;
-        }
-
-        .product-badge.new {
-            background: #27ae60;
-        }
-
-        .product-badge.limited {
-            background: #f39c12;
-        }
-
-        .product-badge.featured {
-            background: #9b59b6;
-        }
-
-        .wishlist-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255,255,255,0.9);
-            border: none;
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            font-size: 0.8rem;
-            z-index: 5;
-            transition: all 0.3s ease;
-        }
-
-        .wishlist-btn:hover {
-            background: var(--rose-gold);
-            color: white;
-            transform: scale(1.1);
-        }
-
-        .product-info {
-            padding: 18px;
-        }
-
-        .product-name {
-            font-size: 1rem;
-            font-weight: 700;
-            color: var(--dark-text);
-            margin-bottom: 8px;
-            line-height: 1.3;
-        }
-
-        .product-rating {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            margin-bottom: 8px;
-        }
-
-        .stars {
-            color: #ffd700;
-            font-size: 0.75rem;
-        }
-
-        .rating-count {
-            font-size: 0.7rem;
-            color: #888;
-        }
-
-        .product-description {
-            font-size: 0.8rem;
-            color: #666;
-            margin-bottom: 12px;
-            line-height: 1.4;
-        }
-
-        /* Détails compacts sur une ligne */
-        .product-details {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 6px;
-            margin-bottom: 12px;
-            padding: 8px;
-            background: rgba(183, 110, 121, 0.05);
-            border-radius: 6px;
-            font-size: 0.7rem;
-        }
-
-        .detail-item {
-            display: inline-flex;
-            align-items: center;
-            gap: 2px;
-        }
-
-        .detail-label {
-            color: var(--rose-gold-dark);
-            font-weight: 600;
-        }
-
-        .detail-value {
-            color: var(--dark-text);
-            font-weight: 700;
-        }
-
-        .detail-separator {
-            color: var(--rose-gold-light);
-            font-weight: 700;
-            margin: 0 3px;
-        }
-
-        /* Prix CORRIGÉ */
-        .product-price-section {
-            margin-bottom: 12px;
-            text-align: center;
-        }
-
-        .product-price {
-            font-size: 1.1rem;
-            font-weight: 800;
-            color: var(--rose-gold);
-            display: block;
-            margin-bottom: 4px;
-        }
-
-        .price-discount-info {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-            font-size: 0.8rem;
-        }
-
-        .original-price {
-            color: #888;
-            text-decoration: line-through;
-        }
-
-        .discount-percentage {
-            background: #e74c3c;
-            color: white;
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 0.7rem;
-            font-weight: 700;
-        }
-
-        .stock-info {
-            margin-bottom: 12px;
-            text-align: center;
-        }
-
-        .stock-status {
-            font-size: 0.7rem;
-            padding: 4px 8px;
-            border-radius: 10px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        .stock-status.in-stock {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .stock-status.low-stock {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .stock-status.out-of-stock {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .view-product-btn {
-            width: 100%;
-            padding: 10px;
-            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            text-decoration: none;
-            display: block;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-
-        .view-product-btn:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(183, 110, 121, 0.3);
-        }
-
-        /* État vide */
-        .no-results {
-            text-align: center;
-            padding: 60px 20px;
-            color: #666;
-        }
-
-        .no-results-icon {
-            font-size: 3rem;
-            color: var(--rose-gold-light);
-            margin-bottom: 20px;
-        }
-
-        /* Pagination */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            margin: 40px 0;
-        }
-
-        .page-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 35px;
-            height: 35px;
-            border: 1px solid var(--rose-gold-light);
-            border-radius: 6px;
-            color: var(--rose-gold);
-            text-decoration: none;
-            font-weight: 600;
-            font-size: 0.8rem;
-            transition: all 0.3s ease;
-        }
-
-        .page-link:hover {
-            background: var(--rose-gold-light);
-            color: var(--rose-gold-dark);
-        }
-
-        .page-link.active {
-            background: var(--rose-gold);
-            color: white;
-            border-color: var(--rose-gold);
-        }
-
-        /* === RESPONSIVE === */
-        @media (max-width: 768px) {
-            :root {
-                --sidebar-width: 100vw;
-            }
-
-            .header-top {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-
-            .header-controls {
-                width: 100%;
-                justify-content: space-between;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-                gap: 20px;
-            }
-
-            .product-details {
-                flex-direction: column;
-                gap: 4px;
-            }
-
-            .detail-separator {
-                display: none;
-            }
-
-            .price-discount-info {
-                flex-direction: column;
-                gap: 4px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .products-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .price-range-container {
-                flex-direction: column;
-                gap: 6px;
-            }
-
-            .range-separator {
-                display: none;
-            }
-
-            .filters-actions {
-                flex-direction: column;
-            }
-        }
-
-        /* STYLES D'ANIMATION */
-        @keyframes slideInNotification {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        @keyframes slideOutNotification {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(100%); opacity: 0; }
-        }
-    </style>
+    <title><%= title %></title>
+    <link rel="stylesheet" href="/css/global.css">
+    <link rel="stylesheet" href="/css/bagues.css">
+    <link rel="stylesheet" href="/css/global-categories.css">  <!-- NOUVEAU CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <%- include('partials/navbarre') %>
-
-    <!-- Banner -->
-    <div class="page-banner">
-        <div class="banner-content">
-            <h2><%- pageTitle %></h2>
-            <p>Découvrez notre collection exclusive de bagues élégantes</p>
-        </div>
+    <!-- BANNIÈRE PROMOTIONNELLE MISE EN AVANT -->
+    <div class="promo-banner">
+        <i class="fas fa-fire"></i>
+        🔥 PROMOTIONS EXCEPTIONNELLES ! Jusqu'à -50% sur une sélection de bijoux 🔥
+        <i class="fas fa-gift"></i>
+        Livraison gratuite dès 100€ d'achat !
     </div>
 
-    <div class="container">
-        <!-- En-tête avec filtres et tri -->
-        <div class="filters-header-section">
-            <div class="header-top">
-                <div class="results-count">
-                    <% if (jewels && jewels.length > 0) { %>
-                        <i class="fas fa-gem"></i> 
-                        Affichage de <strong><%- jewels.length %></strong> bague<%- jewels.length > 1 ? 's' : '' %>
-                        <% if (pagination && pagination.totalJewels) { %>
-                            sur <strong><%- pagination.totalJewels %></strong> au total
-                        <% } %>
-                    <% } else { %>
-                        <i class="fas fa-search"></i> Aucune bague trouvée
-                    <% } %>
-                </div>
-                
-                <div class="header-controls">
-                    <div class="sort-container">
-                        <label class="sort-label" for="sort-select-bagues">
-                            <i class="fas fa-sort"></i> Trier :
-                        </label>
-                        <select id="sort-select-bagues" name="sort" class="sort-select">
-                            <option value="newest" <%- filters.sort === 'newest' || !filters.sort ? 'selected' : '' %>>Plus récent</option>
-                            <option value="price_asc" <%- filters.sort === 'price_asc' ? 'selected' : '' %>>Prix croissant</option>
-                            <option value="price_desc" <%- filters.sort === 'price_desc' ? 'selected' : '' %>>Prix décroissant</option>
-                            <option value="name_asc" <%- filters.sort === 'name_asc' ? 'selected' : '' %>>Nom A-Z</option>
-                            <option value="popular" <%- filters.sort === 'popular' ? 'selected' : '' %>>Popularité</option>
-                        </select>
-                    </div>
+    <header>
+        <%- include('partials/navbarre.ejs') %>
+        <div class="overlay" id="overlay"></div>
+    </header>
 
-                    <button type="button" class="filters-toggle-btn" id="filters-toggle-bagues">
-                        <i class="fas fa-filter"></i> Filtres
-                        <% 
-                        // Compter les filtres actifs
-                        let activeFiltersCount = 0;
-                        if (filters.matiere && filters.matiere.length > 0) activeFiltersCount++;
-                        if (filters.type && filters.type.length > 0) activeFiltersCount++;
-                        if (filters.carat && filters.carat.length > 0) activeFiltersCount++;
-                        if (filters.taille && filters.taille.length > 0) activeFiltersCount++;
-                        if (filters.prix_min || filters.prix_max) activeFiltersCount++;
-                        if (filters.disponibilite) activeFiltersCount++;
-                        %>
-                        <% if (activeFiltersCount > 0) { %>
-                            <span class="filters-count-badge"><%- activeFiltersCount %></span>
-                        <% } %>
+    <section class="page-banner">
+        <div class="banner-content">
+            <h2>Nos Bagues</h2>
+            <p>Des créations délicates pour sublimer vos mains</p>
+        </div>
+    </section>
+
+    <section class="category-intro">
+        <div class="container">
+            <div class="intro-content">
+                <h3>L'élégance au bout des doigts</h3>
+                <p>Découvrez notre collection de bagues en rose gold et or, ornées de pierres précieuses soigneusement sélectionnées. Chaque pièce est conçue pour magnifier votre style et apporter une touche d'éclat à vos tenues quotidiennes ou vos occasions spéciales.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== SECTION FILTRES FONCTIONNELS ===== -->
+    <section class="filters-section">
+        <div class="container">
+            <div class="filters-container">
+                <div class="filters-header">
+                    <h3 class="filters-title">
+                        <i class="fas fa-filter"></i>
+                        Filtrer les bijoux
+                    </h3>
+                    <button class="filters-toggle" onclick="toggleFilters()" type="button">
+                        <i class="fas fa-chevron-down"></i>
+                        Filtres
                     </button>
                 </div>
-            </div>
-        </div>
-
-        <!-- Grille des produits -->
-        <% if (jewels && jewels.length > 0) { %>
-            <div class="products-grid">
-                <% jewels.forEach(jewel => { %>
-                    <div class="product-card">
-                        <div class="product-image">
-                            <!-- Badges conditionnels -->
-                            <% if (jewel.badge && jewel.badge.type) { %>
-                                <div class="product-badge <%- jewel.badge.type %>">
-                                    <%- jewel.badge.text %>
+                
+                <div class="filters-content" id="filtersContent">
+                    <form method="GET" class="filters-form">
+                        <div class="filters-grid">
+                            
+                            <!-- Filtre Matières -->
+                            <div class="filter-group">
+                                <h4><i class="fas fa-gem"></i> Matières</h4>
+                                <% if (materials && materials.length > 0) { %>
+                                    <% materials.forEach(material => { %>
+                                        <div class="filter-checkbox">
+                                            <input type="checkbox" name="matiere" value="<%= material.id %>" 
+                                                   id="mat_<%= material.id %>"
+                                                   <%= filters.matiere.includes(material.id.toString()) ? 'checked' : '' %>>
+                                            <label for="mat_<%= material.id %>"><%= material.name %></label>
+                                        </div>
+                                    <% }); %>
+                                <% } %>
+                            </div>
+                            
+                            <!-- Filtre Types -->
+                            <div class="filter-group">
+                                <h4><i class="fas fa-shapes"></i> Types</h4>
+                                <% if (types && types.length > 0) { %>
+                                    <% types.forEach(type => { %>
+                                        <div class="filter-checkbox">
+                                            <input type="checkbox" name="type" value="<%= type.id %>" 
+                                                   id="type_<%= type.id %>"
+                                                   <%= filters.type.includes(type.id.toString()) ? 'checked' : '' %>>
+                                            <label for="type_<%= type.id %>"><%= type.name %></label>
+                                        </div>
+                                    <% }); %>
+                                <% } %>
+                            </div>
+                            
+                            <!-- Filtre Prix -->
+                            <div class="filter-group">
+                                <h4><i class="fas fa-euro-sign"></i> Prix</h4>
+                                <div class="filter-checkbox">
+                                    <input type="checkbox" name="prix" value="0-100" id="prix1"
+                                           <%= filters.prix.includes('0-100') ? 'checked' : '' %>>
+                                    <label for="prix1">Moins de 100€</label>
                                 </div>
-                            <% } %>
-
-                            <!-- Bouton favoris -->
-                            <button class="wishlist-btn" onclick="toggleWishlist(<%- jewel.id %>)">
-                                <i class="far fa-heart"></i>
-                            </button>
-
-                            <!-- Image du produit -->
-                            <% if (jewel.image) { %>
-                                <img src="/uploads/jewels/<%- jewel.image %>" alt="<%- jewel.name %>" 
-                                     onerror="this.src='/images/no-image.jpg'">
-                            <% } else { %>
-                                <img src="/images/no-image.jpg" alt="<%- jewel.name %>">
-                            <% } %>
+                                <div class="filter-checkbox">
+                                    <input type="checkbox" name="prix" value="100-300" id="prix2"
+                                           <%= filters.prix.includes('100-300') ? 'checked' : '' %>>
+                                    <label for="prix2">100€ - 300€</label>
+                                </div>
+                                <div class="filter-checkbox">
+                                    <input type="checkbox" name="prix" value="300-500" id="prix3"
+                                           <%= filters.prix.includes('300-500') ? 'checked' : '' %>>
+                                    <label for="prix3">300€ - 500€</label>
+                                </div>
+                                <div class="filter-checkbox">
+                                    <input type="checkbox" name="prix" value="500-plus" id="prix4"
+                                           <%= filters.prix.includes('500-plus') ? 'checked' : '' %>>
+                                    <label for="prix4">Plus de 500€</label>
+                                </div>
+                            </div>
+                            
+                            <!-- Tri -->
+                            <div class="filter-group">
+                                <h4><i class="fas fa-sort"></i> Trier par</h4>
+                                <select name="sort" class="filter-select" onchange="this.form.submit()">
+                                    <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>
+                                        Plus récents
+                                    </option>
+                                    <option value="price_asc" <%= filters.sort === 'price_asc' ? 'selected' : '' %>>
+                                        Prix croissant
+                                    </option>
+                                    <option value="price_desc" <%= filters.sort === 'price_desc' ? 'selected' : '' %>>
+                                        Prix décroissant
+                                    </option>
+                                    <option value="popularity" <%= filters.sort === 'popularity' ? 'selected' : '' %>>
+                                        Popularité
+                                    </option>
+                                </select>
+                            </div>
+                            
                         </div>
-
-                        <div class="product-info">
-                            <h4 class="product-name"><%- jewel.name %></h4>
-
-                            <!-- Note et avis (si disponible) -->
-                            <% if (jewel.average_rating) { %>
-                                <div class="product-rating">
-                                    <span class="stars">
-                                        <% for(let i = 1; i <= 5; i++) { %>
-                                            <% if (i <= Math.floor(jewel.average_rating)) { %>⭐<% } else { %>☆<% } %>
-                                        <% } %>
-                                    </span>
-                                    <span class="rating-count">(<%- jewel.reviews_count || 0 %>)</span>
-                                </div>
-                            <% } %>
-
-                            <!-- Description -->
-                            <% if (jewel.description) { %>
-                                <p class="product-description"><%- jewel.description %></p>
-                            <% } %>
-
-                            <!-- Détails compacts sur une ligne -->
-                            <div class="product-details">
-                                <div class="detail-item">
-                                    <span class="detail-label">Matériau:</span>
-                                    <span class="detail-value"><%- jewel.matiere || 'Non spécifié' %></span>
-                                </div>
-                                <span class="detail-separator">•</span>
-                                <% if (jewel.availableSizes && jewel.availableSizes.length > 0) { %>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Tailles:</span>
-                                        <span class="detail-value">
-                                            <% jewel.availableSizes.forEach((sizeObj, index) => { %>
-                                                <%- sizeObj.taille %><%- index < jewel.availableSizes.length - 1 ? ', ' : '' %>
-                                            <% }) %>
-                                        </span>
-                                    </div>
-                                    <span class="detail-separator">•</span>
-                                <% } %>
-                                <% if (jewel.carat) { %>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Carats:</span>
-                                        <span class="detail-value"><%- jewel.carat %>ct</span>
-                                    </div>
-                                    <span class="detail-separator">•</span>
-                                <% } %>
-                                <% if (jewel.poids) { %>
-                                    <div class="detail-item">
-                                        <span class="detail-label">Poids:</span>
-                                        <span class="detail-value"><%- jewel.poids %>g</span>
-                                    </div>
-                                <% } %>
-                            </div>
-
-                            <!-- Prix corrigé -->
-                            <div class="product-price-section">
-                                <% if (jewel.formattedSalePrice && jewel.hasDiscount) { %>
-                                    <span class="product-price"><%- jewel.formattedSalePrice %></span>
-                                    <div class="price-discount-info">
-                                        <span class="original-price"><%- jewel.formattedOriginalPrice %></span>
-                                        <span class="discount-percentage">-<%- jewel.discountPercentage %>%</span>
-                                    </div>
-                                <% } else { %>
-                                    <span class="product-price"><%- jewel.formattedPrice %></span>
-                                <% } %>
-                            </div>
-
-                            <!-- Statut du stock -->
-                            <div class="stock-info">
-                                <% if (jewel.stock <= 0) { %>
-                                    <span class="stock-status out-of-stock">
-                                        <i class="fas fa-times-circle"></i> Rupture de stock
-                                    </span>
-                                <% } else if (jewel.stock <= 5) { %>
-                                    <span class="stock-status low-stock">
-                                        <i class="fas fa-exclamation-triangle"></i> 
-                                        Stock limité (<%- jewel.stock %>)
-                                    </span>
-                                <% } else { %>
-                                    <span class="stock-status in-stock">
-                                        <i class="fas fa-check-circle"></i> En stock
-                                    </span>
-                                <% } %>
-                            </div>
-
-                            <!-- Bouton "Voir le bijou" -->
-                            <a href="/bijoux/<%- jewel.slug %>" class="view-product-btn" 
-                               <%- jewel.stock <= 0 ? 'style="opacity:0.6;pointer-events:none;"' : '' %>>
-                                <% if (jewel.stock <= 0) { %>
-                                    <i class="fas fa-eye-slash"></i> Indisponible
-                                <% } else { %>
-                                    <i class="fas fa-eye"></i> Voir le bijou
-                                <% } %>
+                        
+                        <div class="filters-actions">
+                            <button type="submit" class="btn-filter">
+                                <i class="fas fa-search"></i> Appliquer les filtres
+                            </button>
+                            <a href="?" class="btn-reset">
+                                <i class="fas fa-times"></i> Tout effacer
                             </a>
                         </div>
-                    </div>
-                <% }) %>
+                    </form>
+                </div>
             </div>
-        <% } else { %>
-            <!-- Message si aucun résultat -->
-            <div class="no-results">
-                <div class="no-results-icon">💍</div>
-                <h3>Aucune bague trouvée</h3>
-                <p>Essayez de modifier vos critères de recherche.</p>
-                <button type="button" class="filters-toggle-btn" id="open-filters-no-results-bagues" style="margin-top: 15px;">
-                    <i class="fas fa-filter"></i> Modifier les filtres
-                </button>
-            </div>
-        <% } %>
-
-        <!-- Pagination -->
-        <% if (pagination && pagination.totalPages > 1) { %>
-            <div class="pagination">
-                <% if (pagination.hasPrevPage) { %>
-                    <a href="?page=<%- pagination.prevPage %>&<%- Object.keys(filters).map(key => filters[key] ? `${key}=${encodeURIComponent(filters[key])}` : '').filter(Boolean).join('&') %>" class="page-link">
-                        <i class="fas fa-chevron-left"></i>
-                    </a>
-                <% } %>
-                
-                <% for(let i = 1; i <= pagination.totalPages; i++) { %>
-                    <a href="?page=<%- i %>&<%- Object.keys(filters).map(key => filters[key] ? `${key}=${encodeURIComponent(filters[key])}` : '').filter(Boolean).join('&') %>" 
-                       class="page-link <%- pagination.currentPage === i ? 'active' : '' %>">
-                        <%- i %>
-                    </a>
-                <% } %>
-                
-                <% if (pagination.hasNextPage) { %>
-                    <a href="?page=<%- pagination.nextPage %>&<%- Object.keys(filters).map(key => filters[key] ? `${key}=${encodeURIComponent(filters[key])}` : '').filter(Boolean).join('&') %>" class="page-link">
-                        <i class="fas fa-chevron-right"></i>
-                    </a>
-                <% } %>
-            </div>
-        <% } %>
-    </div>
-
-    <!-- Overlay pour la sidebar -->
-    <div class="sidebar-overlay" id="sidebar-overlay-bagues"></div>
-
-    <!-- Sidebar des filtres -->
-    <div class="filters-sidebar" id="filters-sidebar-bagues">
-        <div class="filters-sidebar-header">
-            <h3 class="filters-sidebar-title">
-                <i class="fas fa-gem"></i>
-                Filtrer les bagues
-            </h3>
-            <button type="button" class="close-sidebar-btn" id="close-sidebar-btn-bagues">
-                <i class="fas fa-times"></i>
-            </button>
         </div>
+    </section>
 
-        <div class="filters-sidebar-content">
-            <!-- Boutons d'action -->
-            <div class="filters-actions">
-                <button type="button" class="apply-filters-btn" id="apply-filters-btn-bagues">
-                    <i class="fas fa-check"></i> Appliquer
-                </button>
-                <a href="/bagues" class="clear-filters-btn">
-                    <i class="fas fa-eraser"></i> Effacer
-                </a>
+    <!-- ===== SECTION PRODUITS AVEC BADGES ET GRID 2 COLONNES MOBILE ===== -->
+    <section class="products">
+        <div class="container">
+            <% if (jewels && jewels.length > 0) { %>
+                <div class="products-grid">
+                    <% jewels.forEach(jewel => { %>
+                        <div class="product-card" data-jewel-id="<%= jewel.id %>">
+                            
+                            <!-- Badge dynamique avec priorités -->
+                            <% if (jewel.badge) { %>
+                                <div class="product-badge <%= jewel.badge.class %>">
+                                    <%= jewel.badge.text %>
+                                </div>
+                            <% } %>
+                            
+                            <div class="product-img">
+                                <img src="<%= jewel.image %>" alt="<%= jewel.name %>" loading="lazy">
+                            </div>
+                            
+                            <div class="product-info">
+                                <h4 class="product-name"><%= jewel.name %></h4>
+                                
+                                <!-- Prix avec gestion des réductions -->
+                                <div class="product-price-container">
+                                    <% if (jewel.hasDiscount) { %>
+                                        <span class="price-current"><%= jewel.formattedCurrentPrice %></span>
+                                        <span class="price-original"><%= jewel.formattedOriginalPrice %></span>
+                                        <% 
+                                        const savings = parseFloat(jewel.price_ttc) - (parseFloat(jewel.price_ttc) * (1 - jewel.discount_percentage / 100));
+                                        %>
+                                        <span class="savings-amount">
+                                            Économisez <%= new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(savings) %>
+                                        </span>
+                                    <% } else { %>
+                                        <span class="price-single"><%= jewel.formattedPrice %></span>
+                                    <% } %>
+                                </div>
+                                
+                                <div class="product-actions">
+                                    <a href="/bijoux/<%= jewel.slug %>" class="product-btn view-jewel-btn" 
+                                       data-jewel-id="<%= jewel.id %>" data-jewel-name="<%= jewel.name %>">
+                                        <i class="fas fa-eye"></i> Voir le bijou
+                                    </a>
+                                    <!-- Les boutons favoris sont automatiquement masqués par le CSS -->
+                                </div>
+                            </div>
+                            
+                            <!-- Actions admin (si user admin) -->
+                            <% if (user && user.role === 'admin') { %>
+                                <div class="admin-actions">
+                                    <a href="/admin/bijoux/<%= jewel.slug %>/edit" class="btn-admin-small btn-edit-small" title="Modifier">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button onclick="deleteJewel('<%= jewel.slug %>')" class="btn-admin-small btn-delete-small" title="Supprimer">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            <% } %>
+                        </div>
+                    <% }); %>
+                </div>
+
+                <!-- Pagination améliorée -->
+                <% if (pagination && pagination.totalPages > 1) { %>
+                    <div class="pagination">
+                        <% if (pagination.hasPrevPage) { %>
+                            <a href="?page=<%= pagination.prevPage %>&<%= new URLSearchParams(filters).toString() %>" class="page-link">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        <% } %>
+                        
+                        <% for (let i = 1; i <= pagination.totalPages; i++) { %>
+                            <a href="?page=<%= i %>&<%= new URLSearchParams(filters).toString() %>" 
+                               class="page-link <%= pagination.currentPage === i ? 'active' : '' %>">
+                                <%= i %>
+                            </a>
+                        <% } %>
+                        
+                        <% if (pagination.hasNextPage) { %>
+                            <a href="?page=<%= pagination.nextPage %>&<%= new URLSearchParams(filters).toString() %>" class="page-link">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        <% } %>
+                    </div>
+                <% } %>
+                
+            <% } else { %>
+                <div class="no-products">
+                    <i class="fas fa-search"></i>
+                    <h3>Aucune bague trouvée</h3>
+                    <p>Essayez de modifier vos critères de recherche ou <a href="?">voir toutes les bagues</a>.</p>
+                </div>
+            <% } %>
+        </div>
+    </section>
+
+    <!-- Section testimonials (conservée) -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-title">
+                <h3>Témoignages clients</h3>
+                <p>Découvrez ce que nos clientes pensent de nos bagues</p>
             </div>
-
-            <form method="GET" action="/bagues" id="filters-form-bagues">
-                <!-- Filtre par matériau -->
-                <div class="filter-group">
-                    <label class="filter-label" for="material-filter-bagues">
-                        <i class="fas fa-layer-group"></i> Matériau
-                    </label>
-                    <select id="material-filter-bagues" name="matiere" class="filter-select">
-                        <option value="">Tous les matériaux</option>
-                        <% if (materials && materials.length > 0) { %>
-                            <% materials.forEach(material => { %>
-                                <% if (material.count > 0) { %>
-                                    <option value="<%- material.name %>" 
-                                            <%- (filters.matiere && filters.matiere.includes && filters.matiere.includes(material.name)) ? 'selected' : '' %>>
-                                        <%- material.name %> (<%- material.count %> bijoux)
-                                    </option>
+            <div class="testimonials-grid">
+                <% if (category && category.testimonials) { %>
+                    <% category.testimonials.forEach(testimonial => { %>
+                        <div class="testimonial-card">
+                            <div class="stars">
+                                <% for (let i = 1; i <= 5; i++) { %>
+                                    <% if (i <= Math.floor(testimonial.stars)) { %>
+                                        <i class="fas fa-star"></i>
+                                    <% } else if (i === Math.ceil(testimonial.stars) && testimonial.stars % 1 !== 0) { %>
+                                        <i class="fas fa-star-half-alt"></i>
+                                    <% } else { %>
+                                        <i class="far fa-star"></i>
+                                    <% } %>
                                 <% } %>
-                            <% }) %>
-                        <% } %>
-                    </select>
-                </div>
+                            </div>
+                            <p>"<%= testimonial.text %>"</p>
+                            <cite>- <%= testimonial.author %></cite>
+                        </div>
+                    <% }); %>
+                <% } %>
+            </div>
+        </div>
+    </section>
 
-                <!-- Filtre par style/type -->
-                <div class="filter-group">
-                    <label class="filter-label" for="style-filter-bagues">
-                        <i class="fas fa-palette"></i> Style
-                    </label>
-                    <select id="style-filter-bagues" name="type" class="filter-select">
-                        <option value="">Tous les styles</option>
-                        <% if (types && types.length > 0) { %>
-                            <% types.forEach(type => { %>
-                                <% if (type.count > 0) { %>
-                                    <option value="<%- type.id %>" 
-                                            <%- (filters.type && filters.type.includes && filters.type.includes(type.id.toString())) ? 'selected' : '' %>>
-                                        <%- type.name %> (<%- type.count %> bijoux)
-                                    </option>
-                                <% } %>
-                            <% }) %>
-                        <% } %>
-                    </select>
-                </div>
-
-                <!-- Filtre par carats -->
-                <div class="filter-group">
-                    <label class="filter-label" for="carat-filter-bagues">
-                        <i class="fas fa-star"></i> Carats
-                    </label>
-                    <select id="carat-filter-bagues" name="carat" class="filter-select">
-                        <option value="">Tous les carats</option>
-                        <% if (availableFilters && availableFilters.carats && availableFilters.carats.length > 0) { %>
-                            <% availableFilters.carats.forEach(carat => { %>
-                                <% if (carat.count > 0) { %>
-                                    <option value="<%- carat.value %>" 
-                                            <%- (filters.carat && filters.carat.includes && filters.carat.includes(carat.value.toString())) ? 'selected' : '' %>>
-                                        <%- carat.value %> carats (<%- carat.count %> bijoux)
-                                    </option>
-                                <% } %>
-                            <% }) %>
-                        <% } else if (carats && carats.length > 0) { %>
-                            <% carats.forEach(carat => { %>
-                                <option value="<%- carat %>" 
-                                        <%- (filters.carat && filters.carat.includes && filters.carat.includes(carat.toString())) ? 'selected' : '' %>>
-                                    <%- carat %> carats
-                                </option>
-                            <% }) %>
-                        <% } %>
-                    </select>
-                </div>
-
-                <!-- Filtre par taille DYNAMIQUE -->
-                <div class="filter-group">
-                    <label class="filter-label" for="size-filter-bagues">
-                        <i class="fas fa-ring"></i> Taille
-                    </label>
-                    <select id="size-filter-bagues" name="taille" class="filter-select">
-                        <option value="">Toutes les tailles</option>
-                        <% if (availableFilters && availableFilters.sizes && availableFilters.sizes.length > 0) { %>
-                            <% availableFilters.sizes.forEach(size => { %>
-                                <% if (size.count > 0) { %>
-                                    <option value="<%- size.value %>" 
-                                            <%- (filters.taille && filters.taille.includes && filters.taille.includes(size.value)) ? 'selected' : '' %>>
-                                        Taille <%- size.value %> (<%- size.count %> bijoux)
-                                    </option>
-                                <% } %>
-                            <% }) %>
+    <!-- Guide des tailles (conservé) -->
+    <section class="size-guide">
+        <div class="container">
+            <div class="guide-content">
+                <div class="guide-text">
+                    <h3><%= category?.guide?.title || 'Guide des tailles' %></h3>
+                    <p><%= category?.guide?.description || 'Trouvez la taille parfaite pour vos bagues.' %></p>
+                    <ul>
+                        <% if (category?.guide?.tips) { %>
+                            <% category.guide.tips.forEach(tip => { %>
+                                <li><%= tip %></li>
+                            <% }); %>
                         <% } else { %>
-                            <!-- Fallback si pas de données dynamiques -->
-                            <% ['48', '50', '52', '54', '56', '58', '60', '62'].forEach(size => { %>
-                                <option value="<%- size %>" 
-                                        <%- (filters.taille && filters.taille.includes && filters.taille.includes(size)) ? 'selected' : '' %>>
-                                    Taille <%- size %>
-                                </option>
-                            <% }) %>
+                            <li>Mesurez votre doigt en fin de journée</li>
+                            <li>Tenez compte de la largeur de la bague</li>
+                            <li>Consultez notre tableau des correspondances</li>
                         <% } %>
-                    </select>
+                    </ul>
+                    <a href="/guide-tailles" class="btn-guide">Consulter le guide complet</a>
                 </div>
-
-                <!-- Filtre par prix -->
-                <div class="filter-group">
-                    <label class="filter-label">
-                        <i class="fas fa-euro-sign"></i> Prix (€)
-                    </label>
-                    <div class="price-range-container">
-                        <input type="number" id="price-min-bagues" name="prix_min" class="price-input" 
-                               placeholder="Min" value="<%- filters.prix_min || '' %>">
-                        <span class="range-separator">—</span>
-                        <input type="number" id="price-max-bagues" name="prix_max" class="price-input" 
-                               placeholder="Max" value="<%- filters.prix_max || '' %>">
-                    </div>
+                <div class="guide-visual">
+                    <img src="/images/guide-tailles-bagues.jpg" alt="Guide des tailles bagues" loading="lazy">
                 </div>
-
-                <!-- Filtre par disponibilité -->
-                <div class="filter-group">
-                    <label class="filter-label" for="availability-filter-bagues">
-                        <i class="fas fa-box"></i> Disponibilité
-                    </label>
-                    <select id="availability-filter-bagues" name="disponibilite" class="filter-select">
-                        <option value="">Toutes</option>
-                        <option value="en_stock" <%- filters.disponibilite === 'en_stock' ? 'selected' : '' %>>En stock</option>
-                        <option value="en_promo" <%- filters.disponibilite === 'en_promo' ? 'selected' : '' %>>En promotion</option>
-                        <option value="nouveau" <%- filters.disponibilite === 'nouveau' ? 'selected' : '' %>>Nouveautés</option>
-                    </select>
-                </div>
-
-                <!-- Input caché pour le tri -->
-                <input type="hidden" id="sort-input-bagues" name="sort" value="<%- filters.sort || 'newest' %>">
-            </form>
+            </div>
         </div>
-    </div>
+    </section>
 
-    <%- include('partials/footer') %>
+    <!-- Footer -->
+    <%- include('partials/footer.ejs') %>
 
+    <!-- JAVASCRIPT POUR FILTRES ET TRACKING -->
     <script>
-        // ===== NAMESPACE POUR ÉVITER LES CONFLITS =====
-        window.BaguesPage = window.BaguesPage || {};
-        
-        (function() {
-            'use strict';
+        // Fonction pour les filtres
+        function toggleFilters() {
+            const content = document.getElementById('filtersContent');
+            const toggle = document.querySelector('.filters-toggle i');
             
-            console.log('🟢 Script Bagues - Démarrage isolé');
+            if (content.style.display === 'none' || !content.style.display) {
+                content.style.display = 'block';
+                toggle.classList.remove('fa-chevron-down');
+                toggle.classList.add('fa-chevron-up');
+            } else {
+                content.style.display = 'none';
+                toggle.classList.remove('fa-chevron-up');
+                toggle.classList.add('fa-chevron-down');
+            }
+        }
+
+        // Initialisation au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🎯 Page bagues initialisée avec nouvelles fonctionnalités');
             
-            // Variables locales
-            let sidebarIsOpen = false;
+            // Auto-submit sur changement de filtre
+            document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    console.log('Filtre changé:', this.name, this.value, this.checked);
+                    this.form.submit();
+                });
+            });
             
-            // Éléments DOM avec suffixes uniques
-            const elements = {
-                filtersToggle: document.getElementById('filters-toggle-bagues'),
-                openFiltersNoResults: document.getElementById('open-filters-no-results-bagues'),
-                filtersSidebar: document.getElementById('filters-sidebar-bagues'),
-                sidebarOverlay: document.getElementById('sidebar-overlay-bagues'),
-                closeSidebarBtn: document.getElementById('close-sidebar-btn-bagues'),
-                applyFiltersBtn: document.getElementById('apply-filters-btn-bagues'),
-                filtersForm: document.getElementById('filters-form-bagues'),
-                sortSelect: document.getElementById('sort-select-bagues'),
-                sortInput: document.getElementById('sort-input-bagues')
-            };
+            // Tracking des vues (conservé et amélioré)
+            const viewJewelButtons = document.querySelectorAll('.view-jewel-btn, .product-btn');
+            console.log('👁️ Boutons voir bijou trouvés:', viewJewelButtons.length);
             
-            // Fonction d'ouverture de la sidebar
-            function openSidebar() {
-                console.log('🔓 [BAGUES] Ouverture sidebar...');
-                
-                if (!elements.filtersSidebar || !elements.sidebarOverlay) {
-                    console.error('❌ [BAGUES] Éléments sidebar introuvables');
-                    return false;
+            viewJewelButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    const jewelCard = this.closest('.product-card, .jewel-card');
+                    const jewelId = jewelCard?.querySelector('[data-jewel-id]')?.getAttribute('data-jewel-id') ||
+                                   this.getAttribute('data-jewel-id');
+                    const jewelName = jewelCard?.querySelector('.product-name, .jewel-name')?.textContent ||
+                                     this.getAttribute('data-jewel-name');
+                    
+                    console.log('👁️ Clic détecté sur bijou:', { jewelId, jewelName });
+                    
+                    if (jewelId && jewelName) {
+                        trackView(jewelId, jewelName);
+                    } else {
+                        console.warn('⚠️ Impossible de tracker la vue - données manquantes');
+                    }
+                });
+            });
+
+            // Fonction de suivi des vues
+            function trackView(jewelId, jewelName) {
+                if (!jewelId) {
+                    console.warn('⚠️ ID bijou manquant pour tracking');
+                    return;
                 }
                 
-                elements.filtersSidebar.classList.add('open');
-                elements.sidebarOverlay.classList.add('show');
-                sidebarIsOpen = true;
-                document.body.style.overflow = 'hidden';
+                console.log('📊 Envoi tracking vue:', { jewelId, jewelName });
                 
-                console.log('✅ [BAGUES] Sidebar ouverte');
-                return true;
-            }
-            
-            // Fonction de fermeture de la sidebar
-            function closeSidebar() {
-                console.log('🔒 [BAGUES] Fermeture sidebar...');
-                
-                if (!elements.filtersSidebar || !elements.sidebarOverlay) {
-                    console.error('❌ [BAGUES] Éléments sidebar introuvables');
-                    return false;
-                }
-                
-                elements.filtersSidebar.classList.remove('open');
-                elements.sidebarOverlay.classList.remove('show');
-                sidebarIsOpen = false;
-                document.body.style.overflow = '';
-                
-                console.log('✅ [BAGUES] Sidebar fermée');
-                return true;
-            }
-            
-            // Fonction d'application des filtres
-            function applyFilters() {
-                console.log('🔄 [BAGUES] Application filtres...');
-                
-                if (!elements.filtersForm) {
-                    console.error('❌ [BAGUES] Formulaire introuvable');
-                    return false;
-                }
-                
-                closeSidebar();
-                
-                setTimeout(() => {
-                    console.log('📤 [BAGUES] Soumission formulaire');
-                    elements.filtersForm.submit();
-                }, 300);
-                
-                return true;
-            }
-            
-            // Fonction de gestion du tri
-            function handleSortChange(event) {
-                const newSortValue = event.target.value;
-                console.log('🔄 [BAGUES] Changement tri:', newSortValue);
-                
-                if (!elements.sortInput || !elements.filtersForm) {
-                    console.error('❌ [BAGUES] Éléments tri introuvables');
-                    return false;
-                }
-                
-                elements.sortInput.value = newSortValue;
-                
-                console.log('📤 [BAGUES] Soumission pour tri');
-                elements.filtersForm.submit();
-                
-                return true;
-            }
-            
-            // Fonction de gestion des favoris
-            function toggleWishlist(jewelId) {
-                const button = event.target.closest('.wishlist-btn');
-                if (!button) return;
-                
-                const icon = button.querySelector('i');
-                if (!icon) return;
-                
-                fetch('/api/wishlist/toggle', {
+                fetch('/api/track-view', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ jewelId: jewelId })
+                    body: JSON.stringify({ 
+                        jewelId: jewelId,
+                        jewelName: jewelName 
+                    })
                 })
-                .then(response => response.json())
+                .then(response => {
+                    console.log('📡 Réponse tracking:', response.status);
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
-                        if (data.added) {
-                            icon.classList.remove('far');
-                            icon.classList.add('fas');
-                            button.style.color = '#e74c3c';
-                            showNotification('Ajouté aux favoris', 'success');
-                        } else {
-                            icon.classList.remove('fas');
-                            icon.classList.add('far');
-                            button.style.color = '';
-                            showNotification('Retiré des favoris', 'success');
-                        }
+                        console.log(`✅ Vue trackée pour bijou ${jewelName}: ${data.views} vues`);
                     } else {
-                        showNotification(data.message || 'Erreur lors de la gestion des favoris', 'error');
+                        console.warn('⚠️ Erreur tracking:', data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('❌ Erreur lors du suivi de vue:', error);
+                });
+            }
+
+            console.log('✅ Système de filtres et tracking initialisé');
+        });
+
+        // Fonction pour supprimer un bijou (admin)
+        function deleteJewel(slug) {
+            if (confirm('Êtes-vous sûr de vouloir supprimer ce bijou ?')) {
+                fetch(`/bijoux/${slug}/supprimer`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Erreur lors de la suppression');
                     }
                 })
                 .catch(error => {
                     console.error('Erreur:', error);
-                    showNotification('Erreur lors de la gestion des favoris', 'error');
+                    alert('Erreur lors de la suppression');
                 });
             }
-            
-            // Système de notifications
-            function showNotification(message, type = 'info') {
-                const notification = document.createElement('div');
-                notification.className = `notification notification-${type}`;
-                notification.innerHTML = `
-                    <span><i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'times' : 'info'}-circle"></i> ${message}</span>
-                    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:inherit;margin-left:15px;cursor:pointer;font-size:1.2rem;">&times;</button>
-                `;
-                
-                notification.style.cssText = `
-                    position: fixed;
-                    top: 20px;
-                    right: 20px;
-                    padding: 12px 16px;
-                    border-radius: 8px;
-                    color: white;
-                    font-weight: 600;
-                    z-index: 1001;
-                    max-width: 300px;
-                    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-                    animation: slideInNotification 0.3s ease;
-                    display: flex;
-                    align-items: center;
-                    justify-content: space-between;
-                    font-size: 0.85rem;
-                `;
-                
-                if (type === 'success') {
-                    notification.style.background = '#27ae60';
-                } else if (type === 'error') {
-                    notification.style.background = '#e74c3c';
-                } else {
-                    notification.style.background = 'var(--rose-gold)';
-                }
-                
-                document.body.appendChild(notification);
-                
-                setTimeout(() => {
-                    if (notification.parentElement) {
-                        notification.style.animation = 'slideOutNotification 0.3s ease';
-                        setTimeout(() => notification.remove(), 300);
-                    }
-                }, 3000);
-            }
-            
-            // Attachement des événements avec capture forcée
-            function attachEvents() {
-                console.log('🔗 [BAGUES] Attachement événements...');
-                
-                let eventsAttached = 0;
-                
-                // Bouton d'ouverture filtres - CAPTURE FORCÉE
-                if (elements.filtersToggle) {
-                    // Enlever tous les anciens événements
-                    elements.filtersToggle.onclick = null;
-                    
-                    // Ajouter avec capture ET bubble
-                    elements.filtersToggle.addEventListener('click', function(e) {
-                        e.preventDefault();
-                        e.stopImmediatePropagation(); // STOP TOUS les autres événements
-                        console.log('🖱️ [BAGUES] Clic bouton filtres CAPTURÉ');
-                        openSidebar();
-                        return false;
-                    }, { capture: true, passive: false }); // CAPTURE = true pour intercepter en premier
-                    
-                    // Double sécurité avec onclick
-                    elements.filtersToggle.onclick = function(e) {
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
-                        console.log('🖱️ [BAGUES] Clic bouton filtres ONCLICK');
-                        openSidebar();
-                        return false;
-                    };
-                    
-                    eventsAttached++;
-                    console.log('✅ [BAGUES] Event bouton filtres attaché AVEC CAPTURE');
-                }
-                
-                // Bouton ouverture depuis "no results"
-                if (elements.openFiltersNoResults) {
-                    elements.openFiltersNoResults.onclick = function(e) {
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
-                        console.log('🖱️ [BAGUES] Clic bouton filtres (no results)');
-                        openSidebar();
-                        return false;
-                    };
-                    eventsAttached++;
-                    console.log('✅ [BAGUES] Event bouton filtres (no results) attaché');
-                }
-                
-                // Bouton fermeture
-                if (elements.closeSidebarBtn) {
-                    elements.closeSidebarBtn.onclick = function(e) {
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
-                        console.log('🖱️ [BAGUES] Clic bouton fermeture');
-                        closeSidebar();
-                        return false;
-                    };
-                    eventsAttached++;
-                    console.log('✅ [BAGUES] Event bouton fermeture attaché');
-                }
-                
-                // Overlay
-                if (elements.sidebarOverlay) {
-                    elements.sidebarOverlay.onclick = function(e) {
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
-                        console.log('🖱️ [BAGUES] Clic overlay');
-                        closeSidebar();
-                        return false;
-                    };
-                    eventsAttached++;
-                    console.log('✅ [BAGUES] Event overlay attaché');
-                }
-                
-                // Bouton appliquer
-                if (elements.applyFiltersBtn) {
-                    elements.applyFiltersBtn.onclick = function(e) {
-                        e.preventDefault();
-                        e.stopImmediatePropagation();
-                        console.log('🖱️ [BAGUES] Clic appliquer filtres');
-                        applyFilters();
-                        return false;
-                    };
-                    eventsAttached++;
-                    console.log('✅ [BAGUES] Event bouton appliquer attaché');
-                }
-                
-                // Select tri - CAPTURE FORCÉE
-                if (elements.sortSelect) {
-                    elements.sortSelect.onchange = function(e) {
-                        console.log('🔄 [BAGUES] Changement tri CAPTURÉ:', e.target.value);
-                        handleSortChange(e);
-                    };
-                    eventsAttached++;
-                    console.log('✅ [BAGUES] Event select tri attaché AVEC CAPTURE');
-                }
-                
-                // Touche Échap
-                document.addEventListener('keydown', function(e) {
-                    if (e.key === 'Escape' && sidebarIsOpen) {
-                        console.log('⌨️ [BAGUES] Touche Échap');
-                        closeSidebar();
-                    }
-                }, { capture: true });
-                eventsAttached++;
-                console.log('✅ [BAGUES] Event touche Échap attaché');
-                
-                console.log(`✅ [BAGUES] ${eventsAttached} événements attachés AVEC CAPTURE`);
-                return eventsAttached;
-            }
-            
-            // Initialisation
-            function init() {
-                console.log('🚀 [BAGUES] Initialisation...');
-                
-                // Vérifier les éléments
-                let elementsFound = 0;
-                for (const [name, element] of Object.entries(elements)) {
-                    if (element) {
-                        elementsFound++;
-                    } else {
-                        console.warn(`⚠️ [BAGUES] Élément manquant: ${name}`);
-                    }
-                }
-                
-                console.log(`📋 [BAGUES] ${elementsFound}/${Object.keys(elements).length} éléments trouvés`);
-                
-                // Fermer sidebar au démarrage
-                closeSidebar();
-                
-                // Attacher événements
-                const eventsCount = attachEvents();
-                
-                console.log(`✅ [BAGUES] Initialisation terminée (${eventsCount} events)`);
-                
-                return {
-                    elementsFound,
-                    eventsCount,
-                    functions: {
-                        openSidebar,
-                        closeSidebar,
-                        applyFilters,
-                        handleSortChange,
-                        toggleWishlist
-                    }
-                };
-            }
-            
-            // Exposer les fonctions globalement
-            window.BaguesPage = {
-                init,
-                openSidebar,
-                closeSidebar,
-                applyFilters,
-                toggleWishlist
-            };
-            
-            // Exposer toggleWishlist globalement (compatibilité)
-            window.toggleWishlist = toggleWishlist;
-            
-            // Auto-initialisation si DOM prêt
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', init);
-            } else {
-                // DOM déjà prêt, attendre un peu pour éviter les conflits
-                setTimeout(init, 100);
-            }
-            
-        })();
-        
-        // === TEST MANUEL POUR DEBUGGING ===
-        console.log('🧪 [BAGUES] Fonctions de test disponibles :');
-        console.log('💡 Testez: BaguesPage.openSidebar(), BaguesPage.closeSidebar()');
-        
-        // Preload des images
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🖼️ [BAGUES] Préchargement des images...');
-            const images = document.querySelectorAll('.product-image img');
-            images.forEach(img => {
-                const preloadImg = new Image();
-                preloadImg.src = img.src;
-            });
-            
-            // Animation des cartes au scroll
-            if ('IntersectionObserver' in window) {
-                const observer = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            entry.target.style.opacity = '1';
-                            entry.target.style.transform = 'translateY(0)';
-                        }
-                    });
-                }, { threshold: 0.1 });
-
-                document.querySelectorAll('.product-card').forEach((card, index) => {
-                    card.style.opacity = '0';
-                    card.style.transform = 'translateY(20px)';
-                    card.style.transition = `opacity 0.4s ease ${index * 0.05}s, transform 0.4s ease ${index * 0.05}s`;
-                    observer.observe(card);
-                });
-            }
-            
-            console.log('✅ [BAGUES] Animations et préchargement terminés');
-        });
+        }
     </script>
 </body>
 </html>

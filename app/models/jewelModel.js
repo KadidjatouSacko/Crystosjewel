@@ -18,11 +18,7 @@ Jewel.init({
     type: DataTypes.TEXT,
     allowNull: true
   },
-  is_hidden: {
-    type: DataTypes.BOOLEAN,
-    defaultValue: false,
-    allowNull: false
-},
+  
   price_ttc: {
     type: DataTypes.DECIMAL(10, 2),
     allowNull: false
@@ -302,6 +298,50 @@ Jewel.prototype.getBadge = function() {
     return {
       text: 'Populaire',
       class: 'populaire'
+    };
+  }
+  
+  return null;
+};
+
+Jewel.prototype.getBadgeInfo = function() {
+  const now = new Date();
+  const isNew = this.created_at > new Date(now - 7 * 24 * 60 * 60 * 1000); // 7 jours
+  const hasDiscount = this.discount_percentage && this.discount_percentage > 0;
+  const isPopular = (this.popularity_score || 0) >= 50;
+  const isBestSeller = (this.sales_count || 0) >= 10;
+  const isLastChance = this.stock <= 3 && this.stock > 0;
+  
+  // Priorité des badges
+  if (hasDiscount) {
+    return {
+      text: `-${this.discount_percentage}%`,
+      class: 'promo',
+      priority: 1
+    };
+  } else if (isLastChance) {
+    return {
+      text: 'Dernière chance',
+      class: 'derniere-chance',
+      priority: 2
+    };
+  } else if (isBestSeller) {
+    return {
+      text: 'Best-seller',
+      class: 'best-seller',
+      priority: 3
+    };
+  } else if (isNew) {
+    return {
+      text: 'Nouveau',
+      class: 'nouveau',
+      priority: 4
+    };
+  } else if (isPopular) {
+    return {
+      text: 'Populaire',
+      class: 'populaire',
+      priority: 5
     };
   }
   
