@@ -428,6 +428,100 @@ async function deleteImageFile(imagePath) {
   }
 }
 
+/**
+ * Fonction utilitaire pour calculer les badges automatiquement
+ */
+function calculateJewelBadge(jewel, salesStats = {}) {
+    const now = new Date();
+    const createdDate = new Date(jewel.created_at);
+    const daysSinceCreation = Math.floor((now - createdDate) / (1000 * 60 * 60 * 24));
+    
+    // Vérifier si la réduction est active
+    const discountStart = jewel.discount_start_date ? new Date(jewel.discount_start_date) : null;
+    const discountEnd = jewel.discount_end_date ? new Date(jewel.discount_end_date) : null;
+    const hasActiveDiscount = jewel.discount_percentage > 0 && 
+        (!discountStart || discountStart <= now) && 
+        (!discountEnd || discountEnd >= now);
+
+    // Priorité 1: EN PROMO (le plus important)
+    if (hasActiveDiscount) {
+        return {
+            badge: `En Promo -${jewel.discount_percentage}%`,
+            badgeClass: 'promo'
+        };
+    }
+    
+    // Priorité 2: DERNIÈRE CHANCE (stock très faible)
+    if (jewel.stock <= 2 && jewel.stock > 0) {
+        return {
+            badge: 'Dernière Chance',
+            badgeClass: 'derniere-chance'
+        };
+    }
+    
+    // Priorité 3: BEST-SELLER (ventes élevées ou favoris)
+    const salesCount = jewel.sales_count || 0;
+    const favoritesCount = jewel.favorites_count || 0;
+    const viewsCount = jewel.views_count || 0;
+    
+    if (salesCount >= 10 || favoritesCount >= 15 || viewsCount >= 100) {
+        return {
+            badge: 'Best-seller',
+            badgeClass: 'bestseller'
+        };
+    }
+    
+    // Priorité 4: NOUVEAU (moins de 30 jours)
+    if (daysSinceCreation <= 30) {
+        return {
+            badge: 'Nouveau',
+            badgeClass: 'nouveau'
+        };
+    }
+    
+    // Priorité 5: POPULAIRE (engagement moyen)
+    if (favoritesCount >= 5 || viewsCount >= 50) {
+        return {
+            badge: 'Populaire',
+            badgeClass: 'populaire'
+        };
+    }
+    
+    // Aucun badge
+    return null;
+}
+
+/**
+ * Fonction utilitaire pour formater les prix avec réductions
+ */
+function formatJewelPricing(jewel) {
+    const now = new Date();
+    const discountStart = jewel.discount_start_date ? new Date(jewel.discount_start_date) : null;
+    const discountEnd = jewel.discount_end_date ? new Date(jewel.discount_end_date) : null;
+    
+    const hasActiveDiscount = jewel.discount_percentage > 0 && 
+        (!discountStart || discountStart <= now) && 
+        (!discountEnd || discountEnd >= now);
+    
+    const originalPrice = parseFloat(jewel.price_ttc) || 0;
+    const currentPrice = hasActiveDiscount 
+        ? originalPrice * (1 - jewel.discount_percentage / 100)
+        : originalPrice;
+    
+    return {
+        hasDiscount: hasActiveDiscount,
+        originalPrice,
+        currentPrice,
+        formattedCurrentPrice: new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+        }).format(currentPrice),
+        formattedOriginalPrice: hasActiveDiscount ? new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+        }).format(originalPrice) : null
+    };
+}
 
 
 export const jewelControlleur = {
@@ -737,178 +831,213 @@ async showJewelsByCategory(req, res) {
  */
 // Dans baguesControlleur.js - Remplacer la méthode showRings
 
-async showRings(req, res) {
-    console.log('🔍 === DEBUT showRings ===');
+ async showRings(req, res) {
+        try {
+            console.log('🔍 Affichage des bagues avec système complet');
+            
+            // Paramètres de filtrage et pagination
+            const { 
+                page = 1, 
+                limit = 12, 
+                matiere, 
+                type, 
+                prix, 
+                sort = 'newest' 
+            } = req.query;
+            
+            const offset = (parseInt(page) - 1) * parseInt(limit);
+            
+            // Construction des conditions WHERE
+            let whereConditions = { category_id: 1 }; // ID catégorie bagues
+            
+            // Filtre par matériau
+            if (matiere) {
+                const materiaux = Array.isArray(matiere) ? matiere : [matiere];
+                whereConditions.material_id = { [Op.in]: materiaux };
+            }
+            
+            // Filtre par type
+            if (type) {
+                const types = Array.isArray(type) ? type : [type];
+                whereConditions.type_id = { [Op.in]: types };
+            }
+            
+            // Filtre par prix
+            if (prix) {
+                const priceRanges = Array.isArray(prix) ? prix : [prix];
+                const priceConditions = [];
+                
+                priceRanges.forEach(range => {
+                    switch(range) {
+                        case '0-100':
+                            priceConditions.push({ price_ttc: { [Op.between]: [0, 100] } });
+                            break;
+                        case '100-200':
+                            priceConditions.push({ price_ttc: { [Op.between]: [100, 200] } });
+                            break;
+                        case '200-500':
+                            priceConditions.push({ price_ttc: { [Op.between]: [200, 500] } });
+                            break;
+                        case '500+':
+                            priceConditions.push({ price_ttc: { [Op.gte]: 500 } });
+                            break;
+                    }
+                });
+                
+                if (priceConditions.length > 0) {
+                    whereConditions[Op.or] = priceConditions;
+                }
+            }
+            
+            // Construction de l'ordre de tri
+            let orderClause;
+            switch(sort) {
+                case 'price_asc':
+                    orderClause = [['price_ttc', 'ASC']];
+                    break;
+                case 'price_desc':
+                    orderClause = [['price_ttc', 'DESC']];
+                    break;
+                case 'popularity':
+                    orderClause = [
+                        ['sales_count', 'DESC'],
+                        ['favorites_count', 'DESC'],
+                        ['views_count', 'DESC']
+                    ];
+                    break;
+                case 'newest':
+                default:
+                    orderClause = [['created_at', 'DESC']];
+                    break;
+            }
+            
+            // Récupération des bijoux avec relations
+            const { count, rows: rings } = await Jewel.findAndCountAll({
+                where: whereConditions,
+                include: [
+                    {
+                        model: Category,
+                        as: 'category',
+                        attributes: ['id', 'name']
+                    },
+                    {
+                        model: Type,
+                        as: 'type',
+                        attributes: ['id', 'name'],
+                        required: false
+                    },
+                    {
+                        model: Material,
+                        as: 'material',
+                        attributes: ['id', 'name'],
+                        required: false
+                    }
+                ],
+                order: orderClause,
+                limit: parseInt(limit),
+                offset: offset,
+                distinct: true
+            });
+            
+            console.log(`✅ ${rings.length} bagues récupérées sur ${count} total`);
+            
+            // Formatage des bijoux avec badges et prix
+            const formattedRings = rings.map(ring => {
+                const ringData = ring.toJSON();
+                
+                // Calcul du badge automatique
+                const badgeInfo = calculateJewelBadge(ringData);
+                
+                // Formatage des prix
+                const pricingInfo = formatJewelPricing(ringData);
+                
+                return {
+                    ...ringData,
+                    ...badgeInfo,
+                    ...pricingInfo,
+                    image: ringData.image || 'no-image.jpg'
+                };
+            });
+            
+            // Récupération des données pour les filtres
+            const [allMaterials, allTypes] = await Promise.all([
+                Material.findAll({ 
+                    order: [['name', 'ASC']] 
+                }),
+                Type.findAll({ 
+                    where: { category_id: 1 },
+                    order: [['name', 'ASC']] 
+                })
+            ]);
+            
+            // Calcul de la pagination
+            const totalPages = Math.ceil(count / parseInt(limit));
+            const currentPage = parseInt(page);
+            
+            // Données pour la vue
+            const viewData = {
+                title: 'Bagues - Éclat Doré',
+                pageTitle: 'Nos Bagues',
+                jewels: formattedRings,
+                
+                // Pagination
+                pagination: {
+                    currentPage,
+                    totalPages,
+                    totalJewels: count,
+                    hasNextPage: currentPage < totalPages,
+                    hasPrevPage: currentPage > 1,
+                    nextPage: currentPage < totalPages ? currentPage + 1 : currentPage,
+                    prevPage: currentPage > 1 ? currentPage - 1 : currentPage
+                },
+                
+                // Filtres
+                filters: {
+                    matiere: Array.isArray(matiere) ? matiere : (matiere ? [matiere] : []),
+                    type: Array.isArray(type) ? type : (type ? [type] : []),
+                    prix: Array.isArray(prix) ? prix : (prix ? [prix] : []),
+                    sort
+                },
+                
+                // Données pour les filtres
+                materials: allMaterials || [],
+                types: allTypes || [],
+                
+                // Utilisateur
+                user: req.session?.user || null,
+                isAuthenticated: !!req.session?.user,
+                cartItemCount: 0, // À implémenter selon votre système
+                
+                // Messages
+                error: null,
+                success: null
+            };
+            
+            res.render('bracelets', viewData);
+            
+        } catch (error) {
+            console.error('❌ Erreur dans showBracelets:', error);
+            
+            res.status(500).render('bracelets', {
+                title: 'Nos Bracelets - Erreur',
+                pageTitle: 'Nos Bracelets',
+                jewels: [],
+                bracelets: [],
+                pagination: { currentPage: 1, totalPages: 1, totalJewels: 0, hasNextPage: false, hasPrevPage: false },
+                filters: { matiere: [], type: [], prix: [], sort: 'newest' },
+                materials: [],
+                types: [],
+                user: req.session?.user || null,
+                isAuthenticated: false,
+                cartItemCount: 0,
+                error: `Erreur lors du chargement des bracelets: ${error.message}`,
+                success: null
+            });
+        }
+    },
+
     
-    try {
-      const config = CATEGORY_CONFIG['bagues'];
-      if (!config) {
-        console.error('❌ Configuration bagues non trouvée');
-        return res.status(500).render('error', {
-          title: 'Erreur serveur',
-          message: 'Configuration manquante.',
-          statusCode: 500,
-          user: req.session?.user || null
-        });
-      }
 
-      const {
-        matiere = [],
-        type = [],
-        prix = [],
-        sort = 'newest',
-        page = 1
-      } = req.query;
-
-      let whereClause = { category_id: 1 };
-      
-      // Filtres...
-      if (Array.isArray(matiere) && matiere.length > 0) {
-        const materiaux = await Material.findAll({
-          where: { id: { [Op.in]: matiere } }
-        });
-        if (materiaux.length > 0) {
-          whereClause.matiere = { 
-            [Op.in]: materiaux.map(m => m.name) 
-          };
-        }
-      }
-
-      if (Array.isArray(type) && type.length > 0) {
-        whereClause.type_id = { [Op.in]: type };
-      }
-
-      // Tri
-      let orderClause = [['created_at', 'DESC']];
-      switch (sort) {
-        case 'price_asc':
-          orderClause = [['price_ttc', 'ASC']];
-          break;
-        case 'price_desc':
-          orderClause = [['price_ttc', 'DESC']];
-          break;
-        case 'popularity':
-          orderClause = [['popularity_score', 'DESC']];
-          break;
-      }
-
-      // Pagination
-      const limit = 12;
-      const offset = (parseInt(page) - 1) * limit;
-
-      const { rows: rings, count: totalRings } = await Jewel.findAndCountAll({
-        where: whereClause,
-        include: [
-          {
-            model: Category,
-            as: 'category',
-            attributes: ['id', 'name']
-          },
-          {
-            model: Type,
-            as: 'type',
-            attributes: ['id', 'name'],
-            required: false
-          }
-        ],
-        order: orderClause,
-        limit,
-        offset,
-        distinct: true
-      });
-
-      console.log(`✅ ${rings.length} bagues trouvées sur ${totalRings} total`);
-
-      const formattedRings = rings.map(ring => {
-        const isNew = ring.created_at > new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        const hasDiscount = ring.discount_percentage && ring.discount_percentage > 0;
-        
-        let currentPrice = ring.price_ttc;
-        if (hasDiscount) {
-          currentPrice = ring.price_ttc * (1 - ring.discount_percentage / 100);
-        }
-
-        return {
-          ...ring.toJSON(),
-          currentPrice,
-          hasDiscount,
-          isNew,
-          formattedCurrentPrice: new Intl.NumberFormat('fr-FR', {
-            style: 'currency',
-            currency: 'EUR'
-          }).format(currentPrice),
-          image: ring.image || 'no-image.jpg'
-        };
-      });
-
-      const [allMaterials, allTypes] = await Promise.all([
-        Material.findAll({ order: [['name', 'ASC']] }),
-        Type.findAll({ 
-          where: { category_id: 1 },
-          order: [['name', 'ASC']] 
-        })
-      ]);
-
-      const totalPages = Math.ceil(totalRings / limit);
-      const currentPage = parseInt(page);
-
-      const cartItemCount = await getCartItemCount(req.user?.id);
-
-      const viewData = {
-        title: 'Nos Bagues',
-        pageTitle: 'Nos Bagues',
-        jewels: formattedRings,
-        pagination: {
-          currentPage,
-          totalPages,
-          totalJewels: totalRings,
-          hasNextPage: currentPage < totalPages,
-          hasPrevPage: currentPage > 1,
-          nextPage: currentPage < totalPages ? currentPage + 1 : currentPage,
-          prevPage: currentPage > 1 ? currentPage - 1 : currentPage
-        },
-        filters: {
-          matiere: Array.isArray(matiere) ? matiere : (matiere ? [matiere] : []),
-          type: Array.isArray(type) ? type : (type ? [type] : []),
-          prix: Array.isArray(prix) ? prix : (prix ? [prix] : []),
-          sort
-        },
-        materials: allMaterials || [],
-        types: allTypes || [],
-        user: req.user || null,
-        cartItemCount: cartItemCount || 0,
-        error: null,
-        success: null
-      };
-
-      res.render('bagues', viewData);
-
-    } catch (error) {
-      console.error('❌ Erreur dans showRings:', error);
-      
-      res.status(500).render('bagues', {
-        title: 'Nos Bagues - Erreur',
-        pageTitle: 'Nos Bagues',
-        jewels: [],
-        pagination: {
-          currentPage: 1,
-          totalPages: 1,
-          totalJewels: 0,
-          hasNextPage: false,
-          hasPrevPage: false,
-          nextPage: 1,
-          prevPage: 1
-        },
-        filters: { matiere: [], type: [], prix: [], sort: 'newest' },
-        materials: [],
-        types: [],
-        user: req.user || null,
-        cartItemCount: 0,
-        error: `Erreur lors du chargement des bagues: ${error.message}`,
-        success: null
-      });
-    }
-  },
 
   /**
    * Affiche les colliers

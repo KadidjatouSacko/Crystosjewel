@@ -443,6 +443,35 @@ async getLowStockJewelsEnhanced(threshold = 3) {
     }
 },
 
+/**
+     * Fonction utilitaire pour calculer automatiquement les badges
+     * Peut être appelée depuis d'autres parties de l'application
+     */
+    async updateJewelBadges() {
+        try {
+            console.log('🔄 Mise à jour automatique des badges...');
+            
+            const allJewels = await Jewel.findAll({
+                attributes: ['id', 'created_at', 'discount_percentage', 'discount_start_date', 'discount_end_date', 'stock', 'sales_count', 'favorites_count', 'views_count']
+            });
+            
+            for (const jewel of allJewels) {
+                const badgeInfo = calculateJewelBadge(jewel.toJSON());
+                
+                // Vous pouvez stocker le badge en base si nécessaire
+                // await jewel.update({ 
+                //     badge: badgeInfo?.badge || null,
+                //     badge_class: badgeInfo?.badgeClass || null 
+                // });
+            }
+            
+            console.log(`✅ ${allJewels.length} bijoux traités pour les badges`);
+            
+        } catch (error) {
+            console.error('❌ Erreur lors de la mise à jour des badges:', error);
+        }
+    }, 
+
 async getMostViewedJewelsEnhanced() {
     try {
         const mostViewed = await sequelize.query(`
