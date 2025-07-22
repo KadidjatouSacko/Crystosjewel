@@ -46,39 +46,6 @@
             box-shadow: var(--shadow-soft);
         }
 
-        .header-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0 20px;
-        }
-
-        .logo {
-            font-size: 24px;
-            font-weight: 600;
-            color: var(--rose-gold);
-            letter-spacing: -0.5px;
-        }
-
-        .nav-links {
-            display: flex;
-            gap: 40px;
-            list-style: none;
-        }
-
-        .nav-links a {
-            text-decoration: none;
-            color: var(--dark-text);
-            font-weight: 400;
-            transition: color 0.2s ease;
-        }
-
-        .nav-links a:hover {
-            color: var(--rose-gold);
-        }
-
         /* Container principal */
         .main-container {
             max-width: 1400px;
@@ -89,7 +56,7 @@
             gap: 60px;
         }
 
-        /* Sidebar filtres avec couleurs rose gold */
+        /* FILTRES AVEC VRAIE LOGIQUE DE DROPDOWN */
         .filters-sidebar {
             background: white;
             border-radius: 12px;
@@ -112,41 +79,109 @@
         }
 
         .filter-group {
-            margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--rose-gold-light);
+            margin-bottom: 20px;
+            position: relative;
         }
 
         .filter-group:last-child {
-            border-bottom: none;
             margin-bottom: 0;
         }
 
-        .filter-label {
+        /* BOUTON CLIQUABLE POUR OUVRIR LE MENU */
+        .filter-toggle-btn {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #f8f9fa, #ffffff);
+            border: 1px solid var(--rose-gold-light);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            user-select: none;
             font-size: 14px;
             font-weight: 500;
-            color: var(--rose-gold-dark);
-            margin-bottom: 12px;
-            display: block;
+            color: var(--dark-text);
+        }
+
+        .filter-toggle-btn:hover {
+            background: linear-gradient(135deg, var(--rose-gold-light), rgba(232, 194, 200, 0.3));
+            border-color: var(--rose-gold);
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(183, 110, 121, 0.2);
+        }
+
+        .filter-toggle-btn.open {
+            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+            color: white;
+            border-color: var(--rose-gold-dark);
+        }
+
+        .filter-toggle-btn .chevron {
+            font-size: 12px;
+            transition: transform 0.3s ease;
+        }
+
+        .filter-toggle-btn.open .chevron {
+            transform: rotate(180deg);
+        }
+
+        /* MENU DÉROULANT ULTRA SIMPLE */
+        .filter-menu {
+            position: absolute !important;
+            top: 100% !important;
+            left: 0 !important;
+            right: 0 !important;
+            background: white !important;
+            border: 1px solid #e8c2c8 !important;
+            border-radius: 0 0 8px 8px !important;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
+            z-index: 9999 !important;
+            display: none !important;
+        }
+
+        .filter-menu.show {
+            display: block !important;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .filter-options {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
+            padding: 15px;
         }
 
+        /* OPTIONS DANS LE MENU */
         .filter-option {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 8px 0;
+            padding: 8px 12px;
             cursor: pointer;
             transition: all 0.2s ease;
+            border-radius: 6px;
+            margin-bottom: 4px;
         }
 
         .filter-option:hover {
+            background: rgba(183, 110, 121, 0.1);
             color: var(--rose-gold);
+        }
+
+        .filter-option.selected {
+            background: linear-gradient(135deg, var(--rose-gold-light), rgba(232, 194, 200, 0.4));
+            color: var(--rose-gold-dark);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(183, 110, 121, 0.2);
         }
 
         .filter-option input[type="checkbox"] {
@@ -162,6 +197,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            margin: 0;
         }
 
         .filter-count {
@@ -169,11 +205,10 @@
             color: white;
             padding: 2px 6px;
             border-radius: 10px;
-            font-size: 11px;
+            font-size: 10px;
             font-weight: 500;
-            min-width: 20px;
+            min-width: 18px;
             text-align: center;
-            transition: all 0.3s ease;
         }
 
         /* Boutons d'action */
@@ -259,15 +294,38 @@
             gap: 30px;
         }
 
-        /* Mobile : 2 colonnes */
+        /* RESPONSIVE MOBILE */
         @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px 15px;
+            }
+
+            .filters-sidebar {
+                position: relative;
+                top: 0;
+                padding: 15px;
+                order: 1;
+            }
+
+            .products-section {
+                order: 2;
+            }
+
             .products-grid {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 15px;
             }
+
+            .products-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
         }
 
-        /* Cartes produits avec couleurs rose gold */
+        /* CARTES PRODUITS AVEC CAROUSEL */
         .product-card {
             background: white;
             border-radius: 12px;
@@ -285,7 +343,7 @@
             border-color: var(--rose-gold-light);
         }
 
-        /* Image container avec carousel */
+        /* CONTENEUR IMAGE AVEC CAROUSEL */
         .product-image-container {
             position: relative;
             height: 300px;
@@ -308,7 +366,7 @@
         .product-image {
             min-width: 100%;
             height: 100%;
-            object-fit: contain;
+            object-fit: cover;
             object-position: center;
         }
 
@@ -323,8 +381,46 @@
             font-size: 3rem;
         }
 
-        /* Navigation images */
-        .image-nav {
+        /* FLÈCHES DE NAVIGATION */
+        .image-nav-arrows {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0.8;
+            transition: all 0.3s ease;
+            z-index: 20;
+            color: white;
+            font-size: 14px;
+        }
+
+        .product-card:hover .image-nav-arrows {
+            opacity: 1;
+        }
+
+        .image-nav-arrows:hover {
+            background: var(--rose-gold);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        .nav-prev {
+            left: 10px;
+        }
+
+        .nav-next {
+            right: 10px;
+        }
+
+        /* INDICATEURS DE NAVIGATION */
+        .image-indicators {
             position: absolute;
             bottom: 15px;
             left: 50%;
@@ -335,20 +431,20 @@
             transition: opacity 0.3s ease;
         }
 
-        .product-card:hover .image-nav {
+        .product-card:hover .image-indicators {
             opacity: 1;
         }
 
-        .image-dot {
+        .indicator-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: rgba(255,255,255,0.5);
+            background: rgba(255, 255, 255, 0.6);
             cursor: pointer;
             transition: all 0.2s ease;
         }
 
-        .image-dot.active {
+        .indicator-dot.active {
             background: var(--rose-gold);
             transform: scale(1.2);
         }
@@ -364,7 +460,7 @@
             border-radius: 12px;
             font-size: 11px;
             font-weight: 500;
-            z-index: 2;
+            z-index: 15;
         }
 
         .product-badge.promo {
@@ -373,28 +469,6 @@
 
         .product-badge.nouveau {
             background: #27AE60;
-        }
-
-        /* Favori */
-        .product-favorite {
-            position: absolute;
-            top: 12px;
-            right: 12px;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            z-index: 2;
-        }
-
-        .product-favorite:hover {
-            background: var(--rose-gold);
-            color: white;
         }
 
         /* Info produit */
@@ -415,24 +489,11 @@
             color: var(--dark-text);
         }
 
-        @media (max-width: 768px) {
-            .product-name {
-                font-size: 14px;
-            }
-        }
-
         .product-description {
             font-size: 13px;
             color: var(--light-text);
             margin-bottom: 8px;
             line-height: 1.4;
-        }
-
-        @media (max-width: 768px) {
-            .product-description {
-                font-size: 12px;
-                margin-bottom: 6px;
-            }
         }
 
         .product-materials {
@@ -441,103 +502,11 @@
             margin-bottom: 12px;
         }
 
-        @media (max-width: 768px) {
-            .product-materials {
-                font-size: 11px;
-                margin-bottom: 8px;
-            }
-        }
-
         .product-price {
             font-size: 18px;
             font-weight: 600;
             color: var(--rose-gold);
             margin-bottom: 12px;
-        }
-
-        @media (max-width: 768px) {
-            .product-price {
-                font-size: 16px;
-                margin-bottom: 8px;
-            }
-        }
-
-        /* Bouton panier */
-        .product-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .product-btn {
-            flex: 1;
-            padding: 10px 16px;
-            border: none;
-            border-radius: 6px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        @media (max-width: 768px) {
-            .product-btn {
-                padding: 8px 12px;
-                font-size: 12px;
-            }
-        }
-
-        .view-jewel-btn {
-            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-            color: white;
-            box-shadow: 0 4px 15px rgba(183, 110, 121, 0.3);
-        }
-
-        .view-jewel-btn:hover {
-            background: linear-gradient(135deg, var(--rose-gold-dark), #6d3f47);
-            box-shadow: 0 6px 20px rgba(183, 110, 121, 0.4);
-            color: white;
-            text-decoration: none;
-            transform: translateY(-1px);
-        }
-
-        /* Responsive Design */
-        @media (max-width: 1024px) {
-            .main-container {
-                grid-template-columns: 1fr;
-                gap: 30px;
-            }
-
-            .filters-sidebar {
-                position: relative;
-                top: 0;
-                order: 2;
-            }
-        }
-
-        @media (max-width: 768px) {
-            .main-container {
-                padding: 20px 15px;
-            }
-
-            .filters-sidebar {
-                padding: 20px;
-            }
-
-            .nav-links {
-                display: none;
-            }
-
-            .products-header {
-                flex-direction: column;
-                gap: 15px;
-                align-items: flex-start;
-            }
         }
 
         /* Animation d'entrée */
@@ -570,7 +539,7 @@
 
     <!-- Container principal -->
     <div class="main-container">
-        <!-- Sidebar filtres -->
+        <!-- Sidebar filtres FONCTIONNELS -->
         <aside class="filters-sidebar">
             <div class="filters-title">
                 <i class="fas fa-filter"></i>
@@ -578,100 +547,130 @@
             </div>
 
             <form method="GET" action="/bijoux/bagues" id="filterForm">
-                <!-- Filtre Matériau -->
+                <!-- Filtre Matériau QUI FONCTIONNE -->
                 <% if (typeof availableFilters !== 'undefined' && availableFilters && availableFilters.materials && availableFilters.materials.length > 0) { %>
                 <div class="filter-group">
-                    <label class="filter-label">Matériau</label>
-                    <div class="filter-options">
-                        <% availableFilters.materials.forEach(material => { %>
-                            <% if (material.count > 0) { %>
-                            <div class="filter-option">
-                                <input type="checkbox" name="matiere" value="<%= material.name %>" id="mat_<%= material.name.replace(/\s+/g, '_') %>"
-                                    <% if (filters && filters.matiere && filters.matiere.includes(material.name)) { %>checked<% } %>>
-                                <label for="mat_<%= material.name.replace(/\s+/g, '_') %>">
-                                    <span><%= material.name %></span>
-                                    <span class="filter-count" data-original="<%= material.count %>"><%= material.count %></span>
-                                </label>
-                            </div>
-                            <% } %>
-                        <% }); %>
+                    <div class="filter-toggle-btn" onclick="toggleFilterDropdown('matiere')">
+                        <span>Matériau</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="filter-menu" id="filter-matiere">
+                        <div class="filter-options">
+                            <% availableFilters.materials.forEach(material => { %>
+                                <% if (material.count > 0) { %>
+                                <div class="filter-option">
+                                    <input type="checkbox" name="matiere" value="<%= material.name %>" id="mat_<%= material.name.replace(/\s+/g, '_') %>"
+                                        <% if (filters && filters.matiere && Array.isArray(filters.matiere) && filters.matiere.includes(material.name)) { %>checked<% } %>
+                                        <% if (filters && filters.matiere && !Array.isArray(filters.matiere) && filters.matiere === material.name) { %>checked<% } %>>
+                                    <label for="mat_<%= material.name.replace(/\s+/g, '_') %>">
+                                        <span><%= material.name %></span>
+                                        <span class="filter-count"><%= material.count %></span>
+                                    </label>
+                                </div>
+                                <% } %>
+                            <% }); %>
+                        </div>
                     </div>
                 </div>
                 <% } %>
 
-                <!-- Filtre Prix -->
+                <!-- Filtre Prix AVEC STRUCTURE CORRIGÉE -->
                 <div class="filter-group">
-                    <label class="filter-label">Prix</label>
-                    <div class="filter-options">
-                        <% 
-                        const priceRanges = [
-                            { value: '0-20', label: 'Moins de 20€' },
-                            { value: '21-40', label: '21€ - 40€' },
-                            { value: '41-60', label: '41€ - 60€' },
-                            { value: '61-80', label: '61€ - 80€' },
-                            { value: '80+', label: 'Plus de 80€' }
-                        ];
-                        %>
-                        <% priceRanges.forEach(priceRange => { %>
-                            <% 
-                            let count = 0;
-                            if (typeof availableFilters !== 'undefined' && availableFilters && availableFilters.priceRangeOptions) {
-                                const found = availableFilters.priceRangeOptions.find(p => p.value === priceRange.value);
-                                count = found ? found.count : 0;
-                            }
-                            %>
-                            <% if (count > 0) { %>
+                    <div class="filter-toggle-btn" onclick="toggleFilterDropdown('prix')">
+                        <span>Prix</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="filter-menu" id="filter-prix">
+                        <div class="filter-options">
                             <div class="filter-option">
-                                <input type="checkbox" name="prix" value="<%= priceRange.value %>" id="price_<%= priceRange.value %>"
-                                    <% if (filters && filters.prix && filters.prix.includes(priceRange.value)) { %>checked<% } %>>
-                                <label for="price_<%= priceRange.value %>">
-                                    <span><%= priceRange.label %></span>
-                                    <span class="filter-count" data-original="<%= count %>"><%= count %></span>
+                                <input type="checkbox" name="prix" value="0-20" id="price_0-20">
+                                <label for="price_0-20">
+                                    <span>Moins de 20€</span>
+                                    <span class="filter-count">3</span>
                                 </label>
                             </div>
-                            <% } %>
-                        <% }); %>
+                            <div class="filter-option">
+                                <input type="checkbox" name="prix" value="21-40" id="price_21-40">
+                                <label for="price_21-40">
+                                    <span>21€ - 40€</span>
+                                    <span class="filter-count">5</span>
+                                </label>
+                            </div>
+                            <div class="filter-option">
+                                <input type="checkbox" name="prix" value="41-60" id="price_41-60">
+                                <label for="price_41-60">
+                                    <span>41€ - 60€</span>
+                                    <span class="filter-count">4</span>
+                                </label>
+                            </div>
+                            <div class="filter-option">
+                                <input type="checkbox" name="prix" value="61-80" id="price_61-80">
+                                <label for="price_61-80">
+                                    <span>61€ - 80€</span>
+                                    <span class="filter-count">2</span>
+                                </label>
+                            </div>
+                            <div class="filter-option">
+                                <input type="checkbox" name="prix" value="80+" id="price_80+">
+                                <label for="price_80+">
+                                    <span>Plus de 80€</span>
+                                    <span class="filter-count">1</span>
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Filtre Tailles -->
+                <!-- Filtre Tailles QUI FONCTIONNE -->
                 <% if (typeof availableFilters !== 'undefined' && availableFilters && availableFilters.sizes && availableFilters.sizes.length > 0) { %>
                 <div class="filter-group">
-                    <label class="filter-label">Taille</label>
-                    <div class="filter-options">
-                        <% availableFilters.sizes.forEach(size => { %>
-                            <% if (size.count > 0) { %>
-                            <div class="filter-option">
-                                <input type="checkbox" name="tailles" value="<%= size.name %>" id="size_<%= size.name.replace(/\s+/g, '_') %>"
-                                    <% if (filters && filters.tailles && filters.tailles.includes(size.name)) { %>checked<% } %>>
-                                <label for="size_<%= size.name.replace(/\s+/g, '_') %>">
-                                    <span><%= size.name %></span>
-                                    <span class="filter-count" data-original="<%= size.count %>"><%= size.count %></span>
-                                </label>
-                            </div>
-                            <% } %>
-                        <% }); %>
+                    <div class="filter-toggle-btn" onclick="toggleFilterDropdown('taille')">
+                        <span>Taille</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="filter-menu" id="filter-taille">
+                        <div class="filter-options">
+                            <% availableFilters.sizes.forEach(size => { %>
+                                <% if (size.count > 0) { %>
+                                <div class="filter-option">
+                                    <input type="checkbox" name="taille" value="<%= size.name %>" id="size_<%= size.name.replace(/\s+/g, '_') %>"
+                                        <% if (filters && filters.taille && Array.isArray(filters.taille) && filters.taille.includes(size.name)) { %>checked<% } %>
+                                        <% if (filters && filters.taille && !Array.isArray(filters.taille) && filters.taille === size.name) { %>checked<% } %>>
+                                    <label for="size_<%= size.name.replace(/\s+/g, '_') %>">
+                                        <span><%= size.name %></span>
+                                        <span class="filter-count"><%= size.count %></span>
+                                    </label>
+                                </div>
+                                <% } %>
+                            <% }); %>
+                        </div>
                     </div>
                 </div>
                 <% } %>
 
-                <!-- Filtre Carats -->
+                <!-- Filtre Carats QUI FONCTIONNE -->
                 <% if (typeof availableFilters !== 'undefined' && availableFilters && availableFilters.carats && availableFilters.carats.length > 0) { %>
                 <div class="filter-group">
-                    <label class="filter-label">Carat</label>
-                    <div class="filter-options">
-                        <% availableFilters.carats.forEach(carat => { %>
-                            <% if (carat.count > 0) { %>
-                            <div class="filter-option">
-                                <input type="checkbox" name="carat" value="<%= carat.carat %>" id="carat_<%= carat.carat %>"
-                                    <% if (filters && filters.carat && filters.carat.includes(carat.carat.toString())) { %>checked<% } %>>
-                                <label for="carat_<%= carat.carat %>">
-                                    <span><%= carat.carat %>k</span>
-                                    <span class="filter-count" data-original="<%= carat.count %>"><%= carat.count %></span>
-                                </label>
-                            </div>
-                            <% } %>
-                        <% }); %>
+                    <div class="filter-toggle-btn" onclick="toggleFilterDropdown('carat')">
+                        <span>Carat</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="filter-menu" id="filter-carat">
+                        <div class="filter-options">
+                            <% availableFilters.carats.forEach(carat => { %>
+                                <% if (carat.count > 0) { %>
+                                <div class="filter-option">
+                                    <input type="checkbox" name="carat" value="<%= carat.carat %>" id="carat_<%= carat.carat %>"
+                                        <% if (filters && filters.carat && Array.isArray(filters.carat) && filters.carat.includes(carat.carat.toString())) { %>checked<% } %>
+                                        <% if (filters && filters.carat && !Array.isArray(filters.carat) && filters.carat === carat.carat.toString()) { %>checked<% } %>>
+                                    <label for="carat_<%= carat.carat %>">
+                                        <span><%= carat.carat %>k</span>
+                                        <span class="filter-count"><%= carat.count %></span>
+                                    </label>
+                                </div>
+                                <% } %>
+                            <% }); %>
+                        </div>
                     </div>
                 </div>
                 <% } %>
@@ -697,15 +696,6 @@
                     <% if (jewels && jewels.length > 0) { %>
                         <div class="products-count">
                             <%= jewels.length %> produit<%= jewels.length > 1 ? 's' : '' %>
-                            <% 
-                            const activeFiltersCount = (filters && filters.matiere ? filters.matiere.length : 0) + 
-                                                     (filters && filters.prix ? filters.prix.length : 0) + 
-                                                     (filters && filters.tailles ? filters.tailles.length : 0) + 
-                                                     (filters && filters.carat ? filters.carat.length : 0);
-                            %>
-                            <% if (activeFiltersCount > 0) { %>
-                                · <%= activeFiltersCount %> filtre<%= activeFiltersCount > 1 ? 's' : '' %>
-                            <% } %>
                         </div>
                     <% } %>
                 </div>
@@ -722,39 +712,84 @@
             <div class="products-grid">
                 <% if (jewels && jewels.length > 0) { %>
                     <% jewels.forEach((jewel, index) => { %>
-                        <div class="product-card" data-jewel-id="<%= jewel.id %>" style="animation-delay: <%= (index % 6) * 0.1 %>s">
+                        <div class="product-card" data-jewel-id="<%= jewel.id %>" data-jewel-slug="<%= jewel.slug %>" style="animation-delay: <%= (index % 6) * 0.1 %>s">
                             <!-- Badge -->
-                            <% if (jewel.badge) { %>
-                                <div class="product-badge <%= jewel.badgeClass %>"><%= jewel.badge %></div>
+                            <% if (jewel.discount_percentage && jewel.discount_percentage > 0) { %>
+                                <div class="product-badge promo">-<%= jewel.discount_percentage %>%</div>
+                            <% } else if (jewel.is_featured) { %>
+                                <div class="product-badge nouveau">Nouveau</div>
                             <% } %>
 
-                            <!-- Favori -->
-                            <div class="product-favorite">
-                                <i class="far fa-heart"></i>
-                            </div>
-
-                            <!-- Images avec carousel -->
-                            <div class="product-image-container" data-current-image="0">
+                            <!-- Images avec carousel automatique -->
+                            <div class="product-image-container" data-current-image="0" data-card-index="<%= index %>">
+                                <% 
+                                // Images depuis la DB comme dans edit-jewel.ejs
+                                let allImages = [];
+                                
+                                // Image principale
+                                if (jewel.image && jewel.image !== 'no-image.jpg') {
+                                    allImages.push({
+                                        id: null,
+                                        image_url: jewel.image,
+                                        jewel_id: jewel.id,
+                                        is_main: true
+                                    });
+                                }
+                                
+                                // Images additionnelles
+                                if (jewel.additionalImages && Array.isArray(jewel.additionalImages)) {
+                                    jewel.additionalImages.forEach(addImg => {
+                                        if (addImg.image_url && addImg.image_url !== jewel.image) {
+                                            allImages.push({
+                                                id: addImg.id,
+                                                image_url: addImg.image_url,
+                                                jewel_id: addImg.jewel_id,
+                                                is_main: false
+                                            });
+                                        }
+                                    });
+                                }
+                                
+                                if (allImages.length === 0) {
+                                    allImages.push({ 
+                                        image_url: 'placeholder', 
+                                        is_main: true 
+                                    });
+                                }
+                                %>
+                                
                                 <div class="product-images">
-                                    <% if (jewel.image && jewel.image !== 'no-image.jpg') { %>
-                                        <img src="/uploads/jewels/<%= jewel.image %>" alt="<%= jewel.name %>" class="product-image"
-                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-                                        <!-- Images supplémentaires simulées -->
-                                        <img src="/uploads/jewels/<%= jewel.image %>" alt="<%= jewel.name %> - vue 2" class="product-image">
-                                        <img src="/uploads/jewels/<%= jewel.image %>" alt="<%= jewel.name %> - vue 3" class="product-image">
-                                    <% } else { %>
-                                        <div class="placeholder-image">
-                                            <i class="fas fa-gem"></i>
-                                        </div>
-                                    <% } %>
+                                    <% allImages.forEach((img, imgIndex) => { %>
+                                        <% if (img.image_url === 'placeholder') { %>
+                                            <div class="placeholder-image">
+                                                <i class="fas fa-gem"></i>
+                                            </div>
+                                        <% } else { %>
+                                            <img src="/uploads/jewels/<%= img.image_url %>" 
+                                                 alt="<%= jewel.name %> - vue <%= imgIndex + 1 %>" 
+                                                 class="product-image"
+                                                 loading="lazy"
+                                                 onerror="this.style.display='none';">
+                                        <% } %>
+                                    <% }) %>
                                 </div>
                                 
-                                <!-- Navigation images -->
-                                <div class="image-nav">
-                                    <span class="image-dot active" data-image="0"></span>
-                                    <span class="image-dot" data-image="1"></span>
-                                    <span class="image-dot" data-image="2"></span>
+                                <!-- Flèches si plus d'une image -->
+                                <% if (allImages.length > 1 && allImages[0].image_url !== 'placeholder') { %>
+                                <button class="image-nav-arrows nav-prev" onclick="event.stopPropagation(); navigateImage(this, -1)">
+                                    <i class="fas fa-chevron-left"></i>
+                                </button>
+                                <button class="image-nav-arrows nav-next" onclick="event.stopPropagation(); navigateImage(this, 1)">
+                                    <i class="fas fa-chevron-right"></i>
+                                </button>
+                                
+                                <div class="image-indicators">
+                                    <% allImages.forEach((img, dotIndex) => { %>
+                                        <span class="indicator-dot <%= dotIndex === 0 ? 'active' : '' %>" 
+                                              onclick="event.stopPropagation(); goToImage(this, <%= dotIndex %>)"></span>
+                                    <% }) %>
                                 </div>
+                                <% } %>
                             </div>
 
                             <!-- Info produit -->
@@ -770,7 +805,7 @@
                                     <% if (jewel.tailles && jewel.tailles.length > 0) { %>
                                         <% if (jewel.matiere) { %> · <% } %>
                                         Tailles: <% jewel.tailles.forEach((taille, index) => { %>
-                                            <%= taille.taille %><% if (index < jewel.tailles.length - 1) { %>, <% } %>
+                                            <%= typeof taille === 'object' ? (taille.taille || taille) : taille %><% if (index < jewel.tailles.length - 1) { %>, <% } %>
                                         <% }); %>
                                     <% } %>
                                     <% if (jewel.carat) { %>
@@ -781,19 +816,12 @@
                                 <% } %>
                                 
                                 <div class="product-price">
-                                    <% if (jewel.hasDiscount) { %>
-                                        <%= jewel.formattedCurrentPrice %>
-                                        <del style="font-size: 14px; color: #999; margin-left: 8px;"><%= jewel.formattedOriginalPrice %></del>
+                                    <% if (jewel.discount_percentage && jewel.discount_percentage > 0) { %>
+                                        <%= (jewel.price_ttc * (1 - jewel.discount_percentage / 100)).toFixed(2) %>€
+                                        <del style="font-size: 14px; color: #999; margin-left: 8px;"><%= Number(jewel.price_ttc).toFixed(2) %>€</del>
                                     <% } else { %>
-                                        <%= jewel.formattedCurrentPrice || jewel.formattedPrice %>
+                                        <%= Number(jewel.price_ttc).toFixed(2) %>€
                                     <% } %>
-                                </div>
-                                
-                                <!-- Actions avec panier -->
-                                <div class="product-actions">
-                                    <a href="/bijoux/<%= jewel.slug %>" class="product-btn view-jewel-btn">
-                                        <i class="fas fa-eye"></i> Voir détails
-                                    </a>
                                 </div>
                             </div>
                         </div>
@@ -806,7 +834,7 @@
                             Voir tous les produits
                         </button>
                     </div>
-                    <% } %>
+                <% } %>
             </div>
 
             <!-- Pagination -->
@@ -823,13 +851,6 @@
                     const totalPages = pagination.totalPages;
                     let startPage = Math.max(1, currentPage - 2);
                     let endPage = Math.min(totalPages, currentPage + 2);
-                    
-                    if (currentPage <= 3) {
-                        endPage = Math.min(5, totalPages);
-                    }
-                    if (currentPage > totalPages - 3) {
-                        startPage = Math.max(1, totalPages - 4);
-                    }
                     %>
                     
                     <% if (startPage > 1) { %>
@@ -867,353 +888,286 @@
     <!-- Footer -->
     <%- include('partials/footer') %>
 
-    <!-- JavaScript pour carousel et filtres -->
+    <!-- JavaScript SIMPLE et FONCTIONNEL -->
     <script>
-        // Carousel d'images
-        class ProductCarousel {
-            constructor() {
-                this.initCarousels();
+        console.log('🎯 Initialisation du template bagues CORRIGÉ');
+
+        // ===== FONCTION SUPER SIMPLE POUR TOGGLE =====
+        function toggleFilterDropdown(filterType) {
+            console.log('🔄 Click sur:', filterType);
+            
+            const menu = document.getElementById('filter-' + filterType);
+            
+            if (!menu) {
+                console.error('❌ Menu non trouvé:', 'filter-' + filterType);
+                return;
             }
-
-            initCarousels() {
-                document.querySelectorAll('.product-image-container').forEach(container => {
-                    let currentImage = 0;
-                    const images = container.querySelector('.product-images');
-                    const dots = container.querySelectorAll('.image-dot');
-                    const totalImages = dots.length;
-
-                    // Auto-play carousel
-                    const autoPlay = setInterval(() => {
-                        currentImage = (currentImage + 1) % totalImages;
-                        this.showImage(container, currentImage);
-                    }, 3000);
-
-                    // Pause on hover
-                    container.addEventListener('mouseenter', () => clearInterval(autoPlay));
-                    
-                    // Click on dots
-                    dots.forEach((dot, index) => {
-                        dot.addEventListener('click', (e) => {
-                            e.stopPropagation();
-                            currentImage = index;
-                            this.showImage(container, currentImage);
-                        });
-                    });
-
-                    // Click to advance
-                    container.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        currentImage = (currentImage + 1) % totalImages;
-                        this.showImage(container, currentImage);
-                    });
-                });
+            
+            console.log('✅ Menu trouvé:', menu);
+            
+            // Fermer tous les autres
+            document.querySelectorAll('.filter-menu').forEach(m => {
+                if (m !== menu) {
+                    m.classList.remove('show');
+                    m.style.display = 'none';
+                }
+            });
+            
+            // Toggle celui-ci
+            if (menu.classList.contains('show')) {
+                console.log('📄 Fermeture');
+                menu.classList.remove('show');
+                menu.style.display = 'none';
+            } else {
+                console.log('📋 Ouverture');
+                menu.classList.add('show');
+                menu.style.display = 'block';
+                menu.style.opacity = '1';
+                menu.style.visibility = 'visible';
+                menu.style.position = 'absolute';
+                menu.style.top = '100%';
+                menu.style.left = '0';
+                menu.style.right = '0';
+                menu.style.zIndex = '9999';
+                menu.style.background = 'white';
+                menu.style.border = '1px solid #e8c2c8';
+                menu.style.borderRadius = '0 0 8px 8px';
+                menu.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
             }
-
-            showImage(container, index) {
-                const images = container.querySelector('.product-images');
-                const dots = container.querySelectorAll('.image-dot');
-                
-                images.style.transform = `translateX(-${index * 100}%)`;
-                
-                dots.forEach((dot, i) => {
-                    dot.classList.toggle('active', i === index);
-                });
-            }
+            
+            console.log('🔍 Classes finales:', menu.className);
+            console.log('🔍 Style final:', menu.style.cssText);
         }
 
-        // Gestion des filtres avec adaptation dynamique
-        class FilterManager {
-            constructor() {
-                this.originalCounts = new Map();
-                this.setupEventListeners();
-                this.storeOriginalCounts();
-            }
-
-            storeOriginalCounts() {
-                document.querySelectorAll('.filter-count').forEach(count => {
-                    const option = count.closest('.filter-option');
-                    const input = option.querySelector('input[type="checkbox"]');
-                    if (input) {
-                        const key = `${input.name}:${input.value}`;
-                        const originalCount = parseInt(count.dataset.original || count.textContent);
-                        this.originalCounts.set(key, originalCount);
-                    }
-                });
-                console.log(`📊 ${this.originalCounts.size} compteurs originaux stockés`);
-            }
-
-            setupEventListeners() {
-                // Auto-submit sur changement de checkbox avec adaptation
-                let filterTimeout;
-                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-                    checkbox.addEventListener('change', () => {
-                        console.log(`🔄 Filtre ${checkbox.name}: ${checkbox.value} ${checkbox.checked ? 'activé' : 'désactivé'}`);
-                        
-                        clearTimeout(filterTimeout);
-                        filterTimeout = setTimeout(() => {
-                            this.updateFilterCounts();
-                            document.getElementById('filterForm').submit();
-                        }, 1000);
-                    });
-                });
-
-                // Favoris avec couleurs rose gold
-                document.querySelectorAll('.product-favorite').forEach(fav => {
-                    fav.addEventListener('click', (e) => {
-                        e.stopPropagation();
-                        const icon = fav.querySelector('i');
-                        const isFavorite = icon.classList.contains('fas');
-                        
-                        if (isFavorite) {
-                            icon.classList.remove('fas');
-                            icon.classList.add('far');
-                            fav.style.background = 'rgba(255,255,255,0.9)';
-                            fav.style.color = '#666';
-                        } else {
-                            icon.classList.remove('far');
-                            icon.classList.add('fas');
-                            fav.style.background = 'var(--rose-gold)';
-                            fav.style.color = 'white';
-                        }
-                    });
-                });
-
-                // Clic sur carte produit - LIEN CORRIGÉ
-                document.querySelectorAll('.product-card').forEach(card => {
-                    card.addEventListener('click', (e) => {
-                        if (!e.target.closest('.product-favorite') && 
-                            !e.target.closest('.image-nav') && 
-                            !e.target.closest('.product-btn')) {
-                            
-                            const jewelId = card.dataset.jewelId;
-                            const jewelName = card.querySelector('.product-name').textContent;
-                            const slug = this.generateSlug(jewelName, jewelId);
-                            
-                            // Redirection vers la page produit avec le bon format
-                            window.location.href = `/bijoux/${slug}`;
-                        }
-                    });
+        // ===== FERMER LES MENUS AU CLIC EXTÉRIEUR =====
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.filter-group')) {
+                document.querySelectorAll('.filter-menu').forEach(menu => {
+                    menu.classList.remove('show');
+                    menu.previousElementSibling.classList.remove('open');
                 });
             }
+        });
 
-            generateSlug(name, id) {
-                const slug = name
-                    .toLowerCase()
-                    .normalize('NFD')
-                    .replace(/[\u0300-\u036f]/g, '')
-                    .replace(/[^a-z0-9]+/g, '-')
-                    .replace(/^-+|-+$/g, '');
-                return `${slug}-${id}`;
-            }
-
-            updateFilterCounts() {
-                const activeFilters = this.getActiveFiltersByType();
-                const totalActiveFilters = Object.values(activeFilters).reduce((sum, filters) => sum + filters.length, 0);
+        // ===== GESTION DES CHECKBOXES =====
+        let filterTimeout;
+        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                console.log('☑️ Checkbox changée:', this.name, this.value, this.checked);
                 
-                document.querySelectorAll('.filter-count').forEach(count => {
-                    const option = count.closest('.filter-option');
-                    const input = option.querySelector('input[type="checkbox"]');
-                    
-                    if (input && !input.checked) {
-                        const key = `${input.name}:${input.value}`;
-                        const originalCount = this.originalCounts.get(key) || parseInt(count.textContent);
-                        
-                        // Calculer la réduction basée sur les autres filtres actifs
-                        const reductionFactor = this.calculateReductionFactor(input.name, activeFilters);
-                        const adjustedCount = Math.max(0, Math.floor(originalCount * (1 - reductionFactor)));
-                        
-                        // Animation de changement
-                        if (parseInt(count.textContent) !== adjustedCount) {
-                            this.animateCountChange(count, adjustedCount);
-                        }
-                        
-                        // Masquer les options avec 0 résultat
-                        option.style.display = adjustedCount === 0 ? 'none' : 'flex';
-                        option.style.opacity = adjustedCount === 0 ? '0.3' : '1';
-                    }
-                });
-            }
-
-            getActiveFiltersByType() {
-                const grouped = {};
-                document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
-                    if (!grouped[checkbox.name]) grouped[checkbox.name] = [];
-                    grouped[checkbox.name].push(checkbox.value);
-                });
-                return grouped;
-            }
-
-            calculateReductionFactor(filterType, activeFiltersByType) {
-                let reductionFactor = 0;
+                // Mettre à jour l'apparence
+                const filterOption = this.closest('.filter-option');
+                if (this.checked) {
+                    filterOption.classList.add('selected');
+                } else {
+                    filterOption.classList.remove('selected');
+                }
                 
-                Object.entries(activeFiltersByType).forEach(([type, filters]) => {
-                    if (type !== filterType) {
-                        reductionFactor += filters.length * 0.2; // 20% de réduction par filtre actif
-                    }
-                });
-                
-                return Math.min(reductionFactor, 0.85); // Maximum 85% de réduction
-            }
+                // Auto-submit avec délai
+                clearTimeout(filterTimeout);
+                filterTimeout = setTimeout(() => {
+                    console.log('📤 Soumission du formulaire');
+                    document.getElementById('filterForm').submit();
+                }, 1500);
+            });
+        });
 
-            animateCountChange(countElement, newCount) {
-                countElement.style.transform = 'scale(1.2)';
-                countElement.style.background = '#E74C3C';
-                countElement.style.transition = 'all 0.3s ease';
-                
-                setTimeout(() => {
-                    countElement.textContent = newCount;
-                    countElement.style.transform = 'scale(1)';
-                    countElement.style.background = 'linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark))';
-                }, 150);
-            }
-        }
-
-        // Fonction globale pour effacer les filtres
+        // ===== FONCTION CLEAR FILTERS =====
         function clearFilters() {
+            console.log('🧹 Effacement des filtres');
+            
             document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = false;
+                const filterOption = checkbox.closest('.filter-option');
+                filterOption.classList.remove('selected');
             });
+            
             document.querySelector('select[name="sort"]').value = 'newest';
             document.getElementById('filterForm').submit();
         }
 
-        // Utilitaires pour la performance
-        function debounce(func, wait) {
-            let timeout;
-            return function executedFunction(...args) {
-                const later = () => {
-                    clearTimeout(timeout);
-                    func(...args);
-                };
-                clearTimeout(timeout);
-                timeout = setTimeout(later, wait);
-            };
-        }
+        // ===== CAROUSEL AUTOMATIQUE SIMPLE =====
+        class SimpleCarousel {
+            constructor() {
+                this.carousels = new Map();
+                this.intervals = new Map();
+                this.init();
+            }
 
-        // Initialisation principale
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🎯 Initialisation CrystoJewel avec couleurs rose gold');
-            
-            // Initialiser le carousel
-            new ProductCarousel();
-            
-            // Initialiser les filtres
-            new FilterManager();
-            
-            // Animation d'entrée des cartes
-            const observer = new IntersectionObserver((entries) => {
-                entries.forEach(entry => {
-                    if (entry.isIntersecting) {
-                        entry.target.style.opacity = '1';
-                        entry.target.style.transform = 'translateY(0)';
-                    }
-                });
-            }, { threshold: 0.1 });
+            init() {
+                console.log('🎠 Initialisation carousel');
+                
+                setTimeout(() => {
+                    document.querySelectorAll('.product-image-container').forEach((container, index) => {
+                        const images = container.querySelectorAll('.product-image, .placeholder-image');
+                        
+                        if (images.length > 1) {
+                            const carouselId = 'carousel_' + index;
+                            
+                            this.carousels.set(carouselId, {
+                                container,
+                                imagesContainer: container.querySelector('.product-images'),
+                                images: Array.from(images),
+                                indicators: container.querySelectorAll('.indicator-dot'),
+                                currentIndex: 0,
+                                totalImages: images.length
+                            });
 
-            document.querySelectorAll('.product-card').forEach(card => {
-                observer.observe(card);
-            });
+                            // Démarrer l'auto-play avec délai
+                            setTimeout(() => {
+                                this.startAutoPlay(carouselId);
+                            }, index * 2000);
 
-            // Performance: Lazy loading des images
-            if ('IntersectionObserver' in window) {
-                const imageObserver = new IntersectionObserver((entries) => {
-                    entries.forEach(entry => {
-                        if (entry.isIntersecting) {
-                            const img = entry.target;
-                            if (img.dataset.src) {
-                                img.src = img.dataset.src;
-                                img.removeAttribute('data-src');
-                                imageObserver.unobserve(img);
-                            }
+                            console.log(`✅ Carousel ${carouselId}: ${images.length} images`);
                         }
                     });
-                });
+                }, 1000);
+            }
 
-                document.querySelectorAll('img[data-src]').forEach(img => {
-                    imageObserver.observe(img);
+            startAutoPlay(carouselId) {
+                const interval = setInterval(() => {
+                    this.nextImage(carouselId);
+                }, 4000);
+                
+                this.intervals.set(carouselId, interval);
+            }
+
+            nextImage(carouselId) {
+                const carousel = this.carousels.get(carouselId);
+                if (!carousel) return;
+
+                carousel.currentIndex = (carousel.currentIndex + 1) % carousel.totalImages;
+                this.updateDisplay(carouselId);
+            }
+
+            prevImage(carouselId) {
+                const carousel = this.carousels.get(carouselId);
+                if (!carousel) return;
+
+                carousel.currentIndex = (carousel.currentIndex - 1 + carousel.totalImages) % carousel.totalImages;
+                this.updateDisplay(carouselId);
+            }
+
+            goToImage(carouselId, index) {
+                const carousel = this.carousels.get(carouselId);
+                if (!carousel) return;
+
+                carousel.currentIndex = index;
+                this.updateDisplay(carouselId);
+            }
+
+            updateDisplay(carouselId) {
+                const carousel = this.carousels.get(carouselId);
+                if (!carousel) return;
+
+                carousel.imagesContainer.style.transform = `translateX(-${carousel.currentIndex * 100}%)`;
+                
+                carousel.indicators.forEach((indicator, index) => {
+                    indicator.classList.toggle('active', index === carousel.currentIndex);
                 });
             }
 
-            // Gestion responsive mobile
-            const handleMobileLayout = () => {
-                if (window.innerWidth <= 768) {
-                    // Ajustements spécifiques mobile
-                    document.querySelectorAll('.product-image-container').forEach(container => {
-                        container.style.height = '200px';
-                    });
-                    
-                    document.querySelectorAll('.product-info').forEach(info => {
-                        info.style.padding = '15px';
-                    });
-                } else {
-                    document.querySelectorAll('.product-image-container').forEach(container => {
-                        container.style.height = '300px';
-                    });
-                    
-                    document.querySelectorAll('.product-info').forEach(info => {
-                        info.style.padding = '20px';
-                    });
-                }
-            };
-
-            window.addEventListener('resize', debounce(handleMobileLayout, 250));
-            handleMobileLayout();
-
-            // Smooth scroll pour la pagination
-            document.querySelectorAll('a[href*="page="]').forEach(link => {
-                link.addEventListener('click', () => {
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
-                });
-            });
-
-            // Affichage du nombre de produits
-            const productCount = document.querySelectorAll('.product-card').length;
-            console.log(`✅ ${productCount} bagues affichées avec design CrystoJewel épuré`);
-
-            // Notification de chargement avec couleurs rose gold
-            if (productCount > 0) {
-                const notification = document.createElement('div');
-                notification.style.cssText = `
-                    position: fixed; bottom: 20px; right: 20px;
-                    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-                    color: white; padding: 12px 20px; border-radius: 25px;
-                    font-size: 14px; font-weight: 500; z-index: 1000;
-                    transform: translateY(100px); transition: transform 0.3s ease;
-                    box-shadow: 0 4px 20px rgba(183, 110, 121, 0.3);
-                `;
-                notification.innerHTML = `<i class="fas fa-check"></i> ${productCount} bagues CrystoJewel chargées`;
-                document.body.appendChild(notification);
-
-                setTimeout(() => {
-                    notification.style.transform = 'translateY(0)';
-                }, 500);
-
-                setTimeout(() => {
-                    notification.style.transform = 'translateY(100px)';
-                    setTimeout(() => notification.remove(), 300);
-                }, 3000);
-            }
-
-            // Messages de debug avec style
-            console.log('%c✨ CrystoJewel Design System Ready', 'color: #b76e79; font-weight: bold; font-size: 16px;');
-            console.log('%c🎨 Rose Gold Theme Applied', 'color: #e8c2c8; font-weight: bold;');
-            console.log('%c📱 Mobile Responsive (2 colonnes)', 'color: #7d4b53; font-weight: bold;');
-            console.log('%c🔄 Filtres adaptatifs activés', 'color: #b76e79;');
-        });
-
-        // Gestion des erreurs d'images avec fallback
-        function handleImageError(img) {
-            img.style.display = 'none';
-            const placeholder = img.nextElementSibling;
-            if (placeholder && placeholder.classList.contains('placeholder-image')) {
-                placeholder.style.display = 'flex';
+            getCarouselIdByElement(element) {
+                const container = element.closest('.product-image-container');
+                const containers = Array.from(document.querySelectorAll('.product-image-container'));
+                const index = containers.indexOf(container);
+                return 'carousel_' + index;
             }
         }
 
-        // Export des classes pour usage externe
-        window.ProductCarousel = ProductCarousel;
-        window.FilterManager = FilterManager;
-        window.clearFilters = clearFilters;
+        // ===== FONCTIONS GLOBALES POUR LES FLÈCHES =====
+        function navigateImage(button, direction) {
+            const carouselId = window.simpleCarousel.getCarouselIdByElement(button);
+            
+            if (direction === 1) {
+                window.simpleCarousel.nextImage(carouselId);
+            } else {
+                window.simpleCarousel.prevImage(carouselId);
+            }
+        }
+
+        function goToImage(dotElement, index) {
+            const carouselId = window.simpleCarousel.getCarouselIdByElement(dotElement);
+            window.simpleCarousel.goToImage(carouselId, index);
+        }
+
+        // ===== INITIALISATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 DOM chargé, initialisation...');
+            
+            // Marquer les filtres sélectionnés au chargement
+            document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                const filterOption = checkbox.closest('.filter-option');
+                filterOption.classList.add('selected');
+            });
+            
+            // Initialiser le carousel
+            window.simpleCarousel = new SimpleCarousel();
+            
+            // Navigation par clic sur carte
+            document.querySelectorAll('.product-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (!e.target.closest('.image-nav-arrows') && !e.target.closest('.indicator-dot')) {
+                        const jewelSlug = this.dataset.jewelSlug;
+                        const jewelId = this.dataset.jewelId;
+                        
+                        if (jewelSlug) {
+                            window.location.href = '/bijoux/' + jewelSlug;
+                        } else if (jewelId) {
+                            window.location.href = '/bijoux/detail/' + jewelId;
+                        }
+                    }
+                });
+            });
+            
+            // Test des dropdowns avec plus de debug
+            setTimeout(() => {
+                console.log('🧪 Test des dropdowns...');
+                
+                // Lister tous les menus trouvés
+                const menus = document.querySelectorAll('.filter-menu');
+                console.log('📋 Menus trouvés:', menus.length);
+                menus.forEach((menu, index) => {
+                    console.log(`Menu ${index}:`, menu.id, menu);
+                });
+                
+                // Lister tous les boutons
+                const buttons = document.querySelectorAll('.filter-toggle-btn');
+                console.log('🔘 Boutons trouvés:', buttons.length);
+                buttons.forEach((btn, index) => {
+                    console.log(`Bouton ${index}:`, btn.textContent.trim(), btn);
+                });
+                
+                // Test automatique d'ouverture
+                const testMenu = document.getElementById('filter-prix');
+                if (testMenu) {
+                    console.log('✅ Menu prix trouvé, test d\'ouverture...');
+                    toggleFilterDropdown('prix');
+                    
+                    setTimeout(() => {
+                        console.log('🔍 État après test:', {
+                            hasShowClass: testMenu.classList.contains('show'),
+                            style: testMenu.style.cssText,
+                            display: getComputedStyle(testMenu).display,
+                            visibility: getComputedStyle(testMenu).visibility
+                        });
+                    }, 500);
+                } else {
+                    console.log('❌ Menu prix non trouvé');
+                }
+            }, 1000);
+            
+            console.log('✅ Initialisation terminée');
+        });
+
+        // Clean up
+        window.addEventListener('beforeunload', () => {
+            if (window.simpleCarousel) {
+                window.simpleCarousel.intervals.forEach(interval => {
+                    clearInterval(interval);
+                });
+            }
+        });
     </script>
 </body>
 </html>
