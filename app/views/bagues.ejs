@@ -8,7 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
-    <style>
+     <style>
         :root {
             --rose-gold: #b76e79;
             --rose-gold-light: #e8c2c8;
@@ -35,7 +35,7 @@
             line-height: 1.6;
         }
 
-        /* Header avec navigation existante */
+        /* Header */
         .header-clean {
             background: white;
             padding: 15px 0;
@@ -56,7 +56,7 @@
             gap: 60px;
         }
 
-        /* FILTRES AVEC VRAIE LOGIQUE DE DROPDOWN */
+        /* SIDEBAR FILTRES */
         .filters-sidebar {
             background: white;
             border-radius: 12px;
@@ -78,16 +78,16 @@
             gap: 10px;
         }
 
-        .filter-group {
-            margin-bottom: 20px;
-            position: relative;
-        }
+      .filter-group {
+    margin-bottom: 20px !important;
+    position: relative !important;
+}
 
         .filter-group:last-child {
             margin-bottom: 0;
         }
 
-        /* BOUTON CLIQUABLE POUR OUVRIR LE MENU */
+        /* Bouton toggle pour chaque filtre */
         .filter-toggle-btn {
             width: 100%;
             display: flex;
@@ -127,23 +127,33 @@
             transform: rotate(180deg);
         }
 
-        /* MENU DÉROULANT ULTRA SIMPLE */
+        /* Menu déroulant des options */
         .filter-menu {
-            position: absolute !important;
-            top: 100% !important;
-            left: 0 !important;
-            right: 0 !important;
-            background: white !important;
-            border: 1px solid #e8c2c8 !important;
-            border-radius: 0 0 8px 8px !important;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1) !important;
-            z-index: 9999 !important;
-            display: none !important;
-        }
+    position: absolute !important;
+    top: 100% !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: white !important;
+    border: 2px solid #e8c2c8 !important;
+    border-radius: 0 0 8px 8px !important;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15) !important;
+    z-index: 99999 !important;
+    display: none !important;
+    min-height: 100px !important; /* Force une hauteur minimum */
+    max-height: 300px !important;
+    overflow-y: auto !important;
+    visibility: hidden !important;
+    opacity: 0 !important;
+    transform: translateY(-10px) !important;
+    transition: all 0.3s ease !important;
+}
 
-        .filter-menu.show {
-            display: block !important;
-        }
+.filter-menu.show {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+}
 
         @keyframes slideDown {
             from {
@@ -156,62 +166,70 @@
             }
         }
 
-        .filter-options {
-            padding: 15px;
-        }
+       .filter-options {
+    padding: 15px !important;
+    background: white !important;
+    min-height: 80px !important;
+}
 
-        /* OPTIONS DANS LE MENU */
-        .filter-option {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 8px 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border-radius: 6px;
-            margin-bottom: 4px;
-        }
+.filter-option {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 12px !important;
+    cursor: pointer !important;
+    transition: all 0.2s ease !important;
+    border-radius: 6px !important;
+    margin-bottom: 6px !important;
+    background: white !important;
+    border: 1px solid transparent !important;
+}
 
-        .filter-option:hover {
-            background: rgba(183, 110, 121, 0.1);
-            color: var(--rose-gold);
-        }
+.filter-option:hover {
+    background: rgba(183, 110, 121, 0.1) !important;
+    color: #b76e79 !important;
+    border-color: rgba(183, 110, 121, 0.2) !important;
+}
 
-        .filter-option.selected {
-            background: linear-gradient(135deg, var(--rose-gold-light), rgba(232, 194, 200, 0.4));
-            color: var(--rose-gold-dark);
-            font-weight: 600;
-            box-shadow: 0 2px 8px rgba(183, 110, 121, 0.2);
-        }
+.filter-option.selected {
+    background: linear-gradient(135deg, #e8c2c8, rgba(232, 194, 200, 0.4)) !important;
+    color: #7d4b53 !important;
+    font-weight: 600 !important;
+    border-color: #b76e79 !important;
+}
 
-        .filter-option input[type="checkbox"] {
-            margin-right: 10px;
-            accent-color: var(--rose-gold);
-            transform: scale(1.1);
-        }
+.filter-option input[type="checkbox"] {
+    margin-right: 10px !important;
+    accent-color: #b76e79 !important;
+    transform: scale(1.2) !important;
+    position: relative !important;
+    z-index: 1 !important;
+}
 
-        .filter-option label {
-            flex: 1;
-            cursor: pointer;
-            font-size: 13px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 0;
-        }
+.filter-option label {
+    flex: 1 !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+    color: #3a3a3a !important;
+}
 
-        .filter-count {
-            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-            color: white;
-            padding: 2px 6px;
-            border-radius: 10px;
-            font-size: 10px;
-            font-weight: 500;
-            min-width: 18px;
-            text-align: center;
-        }
+.filter-count {
+    background: linear-gradient(135deg, #b76e79, #7d4b53) !important;
+    color: white !important;
+    padding: 3px 8px !important;
+    border-radius: 12px !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    min-width: 20px !important;
+    text-align: center !important;
+}
 
-        /* Boutons d'action */
+        /* Actions filtres */
         .filter-actions {
             margin-top: 25px;
             display: flex;
@@ -287,45 +305,14 @@
             border-color: var(--rose-gold);
         }
 
-        /* Grille produits responsive */
+        /* Grille produits */
         .products-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 30px;
         }
 
-        /* RESPONSIVE MOBILE */
-        @media (max-width: 768px) {
-            .main-container {
-                grid-template-columns: 1fr;
-                gap: 20px;
-                padding: 20px 15px;
-            }
-
-            .filters-sidebar {
-                position: relative;
-                top: 0;
-                padding: 15px;
-                order: 1;
-            }
-
-            .products-section {
-                order: 2;
-            }
-
-            .products-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 15px;
-            }
-
-            .products-header {
-                flex-direction: column;
-                gap: 15px;
-                align-items: flex-start;
-            }
-        }
-
-        /* CARTES PRODUITS AVEC CAROUSEL */
+        /* Cartes produits */
         .product-card {
             background: white;
             border-radius: 12px;
@@ -343,18 +330,11 @@
             border-color: var(--rose-gold-light);
         }
 
-        /* CONTENEUR IMAGE AVEC CAROUSEL */
         .product-image-container {
             position: relative;
             height: 300px;
             overflow: hidden;
             background: var(--cream);
-        }
-
-        @media (max-width: 768px) {
-            .product-image-container {
-                height: 200px;
-            }
         }
 
         .product-images {
@@ -381,7 +361,7 @@
             font-size: 3rem;
         }
 
-        /* FLÈCHES DE NAVIGATION */
+        /* Flèches navigation */
         .image-nav-arrows {
             position: absolute;
             top: 50%;
@@ -395,7 +375,7 @@
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            opacity: 0.8;
+            opacity: 0;
             transition: all 0.3s ease;
             z-index: 20;
             color: white;
@@ -419,7 +399,7 @@
             right: 10px;
         }
 
-        /* INDICATEURS DE NAVIGATION */
+        /* Indicateurs */
         .image-indicators {
             position: absolute;
             bottom: 15px;
@@ -476,12 +456,6 @@
             padding: 20px;
         }
 
-        @media (max-width: 768px) {
-            .product-info {
-                padding: 15px;
-            }
-        }
-
         .product-name {
             font-size: 16px;
             font-weight: 600;
@@ -529,17 +503,54 @@
         .product-card:nth-child(4) { animation-delay: 0.4s; }
         .product-card:nth-child(5) { animation-delay: 0.5s; }
         .product-card:nth-child(6) { animation-delay: 0.6s; }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 20px;
+                padding: 20px 15px;
+            }
+
+            .filters-sidebar {
+                position: relative;
+                top: 0;
+                padding: 15px;
+                order: 1;
+            }
+
+            .products-section {
+                order: 2;
+            }
+
+            .products-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 15px;
+            }
+
+            .product-image-container {
+                height: 200px;
+            }
+
+            .product-info {
+                padding: 15px;
+            }
+
+            .products-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+            }
+        }
     </style>
 </head>
 <body>
-    <!-- Header avec navigation existante -->
     <header class="header-clean">
         <%- include('partials/navbarre.ejs') %>
     </header>
 
-    <!-- Container principal -->
     <div class="main-container">
-        <!-- Sidebar filtres FONCTIONNELS -->
+        <!-- SIDEBAR FILTRES FONCTIONNELS -->
         <aside class="filters-sidebar">
             <div class="filters-title">
                 <i class="fas fa-filter"></i>
@@ -547,8 +558,8 @@
             </div>
 
             <form method="GET" action="/bijoux/bagues" id="filterForm">
-                <!-- Filtre Matériau QUI FONCTIONNE -->
-                <% if (typeof availableFilters !== 'undefined' && availableFilters && availableFilters.materials && availableFilters.materials.length > 0) { %>
+                <!-- FILTRE MATÉRIAU -->
+                <% if (materials && materials.length > 0) { %>
                 <div class="filter-group">
                     <div class="filter-toggle-btn" onclick="toggleFilterDropdown('matiere')">
                         <span>Matériau</span>
@@ -556,73 +567,55 @@
                     </div>
                     <div class="filter-menu" id="filter-matiere">
                         <div class="filter-options">
-                            <% availableFilters.materials.forEach(material => { %>
-                                <% if (material.count > 0) { %>
+                            <% materials.forEach(material => { %>
                                 <div class="filter-option">
-                                    <input type="checkbox" name="matiere" value="<%= material.name %>" id="mat_<%= material.name.replace(/\s+/g, '_') %>"
-                                        <% if (filters && filters.matiere && Array.isArray(filters.matiere) && filters.matiere.includes(material.name)) { %>checked<% } %>
-                                        <% if (filters && filters.matiere && !Array.isArray(filters.matiere) && filters.matiere === material.name) { %>checked<% } %>>
+                                    <input type="checkbox" 
+                                           name="matiere" 
+                                           value="<%= material.name %>" 
+                                           id="mat_<%= material.name.replace(/\s+/g, '_') %>"
+                                           <% if (filters && filters.matiere && Array.isArray(filters.matiere) && filters.matiere.includes(material.name)) { %>checked<% } %>
+                                           <% if (filters && filters.matiere && !Array.isArray(filters.matiere) && filters.matiere === material.name) { %>checked<% } %>>
                                     <label for="mat_<%= material.name.replace(/\s+/g, '_') %>">
                                         <span><%= material.name %></span>
-                                        <span class="filter-count"><%= material.count %></span>
+                                        <span class="filter-count"><%= material.count || 0 %></span>
                                     </label>
                                 </div>
-                                <% } %>
                             <% }); %>
                         </div>
                     </div>
                 </div>
                 <% } %>
 
-                <!-- Filtre Prix AVEC STRUCTURE CORRIGÉE -->
+                <!-- FILTRE TYPES -->
+                <% if (types && types.length > 0) { %>
                 <div class="filter-group">
-                    <div class="filter-toggle-btn" onclick="toggleFilterDropdown('prix')">
-                        <span>Prix</span>
+                    <div class="filter-toggle-btn" onclick="toggleFilterDropdown('type')">
+                        <span>Style</span>
                         <i class="fas fa-chevron-down chevron"></i>
                     </div>
-                    <div class="filter-menu" id="filter-prix">
+                    <div class="filter-menu" id="filter-type">
                         <div class="filter-options">
-                            <div class="filter-option">
-                                <input type="checkbox" name="prix" value="0-20" id="price_0-20">
-                                <label for="price_0-20">
-                                    <span>Moins de 20€</span>
-                                    <span class="filter-count">3</span>
-                                </label>
-                            </div>
-                            <div class="filter-option">
-                                <input type="checkbox" name="prix" value="21-40" id="price_21-40">
-                                <label for="price_21-40">
-                                    <span>21€ - 40€</span>
-                                    <span class="filter-count">5</span>
-                                </label>
-                            </div>
-                            <div class="filter-option">
-                                <input type="checkbox" name="prix" value="41-60" id="price_41-60">
-                                <label for="price_41-60">
-                                    <span>41€ - 60€</span>
-                                    <span class="filter-count">4</span>
-                                </label>
-                            </div>
-                            <div class="filter-option">
-                                <input type="checkbox" name="prix" value="61-80" id="price_61-80">
-                                <label for="price_61-80">
-                                    <span>61€ - 80€</span>
-                                    <span class="filter-count">2</span>
-                                </label>
-                            </div>
-                            <div class="filter-option">
-                                <input type="checkbox" name="prix" value="80+" id="price_80+">
-                                <label for="price_80+">
-                                    <span>Plus de 80€</span>
-                                    <span class="filter-count">1</span>
-                                </label>
-                            </div>
+                            <% types.forEach(type => { %>
+                                <div class="filter-option">
+                                    <input type="checkbox" 
+                                           name="type" 
+                                           value="<%= type.id %>" 
+                                           id="type_<%= type.id %>"
+                                           <% if (filters && filters.type && Array.isArray(filters.type) && filters.type.includes(type.id.toString())) { %>checked<% } %>
+                                           <% if (filters && filters.type && !Array.isArray(filters.type) && filters.type === type.id.toString()) { %>checked<% } %>>
+                                    <label for="type_<%= type.id %>">
+                                        <span><%= type.name %></span>
+                                        <span class="filter-count"><%= type.count || 0 %></span>
+                                    </label>
+                                </div>
+                            <% }); %>
                         </div>
                     </div>
                 </div>
+                <% } %>
 
-                <!-- Filtre Tailles QUI FONCTIONNE -->
-                <% if (typeof availableFilters !== 'undefined' && availableFilters && availableFilters.sizes && availableFilters.sizes.length > 0) { %>
+                <!-- FILTRE TAILLES (depuis le JSON) -->
+                <% if (availableFilters && availableFilters.sizes && availableFilters.sizes.length > 0) { %>
                 <div class="filter-group">
                     <div class="filter-toggle-btn" onclick="toggleFilterDropdown('taille')">
                         <span>Taille</span>
@@ -631,25 +624,26 @@
                     <div class="filter-menu" id="filter-taille">
                         <div class="filter-options">
                             <% availableFilters.sizes.forEach(size => { %>
-                                <% if (size.count > 0) { %>
                                 <div class="filter-option">
-                                    <input type="checkbox" name="taille" value="<%= size.name %>" id="size_<%= size.name.replace(/\s+/g, '_') %>"
-                                        <% if (filters && filters.taille && Array.isArray(filters.taille) && filters.taille.includes(size.name)) { %>checked<% } %>
-                                        <% if (filters && filters.taille && !Array.isArray(filters.taille) && filters.taille === size.name) { %>checked<% } %>>
+                                    <input type="checkbox" 
+                                           name="tailles" 
+                                           value="<%= size.name %>" 
+                                           id="size_<%= size.name.replace(/\s+/g, '_') %>"
+                                           <% if (filters && filters.tailles && Array.isArray(filters.tailles) && filters.tailles.includes(size.name)) { %>checked<% } %>
+                                           <% if (filters && filters.tailles && !Array.isArray(filters.tailles) && filters.tailles === size.name) { %>checked<% } %>>
                                     <label for="size_<%= size.name.replace(/\s+/g, '_') %>">
                                         <span><%= size.name %></span>
                                         <span class="filter-count"><%= size.count %></span>
                                     </label>
                                 </div>
-                                <% } %>
                             <% }); %>
                         </div>
                     </div>
                 </div>
                 <% } %>
 
-                <!-- Filtre Carats QUI FONCTIONNE -->
-                <% if (typeof availableFilters !== 'undefined' && availableFilters && availableFilters.carats && availableFilters.carats.length > 0) { %>
+                <!-- FILTRE CARATS -->
+                <% if (availableFilters && availableFilters.carats && availableFilters.carats.length > 0) { %>
                 <div class="filter-group">
                     <div class="filter-toggle-btn" onclick="toggleFilterDropdown('carat')">
                         <span>Carat</span>
@@ -658,22 +652,55 @@
                     <div class="filter-menu" id="filter-carat">
                         <div class="filter-options">
                             <% availableFilters.carats.forEach(carat => { %>
-                                <% if (carat.count > 0) { %>
                                 <div class="filter-option">
-                                    <input type="checkbox" name="carat" value="<%= carat.carat %>" id="carat_<%= carat.carat %>"
-                                        <% if (filters && filters.carat && Array.isArray(filters.carat) && filters.carat.includes(carat.carat.toString())) { %>checked<% } %>
-                                        <% if (filters && filters.carat && !Array.isArray(filters.carat) && filters.carat === carat.carat.toString()) { %>checked<% } %>>
+                                    <input type="checkbox" 
+                                           name="carat" 
+                                           value="<%= carat.carat %>" 
+                                           id="carat_<%= carat.carat %>"
+                                           <% if (filters && filters.carat && Array.isArray(filters.carat) && filters.carat.includes(carat.carat.toString())) { %>checked<% } %>
+                                           <% if (filters && filters.carat && !Array.isArray(filters.carat) && filters.carat === carat.carat.toString()) { %>checked<% } %>>
                                     <label for="carat_<%= carat.carat %>">
                                         <span><%= carat.carat %>k</span>
                                         <span class="filter-count"><%= carat.count %></span>
                                     </label>
                                 </div>
-                                <% } %>
                             <% }); %>
                         </div>
                     </div>
                 </div>
                 <% } %>
+
+                <!-- FILTRE PRIX -->
+                <div class="filter-group">
+                    <div class="filter-toggle-btn" onclick="toggleFilterDropdown('prix')">
+                        <span>Prix</span>
+                        <i class="fas fa-chevron-down chevron"></i>
+                    </div>
+                    <div class="filter-menu" id="filter-prix">
+                        <div class="filter-options">
+                            <% ['0-20', '21-40', '41-60', '61-80', '80+'].forEach(range => { %>
+                                <div class="filter-option">
+                                    <input type="checkbox" 
+                                           name="prix" 
+                                           value="<%= range %>" 
+                                           id="price_<%= range.replace('+', '_plus') %>"
+                                           <% if (filters && filters.prix && Array.isArray(filters.prix) && filters.prix.includes(range)) { %>checked<% } %>
+                                           <% if (filters && filters.prix && !Array.isArray(filters.prix) && filters.prix === range) { %>checked<% } %>>
+                                    <label for="price_<%= range.replace('+', '_plus') %>">
+                                        <span>
+                                            <% if (range === '0-20') { %>Moins de 20€
+                                            <% } else if (range === '21-40') { %>21€ - 40€
+                                            <% } else if (range === '41-60') { %>41€ - 60€
+                                            <% } else if (range === '61-80') { %>61€ - 80€
+                                            <% } else if (range === '80+') { %>Plus de 80€
+                                            <% } %>
+                                        </span>
+                                    </label>
+                                </div>
+                            <% }); %>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- Actions -->
                 <div class="filter-actions">
@@ -687,9 +714,8 @@
             </form>
         </aside>
 
-        <!-- Section produits -->
+        <!-- SECTION PRODUITS -->
         <main class="products-section">
-            <!-- Header produits -->
             <div class="products-header">
                 <div>
                     <h1 class="products-title">Bagues</h1>
@@ -708,7 +734,7 @@
                 </select>
             </div>
 
-            <!-- Grille produits -->
+            <!-- GRILLE PRODUITS -->
             <div class="products-grid">
                 <% if (jewels && jewels.length > 0) { %>
                     <% jewels.forEach((jewel, index) => { %>
@@ -720,10 +746,10 @@
                                 <div class="product-badge nouveau">Nouveau</div>
                             <% } %>
 
-                            <!-- Images avec carousel automatique -->
+                            <!-- Images avec carousel -->
                             <div class="product-image-container" data-current-image="0" data-card-index="<%= index %>">
                                 <% 
-                                // Images depuis la DB comme dans edit-jewel.ejs
+                                // Gestion des images selon votre BDD
                                 let allImages = [];
                                 
                                 // Image principale
@@ -736,7 +762,7 @@
                                     });
                                 }
                                 
-                                // Images additionnelles
+                                // Images additionnelles depuis jewel_images ou images JSON
                                 if (jewel.additionalImages && Array.isArray(jewel.additionalImages)) {
                                     jewel.additionalImages.forEach(addImg => {
                                         if (addImg.image_url && addImg.image_url !== jewel.image) {
@@ -744,6 +770,18 @@
                                                 id: addImg.id,
                                                 image_url: addImg.image_url,
                                                 jewel_id: addImg.jewel_id,
+                                                is_main: false
+                                            });
+                                        }
+                                    });
+                                } else if (jewel.images && Array.isArray(jewel.images)) {
+                                    // Si images JSON depuis votre BDD
+                                    jewel.images.forEach((imgUrl, imgIndex) => {
+                                        if (imgUrl && imgUrl !== jewel.image) {
+                                            allImages.push({
+                                                id: null,
+                                                image_url: imgUrl,
+                                                jewel_id: jewel.id,
                                                 is_main: false
                                             });
                                         }
@@ -888,55 +926,114 @@
     <!-- Footer -->
     <%- include('partials/footer') %>
 
-    <!-- JavaScript SIMPLE et FONCTIONNEL -->
+    <!-- JavaScript FONCTIONNEL -->
     <script>
-        console.log('🎯 Initialisation du template bagues CORRIGÉ');
+        console.log('🎯 Initialisation du template bagues COMPLET');
 
-        // ===== FONCTION SUPER SIMPLE POUR TOGGLE =====
+        // ===== TOGGLE FILTRES ULTRA SIMPLE ET FORCÉ =====
         function toggleFilterDropdown(filterType) {
-            console.log('🔄 Click sur:', filterType);
+            console.log('🔄 Toggle filtre FORCÉ:', filterType);
             
             const menu = document.getElementById('filter-' + filterType);
+            const button = document.querySelector(`[onclick*="'${filterType}'"]`);
             
             if (!menu) {
                 console.error('❌ Menu non trouvé:', 'filter-' + filterType);
+                // Lister tous les éléments pour debug
+                console.log('🔍 Tous les menus disponibles:');
+                document.querySelectorAll('[id^="filter-"]').forEach(el => {
+                    console.log('  -', el.id, el);
+                });
                 return;
             }
             
             console.log('✅ Menu trouvé:', menu);
+            console.log('🔍 État initial:', {
+                display: menu.style.display,
+                visibility: menu.style.visibility,
+                opacity: menu.style.opacity,
+                classes: menu.className
+            });
             
-            // Fermer tous les autres
+            // Fermer tous les autres menus
             document.querySelectorAll('.filter-menu').forEach(m => {
                 if (m !== menu) {
                     m.classList.remove('show');
                     m.style.display = 'none';
+                    m.style.visibility = 'hidden';
+                    m.style.opacity = '0';
                 }
             });
             
-            // Toggle celui-ci
+            // Retirer la classe open de tous les boutons
+            document.querySelectorAll('.filter-toggle-btn').forEach(b => {
+                if (b !== button) {
+                    b.classList.remove('open');
+                }
+            });
+            
+            // Toggle le menu actuel avec FORCE MAXIMALE
             if (menu.classList.contains('show')) {
-                console.log('📄 Fermeture');
+                // FERMER
                 menu.classList.remove('show');
                 menu.style.display = 'none';
+                menu.style.visibility = 'hidden';
+                menu.style.opacity = '0';
+                menu.style.transform = 'translateY(-10px)';
+                if (button) button.classList.remove('open');
+                console.log('📄 FERMETURE FORCÉE');
             } else {
-                console.log('📋 Ouverture');
+                // OUVRIR AVEC FORCE MAXIMALE
                 menu.classList.add('show');
                 menu.style.display = 'block';
-                menu.style.opacity = '1';
                 menu.style.visibility = 'visible';
+                menu.style.opacity = '1';
+                menu.style.transform = 'translateY(0)';
                 menu.style.position = 'absolute';
                 menu.style.top = '100%';
                 menu.style.left = '0';
                 menu.style.right = '0';
-                menu.style.zIndex = '9999';
+                menu.style.zIndex = '99999';
                 menu.style.background = 'white';
-                menu.style.border = '1px solid #e8c2c8';
+                menu.style.border = '2px solid #e8c2c8';
                 menu.style.borderRadius = '0 0 8px 8px';
-                menu.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.1)';
+                menu.style.boxShadow = '0 8px 25px rgba(0, 0, 0, 0.15)';
+                menu.style.minHeight = '100px';
+                menu.style.maxHeight = '300px';
+                menu.style.overflowY = 'auto';
+                
+                if (button) button.classList.add('open');
+                console.log('📋 OUVERTURE FORCÉE');
+                
+                // Forcer l'affichage du contenu
+                const options = menu.querySelector('.filter-options');
+                if (options) {
+                    options.style.display = 'block';
+                    options.style.padding = '15px';
+                    options.style.background = 'white';
+                    console.log('✅ Contenu forcé visible');
+                }
+                
+                // Forcer l'affichage des options individuelles
+                menu.querySelectorAll('.filter-option').forEach(option => {
+                    option.style.display = 'flex';
+                    option.style.padding = '10px 12px';
+                    option.style.marginBottom = '6px';
+                    option.style.background = 'white';
+                    option.style.border = '1px solid transparent';
+                    option.style.borderRadius = '6px';
+                });
+                
+                console.log('🎯 Options individuelles forcées');
             }
             
-            console.log('🔍 Classes finales:', menu.className);
-            console.log('🔍 Style final:', menu.style.cssText);
+            console.log('🔍 État final:', {
+                display: menu.style.display,
+                visibility: menu.style.visibility,
+                opacity: menu.style.opacity,
+                classes: menu.className,
+                hasShowClass: menu.classList.contains('show')
+            });
         }
 
         // ===== FERMER LES MENUS AU CLIC EXTÉRIEUR =====
@@ -944,7 +1041,10 @@
             if (!event.target.closest('.filter-group')) {
                 document.querySelectorAll('.filter-menu').forEach(menu => {
                     menu.classList.remove('show');
-                    menu.previousElementSibling.classList.remove('open');
+                    menu.style.display = 'none';
+                });
+                document.querySelectorAll('.filter-toggle-btn').forEach(btn => {
+                    btn.classList.remove('open');
                 });
             }
         });
@@ -963,12 +1063,15 @@
                     filterOption.classList.remove('selected');
                 }
                 
-                // Auto-submit avec délai
+                // Auto-submit avec délai (optionnel)
+                // Commenté pour permettre sélection multiple avant submit
+                /*
                 clearTimeout(filterTimeout);
                 filterTimeout = setTimeout(() => {
-                    console.log('📤 Soumission du formulaire');
+                    console.log('📤 Soumission automatique');
                     document.getElementById('filterForm').submit();
                 }, 1500);
+                */
             });
         });
 
@@ -979,15 +1082,19 @@
             document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = false;
                 const filterOption = checkbox.closest('.filter-option');
-                filterOption.classList.remove('selected');
+                if (filterOption) {
+                    filterOption.classList.remove('selected');
+                }
             });
             
             document.querySelector('select[name="sort"]').value = 'newest';
+            
+            // Soumettre le formulaire pour réinitialiser
             document.getElementById('filterForm').submit();
         }
 
-        // ===== CAROUSEL AUTOMATIQUE SIMPLE =====
-        class SimpleCarousel {
+        // ===== CAROUSEL PRODUITS =====
+        class ProductCarousel {
             constructor() {
                 this.carousels = new Map();
                 this.intervals = new Map();
@@ -995,7 +1102,7 @@
             }
 
             init() {
-                console.log('🎠 Initialisation carousel');
+                console.log('🎠 Initialisation carousel produits');
                 
                 setTimeout(() => {
                     document.querySelectorAll('.product-image-container').forEach((container, index) => {
@@ -1013,7 +1120,7 @@
                                 totalImages: images.length
                             });
 
-                            // Démarrer l'auto-play avec délai
+                            // Auto-play différé pour éviter surcharge
                             setTimeout(() => {
                                 this.startAutoPlay(carouselId);
                             }, index * 2000);
@@ -1021,7 +1128,7 @@
                             console.log(`✅ Carousel ${carouselId}: ${images.length} images`);
                         }
                     });
-                }, 1000);
+                }, 500);
             }
 
             startAutoPlay(carouselId) {
@@ -1077,36 +1184,43 @@
 
         // ===== FONCTIONS GLOBALES POUR LES FLÈCHES =====
         function navigateImage(button, direction) {
-            const carouselId = window.simpleCarousel.getCarouselIdByElement(button);
+            if (!window.productCarousel) return;
+            
+            const carouselId = window.productCarousel.getCarouselIdByElement(button);
             
             if (direction === 1) {
-                window.simpleCarousel.nextImage(carouselId);
+                window.productCarousel.nextImage(carouselId);
             } else {
-                window.simpleCarousel.prevImage(carouselId);
+                window.productCarousel.prevImage(carouselId);
             }
         }
 
         function goToImage(dotElement, index) {
-            const carouselId = window.simpleCarousel.getCarouselIdByElement(dotElement);
-            window.simpleCarousel.goToImage(carouselId, index);
+            if (!window.productCarousel) return;
+            
+            const carouselId = window.productCarousel.getCarouselIdByElement(dotElement);
+            window.productCarousel.goToImage(carouselId, index);
         }
 
-        // ===== INITIALISATION =====
+        // ===== INITIALISATION COMPLÈTE =====
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 DOM chargé, initialisation...');
+            console.log('🚀 DOM chargé, initialisation complète...');
             
             // Marquer les filtres sélectionnés au chargement
             document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
                 const filterOption = checkbox.closest('.filter-option');
-                filterOption.classList.add('selected');
+                if (filterOption) {
+                    filterOption.classList.add('selected');
+                }
             });
             
             // Initialiser le carousel
-            window.simpleCarousel = new SimpleCarousel();
+            window.productCarousel = new ProductCarousel();
             
-            // Navigation par clic sur carte
+            // Navigation par clic sur carte produit
             document.querySelectorAll('.product-card').forEach(card => {
                 card.addEventListener('click', function(e) {
+                    // Ne pas naviguer si on clique sur les contrôles du carousel
                     if (!e.target.closest('.image-nav-arrows') && !e.target.closest('.indicator-dot')) {
                         const jewelSlug = this.dataset.jewelSlug;
                         const jewelId = this.dataset.jewelId;
@@ -1120,50 +1234,31 @@
                 });
             });
             
-            // Test des dropdowns avec plus de debug
+            // Test des filtres pour debug
             setTimeout(() => {
-                console.log('🧪 Test des dropdowns...');
+                console.log('🧪 Test des filtres...');
                 
-                // Lister tous les menus trouvés
                 const menus = document.querySelectorAll('.filter-menu');
                 console.log('📋 Menus trouvés:', menus.length);
-                menus.forEach((menu, index) => {
-                    console.log(`Menu ${index}:`, menu.id, menu);
-                });
                 
-                // Lister tous les boutons
                 const buttons = document.querySelectorAll('.filter-toggle-btn');
                 console.log('🔘 Boutons trouvés:', buttons.length);
-                buttons.forEach((btn, index) => {
-                    console.log(`Bouton ${index}:`, btn.textContent.trim(), btn);
-                });
                 
-                // Test automatique d'ouverture
-                const testMenu = document.getElementById('filter-prix');
-                if (testMenu) {
-                    console.log('✅ Menu prix trouvé, test d\'ouverture...');
-                    toggleFilterDropdown('prix');
-                    
-                    setTimeout(() => {
-                        console.log('🔍 État après test:', {
-                            hasShowClass: testMenu.classList.contains('show'),
-                            style: testMenu.style.cssText,
-                            display: getComputedStyle(testMenu).display,
-                            visibility: getComputedStyle(testMenu).visibility
-                        });
-                    }, 500);
-                } else {
-                    console.log('❌ Menu prix non trouvé');
+                // Test d'ouverture du premier filtre
+                if (buttons.length > 0) {
+                    const firstButton = buttons[0];
+                    const onclick = firstButton.getAttribute('onclick');
+                    console.log('🎯 Test du premier bouton:', onclick);
                 }
             }, 1000);
             
-            console.log('✅ Initialisation terminée');
+            console.log('✅ Initialisation terminée avec succès');
         });
 
-        // Clean up
+        // Clean up avant fermeture
         window.addEventListener('beforeunload', () => {
-            if (window.simpleCarousel) {
-                window.simpleCarousel.intervals.forEach(interval => {
+            if (window.productCarousel && window.productCarousel.intervals) {
+                window.productCarousel.intervals.forEach(interval => {
                     clearInterval(interval);
                 });
             }

@@ -1,18 +1,18 @@
-// baguesControlleur.js - VERSION CORRIGÉE POUR VOTRE BDD
 import { Jewel } from '../models/jewelModel.js';
 import { Material } from '../models/materialModel.js';
 import { Type } from '../models/TypeModel.js';
 import { Category } from '../models/categoryModel.js';
 import { Op } from 'sequelize';
+import { sequelize } from '../models/sequelize-client.js';
 
-const baguesControlleur = {
+export const baguesControlleur = {
   
   /**
-   * Affiche la page des bagues - CORRIGÉ pour vos colonnes BDD
+   * Affiche la page des bagues avec filtres fonctionnels
    */
   async showRings(req, res) {
     try {
-      console.log('🔍 === DEBUT showRings - Version corrigée BDD ===');
+      console.log('🔍 === DEBUT showRings - Version finale ===');
       
       // ==========================================
       // 1. RÉCUPÉRATION ET NORMALISATION DES FILTRES
@@ -21,20 +21,20 @@ const baguesControlleur = {
       const filters = {
         matiere: req.query.matiere || [],
         prix: req.query.prix || [],
-        tailles: req.query.tailles || [], // ✅ Corrigé: tailles (pluriel)
+        tailles: req.query.tailles || [], // Depuis le JSON tailles
         carat: req.query.carat || [],
         type: req.query.type || [],
         sort: req.query.sort || 'newest'
       };
 
-      // Normaliser tous les filtres en tableaux
+      // Normaliser tous les filtres en tableaux sauf sort
       Object.keys(filters).forEach(key => {
         if (key !== 'sort' && !Array.isArray(filters[key])) {
           filters[key] = filters[key] ? [filters[key]] : [];
         }
       });
 
-      console.log('Filtres reçus:', Object.keys(req.query).length, 'paramètres');
+      console.log('📋 Filtres reçus:', filters);
 
       // ==========================================
       // 2. PAGINATION
@@ -48,7 +48,7 @@ const baguesControlleur = {
       // 3. CONSTRUCTION DE LA CLAUSE WHERE
       // ==========================================
       
-      let whereClause = { category_id: 3 }; // Bagues
+      let whereClause = { category_id: 3 }; // Bagues = catégorie 3
 
       // Filtre par matériau
       if (filters.matiere.length > 0) {
@@ -65,19 +65,19 @@ const baguesControlleur = {
         whereClause.carat = { [Op.in]: filters.carat.map(c => parseFloat(c)) };
       }
 
-      // ✅ Filtre par tailles (JSON) - CORRIGÉ
+      // ✅ Filtre par tailles depuis JSON
       if (filters.tailles.length > 0) {
-        // Pour un champ JSON comme [{"taille":"5","stock":5}]
-        const tailleConditions = filters.tailles.map(taille => ({
-          tailles: {
-            [Op.contains]: [{ taille: taille }]
-          }
-        }));
+        // Recherche dans le JSON tailles
+        const tailleConditions = filters.tailles.map(taille => 
+          sequelize.literal(`JSON_SEARCH(tailles, 'one', '${taille}', NULL, '$[*].taille') IS NOT NULL`)
+        );
         
         if (tailleConditions.length === 1) {
-          whereClause = { ...whereClause, ...tailleConditions[0] };
+          whereClause[Op.and] = whereClause[Op.and] || [];
+          whereClause[Op.and].push(tailleConditions[0]);
         } else {
-          whereClause[Op.or] = tailleConditions;
+          whereClause[Op.and] = whereClause[Op.and] || [];
+          whereClause[Op.and].push({ [Op.or]: tailleConditions });
         }
       }
 
@@ -106,16 +106,8 @@ const baguesControlleur = {
         });
 
         if (priceConditions.length > 0) {
-          // Combiner avec les conditions existantes
-          if (whereClause[Op.or]) {
-            whereClause[Op.and] = [
-              { [Op.or]: whereClause[Op.or] },
-              { [Op.or]: priceConditions }
-            ];
-            delete whereClause[Op.or];
-          } else {
-            whereClause[Op.or] = priceConditions;
-          }
+          whereClause[Op.and] = whereClause[Op.and] || [];
+          whereClause[Op.and].push({ [Op.or]: priceConditions });
         }
       }
 
@@ -135,8 +127,7 @@ const baguesControlleur = {
         case 'popular':
           orderClause = [
             ['popularity_score', 'DESC'], 
-            ['favorites_count', 'DESC'], 
-            ['views_count', 'DESC']
+            ['created_at', 'DESC']
           ];
           break;
         case 'name_asc':
@@ -151,8 +142,10 @@ const baguesControlleur = {
           break;
       }
 
+      console.log('🔍 Clause WHERE finale:', JSON.stringify(whereClause, null, 2));
+
       // ==========================================
-      // 5. REQUÊTE PRINCIPALE
+      // 5. REQUÊTE PRINCIPALE AVEC INCLUDES
       // ==========================================
       
       const { count, rows: jewels } = await Jewel.findAndCountAll({
@@ -166,11 +159,17 @@ const baguesControlleur = {
             as: 'type',
             required: false,
             attributes: ['id', 'name']
+          },
+          {
+            model: Category,
+            as: 'category',
+            required: false,
+            attributes: ['id', 'name']
           }
         ]
       });
 
-      console.log(`Bagues trouvées: ${count}, page ${page}`);
+      console.log(`✅ Bagues trouvées: ${count}, page ${page}`);
 
       // ==========================================
       // 6. FORMATAGE DES BIJOUX
@@ -191,41 +190,25 @@ const baguesControlleur = {
           hasDiscount = true;
         }
 
-        // Détermination du badge
-        let badge = null;
-        let badgeClass = '';
-        
-        if (hasDiscount) {
-          badge = `-${Math.round(discountPercent)}%`;
-          badgeClass = 'promo';
-        } else if (jewelData.created_at && isNewProduct(jewelData.created_at)) {
-          badge = 'Nouveau';
-          badgeClass = 'nouveau';
-        } else if (jewelData.is_featured) {
-          badge = 'Populaire';
-          badgeClass = 'populaire';
-        }
+        // Générer le slug si manquant
+        const slug = jewelData.slug || generateSlug(jewelData.name, jewelData.id);
 
         return {
           ...jewelData,
-          formattedCurrentPrice: formatPrice(currentPrice),
-          formattedOriginalPrice: hasDiscount ? formatPrice(originalPrice) : null,
           formattedPrice: formatPrice(originalPrice),
           hasDiscount,
-          badge,
-          badgeClass,
-          slug: jewelData.slug || generateSlug(jewelData.name, jewelData.id)
+          slug
         };
       });
 
       // ==========================================
-      // 7. CALCUL DES FILTRES DISPONIBLES
+      // 7. CALCUL DES FILTRES DISPONIBLES DEPUIS LA BDD
       // ==========================================
       
-      // Récupérer tous les bijoux de la catégorie pour le calcul
+      // Récupérer TOUS les bijoux de la catégorie pour calculer les filtres
       const allRings = await Jewel.findAll({
         where: { category_id: 3 },
-        attributes: ['id', 'matiere', 'tailles', 'carat', 'type_id', 'price_ttc'], // ✅ tailles corrigé
+        attributes: ['id', 'matiere', 'tailles', 'carat', 'type_id', 'price_ttc'],
         include: [
           {
             model: Type,
@@ -236,8 +219,30 @@ const baguesControlleur = {
         ]
       });
 
-      // Calcul des filtres disponibles avec les bonnes colonnes
-      const availableFilters = calculateFiltersFromDB(allRings, filters);
+      // Calculer les filtres disponibles
+      const availableFilters = calculateAvailableFilters(allRings);
+
+      // Récupérer les matériaux et types pour les filtres
+      const [allMaterials, allTypes] = await Promise.all([
+        Material.findAll({ 
+          order: [['name', 'ASC']] 
+        }),
+        Type.findAll({ 
+          where: { category_id: 3 }, // Types pour bagues
+          order: [['name', 'ASC']] 
+        })
+      ]);
+
+      // Ajouter les comptes aux matériaux et types
+      const materialsWithCount = allMaterials.map(material => ({
+        ...material.toJSON(),
+        count: allRings.filter(ring => ring.matiere === material.name).length
+      })).filter(m => m.count > 0);
+
+      const typesWithCount = allTypes.map(type => ({
+        ...type.toJSON(),
+        count: allRings.filter(ring => ring.type_id === type.id).length
+      })).filter(t => t.count > 0);
 
       // ==========================================
       // 8. PAGINATION
@@ -259,24 +264,27 @@ const baguesControlleur = {
       // ==========================================
       
       const viewData = {
-        title: 'Bagues Élégantes - Éclat Doré',
+        title: 'Bagues Élégantes - CrystoJewel',
         pageTitle: 'Nos Bagues Élégantes',
         jewels: formattedJewels,
         filters: filters,
         availableFilters: availableFilters,
+        materials: materialsWithCount,
+        types: typesWithCount,
         pagination: pagination,
         user: req.session?.user || null,
-        req: req
+        cartItemCount: 0 // À implémenter selon votre logique panier
       };
 
       console.log(`✅ Rendu: ${formattedJewels.length} bijoux formatés`);
-      console.log(`🔧 Filtres disponibles calculés depuis BDD`);
+      console.log(`🔧 Filtres: ${materialsWithCount.length} matériaux, ${typesWithCount.length} types`);
+      console.log(`📊 Tailles disponibles: ${availableFilters.sizes.length}`);
 
       res.render('bagues', viewData);
 
     } catch (error) {
       console.error('❌ Erreur dans showRings:', error.message);
-      console.error('Stack:', error.stack);
+      console.error('📍 Stack:', error.stack);
       
       return res.status(500).render('error', {
         title: 'Erreur serveur',
@@ -289,22 +297,14 @@ const baguesControlleur = {
 };
 
 // ==========================================
-// FONCTIONS UTILITAIRES HORS DE L'OBJET
+// FONCTIONS UTILITAIRES
 // ==========================================
 
 /**
- * Calcul des filtres basé sur votre structure BDD réelle
+ * Calcule les filtres disponibles depuis les données BDD
  */
-function calculateFiltersFromDB(allRings, currentFilters) {
+function calculateAvailableFilters(allRings) {
   console.log(`📊 Calcul filtres sur ${allRings.length} bagues`);
-
-  // Matériaux disponibles
-  const materials = {};
-  allRings.forEach(ring => {
-    if (ring.matiere) {
-      materials[ring.matiere] = (materials[ring.matiere] || 0) + 1;
-    }
-  });
 
   // ✅ Tailles depuis le champ JSON tailles
   const sizes = {};
@@ -321,28 +321,12 @@ function calculateFiltersFromDB(allRings, currentFilters) {
   // Carats disponibles
   const carats = {};
   allRings.forEach(ring => {
-    if (ring.carat) {
+    if (ring.carat && ring.carat > 0) {
       carats[ring.carat] = (carats[ring.carat] || 0) + 1;
     }
   });
 
-  // Types disponibles
-  const types = {};
-  allRings.forEach(ring => {
-    if (ring.type && ring.type_id) {
-      const typeKey = ring.type_id;
-      if (!types[typeKey]) {
-        types[typeKey] = {
-          id: ring.type_id,
-          name: ring.type?.name || `Type ${ring.type_id}`,
-          count: 0
-        };
-      }
-      types[typeKey].count++;
-    }
-  });
-
-  // Prix par tranches
+  // Prix par tranches avec calcul dynamique
   const priceRanges = [
     { value: '0-20', label: 'Moins de 20€', min: 0, max: 20 },
     { value: '21-40', label: '21€ - 40€', min: 21, max: 40 },
@@ -357,18 +341,14 @@ function calculateFiltersFromDB(allRings, currentFilters) {
       const price = parseFloat(ring.price_ttc || 0);
       return price >= range.min && (range.max === Infinity ? true : price <= range.max);
     }).length
-  }));
+  })).filter(p => p.count > 0);
 
   return {
-    materials: Object.entries(materials)
-      .map(([name, count]) => ({ name, count }))
-      .filter(m => m.count > 0)
-      .sort((a, b) => b.count - a.count),
-      
     sizes: Object.entries(sizes)
       .map(([name, count]) => ({ name, count }))
       .filter(s => s.count > 0)
       .sort((a, b) => {
+        // Tri numérique pour les tailles
         const aNum = parseFloat(a.name);
         const bNum = parseFloat(b.name);
         if (!isNaN(aNum) && !isNaN(bNum)) {
@@ -382,18 +362,13 @@ function calculateFiltersFromDB(allRings, currentFilters) {
       .filter(c => c.count > 0)
       .sort((a, b) => a.carat - b.carat),
       
-    types: Object.values(types)
-      .filter(t => t.count > 0)
-      .sort((a, b) => b.count - a.count),
-      
-    priceRangeOptions: priceRangeOptions.filter(p => p.count > 0)
+    priceRangeOptions: priceRangeOptions
   };
 }
 
-// ==========================================
-// FONCTIONS UTILITAIRES
-// ==========================================
-
+/**
+ * Formate un prix en euros
+ */
 function formatPrice(price) {
   return new Intl.NumberFormat('fr-FR', {
     style: 'currency',
@@ -401,20 +376,24 @@ function formatPrice(price) {
   }).format(price);
 }
 
+/**
+ * Vérifie si un produit est nouveau (moins de 30 jours)
+ */
 function isNewProduct(createdAt) {
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
   return new Date(createdAt) > thirtyDaysAgo;
 }
 
+/**
+ * Génère un slug pour une URL friendly
+ */
 function generateSlug(name, id) {
   const slug = name
     .toLowerCase()
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '');
+    .replace(/[\u0300-\u036f]/g, '') // Supprimer les accents
+    .replace(/[^a-z0-9]+/g, '-')     // Remplacer par des tirets
+    .replace(/^-+|-+$/g, '');        // Supprimer tirets début/fin
   return `${slug}-${id}`;
 }
-
-export { baguesControlleur };
