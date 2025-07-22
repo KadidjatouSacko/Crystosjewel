@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title || 'Bagues - Éclat Doré' %></title>
+    <title><%= title || 'Bagues - CrystoJewel' %></title>
     <link rel="stylesheet" href="/css/bijoux.css">
-    <link rel="stylesheet" href="/css/bagues.css">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         :root {
@@ -23,281 +22,244 @@
             --shadow-hover: 0 8px 25px rgba(0, 0, 0, 0.15);
         }
 
-        /* ================================
-           BANNIÈRES PROMOTIONNELLES
-           ================================ */
-        .promo-banner, .secondary-banner {
-            color: white;
-            text-align: center;
-            padding: 12px 0;
-            font-weight: 600;
-            font-size: 14px;
-            position: relative;
-            overflow: hidden;
-            margin-bottom: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 45px;
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
 
-        .promo-banner {
-            background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-            animation: pulse 2s infinite;
-            box-shadow: 0 4px 15px rgba(238, 90, 36, 0.3);
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--white-soft);
+            color: var(--dark-text);
+            line-height: 1.6;
         }
 
-        .secondary-banner {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.02); }
-        }
-
-        /* ================================
-           SYSTÈME DE FILTRES AVEC MENUS DÉPLIANTS
-           ================================ */
-        .filter-controls {
+        /* Header avec navigation existante */
+        .header-clean {
             background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 40px;
+            padding: 15px 0;
+            border-bottom: 1px solid var(--border-light);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: var(--shadow-soft);
         }
 
-        .filters-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
-        .filter-dropdown {
-            position: relative;
-        }
-
-        .filter-toggle {
-            width: 100%;
-            padding: 12px 16px;
-            background: linear-gradient(135deg, #f8f9fa, #ffffff);
-            border: 2px solid var(--rose-gold-light);
-            border-radius: 8px;
-            cursor: pointer;
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            padding: 0 20px;
+        }
+
+        .logo {
+            font-size: 24px;
             font-weight: 600;
+            color: var(--rose-gold);
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 40px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
             color: var(--dark-text);
-            transition: all 0.3s ease;
+            font-weight: 400;
+            transition: color 0.2s ease;
         }
 
-        .filter-toggle:hover {
-            border-color: var(--rose-gold);
-            background: linear-gradient(135deg, var(--rose-gold-light), rgba(232, 194, 200, 0.3));
+        .nav-links a:hover {
+            color: var(--rose-gold);
         }
 
-        .filter-toggle.active {
-            border-color: var(--rose-gold);
-            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-            color: white;
+        /* Container principal */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 60px;
         }
 
-        .filter-toggle i {
-            transition: transform 0.3s ease;
-        }
-
-        .filter-toggle.active i {
-            transform: rotate(180deg);
-        }
-
-        .filter-menu {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            right: 0;
+        /* Sidebar filtres avec couleurs rose gold */
+        .filters-sidebar {
             background: white;
+            border-radius: 12px;
+            padding: 30px;
+            height: fit-content;
+            box-shadow: var(--shadow-soft);
+            position: sticky;
+            top: 120px;
             border: 1px solid var(--rose-gold-light);
-            border-radius: 8px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
-            z-index: 100;
-            max-height: 0;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            margin-top: 5px;
         }
 
-        .filter-menu.active {
-            max-height: 300px;
-            overflow-y: auto;
+        .filters-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            color: var(--rose-gold-dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .filter-menu::-webkit-scrollbar {
-            width: 4px;
+        .filter-group {
+            margin-bottom: 25px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--rose-gold-light);
         }
 
-        .filter-menu::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        .filter-group:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
         }
 
-        .filter-menu::-webkit-scrollbar-thumb {
-            background: var(--rose-gold-light);
-            border-radius: 4px;
+        .filter-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--rose-gold-dark);
+            margin-bottom: 12px;
+            display: block;
+        }
+
+        .filter-options {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
 
         .filter-option {
-            padding: 10px 16px;
-            border-bottom: 1px solid #f0f0f0;
-            cursor: pointer;
-            transition: all 0.3s ease;
             display: flex;
-            justify-content: space-between;
             align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            cursor: pointer;
+            transition: all 0.2s ease;
         }
 
         .filter-option:hover {
-            background: var(--rose-gold-light);
-        }
-
-        .filter-option:last-child {
-            border-bottom: none;
+            color: var(--rose-gold);
         }
 
         .filter-option input[type="checkbox"] {
             margin-right: 10px;
-            transform: scale(1.2);
             accent-color: var(--rose-gold);
+            transform: scale(1.1);
         }
 
         .filter-option label {
             flex: 1;
             cursor: pointer;
+            font-size: 13px;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 14px;
-            color: var(--dark-text);
         }
 
         .filter-count {
-            background: var(--rose-gold);
+            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
             color: white;
-            padding: 2px 8px;
-            border-radius: 12px;
+            padding: 2px 6px;
+            border-radius: 10px;
             font-size: 11px;
-            font-weight: 600;
+            font-weight: 500;
             min-width: 20px;
             text-align: center;
+            transition: all 0.3s ease;
         }
 
-        /* Section tri */
-        .sort-section {
+        /* Boutons d'action */
+        .filter-actions {
+            margin-top: 25px;
             display: flex;
-            align-items: center;
-            gap: 15px;
-            padding-top: 20px;
-            border-top: 1px solid var(--rose-gold-light);
+            flex-direction: column;
+            gap: 10px;
         }
 
-        .sort-label {
-            font-weight: 600;
-            color: var(--rose-gold-dark);
-        }
-
-        .sort-select {
-            padding: 10px 15px;
-            border: 2px solid var(--rose-gold-light);
+        .btn-filter {
+            padding: 12px 20px;
+            border: none;
             border-radius: 8px;
-            background: white;
-            color: var(--dark-text);
+            font-size: 13px;
             font-weight: 500;
             cursor: pointer;
-            transition: all 0.3s ease;
-            min-width: 200px;
+            transition: all 0.2s ease;
         }
 
-        .sort-select:focus, .sort-select:hover {
-            border-color: var(--rose-gold);
-            outline: none;
-        }
-
-        .filter-actions {
-            display: flex;
-            gap: 10px;
-            margin-top: 20px;
-        }
-
-        .btn-apply-filters, .btn-clear-filters {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 6px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 14px;
-        }
-
-        .btn-apply-filters {
+        .btn-apply {
             background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
             color: white;
         }
 
-        .btn-apply-filters:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(183, 110, 121, 0.3);
-        }
-
-        .btn-clear-filters {
-            background: #6c757d;
-            color: white;
-        }
-
-        .btn-clear-filters:hover {
-            background: #5a6268;
+        .btn-apply:hover {
+            background: linear-gradient(135deg, var(--rose-gold-dark), #6d3f47);
             transform: translateY(-1px);
         }
 
-        /* ================================
-           BOUTON VOIR DÉTAILS - COULEUR FOOTER
-           ================================ */
-        .view-jewel-btn {
-            background: linear-gradient(135deg, #7d4b53, #6d3f47);
-            color: white;
-            box-shadow: 0 4px 15px rgba(125, 75, 83, 0.3);
+        .btn-clear {
+            background: #f5f5f5;
+            color: var(--dark-text);
+            border: 1px solid var(--border-light);
         }
 
-        .view-jewel-btn:hover {
-            background: linear-gradient(135deg, #6d3f47, #5d3439);
-            box-shadow: 0 6px 20px rgba(125, 75, 83, 0.4);
-            color: white;
-            text-decoration: none;
+        .btn-clear:hover {
+            background: #e5e5e5;
         }
 
-        /* ================================
-           GRILLE PRODUITS RESPONSIVE OPTIMISÉE
-           ================================ */
+        /* Section produits */
+        .products-section {
+            min-height: 100vh;
+        }
+
+        .products-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+
+        .products-title {
+            font-size: 28px;
+            font-weight: 600;
+            color: var(--rose-gold-dark);
+        }
+
+        .products-count {
+            font-size: 14px;
+            color: var(--light-text);
+        }
+
+        .sort-select {
+            padding: 8px 15px;
+            border: 1px solid var(--rose-gold-light);
+            border-radius: 6px;
+            background: white;
+            font-size: 13px;
+            cursor: pointer;
+            color: var(--dark-text);
+        }
+
+        .sort-select:focus {
+            outline: none;
+            border-color: var(--rose-gold);
+        }
+
+        /* Grille produits responsive */
         .products-grid {
             display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
             gap: 30px;
-            margin-bottom: 50px;
         }
 
-        /* Desktop : 3 colonnes */
-        @media (min-width: 992px) {
-            .products-grid {
-                grid-template-columns: repeat(3, 1fr);
-            }
-        }
-
-        /* Tablettes : 2 colonnes */
-        @media (min-width: 769px) and (max-width: 991px) {
-            .products-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
-        }
-
-        /* Mobile : 2 colonnes avec optimisations */
+        /* Mobile : 2 colonnes */
         @media (max-width: 768px) {
             .products-grid {
                 grid-template-columns: repeat(2, 1fr);
@@ -305,18 +267,15 @@
             }
         }
 
-        /* ================================
-           CARTES PRODUITS OPTIMISÉES MOBILE
-           ================================ */
+        /* Cartes produits avec couleurs rose gold */
         .product-card {
-            display: flex;
-            flex-direction: column;
             background: white;
-            border-radius: 15px;
+            border-radius: 12px;
             overflow: hidden;
             box-shadow: var(--shadow-soft);
-            transition: all 0.4s ease;
+            transition: all 0.3s ease;
             position: relative;
+            cursor: pointer;
             border: 1px solid var(--border-light);
         }
 
@@ -326,24 +285,31 @@
             border-color: var(--rose-gold-light);
         }
 
-        .product-img {
-            width: 100%;
-            height: 280px;
-            overflow: hidden;
-            background: linear-gradient(135deg, var(--cream), var(--white-soft));
+        /* Image container avec carousel */
+        .product-image-container {
             position: relative;
+            height: 300px;
+            overflow: hidden;
+            background: var(--cream);
         }
 
-        .product-img img {
-            width: 100%;
+        @media (max-width: 768px) {
+            .product-image-container {
+                height: 200px;
+            }
+        }
+
+        .product-images {
+            display: flex;
             height: 100%;
-            object-fit: contain;
-            object-position: center;
             transition: transform 0.4s ease;
         }
 
-        .product-card:hover .product-img img {
-            transform: scale(1.05);
+        .product-image {
+            min-width: 100%;
+            height: 100%;
+            object-fit: contain;
+            object-position: center;
         }
 
         .placeholder-image {
@@ -357,127 +323,10 @@
             font-size: 3rem;
         }
 
-        .product-info {
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            flex-grow: 1;
-        }
-
-        .product-name {
-            font-size: 1.1rem;
-            font-weight: 700;
-            margin-bottom: 8px;
-            color: var(--dark-text);
-            line-height: 1.4;
-        }
-
-        .product-desc {
-            font-size: 0.85rem;
-            color: var(--light-text);
-            margin-bottom: 15px;
-            flex-grow: 1;
-            line-height: 1.5;
-        }
-
-        /* Système de prix */
-        .product-price-container {
-            margin-bottom: 15px;
-        }
-        
-        .price-current {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: #e74c3c;
-        }
-        
-        .price-original {
-            font-size: 1rem;
-            color: #7f8c8d;
-            text-decoration: line-through;
-            margin-top: 3px;
-        }
-        
-        .price-single {
-            font-size: 1.2rem;
-            font-weight: 700;
-            color: var(--rose-gold);
-        }
-
-        /* Actions produits SANS panier - optimisé mobile */
-        .product-actions {
-            display: flex;
-            gap: 8px;
-        }
-
-        .product-btn {
-            flex: 1;
-            padding: 12px 16px;
-            border: none;
-            border-radius: 25px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            cursor: pointer;
-            text-align: center;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .product-btn:hover {
-            transform: translateY(-2px);
-        }
-
-        .view-jewel-btn {
-            background: linear-gradient(135deg, #8e44ad, #9b59b6);
-            color: white;
-            box-shadow: 0 4px 15px rgba(142, 68, 173, 0.3);
-        }
-
-        .view-jewel-btn:hover {
-            background: linear-gradient(135deg, #7d3c98, #8e44ad);
-            box-shadow: 0 6px 20px rgba(142, 68, 173, 0.4);
-            color: white;
-            text-decoration: none;
-        }
-
-        /* ================================
-           SYSTÈME DE SWIPE POUR IMAGES
-           ================================ */
-        .product-img {
-            width: 100%;
-            height: 280px;
-            overflow: hidden;
-            background: linear-gradient(135deg, var(--cream), var(--white-soft));
-            position: relative;
-            cursor: grab;
-        }
-
-        .product-img:active {
-            cursor: grabbing;
-        }
-
-        .product-img img {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
-            object-position: center;
-            transition: transform 0.4s ease;
-            user-select: none;
-            -webkit-user-drag: none;
-        }
-
-        .product-card:hover .product-img img {
-            transform: scale(1.05);
-        }
-
-        /* Indicateurs de swipe */
-        .swipe-indicators {
+        /* Navigation images */
+        .image-nav {
             position: absolute;
-            bottom: 10px;
+            bottom: 15px;
             left: 50%;
             transform: translateX(-50%);
             display: flex;
@@ -486,681 +335,461 @@
             transition: opacity 0.3s ease;
         }
 
-        .product-card:hover .swipe-indicators {
+        .product-card:hover .image-nav {
             opacity: 1;
         }
 
-        .swipe-dot {
+        .image-dot {
             width: 8px;
             height: 8px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.6);
-            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.5);
             cursor: pointer;
+            transition: all 0.2s ease;
         }
 
-        .swipe-dot.active {
+        .image-dot.active {
             background: var(--rose-gold);
             transform: scale(1.2);
         }
 
-        /* Instructions de swipe */
-        .swipe-hint {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(0, 0, 0, 0.7);
-            color: white;
-            padding: 4px 8px;
-            border-radius: 15px;
-            font-size: 10px;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-            pointer-events: none;
-        }
-
-        .product-card:hover .swipe-hint {
-            opacity: 1;
-        }
+        /* Badge produit */
         .product-badge {
             position: absolute;
-            top: 10px;
-            left: 10px;
-            padding: 6px 12px;
-            border-radius: 20px;
+            top: 12px;
+            left: 12px;
+            background: var(--rose-gold);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
             font-size: 11px;
-            font-weight: 700;
-            z-index: 5;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            font-weight: 500;
+            z-index: 2;
         }
-        
+
         .product-badge.promo {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
-            animation: pulse 2s infinite;
+            background: #E74C3C;
         }
-        
+
         .product-badge.nouveau {
-            background: linear-gradient(135deg, #27ae60, #2ecc71);
-            color: white;
-        }
-        
-        .product-badge.bestseller, .product-badge.populaire {
-            background: linear-gradient(135deg, #f39c12, #e67e22);
-            color: white;
+            background: #27AE60;
         }
 
-        .product-badge.derniere-chance {
-            background: linear-gradient(135deg, #9b59b6, #8e44ad);
-            color: white;
-            animation: urgentPulse 1.5s infinite;
-        }
-
-        @keyframes urgentPulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
-        }
-
-        /* ================================
-           RESPONSIVE DESIGN OPTIMISÉ MOBILE
-           ================================ */
-        @media (max-width: 768px) {
-            .promo-banner, .secondary-banner {
-                font-size: 12px;
-                padding: 10px 5px;
-                min-height: 40px;
-            }
-            
-            .filter-controls {
-                padding: 15px;
-                margin-bottom: 25px;
-            }
-            
-            .filter-row {
-                flex-direction: column;
-                gap: 15px;
-            }
-            
-            .filter-section {
-                min-width: unset;
-            }
-            
-            .filter-group {
-                margin-bottom: 15px;
-            }
-            
-            .filter-group h4 {
-                font-size: 14px;
-                margin-bottom: 10px;
-            }
-            
-            .sort-section {
-                flex-direction: column;
-                gap: 10px;
-                align-items: flex-start;
-            }
-            
-            .filter-actions {
-                flex-direction: column;
-            }
-            
-            .btn-apply-filters, .btn-clear-filters {
-                width: 100%;
-                padding: 12px;
-                font-size: 14px;
-            }
-            
-            /* Images plus grandes sur mobile */
-            .product-img {
-                height: 220px; /* Augmenté de 200px à 220px */
-            }
-            
-            .product-info {
-                padding: 15px;
-            }
-            
-            .product-name {
-                font-size: 1rem;
-            }
-            
-            .product-desc {
-                font-size: 0.8rem;
-                margin-bottom: 12px;
-            }
-            
-            /* Boutons plus petits et élégants sur mobile */
-            .product-btn {
-                padding: 10px 12px; /* Réduit de 12px 16px */
-                font-size: 0.75rem; /* Réduit de 0.85rem */
-                border-radius: 20px; /* Réduit de 25px */
-                font-weight: 500;
-            }
-            
-            .product-actions {
-                gap: 6px;
-            }
-            
-            .product-badge {
-                font-size: 9px;
-                padding: 4px 8px;
-                top: 8px;
-                left: 8px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .products-grid {
-                gap: 12px;
-            }
-            
-            /* Images encore plus grandes sur très petits écrans */
-            .product-img {
-                height: 200px;
-            }
-            
-            .product-info {
-                padding: 12px;
-            }
-            
-            .product-btn {
-                padding: 8px 10px;
-                font-size: 0.7rem;
-            }
-            
-            .filter-controls {
-                padding: 12px;
-            }
-        }
-
-        /* ================================
-           PAGINATION
-           ================================ */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 10px;
-            margin-top: 50px;
-        }
-
-        .page-link {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 45px;
-            height: 45px;
+        /* Favori */
+        .product-favorite {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
-            border: 2px solid var(--border-light);
-            text-decoration: none;
-            color: var(--dark-text);
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            background: white;
+            background: rgba(255,255,255,0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            z-index: 2;
         }
 
-        .page-link:hover, .page-link.active {
+        .product-favorite:hover {
+            background: var(--rose-gold);
+            color: white;
+        }
+
+        /* Info produit */
+        .product-info {
+            padding: 20px;
+        }
+
+        @media (max-width: 768px) {
+            .product-info {
+                padding: 15px;
+            }
+        }
+
+        .product-name {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark-text);
+        }
+
+        @media (max-width: 768px) {
+            .product-name {
+                font-size: 14px;
+            }
+        }
+
+        .product-description {
+            font-size: 13px;
+            color: var(--light-text);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        @media (max-width: 768px) {
+            .product-description {
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+        }
+
+        .product-materials {
+            font-size: 12px;
+            color: var(--light-text);
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .product-materials {
+                font-size: 11px;
+                margin-bottom: 8px;
+            }
+        }
+
+        .product-price {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--rose-gold);
+            margin-bottom: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .product-price {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+        }
+
+        /* Bouton panier */
+        .product-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .product-btn {
+            flex: 1;
+            padding: 10px 16px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            text-align: center;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        @media (max-width: 768px) {
+            .product-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+        }
+
+        .view-jewel-btn {
             background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
             color: white;
-            border-color: var(--rose-gold);
-            transform: translateY(-2px);
             box-shadow: 0 4px 15px rgba(183, 110, 121, 0.3);
         }
 
-        /* ================================
-           ÉTAT VIDE
-           ================================ */
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--light-text);
-        }
-
-        .empty-state h3 {
-            font-size: 1.6rem;
-            margin-bottom: 15px;
-            color: var(--rose-gold);
-        }
-
-        .empty-state p {
-            font-size: 1rem;
-        }
-
-        /* ================================
-           UTILITAIRES
-           ================================ */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        .category-intro {
-            padding: 50px 0 30px;
-        }
-
-        .intro-content {
-            text-align: center;
-            max-width: 800px;
-            margin: 0 auto 40px;
-        }
-
-        .intro-content h3 {
-            font-size: 2rem;
-            color: var(--rose-gold);
-            margin-bottom: 20px;
-            font-weight: 600;
-        }
-
-        .intro-content p {
-            font-size: 1rem;
-            color: var(--dark-text);
-            line-height: 1.7;
-        }
-
-        .products {
-            padding: 30px 0 60px;
-        }
-
-        .page-banner {
-            height: 350px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
+        .view-jewel-btn:hover {
+            background: linear-gradient(135deg, var(--rose-gold-dark), #6d3f47);
+            box-shadow: 0 6px 20px rgba(183, 110, 121, 0.4);
             color: white;
-            background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), url('/images/bagues-banner.jpg') center/cover;
+            text-decoration: none;
+            transform: translateY(-1px);
         }
 
-        .banner-content h2 {
-            font-size: 2.8rem;
-            font-weight: 300;
-            letter-spacing: 2px;
-            margin-bottom: 15px;
-        }
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .main-container {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
 
-        .banner-content p {
-            font-size: 1.2rem;
-            font-weight: 300;
-            letter-spacing: 1px;
+            .filters-sidebar {
+                position: relative;
+                top: 0;
+                order: 2;
+            }
         }
 
         @media (max-width: 768px) {
-            .page-banner {
-                height: 250px;
+            .main-container {
+                padding: 20px 15px;
             }
-            
-            .banner-content h2 {
-                font-size: 2rem;
+
+            .filters-sidebar {
+                padding: 20px;
             }
-            
-            .banner-content p {
-                font-size: 1rem;
+
+            .nav-links {
+                display: none;
             }
-            
-            .category-intro {
-                padding: 30px 0 20px;
-            }
-            
-            .intro-content h3 {
-                font-size: 1.6rem;
-            }
-            
-            .intro-content p {
-                font-size: 0.9rem;
-            }
-            
-            .pagination {
-                margin-top: 30px;
-            }
-            
-            .page-link {
-                width: 40px;
-                height: 40px;
-                font-size: 12px;
+
+            .products-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
             }
         }
+
+        /* Animation d'entrée */
+        .product-card {
+            opacity: 0;
+            transform: translateY(20px);
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        @keyframes fadeInUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .product-card:nth-child(1) { animation-delay: 0.1s; }
+        .product-card:nth-child(2) { animation-delay: 0.2s; }
+        .product-card:nth-child(3) { animation-delay: 0.3s; }
+        .product-card:nth-child(4) { animation-delay: 0.4s; }
+        .product-card:nth-child(5) { animation-delay: 0.5s; }
+        .product-card:nth-child(6) { animation-delay: 0.6s; }
     </style>
 </head>
 <body>
-    <!-- Bannières promotionnelles -->
-    <div class="promo-banner">
-        <div class="promo-text">
-            <i class="fas fa-fire"></i>
-            PROMOTIONS EXCEPTIONNELLES ! Jusqu'à -50% sur une sélection de bijoux
-            <i class="fas fa-fire"></i>
-        </div>
-    </div>
-
-    <div class="secondary-banner">
-        <div class="secondary-text">
-            <i class="fas fa-shipping-fast"></i>
-            Livraison gratuite dès 150€ d'achat
-        </div>
-    </div>
-
-    <header>
+    <!-- Header avec navigation existante -->
+    <header class="header-clean">
         <%- include('partials/navbarre.ejs') %>
-        <div class="overlay" id="overlay"></div>
     </header>
 
-    <section class="page-banner">
-        <div class="banner-content">
-            <h2><%= pageTitle || 'Nos Bagues' %></h2>
-            <p>Des créations délicates pour sublimer vos mains</p>
-        </div>
-    </section>
-
-    <section class="category-intro">
-        <div class="container">
-            <div class="intro-content">
-                <h3>L'élégance au bout des doigts</h3>
-                <p>Découvrez notre collection de bagues en rose gold et or, ornées de pierres précieuses soigneusement sélectionnées. Chaque pièce est conçue pour magnifier votre style et apporter une touche d'éclat à vos tenues quotidiennes ou vos occasions spéciales.</p>
+    <!-- Container principal -->
+    <div class="main-container">
+        <!-- Sidebar filtres -->
+        <aside class="filters-sidebar">
+            <div class="filters-title">
+                <i class="fas fa-filter"></i>
+                Filtres
             </div>
-           
-            <!-- Système de filtres avec menus dépliants -->
-            <div class="filter-controls">
-                <form method="GET" action="/bijoux/bagues" id="filterForm">
-                    <div class="filters-grid">
-                        <!-- Filtre Matériaux -->
-                        <div class="filter-dropdown">
-                            <div class="filter-toggle" onclick="toggleFilterMenu(this)">
-                                <span><i class="fas fa-gem"></i> Matériau</span>
-                                <i class="fas fa-chevron-down"></i>
+
+            <form method="GET" action="/bijoux/bagues" id="filterForm">
+                <!-- Filtre Matériau -->
+                <% if (typeof availableFilters !== 'undefined' && availableFilters && availableFilters.materials && availableFilters.materials.length > 0) { %>
+                <div class="filter-group">
+                    <label class="filter-label">Matériau</label>
+                    <div class="filter-options">
+                        <% availableFilters.materials.forEach(material => { %>
+                            <% if (material.count > 0) { %>
+                            <div class="filter-option">
+                                <input type="checkbox" name="matiere" value="<%= material.name %>" id="mat_<%= material.name.replace(/\s+/g, '_') %>"
+                                    <% if (filters && filters.matiere && filters.matiere.includes(material.name)) { %>checked<% } %>>
+                                <label for="mat_<%= material.name.replace(/\s+/g, '_') %>">
+                                    <span><%= material.name %></span>
+                                    <span class="filter-count" data-original="<%= material.count %>"><%= material.count %></span>
+                                </label>
                             </div>
-                            <div class="filter-menu">
-                                <% 
-                                // Matériaux par défaut
-                                const defaultMaterials = [
-                                    { name: 'Or rose', count: 1 },
-                                    { name: 'Or', count: 0 },
-                                    { name: 'Or jaune', count: 1 },
-                                    { name: 'Argent', count: 0 },
-                                    { name: 'Platine', count: 0 }
-                                ];
-                                
-                                const materialsToShow = (availableFilters && availableFilters.materials && availableFilters.materials.length > 0) 
-                                    ? availableFilters.materials 
-                                    : defaultMaterials;
-                                %>
-                                <% materialsToShow.forEach(material => { %>
-                                    <% if (material.count > 0) { %>
-                                    <div class="filter-option">
-                                        <input type="checkbox" name="matiere" value="<%= material.name %>" id="mat_<%= material.name.replace(/\s+/g, '_') %>"
-                                            <%= (filters.matiere && filters.matiere.includes(material.name)) ? 'checked' : '' %>>
-                                        <label for="mat_<%= material.name.replace(/\s+/g, '_') %>">
-                                            <span><%= material.name %></span>
-                                            <span class="filter-count">(<%= material.count %>)</span>
-                                        </label>
-                                    </div>
-                                    <% } %>
-                                <% }); %>
+                            <% } %>
+                        <% }); %>
+                    </div>
+                </div>
+                <% } %>
+
+                <!-- Filtre Prix -->
+                <div class="filter-group">
+                    <label class="filter-label">Prix</label>
+                    <div class="filter-options">
+                        <% 
+                        const priceRanges = [
+                            { value: '0-20', label: 'Moins de 20€' },
+                            { value: '21-40', label: '21€ - 40€' },
+                            { value: '41-60', label: '41€ - 60€' },
+                            { value: '61-80', label: '61€ - 80€' },
+                            { value: '80+', label: 'Plus de 80€' }
+                        ];
+                        %>
+                        <% priceRanges.forEach(priceRange => { %>
+                            <% 
+                            let count = 0;
+                            if (typeof availableFilters !== 'undefined' && availableFilters && availableFilters.priceRangeOptions) {
+                                const found = availableFilters.priceRangeOptions.find(p => p.value === priceRange.value);
+                                count = found ? found.count : 0;
+                            }
+                            %>
+                            <% if (count > 0) { %>
+                            <div class="filter-option">
+                                <input type="checkbox" name="prix" value="<%= priceRange.value %>" id="price_<%= priceRange.value %>"
+                                    <% if (filters && filters.prix && filters.prix.includes(priceRange.value)) { %>checked<% } %>>
+                                <label for="price_<%= priceRange.value %>">
+                                    <span><%= priceRange.label %></span>
+                                    <span class="filter-count" data-original="<%= count %>"><%= count %></span>
+                                </label>
                             </div>
+                            <% } %>
+                        <% }); %>
+                    </div>
+                </div>
+
+                <!-- Filtre Tailles -->
+                <% if (typeof availableFilters !== 'undefined' && availableFilters && availableFilters.sizes && availableFilters.sizes.length > 0) { %>
+                <div class="filter-group">
+                    <label class="filter-label">Taille</label>
+                    <div class="filter-options">
+                        <% availableFilters.sizes.forEach(size => { %>
+                            <% if (size.count > 0) { %>
+                            <div class="filter-option">
+                                <input type="checkbox" name="tailles" value="<%= size.name %>" id="size_<%= size.name.replace(/\s+/g, '_') %>"
+                                    <% if (filters && filters.tailles && filters.tailles.includes(size.name)) { %>checked<% } %>>
+                                <label for="size_<%= size.name.replace(/\s+/g, '_') %>">
+                                    <span><%= size.name %></span>
+                                    <span class="filter-count" data-original="<%= size.count %>"><%= size.count %></span>
+                                </label>
+                            </div>
+                            <% } %>
+                        <% }); %>
+                    </div>
+                </div>
+                <% } %>
+
+                <!-- Filtre Carats -->
+                <% if (typeof availableFilters !== 'undefined' && availableFilters && availableFilters.carats && availableFilters.carats.length > 0) { %>
+                <div class="filter-group">
+                    <label class="filter-label">Carat</label>
+                    <div class="filter-options">
+                        <% availableFilters.carats.forEach(carat => { %>
+                            <% if (carat.count > 0) { %>
+                            <div class="filter-option">
+                                <input type="checkbox" name="carat" value="<%= carat.carat %>" id="carat_<%= carat.carat %>"
+                                    <% if (filters && filters.carat && filters.carat.includes(carat.carat.toString())) { %>checked<% } %>>
+                                <label for="carat_<%= carat.carat %>">
+                                    <span><%= carat.carat %>k</span>
+                                    <span class="filter-count" data-original="<%= carat.count %>"><%= carat.count %></span>
+                                </label>
+                            </div>
+                            <% } %>
+                        <% }); %>
+                    </div>
+                </div>
+                <% } %>
+
+                <!-- Actions -->
+                <div class="filter-actions">
+                    <button type="submit" class="btn-filter btn-apply">
+                        <i class="fas fa-check"></i> Appliquer
+                    </button>
+                    <button type="button" class="btn-filter btn-clear" onclick="clearFilters()">
+                        <i class="fas fa-times"></i> Effacer
+                    </button>
+                </div>
+            </form>
+        </aside>
+
+        <!-- Section produits -->
+        <main class="products-section">
+            <!-- Header produits -->
+            <div class="products-header">
+                <div>
+                    <h1 class="products-title">Bagues</h1>
+                    <% if (jewels && jewels.length > 0) { %>
+                        <div class="products-count">
+                            <%= jewels.length %> produit<%= jewels.length > 1 ? 's' : '' %>
+                            <% 
+                            const activeFiltersCount = (filters && filters.matiere ? filters.matiere.length : 0) + 
+                                                     (filters && filters.prix ? filters.prix.length : 0) + 
+                                                     (filters && filters.tailles ? filters.tailles.length : 0) + 
+                                                     (filters && filters.carat ? filters.carat.length : 0);
+                            %>
+                            <% if (activeFiltersCount > 0) { %>
+                                · <%= activeFiltersCount %> filtre<%= activeFiltersCount > 1 ? 's' : '' %>
+                            <% } %>
                         </div>
-
-                        <!-- Filtre Prix -->
-                        <div class="filter-dropdown">
-                            <div class="filter-toggle" onclick="toggleFilterMenu(this)">
-                                <span><i class="fas fa-euro-sign"></i> Prix</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="filter-menu">
-                                <% 
-                                const priceRanges = [
-                                    { value: '0-20', label: 'Moins de 20€' },
-                                    { value: '21-40', label: '21€ - 40€' },
-                                    { value: '41-60', label: '41€ - 60€' },
-                                    { value: '61-80', label: '61€ - 80€' },
-                                    { value: '80+', label: 'Plus de 80€' }
-                                ];
-                                %>
-                                <% priceRanges.forEach(priceRange => { %>
-                                    <% 
-                                    // Simuler le comptage pour la démo
-                                    let count = 0;
-                                    if (priceRange.value === '41-60') count = 1; // Votre bague à 50€
-                                    if (availableFilters && availableFilters.priceRangeOptions) {
-                                        const found = availableFilters.priceRangeOptions.find(p => p.value === priceRange.value);
-                                        count = found ? found.count : count;
-                                    }
-                                    %>
-                                    <% if (count > 0) { %>
-                                    <div class="filter-option">
-                                        <input type="checkbox" name="prix" value="<%= priceRange.value %>" id="price_<%= priceRange.value %>"
-                                            <%= (filters.prix && filters.prix.includes(priceRange.value)) ? 'checked' : '' %>>
-                                        <label for="price_<%= priceRange.value %>">
-                                            <span><%= priceRange.label %></span>
-                                            <span class="filter-count">(<%= count %>)</span>
-                                        </label>
-                                    </div>
-                                    <% } %>
-                                <% }); %>
-                            </div>
-                        </div>
-
-                        <!-- Filtre Taille (si disponible) -->
-                        <% if (availableFilters && availableFilters.sizes && availableFilters.sizes.length > 0) { %>
-                        <div class="filter-dropdown">
-                            <div class="filter-toggle" onclick="toggleFilterMenu(this)">
-                                <span><i class="fas fa-ruler"></i> Taille</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="filter-menu">
-                                <% availableFilters.sizes.forEach(size => { %>
-                                    <div class="filter-option">
-                                        <input type="checkbox" name="taille" value="<%= size.name %>" id="size_<%= size.name %>"
-                                            <%= (filters.taille && filters.taille.includes(size.name)) ? 'checked' : '' %>>
-                                        <label for="size_<%= size.name %>">
-                                            <span><%= size.name %></span>
-                                            <span class="filter-count">(<%= size.count %>)</span>
-                                        </label>
-                                    </div>
-                                <% }); %>
-                            </div>
-                        </div>
-                        <% } %>
-
-                        <!-- Filtre Carat (si disponible) -->
-                        <% if (availableFilters && availableFilters.carats && availableFilters.carats.length > 0) { %>
-                        <div class="filter-dropdown">
-                            <div class="filter-toggle" onclick="toggleFilterMenu(this)">
-                                <span><i class="fas fa-star"></i> Carat</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="filter-menu">
-                                <% availableFilters.carats.forEach(carat => { %>
-                                    <div class="filter-option">
-                                        <input type="checkbox" name="carat" value="<%= carat.carat %>" id="carat_<%= carat.carat %>"
-                                            <%= (filters.carat && filters.carat.includes(carat.carat.toString())) ? 'checked' : '' %>>
-                                        <label for="carat_<%= carat.carat %>">
-                                            <span><%= carat.carat %>k</span>
-                                            <span class="filter-count">(<%= carat.count %>)</span>
-                                        </label>
-                                    </div>
-                                <% }); %>
-                            </div>
-                        </div>
-                        <% } %>
-
-                        <!-- Filtre Type (si disponible) -->
-                        <% if (availableFilters && availableFilters.types && availableFilters.types.length > 0) { %>
-                        <div class="filter-dropdown">
-                            <div class="filter-toggle" onclick="toggleFilterMenu(this)">
-                                <span><i class="fas fa-ring"></i> Type</span>
-                                <i class="fas fa-chevron-down"></i>
-                            </div>
-                            <div class="filter-menu">
-                                <% availableFilters.types.forEach(type => { %>
-                                    <div class="filter-option">
-                                        <input type="checkbox" name="type" value="<%= type.id %>" id="type_<%= type.id %>"
-                                            <%= (filters.type && filters.type.includes(type.id.toString())) ? 'checked' : '' %>>
-                                        <label for="type_<%= type.id %>">
-                                            <span><%= type.name %></span>
-                                            <span class="filter-count">(<%= type.count %>)</span>
-                                        </label>
-                                    </div>
-                                <% }); %>
-                            </div>
-                        </div>
-                        <% } %>
-                    </div>
-
-                    <!-- Section tri -->
-                    <div class="sort-section">
-                        <span class="sort-label">Trier par :</span>
-                        <select name="sort" class="sort-select" onchange="document.getElementById('filterForm').submit()">
-                            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Nouveautés</option>
-                            <option value="price_asc" <%= filters.sort === 'price_asc' ? 'selected' : '' %>>Prix croissant</option>
-                            <option value="price_desc" <%= filters.sort === 'price_desc' ? 'selected' : '' %>>Prix décroissant</option>
-                            <option value="popular" <%= filters.sort === 'popular' ? 'selected' : '' %>>Popularité</option>
-                            <option value="name_asc" <%= filters.sort === 'name_asc' ? 'selected' : '' %>>Nom A-Z</option>
-                            <option value="name_desc" <%= filters.sort === 'name_desc' ? 'selected' : '' %>>Nom Z-A</option>
-                        </select>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="filter-actions">
-                        <button type="submit" class="btn-apply-filters">
-                            <i class="fas fa-check"></i> Appliquer
-                        </button>
-                        <button type="button" class="btn-clear-filters" onclick="clearFilters()">
-                            <i class="fas fa-times"></i> Effacer
-                        </button>
-                    </div>
-                </form>
-            </div>"><%= carat.count %></span>
-                                            </label>
-                                        </div>
-                                    <% }); %>
-                                </div>
-                            </div>
-                        </div>
-                        <% } %>
-
-                        <!-- Types (si disponibles) -->
-                        <% if (availableFilters && availableFilters.types && availableFilters.types.length > 0) { %>
-                        <div class="filter-section">
-                            <div class="filter-group">
-                                <h4><i class="fas fa-ring"></i> Style</h4>
-                                <div class="filter-options">
-                                    <% availableFilters.types.forEach(type => { %>
-                                        <div class="filter-item">
-                                            <input type="checkbox" name="type" value="<%= type.id %>" id="type_<%= type.id %>"
-                                                <%= (filters.type && filters.type.includes(type.id.toString())) ? 'checked' : '' %>>
-                                            <label for="type_<%= type.id %>">
-                                                <span><%= type.name %></span>
-                                                <span class="filter-count"><%= type.count %></span>
-                                            </label>
-                                        </div>
-                                    <% }); %>
-                                </div>
-                            </div>
-                        </div>
-                        <% } %>
-                    </div>
-
-                    <!-- Section tri améliorée -->
-                    <div class="sort-section">
-                        <span class="sort-label">Trier par :</span>
-                        <select name="sort" class="sort-select" onchange="document.getElementById('filterForm').submit()">
-                            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>✨ Nouveautés</option>
-                            <option value="price_asc" <%= filters.sort === 'price_asc' ? 'selected' : '' %>>💰 Prix croissant</option>
-                            <option value="price_desc" <%= filters.sort === 'price_desc' ? 'selected' : '' %>>💎 Prix décroissant</option>
-                            <option value="popular" <%= filters.sort === 'popular' ? 'selected' : '' %>>🔥 Popularité</option>
-                            <option value="name_asc" <%= filters.sort === 'name_asc' ? 'selected' : '' %>>🔤 Nom A-Z</option>
-                            <option value="name_desc" <%= filters.sort === 'name_desc' ? 'selected' : '' %>>🔤 Nom Z-A</option>
-                        </select>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="filter-actions">
-                        <button type="submit" class="btn-apply-filters">
-                            <i class="fas fa-check"></i> Appliquer
-                        </button>
-                        <button type="button" class="btn-clear-filters" onclick="clearFilters()">
-                            <i class="fas fa-times"></i> Effacer
-                        </button>
-                    </div>
-                </form>
-            </div>d('filterForm').submit()">
-                            <option value="newest" <%= filters.sort === 'newest' ? 'selected' : '' %>>Nouveautés</option>
-                            <option value="price_asc" <%= filters.sort === 'price_asc' ? 'selected' : '' %>>Prix croissant</option>
-                            <option value="price_desc" <%= filters.sort === 'price_desc' ? 'selected' : '' %>>Prix décroissant</option>
-                            <option value="popular" <%= filters.sort === 'popular' ? 'selected' : '' %>>Popularité</option>
-                            <option value="name_asc" <%= filters.sort === 'name_asc' ? 'selected' : '' %>>Nom A-Z</option>
-                            <option value="name_desc" <%= filters.sort === 'name_desc' ? 'selected' : '' %>>Nom Z-A</option>
-                        </select>
-                    </div>
-
-                    <!-- Actions -->
-                    <div class="filter-actions">
-                        <button type="submit" class="btn-apply-filters">
-                            <i class="fas fa-check"></i> Appliquer les filtres
-                        </button>
-                        <button type="button" class="btn-clear-filters" onclick="clearFilters()">
-                            <i class="fas fa-times"></i> Effacer
-                        </button>
-                    </div>
-                </form>
+                    <% } %>
+                </div>
+                <select name="sort" class="sort-select" onchange="document.getElementById('filterForm').submit()">
+                    <option value="newest" <% if (filters && filters.sort === 'newest') { %>selected<% } %>>Nouveautés</option>
+                    <option value="price_asc" <% if (filters && filters.sort === 'price_asc') { %>selected<% } %>>Prix croissant</option>
+                    <option value="price_desc" <% if (filters && filters.sort === 'price_desc') { %>selected<% } %>>Prix décroissant</option>
+                    <option value="popular" <% if (filters && filters.sort === 'popular') { %>selected<% } %>>Popularité</option>
+                    <option value="name_asc" <% if (filters && filters.sort === 'name_asc') { %>selected<% } %>>Nom A-Z</option>
+                </select>
             </div>
-        </div>
-    </section>
-        
-    <section class="products">
-        <div class="container">
+
+            <!-- Grille produits -->
             <div class="products-grid">
                 <% if (jewels && jewels.length > 0) { %>
-                    <% jewels.forEach(jewel => { %>
-                        <div class="product-card">
-                            <!-- Badge dynamique -->
-                            <% if (jewel.badge) { %>  
+                    <% jewels.forEach((jewel, index) => { %>
+                        <div class="product-card" data-jewel-id="<%= jewel.id %>" style="animation-delay: <%= (index % 6) * 0.1 %>s">
+                            <!-- Badge -->
+                            <% if (jewel.badge) { %>
                                 <div class="product-badge <%= jewel.badgeClass %>"><%= jewel.badge %></div>
                             <% } %>
-                            
-                            <div class="product-img" data-jewel-id="<%= jewel.id %>">
-                                <% if (jewel.image && jewel.image !== 'no-image.jpg') { %>
-                                    <img src="/uploads/jewels/<%= jewel.image %>" alt="<%= jewel.name %>" 
-                                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
-                                         draggable="false">
-                                    <div class="placeholder-image" style="display: none;">
-                                        <i class="fas fa-gem"></i>
-                                    </div>
-                                <% } else { %>
-                                    <div class="placeholder-image">
-                                        <i class="fas fa-gem"></i>
-                                    </div>
-                                <% } %>
-                                
-                                <!-- Instructions de swipe -->
-                                <div class="swipe-hint">
-                                    <i class="fas fa-hand-paper"></i> Glisser
-                                </div>
-                                
-                                <!-- Indicateurs de swipe (si plusieurs images) -->
-                                <div class="swipe-indicators">
-                                    <div class="swipe-dot active"></div>
-                                    <div class="swipe-dot"></div>
-                                    <div class="swipe-dot"></div>
-                                </div>
+
+                            <!-- Favori -->
+                            <div class="product-favorite">
+                                <i class="far fa-heart"></i>
                             </div>
-                            
-                            <div class="product-info">
-                                <h3 class="product-name"><%= jewel.name %></h3>
-                                <p class="product-desc"><%= jewel.description || 'Magnifique bague de notre collection' %></p>
-                                
-                                <!-- Prix avec réductions -->
-                                <div class="product-price-container">
-                                    <% if (jewel.hasDiscount) { %>
-                                        <div class="price-current"><%= jewel.formattedCurrentPrice %></div>
-                                        <div class="price-original"><%= jewel.formattedOriginalPrice %></div>
+
+                            <!-- Images avec carousel -->
+                            <div class="product-image-container" data-current-image="0">
+                                <div class="product-images">
+                                    <% if (jewel.image && jewel.image !== 'no-image.jpg') { %>
+                                        <img src="/uploads/jewels/<%= jewel.image %>" alt="<%= jewel.name %>" class="product-image"
+                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                        <!-- Images supplémentaires simulées -->
+                                        <img src="/uploads/jewels/<%= jewel.image %>" alt="<%= jewel.name %> - vue 2" class="product-image">
+                                        <img src="/uploads/jewels/<%= jewel.image %>" alt="<%= jewel.name %> - vue 3" class="product-image">
                                     <% } else { %>
-                                        <div class="price-single"><%= jewel.formattedCurrentPrice || jewel.formattedPrice %></div>
+                                        <div class="placeholder-image">
+                                            <i class="fas fa-gem"></i>
+                                        </div>
                                     <% } %>
                                 </div>
                                 
-                                <!-- Actions SANS panier -->
+                                <!-- Navigation images -->
+                                <div class="image-nav">
+                                    <span class="image-dot active" data-image="0"></span>
+                                    <span class="image-dot" data-image="1"></span>
+                                    <span class="image-dot" data-image="2"></span>
+                                </div>
+                            </div>
+
+                            <!-- Info produit -->
+                            <div class="product-info">
+                                <h3 class="product-name"><%= jewel.name %></h3>
+                                <p class="product-description"><%= jewel.description || 'Magnifique bague de notre collection' %></p>
+                                
+                                <% if (jewel.matiere || (jewel.tailles && jewel.tailles.length > 0) || jewel.carat) { %>
+                                <div class="product-materials">
+                                    <% if (jewel.matiere) { %>
+                                        <%= jewel.matiere %>
+                                    <% } %>
+                                    <% if (jewel.tailles && jewel.tailles.length > 0) { %>
+                                        <% if (jewel.matiere) { %> · <% } %>
+                                        Tailles: <% jewel.tailles.forEach((taille, index) => { %>
+                                            <%= taille.taille %><% if (index < jewel.tailles.length - 1) { %>, <% } %>
+                                        <% }); %>
+                                    <% } %>
+                                    <% if (jewel.carat) { %>
+                                        <% if (jewel.matiere || (jewel.tailles && jewel.tailles.length > 0)) { %> · <% } %>
+                                        <%= jewel.carat %>k
+                                    <% } %>
+                                </div>
+                                <% } %>
+                                
+                                <div class="product-price">
+                                    <% if (jewel.hasDiscount) { %>
+                                        <%= jewel.formattedCurrentPrice %>
+                                        <del style="font-size: 14px; color: #999; margin-left: 8px;"><%= jewel.formattedOriginalPrice %></del>
+                                    <% } else { %>
+                                        <%= jewel.formattedCurrentPrice || jewel.formattedPrice %>
+                                    <% } %>
+                                </div>
+                                
+                                <!-- Actions avec panier -->
                                 <div class="product-actions">
                                     <a href="/bijoux/<%= jewel.slug %>" class="product-btn view-jewel-btn">
                                         <i class="fas fa-eye"></i> Voir détails
@@ -1170,227 +799,276 @@
                         </div>
                     <% }); %>
                 <% } else { %>
-                    <div class="empty-state">
-                        <h3>Aucune bague trouvée</h3>
-                        <p>Essayez de modifier vos critères de recherche ou effacez les filtres.</p>
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; color: var(--light-text);">
+                        <h3 style="font-size: 1.5rem; margin-bottom: 15px; color: var(--rose-gold);">Aucune bague trouvée</h3>
+                        <p>Essayez de modifier vos filtres ou effacez-les pour voir tous les produits.</p>
+                        <button onclick="clearFilters()" style="margin-top: 20px; padding: 12px 24px; background: var(--rose-gold); color: white; border: none; border-radius: 8px; cursor: pointer;">
+                            Voir tous les produits
+                        </button>
                     </div>
-                <% } %>
+                    <% } %>
             </div>
-            
+
             <!-- Pagination -->
             <% if (pagination && pagination.totalPages > 1) { %>
-                <div class="pagination">
+                <div style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-top: 50px;">
                     <% if (pagination.hasPrevPage) { %>
-                        <a href="?page=<%= pagination.prevPage %>&<%= new URLSearchParams(req.query).toString() %>" class="page-link">
+                        <a href="?page=<%= pagination.prevPage %>" style="display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--border-light); text-decoration: none; color: var(--dark-text); font-size: 14px; font-weight: 600; transition: all 0.3s ease; background: white;">
                             <i class="fas fa-chevron-left"></i>
                         </a>
                     <% } %>
                     
-                    <% for (let i = 1; i <= pagination.totalPages; i++) { %>
-                        <% if (i === pagination.currentPage) { %>
-                            <span class="page-link active"><%= i %></span>
-                        <% } else { %>
-                            <a href="?page=<%= i %>&<%= new URLSearchParams(req.query).toString() %>" class="page-link"><%= i %></a>
+                    <% 
+                    const currentPage = pagination.currentPage;
+                    const totalPages = pagination.totalPages;
+                    let startPage = Math.max(1, currentPage - 2);
+                    let endPage = Math.min(totalPages, currentPage + 2);
+                    
+                    if (currentPage <= 3) {
+                        endPage = Math.min(5, totalPages);
+                    }
+                    if (currentPage > totalPages - 3) {
+                        startPage = Math.max(1, totalPages - 4);
+                    }
+                    %>
+                    
+                    <% if (startPage > 1) { %>
+                        <a href="?page=1" style="display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--border-light); text-decoration: none; color: var(--dark-text); font-size: 14px; font-weight: 600; transition: all 0.3s ease; background: white;">1</a>
+                        <% if (startPage > 2) { %>
+                            <span style="color: var(--light-text); padding: 0 10px;">...</span>
                         <% } %>
                     <% } %>
                     
+                    <% for (let i = startPage; i <= endPage; i++) { %>
+                        <% if (i === currentPage) { %>
+                            <span style="display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; border-radius: 50%; background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark)); color: white; border: 2px solid var(--rose-gold); font-size: 14px; font-weight: 600; box-shadow: 0 4px 15px rgba(183, 110, 121, 0.3);"><%= i %></span>
+                        <% } else { %>
+                            <a href="?page=<%= i %>" style="display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--border-light); text-decoration: none; color: var(--dark-text); font-size: 14px; font-weight: 600; transition: all 0.3s ease; background: white;"><%= i %></a>
+                        <% } %>
+                    <% } %>
+                    
+                    <% if (endPage < totalPages) { %>
+                        <% if (endPage < totalPages - 1) { %>
+                            <span style="color: var(--light-text); padding: 0 10px;">...</span>
+                        <% } %>
+                        <a href="?page=<%= totalPages %>" style="display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--border-light); text-decoration: none; color: var(--dark-text); font-size: 14px; font-weight: 600; transition: all 0.3s ease; background: white;"><%= totalPages %></a>
+                    <% } %>
+                    
                     <% if (pagination.hasNextPage) { %>
-                        <a href="?page=<%= pagination.nextPage %>&<%= new URLSearchParams(req.query).toString() %>" class="page-link">
+                        <a href="?page=<%= pagination.nextPage %>" style="display: flex; align-items: center; justify-content: center; width: 45px; height: 45px; border-radius: 50%; border: 2px solid var(--border-light); text-decoration: none; color: var(--dark-text); font-size: 14px; font-weight: 600; transition: all 0.3s ease; background: white;">
                             <i class="fas fa-chevron-right"></i>
                         </a>
                     <% } %>
                 </div>
             <% } %>
-        </div>
-    </section>
+        </main>
+    </div>
 
     <!-- Footer -->
     <%- include('partials/footer') %>
 
-    <!-- Scripts JavaScript -->
+    <!-- JavaScript pour carousel et filtres -->
     <script>
-        // ================================
-        // SYSTÈME DE SWIPE POUR IMAGES
-        // ================================
-        class ImageSwiper {
-            constructor(container) {
-                this.container = container;
-                this.images = [
-                    container.querySelector('img').src,
-                    // Simuler d'autres images pour la démo
-                    container.querySelector('img').src + '?view=2',
-                    container.querySelector('img').src + '?view=3'
-                ];
-                this.currentIndex = 0;
-                this.startX = 0;
-                this.isDragging = false;
-                
-                this.init();
+        // Carousel d'images
+        class ProductCarousel {
+            constructor() {
+                this.initCarousels();
             }
-            
-            init() {
-                const img = this.container.querySelector('img');
-                if (!img) return;
-                
-                // Événements tactiles
-                this.container.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: true });
-                this.container.addEventListener('touchmove', this.handleTouchMove.bind(this), { passive: false });
-                this.container.addEventListener('touchend', this.handleTouchEnd.bind(this));
-                
-                // Événements souris
-                this.container.addEventListener('mousedown', this.handleMouseDown.bind(this));
-                this.container.addEventListener('mousemove', this.handleMouseMove.bind(this));
-                this.container.addEventListener('mouseup', this.handleMouseUp.bind(this));
-                this.container.addEventListener('mouseleave', this.handleMouseUp.bind(this));
-                
-                // Clic sur les indicateurs
-                const dots = this.container.querySelectorAll('.swipe-dot');
-                dots.forEach((dot, index) => {
-                    dot.addEventListener('click', () => this.goToSlide(index));
-                });
-                
-                this.updateIndicators();
-            }
-            
-            handleTouchStart(e) {
-                this.startX = e.touches[0].clientX;
-                this.isDragging = true;
-            }
-            
-            handleTouchMove(e) {
-                if (!this.isDragging) return;
-                e.preventDefault();
-                
-                const currentX = e.touches[0].clientX;
-                const diff = this.startX - currentX;
-                
-                // Ajouter un effet visuel pendant le swipe
-                const img = this.container.querySelector('img');
-                if (img) {
-                    img.style.transform = `translateX(${-diff * 0.5}px) scale(1.02)`;
-                }
-            }
-            
-            handleTouchEnd(e) {
-                if (!this.isDragging) return;
-                this.isDragging = false;
-                
-                const endX = e.changedTouches[0].clientX;
-                const diff = this.startX - endX;
-                
-                // Reset de l'image
-                const img = this.container.querySelector('img');
-                if (img) {
-                    img.style.transform = '';
-                }
-                
-                if (Math.abs(diff) > 50) { // Seuil de swipe
-                    if (diff > 0) {
-                        this.nextImage();
-                    } else {
-                        this.prevImage();
-                    }
-                }
-            }
-            
-            handleMouseDown(e) {
-                this.startX = e.clientX;
-                this.isDragging = true;
-                this.container.style.cursor = 'grabbing';
-            }
-            
-            handleMouseMove(e) {
-                if (!this.isDragging) return;
-                
-                const currentX = e.clientX;
-                const diff = this.startX - currentX;
-                
-                const img = this.container.querySelector('img');
-                if (img) {
-                    img.style.transform = `translateX(${-diff * 0.3}px) scale(1.02)`;
-                }
-            }
-            
-            handleMouseUp(e) {
-                if (!this.isDragging) return;
-                this.isDragging = false;
-                this.container.style.cursor = 'grab';
-                
-                const endX = e.clientX;
-                const diff = this.startX - endX;
-                
-                const img = this.container.querySelector('img');
-                if (img) {
-                    img.style.transform = '';
-                }
-                
-                if (Math.abs(diff) > 30) {
-                    if (diff > 0) {
-                        this.nextImage();
-                    } else {
-                        this.prevImage();
-                    }
-                }
-            }
-            
-            nextImage() {
-                this.currentIndex = (this.currentIndex + 1) % this.images.length;
-                this.updateImage();
-                this.updateIndicators();
-                this.showSwipeEffect('next');
-            }
-            
-            prevImage() {
-                this.currentIndex = (this.currentIndex - 1 + this.images.length) % this.images.length;
-                this.updateImage();
-                this.updateIndicators();
-                this.showSwipeEffect('prev');
-            }
-            
-            goToSlide(index) {
-                this.currentIndex = index;
-                this.updateImage();
-                this.updateIndicators();
-                this.showSwipeEffect('direct');
-            }
-            
-            updateImage() {
-                const img = this.container.querySelector('img');
-                if (img) {
-                    // Effet de transition fluide
-                    img.style.opacity = '0.7';
-                    img.style.transform = 'scale(0.95)';
+
+            initCarousels() {
+                document.querySelectorAll('.product-image-container').forEach(container => {
+                    let currentImage = 0;
+                    const images = container.querySelector('.product-images');
+                    const dots = container.querySelectorAll('.image-dot');
+                    const totalImages = dots.length;
+
+                    // Auto-play carousel
+                    const autoPlay = setInterval(() => {
+                        currentImage = (currentImage + 1) % totalImages;
+                        this.showImage(container, currentImage);
+                    }, 3000);
+
+                    // Pause on hover
+                    container.addEventListener('mouseenter', () => clearInterval(autoPlay));
                     
-                    setTimeout(() => {
-                        img.src = this.images[this.currentIndex];
-                        img.style.opacity = '1';
-                        img.style.transform = 'scale(1)';
-                    }, 150);
-                }
-            }
-            
-            updateIndicators() {
-                const dots = this.container.querySelectorAll('.swipe-dot');
-                dots.forEach((dot, index) => {
-                    dot.classList.toggle('active', index === this.currentIndex);
+                    // Click on dots
+                    dots.forEach((dot, index) => {
+                        dot.addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            currentImage = index;
+                            this.showImage(container, currentImage);
+                        });
+                    });
+
+                    // Click to advance
+                    container.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        currentImage = (currentImage + 1) % totalImages;
+                        this.showImage(container, currentImage);
+                    });
                 });
             }
-            
-            showSwipeEffect(direction) {
-                // Ajouter un effet visuel pour indiquer le changement
-                const card = this.container.closest('.product-card');
-                if (card) {
-                    card.style.transform = 'scale(1.02)';
-                    setTimeout(() => {
-                        card.style.transform = '';
-                    }, 200);
-                }
+
+            showImage(container, index) {
+                const images = container.querySelector('.product-images');
+                const dots = container.querySelectorAll('.image-dot');
+                
+                images.style.transform = `translateX(-${index * 100}%)`;
+                
+                dots.forEach((dot, i) => {
+                    dot.classList.toggle('active', i === index);
+                });
             }
         }
 
-        // ================================
-        // FONCTIONS FILTRES
-        // ================================
+        // Gestion des filtres avec adaptation dynamique
+        class FilterManager {
+            constructor() {
+                this.originalCounts = new Map();
+                this.setupEventListeners();
+                this.storeOriginalCounts();
+            }
+
+            storeOriginalCounts() {
+                document.querySelectorAll('.filter-count').forEach(count => {
+                    const option = count.closest('.filter-option');
+                    const input = option.querySelector('input[type="checkbox"]');
+                    if (input) {
+                        const key = `${input.name}:${input.value}`;
+                        const originalCount = parseInt(count.dataset.original || count.textContent);
+                        this.originalCounts.set(key, originalCount);
+                    }
+                });
+                console.log(`📊 ${this.originalCounts.size} compteurs originaux stockés`);
+            }
+
+            setupEventListeners() {
+                // Auto-submit sur changement de checkbox avec adaptation
+                let filterTimeout;
+                document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.addEventListener('change', () => {
+                        console.log(`🔄 Filtre ${checkbox.name}: ${checkbox.value} ${checkbox.checked ? 'activé' : 'désactivé'}`);
+                        
+                        clearTimeout(filterTimeout);
+                        filterTimeout = setTimeout(() => {
+                            this.updateFilterCounts();
+                            document.getElementById('filterForm').submit();
+                        }, 1000);
+                    });
+                });
+
+                // Favoris avec couleurs rose gold
+                document.querySelectorAll('.product-favorite').forEach(fav => {
+                    fav.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        const icon = fav.querySelector('i');
+                        const isFavorite = icon.classList.contains('fas');
+                        
+                        if (isFavorite) {
+                            icon.classList.remove('fas');
+                            icon.classList.add('far');
+                            fav.style.background = 'rgba(255,255,255,0.9)';
+                            fav.style.color = '#666';
+                        } else {
+                            icon.classList.remove('far');
+                            icon.classList.add('fas');
+                            fav.style.background = 'var(--rose-gold)';
+                            fav.style.color = 'white';
+                        }
+                    });
+                });
+
+                // Clic sur carte produit - LIEN CORRIGÉ
+                document.querySelectorAll('.product-card').forEach(card => {
+                    card.addEventListener('click', (e) => {
+                        if (!e.target.closest('.product-favorite') && 
+                            !e.target.closest('.image-nav') && 
+                            !e.target.closest('.product-btn')) {
+                            
+                            const jewelId = card.dataset.jewelId;
+                            const jewelName = card.querySelector('.product-name').textContent;
+                            const slug = this.generateSlug(jewelName, jewelId);
+                            
+                            // Redirection vers la page produit avec le bon format
+                            window.location.href = `/bijoux/${slug}`;
+                        }
+                    });
+                });
+            }
+
+            generateSlug(name, id) {
+                const slug = name
+                    .toLowerCase()
+                    .normalize('NFD')
+                    .replace(/[\u0300-\u036f]/g, '')
+                    .replace(/[^a-z0-9]+/g, '-')
+                    .replace(/^-+|-+$/g, '');
+                return `${slug}-${id}`;
+            }
+
+            updateFilterCounts() {
+                const activeFilters = this.getActiveFiltersByType();
+                const totalActiveFilters = Object.values(activeFilters).reduce((sum, filters) => sum + filters.length, 0);
+                
+                document.querySelectorAll('.filter-count').forEach(count => {
+                    const option = count.closest('.filter-option');
+                    const input = option.querySelector('input[type="checkbox"]');
+                    
+                    if (input && !input.checked) {
+                        const key = `${input.name}:${input.value}`;
+                        const originalCount = this.originalCounts.get(key) || parseInt(count.textContent);
+                        
+                        // Calculer la réduction basée sur les autres filtres actifs
+                        const reductionFactor = this.calculateReductionFactor(input.name, activeFilters);
+                        const adjustedCount = Math.max(0, Math.floor(originalCount * (1 - reductionFactor)));
+                        
+                        // Animation de changement
+                        if (parseInt(count.textContent) !== adjustedCount) {
+                            this.animateCountChange(count, adjustedCount);
+                        }
+                        
+                        // Masquer les options avec 0 résultat
+                        option.style.display = adjustedCount === 0 ? 'none' : 'flex';
+                        option.style.opacity = adjustedCount === 0 ? '0.3' : '1';
+                    }
+                });
+            }
+
+            getActiveFiltersByType() {
+                const grouped = {};
+                document.querySelectorAll('input[type="checkbox"]:checked').forEach(checkbox => {
+                    if (!grouped[checkbox.name]) grouped[checkbox.name] = [];
+                    grouped[checkbox.name].push(checkbox.value);
+                });
+                return grouped;
+            }
+
+            calculateReductionFactor(filterType, activeFiltersByType) {
+                let reductionFactor = 0;
+                
+                Object.entries(activeFiltersByType).forEach(([type, filters]) => {
+                    if (type !== filterType) {
+                        reductionFactor += filters.length * 0.2; // 20% de réduction par filtre actif
+                    }
+                });
+                
+                return Math.min(reductionFactor, 0.85); // Maximum 85% de réduction
+            }
+
+            animateCountChange(countElement, newCount) {
+                countElement.style.transform = 'scale(1.2)';
+                countElement.style.background = '#E74C3C';
+                countElement.style.transition = 'all 0.3s ease';
+                
+                setTimeout(() => {
+                    countElement.textContent = newCount;
+                    countElement.style.transform = 'scale(1)';
+                    countElement.style.background = 'linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark))';
+                }, 150);
+            }
+        }
+
+        // Fonction globale pour effacer les filtres
         function clearFilters() {
             document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
                 checkbox.checked = false;
@@ -1399,118 +1077,143 @@
             document.getElementById('filterForm').submit();
         }
 
-        // Auto-submit sur changement de checkbox avec délai
-        let filterTimeout;
-        document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-            checkbox.addEventListener('change', function() {
-                clearTimeout(filterTimeout);
-                filterTimeout = setTimeout(() => {
-                    document.getElementById('filterForm').submit();
-                }, 500); // Délai plus long pour permettre plusieurs sélections
-            });
-        });
+        // Utilitaires pour la performance
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
 
-        // ================================
-        // ANIMATIONS ET EFFETS
-        // ================================
-        
-        // Animation des cartes au scroll
-        const observerOptions = {
-            threshold: 0.1,
-            rootMargin: '0px 0px -30px 0px'
-        };
-
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                    entry.target.classList.add('visible');
-                }
-            });
-        }, observerOptions);
-
-        // Initialisation au chargement de la page
+        // Initialisation principale
         document.addEventListener('DOMContentLoaded', function() {
-            // Initialiser les animations des cartes
-            const productCards = document.querySelectorAll('.product-card');
-            productCards.forEach((card, index) => {
-                card.style.opacity = '0';
-                card.style.transform = 'translateY(20px)';
-                card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+            console.log('🎯 Initialisation CrystoJewel avec couleurs rose gold');
+            
+            // Initialiser le carousel
+            new ProductCarousel();
+            
+            // Initialiser les filtres
+            new FilterManager();
+            
+            // Animation d'entrée des cartes
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.opacity = '1';
+                        entry.target.style.transform = 'translateY(0)';
+                    }
+                });
+            }, { threshold: 0.1 });
+
+            document.querySelectorAll('.product-card').forEach(card => {
                 observer.observe(card);
             });
 
-            // Initialiser le système de swipe pour chaque image
-            const imageContainers = document.querySelectorAll('.product-img');
-            imageContainers.forEach(container => {
-                new ImageSwiper(container);
-            });
-
-            // Effet de hover amélioré sur les cartes
-            productCards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-8px) scale(1.02)';
+            // Performance: Lazy loading des images
+            if ('IntersectionObserver' in window) {
+                const imageObserver = new IntersectionObserver((entries) => {
+                    entries.forEach(entry => {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            if (img.dataset.src) {
+                                img.src = img.dataset.src;
+                                img.removeAttribute('data-src');
+                                imageObserver.unobserve(img);
+                            }
+                        }
+                    });
                 });
-                
-                card.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0) scale(1)';
-                });
-            });
-        });
 
-        // ================================
-        // AMÉLIORATIONS UX
-        // ================================
-        
-        // Smooth scroll pour la pagination
-        document.querySelectorAll('.page-link').forEach(link => {
-            link.addEventListener('click', function(e) {
-                // Scroll vers le haut avant le changement de page
-                window.scrollTo({
-                    top: 0,
-                    behavior: 'smooth'
+                document.querySelectorAll('img[data-src]').forEach(img => {
+                    imageObserver.observe(img);
                 });
-            });
-        });
+            }
 
-        // Feedback visuel sur les filtres
-        document.querySelectorAll('.filter-item').forEach(item => {
-            item.addEventListener('click', function() {
-                const checkbox = this.querySelector('input[type="checkbox"]');
-                if (checkbox) {
-                    checkbox.checked = !checkbox.checked;
+            // Gestion responsive mobile
+            const handleMobileLayout = () => {
+                if (window.innerWidth <= 768) {
+                    // Ajustements spécifiques mobile
+                    document.querySelectorAll('.product-image-container').forEach(container => {
+                        container.style.height = '200px';
+                    });
                     
-                    // Effet visuel
-                    this.style.background = checkbox.checked 
-                        ? 'linear-gradient(135deg, var(--rose-gold-light), rgba(232, 194, 200, 0.5))'
-                        : '';
+                    document.querySelectorAll('.product-info').forEach(info => {
+                        info.style.padding = '15px';
+                    });
+                } else {
+                    document.querySelectorAll('.product-image-container').forEach(container => {
+                        container.style.height = '300px';
+                    });
                     
-                    // Déclencher le changement
-                    checkbox.dispatchEvent(new Event('change'));
+                    document.querySelectorAll('.product-info').forEach(info => {
+                        info.style.padding = '20px';
+                    });
                 }
+            };
+
+            window.addEventListener('resize', debounce(handleMobileLayout, 250));
+            handleMobileLayout();
+
+            // Smooth scroll pour la pagination
+            document.querySelectorAll('a[href*="page="]').forEach(link => {
+                link.addEventListener('click', () => {
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                });
             });
+
+            // Affichage du nombre de produits
+            const productCount = document.querySelectorAll('.product-card').length;
+            console.log(`✅ ${productCount} bagues affichées avec design CrystoJewel épuré`);
+
+            // Notification de chargement avec couleurs rose gold
+            if (productCount > 0) {
+                const notification = document.createElement('div');
+                notification.style.cssText = `
+                    position: fixed; bottom: 20px; right: 20px;
+                    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+                    color: white; padding: 12px 20px; border-radius: 25px;
+                    font-size: 14px; font-weight: 500; z-index: 1000;
+                    transform: translateY(100px); transition: transform 0.3s ease;
+                    box-shadow: 0 4px 20px rgba(183, 110, 121, 0.3);
+                `;
+                notification.innerHTML = `<i class="fas fa-check"></i> ${productCount} bagues CrystoJewel chargées`;
+                document.body.appendChild(notification);
+
+                setTimeout(() => {
+                    notification.style.transform = 'translateY(0)';
+                }, 500);
+
+                setTimeout(() => {
+                    notification.style.transform = 'translateY(100px)';
+                    setTimeout(() => notification.remove(), 300);
+                }, 3000);
+            }
+
+            // Messages de debug avec style
+            console.log('%c✨ CrystoJewel Design System Ready', 'color: #b76e79; font-weight: bold; font-size: 16px;');
+            console.log('%c🎨 Rose Gold Theme Applied', 'color: #e8c2c8; font-weight: bold;');
+            console.log('%c📱 Mobile Responsive (2 colonnes)', 'color: #7d4b53; font-weight: bold;');
+            console.log('%c🔄 Filtres adaptatifs activés', 'color: #b76e79;');
         });
 
-        // Améliorer l'accessibilité
-        document.querySelectorAll('.product-img').forEach(container => {
-            container.setAttribute('role', 'button');
-            container.setAttribute('tabindex', '0');
-            container.setAttribute('aria-label', 'Faire glisser pour voir plus d\'images');
-            
-            // Navigation au clavier
-            container.addEventListener('keydown', function(e) {
-                if (e.key === 'ArrowLeft') {
-                    const swiper = container.swiper;
-                    if (swiper) swiper.prevImage();
-                } else if (e.key === 'ArrowRight') {
-                    const swiper = container.swiper;
-                    if (swiper) swiper.nextImage();
-                }
-            });
-        });
+        // Gestion des erreurs d'images avec fallback
+        function handleImageError(img) {
+            img.style.display = 'none';
+            const placeholder = img.nextElementSibling;
+            if (placeholder && placeholder.classList.contains('placeholder-image')) {
+                placeholder.style.display = 'flex';
+            }
+        }
 
-        console.log('🎉 Système de bijoux avec swipe initialisé !');
+        // Export des classes pour usage externe
+        window.ProductCarousel = ProductCarousel;
+        window.FilterManager = FilterManager;
+        window.clearFilters = clearFilters;
     </script>
 </body>
 </html>

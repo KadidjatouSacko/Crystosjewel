@@ -29,35 +29,8 @@ const app = express();
 // MIDDLEWARES ESSENTIELS - À AJOUTER EN PREMIER
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-
 // ===== FILTRAGE DES LOGS SÉCURISÉ - UNE SEULE FOIS AU DÉMARRAGE =====
-let logsFiltered = false;
-if (!logsFiltered) {
-    const originalLog = console.log;
-    const originalError = console.error;
-    
-    console.log = function(...args) {
-        const logString = String(args.join(' '));
-        if (logString.includes('Sessions') && logString.includes('Executing')) {
-            return; // Ignorer les logs de session
-        }
-        if (logString.includes('Maximum call stack') || logString.includes('RangeError')) {
-            return; // Ignorer les erreurs de boucle
-        }
-        originalLog.apply(console, args);
-    };
-    
-    console.error = function(...args) {
-        const logString = String(args.join(' '));
-        if (logString.includes('Maximum call stack')) {
-            return; // Ignorer les erreurs de stack overflow
-        }
-        originalError.apply(console, args);
-    };
-    
-    logsFiltered = true;
-    console.log('✅ Filtrage des logs activé');
-}
+
 
 // ===== CRÉATION DES DOSSIERS NÉCESSAIRES =====
 function ensureDirectoriesExist() {
