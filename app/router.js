@@ -611,7 +611,7 @@ router.post('/admin/categories/add', isAdmin, jewelControlleur.addCategory);
 router.post('/admin/types/add', isAdmin, jewelControlleur.addType);  
 router.post('/admin/materials/add', isAdmin, jewelControlleur.addMaterial);
 
-router.get('/bijoux/colliers', jewelControlleur.showNecklaces);
+router.get('/bijoux/colliers', colliersControlleur.showNecklaces);
 router.get('/bijoux/bracelets', braceletsControlleur.showBracelets);
 router.get('/bijoux/bagues', baguesControlleur.showRings);
 router.get('/bijoux/:slug', async (req, res, next) => {
@@ -2556,12 +2556,8 @@ router.post('/track-view', async (req, res) => {
 });
 
 router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
-router.post('/parametres/save', isAdmin, SettingsController.saveSettings);
-// TEST - Ajoutez ça temporairement
-router.post('/admin/parametres/save', (req, res) => {
-    console.log('🎯 Route de test atteinte !');
-    res.json({ success: true, message: 'Test OK !' });
-});
+router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
+
 
 
 
@@ -3773,6 +3769,7 @@ import { adminEmailController } from './controlleurs/adminEmailController.js';
 // ========================================
 
 import {emailController} from "./controlleurs/emailController.js";
+import { colliersControlleur } from "./controlleurs/colliersControlleur.js";
 
 router.get('/admin/emails', isAdmin, emailController.index);
 router.post('/admin/emails/test-connection', isAdmin, emailController.testConnection);

@@ -5,12 +5,12 @@ import { Category } from '../models/categoryModel.js';
 import { Op } from 'sequelize';
 import { sequelize } from '../models/sequelize-client.js';
 
-export const braceletsControlleur = {
+export const colliersControlleur = {
   
   /**
    * Affiche la page des bagues avec filtres fonctionnels
    */
-  async showBracelets(req, res) {
+  async showNecklaces(req, res) {
     try {
       console.log('🔍 === DEBUT showRings - Version finale ===');
       
@@ -48,7 +48,7 @@ export const braceletsControlleur = {
       // 3. CONSTRUCTION DE LA CLAUSE WHERE
       // ==========================================
       
-      let whereClause = { category_id: 1 }; // Bagues = catégorie 3
+      let whereClause = { category_id: 2 }; // Bagues = catégorie 3
 
       // Filtre par matériau
       if (filters.matiere.length > 0) {
@@ -207,7 +207,7 @@ export const braceletsControlleur = {
       
       // Récupérer TOUS les bijoux de la catégorie pour calculer les filtres
       const allRings = await Jewel.findAll({
-        where: { category_id: 1 },
+        where: { category_id: 2 },
         attributes: ['id', 'matiere', 'tailles', 'carat', 'type_id', 'price_ttc'],
         include: [
           {
@@ -228,7 +228,7 @@ export const braceletsControlleur = {
           order: [['name', 'ASC']] 
         }),
         Type.findAll({ 
-          where: { category_id: 1 }, // Types pour bagues
+          where: { category_id: 2 }, // Types pour bagues
           order: [['name', 'ASC']] 
         })
       ]);
@@ -264,8 +264,8 @@ export const braceletsControlleur = {
       // ==========================================
       
       const viewData = {
-        title: 'Bracelets raffinés - CrystoJewel',
-        pageTitle: 'Nos Bracelets',
+        title: 'Colliers uniques - CrystoJewel',
+        pageTitle: 'Nos Colliers',
         jewels: formattedJewels,
         filters: filters,
         availableFilters: availableFilters,
@@ -280,7 +280,7 @@ export const braceletsControlleur = {
       console.log(`🔧 Filtres: ${materialsWithCount.length} matériaux, ${typesWithCount.length} types`);
       console.log(`📊 Tailles disponibles: ${availableFilters.sizes.length}`);
 
-      res.render('bracelets', viewData);
+      res.render('colliers', viewData);
 
     } catch (error) {
       console.error('❌ Erreur dans showRings:', error.message);

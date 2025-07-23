@@ -1,6 +1,7 @@
 // SettingsController.js - VERSION SIMPLE ET ESSENTIELLE
 import Setting from '../models/SettingModel.js';
 
+
 export class SettingsController {
     
     // Afficher la page des paramètres
@@ -136,74 +137,68 @@ export class SettingsController {
     }
 
     // Sauvegarder les paramètres
-    static async saveSettings(req, res) {
-        try {
-            console.log('💾 Sauvegarde paramètres:', req.body);
+   static async saveSettings(req, res) {
+    try {
+        console.log('💾 Sauvegarde paramètres:', req.body);
 
-            const { section, settings } = req.body;
+        const { section, settings } = req.body;
 
-            if (!section || !settings) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Section et paramètres requis'
-                });
-            }
-
-            // Sauvegarder chaque paramètre
-            const savedSettings = [];
-            for (const [key, value] of Object.entries(settings)) {
-                try {
-                    const [setting, created] = await Setting.findOrCreate({
-                        where: { section, key },
-                        defaults: {
-                            section,
-                            key,
-                            value: String(value),
-                            type: SettingsController.getValueType(value),
-                            description: `Paramètre ${key}`,
-                            is_public: section === 'footer' || section === 'company' // Footer et coordonnées publiques
-                        }
-                    });
-
-                    if (!created) {
-                        setting.value = String(value);
-                        setting.type = SettingsController.getValueType(value);
-                        setting.updated_at = new Date();
-                        await setting.save();
-                    }
-
-                    savedSettings.push({
-                        section,
-                        key,
-                        value: setting.value,
-                        created
-                    });
-
-                } catch (settingError) {
-                    console.error(`Erreur paramètre ${key}:`, settingError);
-                }
-            }
-
-            console.log('✅ Paramètres sauvegardés:', savedSettings.length);
-
-            // Invalider le cache pour que les changements soient visibles immédiatement
-            SettingsController.invalidateCache();
-
-            res.json({
-                success: true,
-                message: `${savedSettings.length} paramètres sauvegardés`,
-                data: savedSettings
-            });
-
-        } catch (error) {
-            console.error('❌ Erreur sauvegarde paramètres:', error);
-            res.status(500).json({
+        if (!section || !settings) {
+            return res.status(400).json({
                 success: false,
-                message: 'Erreur lors de la sauvegarde',
-                error: error.message
+                message: 'Section et paramètres requis'
             });
         }
+
+        // Sauvegarder chaque paramètre
+        const savedSettings = [];
+        for (const [key, value] of Object.entries(settings)) {
+            try {
+                // Utiliser upsert au lieu de findOrCreate pour plus de simplicité
+                const setting = await Setting.upsert({
+                    section,
+                    key,
+                    value: String(value),
+                    type: SettingsController.getValueType(value),
+                    description: `Paramètre ${key}`,
+                    is_public: section === 'footer' || section === 'company'
+                }, {
+                    returning: true
+                });
+
+                savedSettings.push({
+                    section,
+                    key,
+                    value: String(value),
+                    type: SettingsController.getValueType(value)
+                });
+
+            } catch (settingError) {
+                console.error(`Erreur paramètre ${key}:`, settingError);
+            }
+        }
+
+        console.log('✅ Paramètres sauvegardés:', savedSettings.length);
+
+        // Invalider le cache pour que les changements soient visibles immédiatement
+        SettingsController.invalidateCache();
+
+        res.json({
+            success: true,
+            message: `${savedSettings.length} paramètres sauvegardés`,
+            data: savedSettings
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde paramètres:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la sauvegarde',
+            error: error.message
+        });
     }
+}
+
 
     // Fonctions utilitaires
     static getValueType(value) {

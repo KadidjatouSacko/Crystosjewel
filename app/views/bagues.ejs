@@ -46,6 +46,27 @@
             box-shadow: var(--shadow-soft);
         }
 
+        /* Bannière de la page */
+        .page-banner {
+            background: linear-gradient(135deg, #b9bbbc 0%, #e9ecef 100%);
+            padding: 60px 0;
+            text-align: center;
+            border-bottom: 1px solid var(--border-light);
+        }
+
+        .banner-content h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--rose-gold-dark);
+            margin-bottom: 15px;
+        }
+
+        .banner-content p {
+            font-size: 1.1rem;
+            color: var(--light-text);
+            margin: 0;
+        }
+
         /* Container principal */
         .main-container {
             max-width: 1400px;
@@ -81,6 +102,7 @@
       .filter-group {
     margin-bottom: 20px !important;
     position: relative !important;
+    
 }
 
         .filter-group:last-child {
@@ -170,6 +192,8 @@
     padding: 15px !important;
     background: white !important;
     min-height: 80px !important;
+    margin-top: -40%;  
+    //test//
 }
 
 .filter-option {
@@ -183,6 +207,9 @@
     margin-bottom: 6px !important;
     background: white !important;
     border: 1px solid transparent !important;
+    width: 70%;
+    //test//
+
 }
 
 .filter-option:hover {
@@ -541,6 +568,14 @@
                 gap: 15px;
                 align-items: flex-start;
             }
+
+            .banner-content h2 {
+                font-size: 2rem;
+            }
+
+            .banner-content p {
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
@@ -548,6 +583,14 @@
     <header class="header-clean">
         <%- include('partials/navbarre.ejs') %>
     </header>
+
+    <!-- Bannière de la page -->
+    <section class="page-banner">
+        <div class="banner-content">
+            <h2>Nos Bagues</h2>
+            <p>Des créations raffinées pour sublimer vos mains</p>
+        </div>
+    </section>
 
     <div class="main-container">
         <!-- SIDEBAR FILTRES FONCTIONNELS -->

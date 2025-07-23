@@ -519,7 +519,6 @@ app.use((req, res, next) => {
 
 // Middleware externes
 app.use(setUserForViews);
-app.use(injectSiteSettings);
 
 // ===== ROUTES DE DEBUG =====
 app.get('/debug/cart', (req, res) => {
@@ -572,6 +571,7 @@ app.get('/debug/add-test-item', (req, res) => {
     cart: req.session.cart 
   });
 });
+
 
 app.get('/debug/category-images', (req, res) => {
     const paths = [
@@ -660,6 +660,9 @@ app.get('/debug/check-permissions', (req, res) => {
 app.get('/api/test', (req, res) => {
     res.json({ success: true, message: 'API fonctionne !' });
 });
+
+app.use(injectSiteSettings);
+
 
 // Middleware de debug pour les requêtes d'images
 app.use('/images', (req, res, next) => {

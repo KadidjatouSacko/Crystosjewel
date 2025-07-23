@@ -47,10 +47,13 @@ export const injectSiteSettings = async (req, res, next) => {
         // Injecter dans toutes les vues
         res.locals.siteSettings = settingsCache || {};
         
-        // Variables de commodité
+        // Variables de commodité pour les vues
         res.locals.siteName = settingsCache?.company?.company_name || 'Crystos Jewel';
         res.locals.companyEmail = settingsCache?.company?.company_email || 'contact@crystosjewel.com';
         res.locals.companyPhone = settingsCache?.company?.company_phone || '+33 1 23 45 67 89';
+        res.locals.footerFacebook = settingsCache?.footer?.facebook_url || '';
+        res.locals.footerInstagram = settingsCache?.footer?.instagram_url || '';
+        res.locals.footerTwitter = settingsCache?.footer?.twitter_url || '';
         
         next();
         
@@ -62,6 +65,9 @@ export const injectSiteSettings = async (req, res, next) => {
         res.locals.siteName = 'Crystos Jewel';
         res.locals.companyEmail = 'contact@crystosjewel.com';
         res.locals.companyPhone = '+33 1 23 45 67 89';
+        res.locals.footerFacebook = '';
+        res.locals.footerInstagram = '';
+        res.locals.footerTwitter = '';
         
         next();
     }
