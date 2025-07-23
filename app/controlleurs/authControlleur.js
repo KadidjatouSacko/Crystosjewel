@@ -60,7 +60,10 @@ async login(req, res) {
       name: customer.firstname,
       email: customer.email,
       role: customer.role,
+      role_id: customer.role_id,  // ✅ AJOUTEZ CETTE LIGNE
+      isAdmin: customer.role_id === 2,
       cartItems: []
+
     };
 
     res.cookie("customername", customer.email, {
