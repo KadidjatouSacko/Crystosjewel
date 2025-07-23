@@ -408,6 +408,87 @@ router.get('/api/placeholder/:width/:height', (req, res) => {
     res.send(svg);
 });
 
+// Route d'urgence pour désactiver la maintenance
+router.post('/maintenance/emergency-disable/:secret', async (req, res) => {
+    try {
+        console.log(`🚨 Tentative désactivation urgence avec secret: ${req.params.secret}`);
+        
+        const emergencySecret = 'URGENCE-CRYSTOS-2025';
+        
+        if (req.params.secret !== emergencySecret) {
+            return res.status(403).json({ 
+                error: 'Secret incorrect',
+                hint: 'Utilisez le bon secret ou SQL: UPDATE settings SET value = \'false\' WHERE section = \'maintenance\' AND key = \'maintenance_enabled\';'
+            });
+        }
+        
+        const Setting = (await import('../models/SettingModel.js')).default;
+        
+        await Setting.update(
+            { value: 'false' },
+            { where: { section: 'maintenance', key: 'maintenance_enabled' } }
+        );
+        
+        console.log('✅ Maintenance désactivée en urgence !');
+        
+        res.json({ 
+            success: true, 
+            message: 'Maintenance désactivée avec succès',
+            redirect: '/admin/parametres',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur désactivation urgence:', error);
+        res.status(500).json({ 
+            error: error.message,
+            sqlFallback: "UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'maintenance_enabled';"
+        });
+    }
+});
+
+// Route GET aussi pour faciliter l'accès
+router.get('/maintenance/emergency-disable/:secret', async (req, res) => {
+    try {
+        console.log(`🚨 GET désactivation urgence: ${req.params.secret}`);
+        
+        const emergencySecret = 'URGENCE-CRYSTOS-2025';
+        
+        if (req.params.secret !== emergencySecret) {
+            return res.send(`
+                <h1>❌ Secret incorrect</h1>
+                <p>Utilisez cette requête SQL en base de données :</p>
+                <code>UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'maintenance_enabled';</code>
+            `);
+        }
+        
+        const Setting = (await import('../models/SettingModel.js')).default;
+        
+        await Setting.update(
+            { value: 'false' },
+            { where: { section: 'maintenance', key: 'maintenance_enabled' } }
+        );
+        
+        console.log('✅ Maintenance désactivée en urgence (GET) !');
+        
+        res.send(`
+            <h1>✅ Maintenance Désactivée</h1>
+            <p>La maintenance a été désactivée avec succès !</p>
+            <p><a href="/admin/parametres">Aller aux paramètres</a></p>
+            <script>setTimeout(() => window.location.href = '/admin/parametres', 2000);</script>
+        `);
+        
+    } catch (error) {
+        console.error('❌ Erreur désactivation urgence (GET):', error);
+        res.send(`
+            <h1>❌ Erreur</h1>
+            <p>Erreur: ${error.message}</p>
+            <p>Utilisez cette requête SQL :</p>
+            <code>UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'maintenance_enabled';</code>
+        `);
+    }
+});
+
 // Route de test général (sans authentification)
 router.get('/api/test', (req, res) => {
     // console.log('🧪 Route de test général atteinte');
@@ -2600,33 +2681,6 @@ router.get('/api/maintenance/status', async (req, res) => {
 // 3. ROUTE D'URGENCE POUR DÉSACTIVER LA MAINTENANCE
 // ==========================================
 
-// Route secrète pour désactiver la maintenance en urgence
-router.post('/maintenance/emergency-disable/:secret', async (req, res) => {
-    try {
-        // Mot de passe d'urgence (changez-le !)
-        const emergencySecret = 'URGENCE-CRYSTOS-2025';
-        
-        if (req.params.secret !== emergencySecret) {
-            return res.status(403).json({ error: 'Secret incorrect' });
-        }
-        
-        await Setting.update(
-            { value: 'false' },
-            { where: { section: 'maintenance', key: 'maintenance_enabled' } }
-        );
-        
-        console.log('🚨 Maintenance désactivée en urgence !');
-        
-        res.json({ 
-            success: true, 
-            message: 'Maintenance désactivée en urgence',
-            timestamp: new Date().toISOString()
-        });
-        
-    } catch (error) {
-        res.status(500).json({ error: error.message });
-    }
-});
 
 
 

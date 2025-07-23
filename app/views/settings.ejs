@@ -519,7 +519,7 @@
         </div>
         <div>
             <div class="section-title">Maintenance</div>
-            <div class="section-description">Activer/désactiver le mode maintenance</div>
+            <div class="section-description">Planifier et gérer la maintenance du site</div>
         </div>
     </div>
     
@@ -532,25 +532,37 @@
                 <span class="slider"></span>
             </label>
             <small style="color: #666; margin-top: 0.5rem; display: block;">
-                ⚠️ Attention : Quand activé, seuls les admins pourront accéder au site
+                ⚠️ Active immédiatement la maintenance (ou utilisez la programmation ci-dessous)
+            </small>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Programmer le début de maintenance</label>
+            <input type="datetime-local" class="form-input" name="maintenance_start_time" 
+                   value="<%= settings.maintenance?.maintenance_start_time || '' %>">
+            <small style="color: #666; margin-top: 0.5rem; display: block;">
+                💡 Si défini, la maintenance s'activera automatiquement à cette heure
+            </small>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Programmer la fin de maintenance</label>
+            <input type="datetime-local" class="form-input" name="maintenance_end_time" 
+                   value="<%= settings.maintenance?.maintenance_end_time || '' %>">
+            <small style="color: #666; margin-top: 0.5rem; display: block;">
+                ⏰ La maintenance se désactivera automatiquement à cette heure
             </small>
         </div>
         
         <div class="form-group">
             <label class="form-label">Message de maintenance</label>
-            <textarea class="form-textarea" name="maintenance_message" placeholder="Message affiché aux visiteurs pendant la maintenance"><%= settings.maintenance?.maintenance_message || 'Site en maintenance. Nous revenons bientôt !' %></textarea>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Heure de retour prévue</label>
-            <input type="datetime-local" class="form-input" name="maintenance_end_time" 
-                   value="<%= settings.maintenance?.maintenance_end_time || '' %>">
+            <textarea class="form-textarea" name="maintenance_message" placeholder="Message affiché aux visiteurs pendant la maintenance"><%= settings.maintenance?.maintenance_message || 'Site en maintenance pour améliorer votre expérience. Nous revenons bientôt !' %></textarea>
         </div>
         
         <div class="form-group">
             <label class="form-label">Email de contact</label>
             <input type="email" class="form-input" name="maintenance_contact_email" 
-                   value="<%= settings.maintenance?.maintenance_contact_email || 'contact@crystosjewel.com' %>" 
+                   value="<%= settings.maintenance?.maintenance_contact_email || 'crystosjewel@gmail.com' %>" 
                    placeholder="Email pour les urgences">
         </div>
         
