@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site en Maintenance - Crystos Jewel</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #b76e79 0%, #e8c2c8 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .maintenance-container {
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            max-width: 600px;
+            margin: 2rem;
+        }
+        
+        .maintenance-icon {
+            font-size: 4rem;
+            margin-bottom: 2rem;
+            color: #fff;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .maintenance-title {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            font-weight: 700;
+        }
+        
+        .maintenance-message {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            line-height: 1.6;
+            opacity: 0.9;
+        }
+        
+        .maintenance-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+        
+        .maintenance-time {
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .contact-info {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .contact-link {
+            color: #fff;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+        
+        .contact-link:hover {
+            opacity: 0.8;
+        }
+        
+        .admin-link {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 10px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: white;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+        }
+        
+        .admin-link:hover {
+            background: rgba(255, 255, 255, 0.3);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="maintenance-container">
+        <div class="maintenance-icon">
+            <i class="fas fa-tools"></i>
+        </div>
+        
+        <h1 class="maintenance-title">Site en Maintenance</h1>
+        
+        <p class="maintenance-message">${maintenanceMessage}</p>
+        
+        <div class="maintenance-info">
+            ${maintenanceEndTime ? `
+                <div class="maintenance-time">
+                    <i class="fas fa-clock"></i>
+                    Retour prévu : ${new Date(maintenanceEndTime).toLocaleString('fr-FR')}
+                </div>
+            ` : ''}
+            
+            <div class="maintenance-time">
+                <i class="fas fa-heart"></i>
+                Merci pour votre patience
+            </div>
+        </div>
+        
+        <div class="contact-info">
+            <p>Pour toute urgence :</p>
+            <a href="mailto:${contactEmail}" class="contact-link">
+                <i class="fas fa-envelope"></i> ${contactEmail}
+            </a>
+        </div>
+    </div>
+    
+    <a href="/admin" class="admin-link">
+        <i class="fas fa-user-shield"></i> Accès Admin
+    </a>
+</body>
+</html>

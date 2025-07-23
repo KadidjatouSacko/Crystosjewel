@@ -33,7 +33,7 @@ import { favoritesController } from "./controlleurs/favoritesControlleur.js";
 import { adminStatsController } from "./controlleurs/adminStatsControlleur.js";
 import { orderController } from "./controlleurs/orderController.js";
 import { adminOrdersController } from "./controlleurs/adminOrdersController.js";
-import { SettingsController } from './controlleurs/SettingsController.js';
+import SettingsController from './controlleurs/SettingsController.js'
 import { jewelryController } from "./controlleurs/jewelryController.js";
 import { categoryController } from './controlleurs/categoryController.js';
 import { sendTestMail } from "./services/mailService.js";
@@ -2555,8 +2555,78 @@ router.post('/track-view', async (req, res) => {
     }
 });
 
+// Route principale admin (redirection)
+router.get('/admin', (req, res) => {
+    if (req.session?.user?.role_id === 2) {
+        res.redirect('/admin/parametres');
+    } else {
+        res.redirect('/connexion-inscription?redirect=/admin');
+    }
+});
+
+// Route paramètres (si pas déjà présente)
 router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
 router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
+
+// Route de vérification du statut maintenance
+router.get('/api/maintenance/status', async (req, res) => {
+    try {
+        const setting = await Setting.findOne({
+            where: { 
+                section: 'maintenance',
+                key: 'maintenance_enabled'
+            }
+        });
+        
+        const endTimeSetting = await Setting.findOne({
+            where: { 
+                section: 'maintenance',
+                key: 'maintenance_end_time'
+            }
+        });
+        
+        res.json({
+            maintenance: setting?.value === 'true',
+            endTime: endTimeSetting?.value || null,
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        res.json({ maintenance: false, error: error.message });
+    }
+});
+
+// ==========================================
+// 3. ROUTE D'URGENCE POUR DÉSACTIVER LA MAINTENANCE
+// ==========================================
+
+// Route secrète pour désactiver la maintenance en urgence
+router.post('/maintenance/emergency-disable/:secret', async (req, res) => {
+    try {
+        // Mot de passe d'urgence (changez-le !)
+        const emergencySecret = 'URGENCE-CRYSTOS-2025';
+        
+        if (req.params.secret !== emergencySecret) {
+            return res.status(403).json({ error: 'Secret incorrect' });
+        }
+        
+        await Setting.update(
+            { value: 'false' },
+            { where: { section: 'maintenance', key: 'maintenance_enabled' } }
+        );
+        
+        console.log('🚨 Maintenance désactivée en urgence !');
+        
+        res.json({ 
+            success: true, 
+            message: 'Maintenance désactivée en urgence',
+            timestamp: new Date().toISOString()
+        });
+        
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 
 

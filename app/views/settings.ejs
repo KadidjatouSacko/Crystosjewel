@@ -276,7 +276,8 @@
                     <div class="form-group">
                         <label class="form-label">Clé publique Stripe</label>
                         <input type="text" class="form-input" name="stripe_public_key" 
-                               value="" placeholder="pk_live_...">
+                            value="<%= settings.payment?.stripe_public_key || '' %>" 
+                            placeholder="pk_test_...">
                     </div>
                     
                     <div class="form-group">
@@ -288,13 +289,15 @@
                     <div class="form-group">
                         <label class="form-label">Client ID PayPal</label>
                         <input type="text" class="form-input" name="paypal_client_id" 
-                               value="" placeholder="Votre Client ID PayPal">
+                        value="<%= settings.payment?.paypal_client_id || '' %>" 
+                        placeholder="Votre Client ID PayPal">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Accepter les cartes de crédit</label>
                         <label class="switch">
-                            <input type="checkbox" name="accept_credit_cards" checked>
+                            <input type="checkbox" name="accept_credit_cards" 
+       <%= (settings.payment?.accept_credit_cards === 'true' || settings.payment?.accept_credit_cards === true) ? 'checked' : '' %>>
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -302,7 +305,8 @@
                     <div class="form-group">
                         <label class="form-label">Accepter PayPal</label>
                         <label class="switch">
-                            <input type="checkbox" name="accept_paypal" checked>
+                            <input type="checkbox" name="accept_paypal" 
+       <%= (settings.payment?.accept_paypal === 'true' || settings.payment?.accept_paypal === true) ? 'checked' : '' %>>
                             <span class="slider"></span>
                         </label>
                     </div>
@@ -329,28 +333,33 @@
                     <div class="form-group">
                         <label class="form-label">Livraison gratuite à partir de (€)</label>
                         <input type="number" class="form-input" name="free_shipping_threshold" 
-                               value="100" step="0.01">
+                        value="<%= settings.shipping?.free_shipping_threshold || '50' %>" 
+                        step="0.01">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Frais livraison standard (€)</label>
                         <input type="number" class="form-input" name="standard_shipping_cost" 
-                               value="7.50" step="0.01">
+       value="<%= settings.shipping?.standard_shipping_cost || '7.50' %>" 
+       step="0.01">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Frais livraison express (€)</label>
                         <input type="number" class="form-input" name="express_shipping_cost" 
-                               value="15.00" step="0.01">
+       value="<%= settings.shipping?.express_shipping_cost || '15.00' %>" 
+       step="0.01">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Zones de livraison</label>
                         <input type="text" class="form-input" name="shipping_zones" 
-                               value="France, Europe, International" 
-                               placeholder="France, Europe, International">
+       value="<%= settings.shipping?.shipping_zones || 'France, Europe, International' %>" 
+       placeholder="France, Europe, International">
                     </div>
                     
+
+
                     <button type="button" class="save-btn" onclick="saveSection('shipping')">
                         <i class="fas fa-save"></i> Sauvegarder
                     </button>
@@ -373,20 +382,20 @@
                     <div class="form-group">
                         <label class="form-label">Timeout session (secondes)</label>
                         <input type="number" class="form-input" name="session_timeout" 
-                               value="3600">
+       value="<%= settings.security?.session_timeout || '3600' %>">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Tentatives de connexion max</label>
                         <input type="number" class="form-input" name="max_login_attempts" 
-                               value="5">
+       value="<%= settings.security?.max_login_attempts || '5' %>">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Vérification email obligatoire</label>
                         <label class="switch">
-                            <input type="checkbox" name="require_email_verification" checked>
-                            <span class="slider"></span>
+<input type="checkbox" name="require_email_verification" 
+       <%= (settings.security?.require_email_verification === 'true' || settings.security?.require_email_verification === true) ? 'checked' : '' %>>                            <span class="slider"></span>
                         </label>
                     </div>
                     
@@ -412,36 +421,39 @@
                     <div class="form-group">
                         <label class="form-label">Nom de l'entreprise</label>
                         <input type="text" class="form-input" name="company_name" 
-                               value="Crystos Jewel">
+       value="<%= settings.company?.company_name || 'Crystos Jewel' %>">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Adresse de facturation</label>
-                        <textarea class="form-textarea" name="company_address">123 Rue de la Paix, 75001 Paris</textarea>
+                        <textarea class="form-textarea" name="company_address"><%= settings.company?.company_address || '123 Rue de la Paix, 75001 Paris' %></textarea>
+
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Téléphone</label>
                         <input type="tel" class="form-input" name="company_phone" 
-                               value="+33 1 23 45 67 89">
+                         value="<%= settings.company?.company_phone || '+33 1 23 45 67 89' %>">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Email officiel</label>
                         <input type="email" class="form-input" name="company_email" 
-                               value="contact@crystosjewel.com">
+                        value="<%= settings.company?.company_email || 'crystosjewel@gmail.com' %>">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Numéro SIRET</label>
-                        <input type="text" class="form-input" name="siret" 
-                               value="" placeholder="12345678901234">
+                            <input type="text" class="form-input" name="siret" 
+                            value="<%= settings.company?.siret || '' %>" 
+                            placeholder="12345678901234">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Numéro TVA</label>
                         <input type="text" class="form-input" name="vat_number" 
-                               value="" placeholder="FR12345678901">
+                        value="<%= settings.company?.vat_number || '' %>" 
+                        placeholder="FR12345678901">
                     </div>
                     
                     <button type="button" class="save-btn" onclick="saveSection('company')">
@@ -466,31 +478,32 @@
                     <div class="form-group">
                         <label class="form-label">Lien Instagram</label>
                         <input type="url" class="form-input" name="instagram_url" 
-                               value="https://instagram.com/crystosjewel">
+       value="<%= settings.footer?.instagram_url || 'https://instagram.com/crystosjewel' %>">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Lien Facebook</label>
                         <input type="url" class="form-input" name="facebook_url" 
-                               value="https://facebook.com/crystosjewel">
+                         value="<%= settings.footer?.facebook_url || 'https://facebook.com/crystosjewel' %>">
+
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Lien Pinterest</label>
-                        <input type="url" class="form-input" name="pinterest_url" 
-                               value="https://pinterest.com/crystosjewel">
+                    <input type="url" class="form-input" name="pinterest_url" 
+                     value="<%= settings.footer?.pinterest_url || 'https://pinterest.com/crystosjewel' %>">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Lien TikTok</label>
                         <input type="url" class="form-input" name="tiktok_url" 
-                               value="https://tiktok.com/@crystosjewel">
+                         value="<%= settings.footer?.tiktok_url || 'https://tiktok.com/@crystosjewel' %>">
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Texte copyright</label>
                         <input type="text" class="form-input" name="copyright_text" 
-                               value="2025 CrystosJewel - Tous droits réservés.">
+                          value="<%= settings.footer?.copyright_text || '2025 CrystosJewel - Tous droits réservés.' %>">
                     </div>
                     
                     <button type="button" class="save-btn" onclick="saveSection('footer')">
@@ -498,85 +511,185 @@
                     </button>
                 </form>
             </div>
+
+            <div class="section-card">
+    <div class="section-header">
+        <div class="section-icon">
+            <i class="fas fa-tools"></i>
+        </div>
+        <div>
+            <div class="section-title">Maintenance</div>
+            <div class="section-description">Activer/désactiver le mode maintenance</div>
         </div>
     </div>
+    
+    <form id="form-maintenance">
+        <div class="form-group">
+            <label class="form-label">Mode maintenance</label>
+            <label class="switch">
+                <input type="checkbox" name="maintenance_enabled" 
+                       <%= (settings.maintenance?.maintenance_enabled === 'true' || settings.maintenance?.maintenance_enabled === true) ? 'checked' : '' %>>
+                <span class="slider"></span>
+            </label>
+            <small style="color: #666; margin-top: 0.5rem; display: block;">
+                ⚠️ Attention : Quand activé, seuls les admins pourront accéder au site
+            </small>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Message de maintenance</label>
+            <textarea class="form-textarea" name="maintenance_message" placeholder="Message affiché aux visiteurs pendant la maintenance"><%= settings.maintenance?.maintenance_message || 'Site en maintenance. Nous revenons bientôt !' %></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Heure de retour prévue</label>
+            <input type="datetime-local" class="form-input" name="maintenance_end_time" 
+                   value="<%= settings.maintenance?.maintenance_end_time || '' %>">
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Email de contact</label>
+            <input type="email" class="form-input" name="maintenance_contact_email" 
+                   value="<%= settings.maintenance?.maintenance_contact_email || 'contact@crystosjewel.com' %>" 
+                   placeholder="Email pour les urgences">
+        </div>
+        
+        <button type="button" class="save-btn" onclick="saveSection('maintenance')">
+            <i class="fas fa-save"></i> Sauvegarder
+        </button>
+    </form>
+</div>
+        </div>
+
+        
+    </div>
+
+
+    
 
     <script>
-        function saveSection(sectionName) {
-            const form = document.getElementById(`form-${sectionName}`);
-            const btn = form.querySelector('.save-btn');
-            
-            // Désactiver le bouton
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
-            
-            // Collecter les données du formulaire
-            const formData = new FormData(form);
-            const settings = {};
-            
-            for (let [key, value] of formData.entries()) {
-                const input = form.querySelector(`[name="${key}"]`);
-                if (input.type === 'checkbox') {
-                    settings[key] = input.checked;
-                } else if (input.type === 'number') {
-                    settings[key] = parseFloat(value) || 0;
-                } else {
-                    settings[key] = value;
-                }
-            }
-            
-            // Envoyer au serveur
-            fetch('/admin/parametres/save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    section: sectionName,
-                    settings: settings
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('Paramètres sauvegardés avec succès', 'success');
-                } else {
-                    showNotification(data.message || 'Erreur lors de la sauvegarde', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                showNotification('Erreur de connexion', 'error');
-            })
-            .finally(() => {
-                // Réactiver le bouton
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
-            });
-        }
         
-        function showNotification(message, type) {
-            // Supprimer les notifications existantes
-            const existing = document.querySelector('.notification');
-            if (existing) {
-                existing.remove();
-            }
-            
-            // Créer la nouvelle notification
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.textContent = message;
-            document.body.appendChild(notification);
-            
-            // Afficher
-            setTimeout(() => notification.classList.add('show'), 100);
-            
-            // Masquer après 4 secondes
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => notification.remove(), 300);
-            }, 4000);
+        function saveSection(sectionName) {
+    const form = document.getElementById(`form-${sectionName}`);
+    const btn = form.querySelector('.save-btn');
+    
+    // Désactiver le bouton
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
+    
+    // Collecter les données du formulaire
+    const formData = new FormData(form);
+    const settings = {};
+    
+    for (let [key, value] of formData.entries()) {
+        const input = form.querySelector(`[name="${key}"]`);
+        if (input.type === 'checkbox') {
+            settings[key] = input.checked;
+        } else if (input.type === 'number') {
+            settings[key] = parseFloat(value) || 0;
+        } else {
+            settings[key] = value;
         }
-    </script>
+    }
+    
+    console.log('📤 Envoi des paramètres:', { section: sectionName, settings });
+    
+    // Envoyer au serveur
+    fetch('/admin/parametres/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            section: sectionName,
+            settings: settings
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('📥 Réponse serveur:', data);
+        
+        if (data.success) {
+            showNotification(`✅ ${data.message}`, 'success');
+            
+            // ✅ RECHARGER LA PAGE pour afficher les nouvelles valeurs
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+            
+        } else {
+            showNotification(`❌ ${data.message || 'Erreur lors de la sauvegarde'}`, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Erreur:', error);
+        showNotification('❌ Erreur de connexion', 'error');
+    })
+    .finally(() => {
+        // Réactiver le bouton
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
+    });
+}
+
+   function showNotification(message, type = 'info') {
+    // Supprimer les anciennes notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notif => notif.remove());
+    
+    // Créer la nouvelle notification
+    const notification = document.createElement('div');
+    notification.className = `notification notification-${type}`;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        z-index: 10000;
+        max-width: 400px;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    // Couleurs selon le type
+    switch(type) {
+        case 'success':
+            notification.style.backgroundColor = '#28a745';
+            break;
+        case 'error':
+            notification.style.backgroundColor = '#dc3545';
+            break;
+        default:
+            notification.style.backgroundColor = '#17a2b8';
+    }
+    
+    notification.textContent = message;
+    document.body.appendChild(notification);
+    
+    // Supprimer après 4 secondes
+    setTimeout(() => {
+        notification.remove();
+    }, 4000);
+}
+
+// Ajouter le CSS pour l'animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+`;
+document.head.appendChild(style);
+
+ </script>
 </body>
 </html>
