@@ -1,146 +1,267 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Site en Maintenance - Crystos Jewel</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<%- include('partials/head') %>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar admin -->
+        <%- include('partials/admin-sidebar') %>
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #b76e79 0%, #e8c2c8 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-        }
-        
-        .maintenance-container {
-            text-align: center;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
-            max-width: 600px;
-            margin: 2rem;
-        }
-        
-        .maintenance-icon {
-            font-size: 4rem;
-            margin-bottom: 2rem;
-            color: #fff;
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
-        }
-        
-        .maintenance-title {
-            font-size: 2.5rem;
-            margin-bottom: 1rem;
-            font-weight: 700;
-        }
-        
-        .maintenance-message {
-            font-size: 1.2rem;
-            margin-bottom: 2rem;
-            line-height: 1.6;
-            opacity: 0.9;
-        }
-        
-        .maintenance-info {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
-            border-radius: 10px;
-            margin-bottom: 2rem;
-        }
-        
-        .maintenance-time {
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-        }
-        
-        .contact-info {
-            margin-top: 2rem;
-            padding-top: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        .contact-link {
-            color: #fff;
-            text-decoration: none;
-            font-weight: 500;
-            transition: opacity 0.3s;
-        }
-        
-        .contact-link:hover {
-            opacity: 0.8;
-        }
-        
-        .admin-link {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            padding: 10px;
-            border-radius: 10px;
-            text-decoration: none;
-            color: white;
-            font-size: 0.9rem;
-            transition: all 0.3s;
-        }
-        
-        .admin-link:hover {
-            background: rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-    </style>
-</head>
-<body>
-    <div class="maintenance-container">
-        <div class="maintenance-icon">
-            <i class="fas fa-tools"></i>
-        </div>
-        
-        <h1 class="maintenance-title">Site en Maintenance</h1>
-        
-        <p class="maintenance-message">${maintenanceMessage}</p>
-        
-        <div class="maintenance-info">
-            ${maintenanceEndTime ? `
-                <div class="maintenance-time">
-                    <i class="fas fa-clock"></i>
-                    Retour prévu : ${new Date(maintenanceEndTime).toLocaleString('fr-FR')}
+        <main class="col-md-10 content">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1><i class="fas fa-tools me-2"></i>Gestion de la Maintenance</h1>
+                <div class="status-badge">
+                    <% if (maintenanceStatus.is_active) { %>
+                        <span class="badge bg-danger">MAINTENANCE ACTIVE</span>
+                    <% } else if (maintenanceStatus.scheduled_start) { %>
+                        <span class="badge bg-warning">PROGRAMMÉE</span>
+                    <% } else { %>
+                        <span class="badge bg-success">SITE OPÉRATIONNEL</span>
+                    <% } %>
                 </div>
-            ` : ''}
-            
-            <div class="maintenance-time">
-                <i class="fas fa-heart"></i>
-                Merci pour votre patience
+            </div>
+
+            <div class="row">
+                <!-- Statut actuel -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-info-circle me-2"></i>Statut Actuel</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="maintenance-status" id="currentStatus">
+                                <% if (maintenanceStatus.is_active) { %>
+                                    <div class="alert alert-danger">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        <strong>Site en maintenance</strong><br>
+                                        Message: <%= maintenanceStatus.message || 'Aucun message' %>
+                                    </div>
+                                <% } else { %>
+                                    <div class="alert alert-success">
+                                        <i class="fas fa-check-circle me-2"></i>
+                                        <strong>Site opérationnel</strong>
+                                    </div>
+                                <% } %>
+                                
+                                <% if (maintenanceStatus.scheduled_start && maintenanceStatus.scheduled_end) { %>
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-clock me-2"></i>
+                                        <strong>Maintenance programmée</strong><br>
+                                        Début: <%= new Date(maintenanceStatus.scheduled_start).toLocaleString('fr-FR') %><br>
+                                        Fin: <%= new Date(maintenanceStatus.scheduled_end).toLocaleString('fr-FR') %>
+                                    </div>
+                                <% } %>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions rapides -->
+                <div class="col-lg-6 mb-4">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-lightning-bolt me-2"></i>Actions Rapides</h5>
+                        </div>
+                        <div class="card-body">
+                            <% if (maintenanceStatus.is_active) { %>
+                                <button class="btn btn-success btn-lg w-100 mb-3" onclick="deactivateMaintenance()">
+                                    <i class="fas fa-play me-2"></i>Réactiver le Site
+                                </button>
+                            <% } else { %>
+                                <button class="btn btn-danger btn-lg w-100 mb-3" onclick="activateMaintenanceNow()">
+                                    <i class="fas fa-pause me-2"></i>Maintenance Immédiate
+                                </button>
+                            <% } %>
+                            
+                            <button class="btn btn-warning btn-lg w-100" onclick="scheduleMaintenanceModal()">
+                                <i class="fas fa-calendar-alt me-2"></i>Programmer une Maintenance
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Historique et infos -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5><i class="fas fa-history me-2"></i>Informations</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6>Configuration actuelle</h6>
+                                    <ul class="list-unstyled">
+                                        <li><strong>État:</strong> <%= maintenanceStatus.is_active ? 'Actif' : 'Inactif' %></li>
+                                        <li><strong>Message:</strong> <%= maintenanceStatus.message || 'Message par défaut' %></li>
+                                        <li><strong>Accès admin autorisé:</strong> <%= maintenanceStatus.allow_admin_access !== false ? 'Oui' : 'Non' %></li>
+                                    </ul>
+                                </div>
+                                <div class="col-md-6">
+                                    <h6>Bonnes pratiques</h6>
+                                    <ul>
+                                        <li>Planifiez la maintenance aux heures creuses</li>
+                                        <li>Informez vos clients à l'avance</li>
+                                        <li>Testez après la maintenance</li>
+                                        <li>Gardez l'accès admin activé</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Modal pour programmer une maintenance -->
+<div class="modal fade" id="scheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Programmer une Maintenance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="scheduleForm">
+                    <div class="mb-3">
+                        <label for="startTime" class="form-label">Date et heure de début</label>
+                        <input type="datetime-local" class="form-control" id="startTime" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="endTime" class="form-label">Date et heure de fin</label>
+                        <input type="datetime-local" class="form-control" id="endTime" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="maintenanceMessage" class="form-label">Message (optionnel)</label>
+                        <textarea class="form-control" id="maintenanceMessage" rows="3" placeholder="Site en maintenance pour amélioration..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <button type="button" class="btn btn-warning" onclick="scheduleMaintenance()">Programmer</button>
             </div>
         </div>
-        
-        <div class="contact-info">
-            <p>Pour toute urgence :</p>
-            <a href="mailto:${contactEmail}" class="contact-link">
-                <i class="fas fa-envelope"></i> ${contactEmail}
-            </a>
-        </div>
     </div>
+</div>
+
+<script>
+// Fonctions de gestion de la maintenance
+async function activateMaintenanceNow() {
+    const message = prompt('Message de maintenance (optionnel):', 'Site en maintenance. Nous revenons bientôt !');
     
-    <a href="/admin" class="admin-link">
-        <i class="fas fa-user-shield"></i> Accès Admin
-    </a>
-</body>
-</html>
+    if (message !== null) {
+        try {
+            const response = await fetch('/api/admin/maintenance/activate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ message })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Maintenance activée avec succès !');
+                location.reload();
+            } else {
+                alert('Erreur: ' + result.message);
+            }
+        } catch (error) {
+            alert('Erreur de communication avec le serveur');
+        }
+    }
+}
+
+async function deactivateMaintenance() {
+    if (confirm('Êtes-vous sûr de vouloir réactiver le site ?')) {
+        try {
+            const response = await fetch('/api/admin/maintenance/deactivate', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                alert('Site réactivé avec succès !');
+                location.reload();
+            } else {
+                alert('Erreur: ' + result.message);
+            }
+        } catch (error) {
+            alert('Erreur de communication avec le serveur');
+        }
+    }
+}
+
+function scheduleMaintenanceModal() {
+    // Définir des valeurs par défaut (dans 1 heure, durée 2 heures)
+    const now = new Date();
+    const start = new Date(now.getTime() + 60 * 60 * 1000); // +1h
+    const end = new Date(start.getTime() + 2 * 60 * 60 * 1000); // +2h
+    
+    document.getElementById('startTime').value = start.toISOString().slice(0, 16);
+    document.getElementById('endTime').value = end.toISOString().slice(0, 16);
+    
+    new bootstrap.Modal(document.getElementById('scheduleModal')).show();
+}
+
+async function scheduleMaintenance() {
+    const startTime = document.getElementById('startTime').value;
+    const endTime = document.getElementById('endTime').value;
+    const message = document.getElementById('maintenanceMessage').value;
+    
+    if (!startTime || !endTime) {
+        alert('Veuillez remplir les dates de début et fin');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/admin/maintenance/schedule', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                startTime: new Date(startTime).toISOString(),
+                endTime: new Date(endTime).toISOString(),
+                message: message || 'Maintenance programmée en cours'
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            alert('Maintenance programmée avec succès !');
+            bootstrap.Modal.getInstance(document.getElementById('scheduleModal')).hide();
+            location.reload();
+        } else {
+            alert('Erreur: ' + result.message);
+        }
+    } catch (error) {
+        alert('Erreur de communication avec le serveur');
+    }
+}
+
+// Rafraîchir le statut toutes les 30 secondes
+setInterval(async () => {
+    try {
+        const response = await fetch('/api/admin/maintenance/status');
+        const status = await response.json();
+        
+        if (status.success) {
+            // Mettre à jour l'affichage si nécessaire
+            console.log('Statut maintenance:', status);
+        }
+    } catch (error) {
+        console.log('Erreur récupération statut');
+    }
+}, 30000);
+</script>
+
+<%- include('partials/footer') %>

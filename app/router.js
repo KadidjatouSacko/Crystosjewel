@@ -16,6 +16,7 @@ import { Type } from "./models/TypeModel.js";
 import { JewelImage } from "./models/jewelImage.js";
 import { Op } from 'sequelize';
 import { PromoCode } from "./models/Promocode.js";
+import Setting from "./models/SettingModel.js";
 
 // Imports des contrôleurs PRINCIPAUX (UN SEUL IMPORT PAR CONTRÔLEUR)
 import { mainControlleur } from "./controlleurs/mainControlleur.js";
@@ -487,6 +488,187 @@ router.get('/maintenance/emergency-disable/:secret', async (req, res) => {
             <code>UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'maintenance_enabled';</code>
         `);
     }
+});
+
+// API pour obtenir le statut de maintenance
+router.get('/api/admin/maintenance/status', isAdmin, async (req, res) => {
+    try {
+        const maintenanceSettings = await Setting.findAll({
+            where: { section: 'maintenance' }
+        });
+        
+        const status = {};
+        maintenanceSettings.forEach(setting => {
+            let value = setting.value;
+            if (setting.type === 'boolean') {
+                value = value === 'true';
+            }
+            status[setting.key] = value;
+        });
+        
+        res.json({
+            success: true,
+            ...status,
+            currentTime: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error('❌ Erreur récupération statut maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la récupération du statut'
+        });
+    }
+});
+
+// Activer la maintenance immédiatement
+router.post('/api/admin/maintenance/activate', isAdmin, async (req, res) => {
+    try {
+        const { message } = req.body;
+        
+        await Setting.updateOrCreate('maintenance', 'is_active', true);
+        
+        if (message) {
+            await Setting.updateOrCreate('maintenance', 'message', message);
+        }
+        
+        // Invalider le cache
+        global.settingsCacheExpired = true;
+        
+        console.log('🔧 Maintenance activée par admin:', req.session.user.email);
+        res.json({
+            success: true,
+            message: 'Maintenance activée avec succès'
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur activation maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur serveur lors de l\'activation'
+        });
+    }
+});
+
+// Désactiver la maintenance
+router.post('/api/admin/maintenance/deactivate', isAdmin, async (req, res) => {
+    try {
+        await Setting.updateOrCreate('maintenance', 'is_active', false);
+        await Setting.updateOrCreate('maintenance', 'scheduled_start', '');
+        await Setting.updateOrCreate('maintenance', 'scheduled_end', '');
+        
+        // Invalider le cache
+        global.settingsCacheExpired = true;
+        
+        console.log('✅ Maintenance désactivée par admin:', req.session.user.email);
+        res.json({
+            success: true,
+            message: 'Maintenance désactivée avec succès'
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur désactivation maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur serveur lors de la désactivation'
+        });
+    }
+});
+
+// Programmer une maintenance
+router.post('/api/admin/maintenance/schedule', isAdmin, async (req, res) => {
+    try {
+        const { startTime, endTime, message } = req.body;
+        
+        // Validation des dates
+        const start = new Date(startTime);
+        const end = new Date(endTime);
+        const now = new Date();
+        
+        if (start < now) {
+            return res.status(400).json({
+                success: false,
+                message: 'La date de début ne peut pas être dans le passé'
+            });
+        }
+        
+        if (end <= start) {
+            return res.status(400).json({
+                success: false,
+                message: 'La date de fin doit être après la date de début'
+            });
+        }
+        
+        // Sauvegarder les paramètres
+        await Setting.updateOrCreate('maintenance', 'scheduled_start', startTime);
+        await Setting.updateOrCreate('maintenance', 'scheduled_end', endTime);
+        
+        if (message) {
+            await Setting.updateOrCreate('maintenance', 'message', message);
+        }
+        
+        // Invalider le cache
+        global.settingsCacheExpired = true;
+        
+        console.log('📅 Maintenance programmée par admin:', {
+            admin: req.session.user.email,
+            startTime,
+            endTime
+        });
+        
+        res.json({
+            success: true,
+            message: 'Maintenance programmée avec succès',
+            scheduledStart: startTime,
+            scheduledEnd: endTime
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur programmation maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur serveur lors de la programmation'
+        });
+    }
+});
+
+// Page d'administration de la maintenance
+router.get('/admin/maintenance', isAdmin, async (req, res) => {
+    try {
+        const maintenanceSettings = await Setting.findAll({
+            where: { section: 'maintenance' }
+        });
+        
+        const status = {};
+        maintenanceSettings.forEach(setting => {
+            let value = setting.value;
+            if (setting.type === 'boolean') {
+                value = value === 'true';
+            }
+            status[setting.key] = value;
+        });
+        
+        res.render('admin-maintenance', {
+            title: 'Gestion de la Maintenance',
+            maintenanceStatus: status,
+            user: req.session.user,
+            isAuthenticated: true,
+            isAdmin: true
+        });
+    } catch (error) {
+        console.error('❌ Erreur page admin maintenance:', error);
+        res.status(500).render('error', {
+            message: 'Erreur lors du chargement de la page de maintenance'
+        });
+    }
+});
+
+// Route de test pour vérifier si le site est accessible
+router.get('/api/maintenance/test', (req, res) => {
+    res.json({
+        success: true,
+        message: 'Site accessible',
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Route de test général (sans authentification)
