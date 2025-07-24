@@ -216,4 +216,39 @@ Setting.getPublicSettings = async function() {
     }
 };
 
+// Méthode pour créer ou mettre à jour un paramètre
+Setting.updateOrCreate = async function(section, key, value, description = null) {
+    try {
+        const stringValue = String(value);
+        const type = typeof value === 'boolean' ? 'boolean' : 
+                     typeof value === 'number' ? 'number' : 'string';
+        
+        const [setting, created] = await this.findOrCreate({
+            where: { section, key },
+            defaults: {
+                section,
+                key,
+                value: stringValue,
+                type,
+                description: description || `Paramètre ${key}`,
+                is_public: false // Maintenance reste privée
+            }
+        });
+        
+        if (!created) {
+            setting.value = stringValue;
+            setting.type = type;
+            if (description) setting.description = description;
+            setting.updated_at = new Date();
+            await setting.save();
+        }
+        
+        return setting;
+        
+    } catch (error) {
+        console.error(`Erreur sauvegarde setting ${section}.${key}:`, error);
+        throw error;
+    }
+};
+
 export default Setting;

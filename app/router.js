@@ -17,7 +17,6 @@ import { JewelImage } from "./models/jewelImage.js";
 import { Op } from 'sequelize';
 import { PromoCode } from "./models/Promocode.js";
 import Setting from "./models/SettingModel.js";
-
 // Imports des contrôleurs PRINCIPAUX (UN SEUL IMPORT PAR CONTRÔLEUR)
 import { mainControlleur } from "./controlleurs/mainControlleur.js";
 import { customerManagementController } from "./controlleurs/customerManagementController.js";
@@ -409,68 +408,54 @@ router.get('/api/placeholder/:width/:height', (req, res) => {
     res.send(svg);
 });
 
-// Route d'urgence pour désactiver la maintenance
-router.post('/maintenance/emergency-disable/:secret', async (req, res) => {
-    try {
-        console.log(`🚨 Tentative désactivation urgence avec secret: ${req.params.secret}`);
-        
-        const emergencySecret = 'URGENCE-CRYSTOS-2025';
-        
-        if (req.params.secret !== emergencySecret) {
-            return res.status(403).json({ 
-                error: 'Secret incorrect',
-                hint: 'Utilisez le bon secret ou SQL: UPDATE settings SET value = \'false\' WHERE section = \'maintenance\' AND key = \'maintenance_enabled\';'
-            });
-        }
-        
-        const Setting = (await import('../models/SettingModel.js')).default;
-        
-        await Setting.update(
-            { value: 'false' },
-            { where: { section: 'maintenance', key: 'maintenance_enabled' } }
-        );
-        
-        console.log('✅ Maintenance désactivée en urgence !');
-        
-        res.json({ 
-            success: true, 
-            message: 'Maintenance désactivée avec succès',
-            redirect: '/admin/parametres',
-            timestamp: new Date().toISOString()
-        });
-        
-    } catch (error) {
-        console.error('❌ Erreur désactivation urgence:', error);
-        res.status(500).json({ 
-            error: error.message,
-            sqlFallback: "UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'maintenance_enabled';"
-        });
+// Route principale admin (redirection)
+router.get('/admin', (req, res) => {
+    if (req.session?.user?.role_id === 2) {
+        res.redirect('/admin/parametres');
+    } else {
+        res.redirect('/connexion-inscription?redirect=/admin');
     }
 });
 
-// Route GET aussi pour faciliter l'accès
+// Routes paramètres principales
+router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
+router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
+
+// Routes API maintenance
+router.get('/api/admin/maintenance/status', isAdmin, SettingsController.getMaintenanceStatus);
+router.post('/api/admin/maintenance/activate', isAdmin, SettingsController.activateMaintenance);
+router.post('/api/admin/maintenance/deactivate', isAdmin, SettingsController.deactivateMaintenance);
+router.post('/api/admin/maintenance/schedule', isAdmin, SettingsController.scheduleMaintenance);
+
+// Redirections pour compatibilité
+router.get('/admin/settings', isAdmin, (req, res) => {
+    res.redirect('/admin/parametres');
+});
+router.get('/admin/maintenance', isAdmin, (req, res) => {
+    res.redirect('/admin/parametres#maintenance');
+});
+
+// Route d'urgence pour désactiver la maintenance (gardez votre route existante)
 router.get('/maintenance/emergency-disable/:secret', async (req, res) => {
     try {
-        console.log(`🚨 GET désactivation urgence: ${req.params.secret}`);
-        
         const emergencySecret = 'URGENCE-CRYSTOS-2025';
         
         if (req.params.secret !== emergencySecret) {
             return res.send(`
                 <h1>❌ Secret incorrect</h1>
                 <p>Utilisez cette requête SQL en base de données :</p>
-                <code>UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'maintenance_enabled';</code>
+                <code>UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'is_active';</code>
             `);
         }
         
-        const Setting = (await import('../models/SettingModel.js')).default;
+        const Setting = (await import('./models/SettingModel.js')).default;
         
         await Setting.update(
             { value: 'false' },
-            { where: { section: 'maintenance', key: 'maintenance_enabled' } }
+            { where: { section: 'maintenance', key: 'is_active' } }
         );
         
-        console.log('✅ Maintenance désactivée en urgence (GET) !');
+        global.settingsCacheExpired = true;
         
         res.send(`
             <h1>✅ Maintenance Désactivée</h1>
@@ -480,196 +465,174 @@ router.get('/maintenance/emergency-disable/:secret', async (req, res) => {
         `);
         
     } catch (error) {
-        console.error('❌ Erreur désactivation urgence (GET):', error);
         res.send(`
             <h1>❌ Erreur</h1>
             <p>Erreur: ${error.message}</p>
             <p>Utilisez cette requête SQL :</p>
-            <code>UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'maintenance_enabled';</code>
+            <code>UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'is_active';</code>
         `);
     }
 });
 
-// API pour obtenir le statut de maintenance
-router.get('/api/admin/maintenance/status', isAdmin, async (req, res) => {
-    try {
-        const maintenanceSettings = await Setting.findAll({
-            where: { section: 'maintenance' }
-        });
+// // Route d'urgence pour désactiver la maintenance
+// router.post('/maintenance/emergency-disable/:secret', async (req, res) => {
+//     try {
+//         console.log(`🚨 Tentative désactivation urgence avec secret: ${req.params.secret}`);
         
-        const status = {};
-        maintenanceSettings.forEach(setting => {
-            let value = setting.value;
-            if (setting.type === 'boolean') {
-                value = value === 'true';
-            }
-            status[setting.key] = value;
-        });
+//         const emergencySecret = 'URGENCE-CRYSTOS-2025';
         
-        res.json({
-            success: true,
-            ...status,
-            currentTime: new Date().toISOString()
-        });
-    } catch (error) {
-        console.error('❌ Erreur récupération statut maintenance:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de la récupération du statut'
-        });
-    }
-});
+//         if (req.params.secret !== emergencySecret) {
+//             return res.status(403).json({ 
+//                 error: 'Secret incorrect',
+//                 hint: 'Utilisez le bon secret ou SQL: UPDATE settings SET value = \'false\' WHERE section = \'maintenance\' AND key = \'maintenance_enabled\';'
+//             });
+//         }
+        
+//         const Setting = (await import('../models/SettingModel.js')).default;
+        
+//         await Setting.update(
+//             { value: 'false' },
+//             { where: { section: 'maintenance', key: 'maintenance_enabled' } }
+//         );
+        
+//         console.log('✅ Maintenance désactivée en urgence !');
+        
+//         res.json({ 
+//             success: true, 
+//             message: 'Maintenance désactivée avec succès',
+//             redirect: '/admin/parametres',
+//             timestamp: new Date().toISOString()
+//         });
+        
+//     } catch (error) {
+//         console.error('❌ Erreur désactivation urgence:', error);
+//         res.status(500).json({ 
+//             error: error.message,
+//             sqlFallback: "UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'maintenance_enabled';"
+//         });
+//     }
+// });
 
-// Activer la maintenance immédiatement
-router.post('/api/admin/maintenance/activate', isAdmin, async (req, res) => {
-    try {
-        const { message } = req.body;
+// // Route GET aussi pour faciliter l'accès
+// router.get('/maintenance/emergency-disable/:secret', async (req, res) => {
+//     try {
+//         console.log(`🚨 GET désactivation urgence: ${req.params.secret}`);
         
-        await Setting.updateOrCreate('maintenance', 'is_active', true);
+//         const emergencySecret = 'URGENCE-CRYSTOS-2025';
         
-        if (message) {
-            await Setting.updateOrCreate('maintenance', 'message', message);
-        }
+//         if (req.params.secret !== emergencySecret) {
+//             return res.send(`
+//                 <h1>❌ Secret incorrect</h1>
+//                 <p>Utilisez cette requête SQL en base de données :</p>
+//                 <code>UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'maintenance_enabled';</code>
+//             `);
+//         }
         
-        // Invalider le cache
-        global.settingsCacheExpired = true;
+//         const Setting = (await import('../models/SettingModel.js')).default;
         
-        console.log('🔧 Maintenance activée par admin:', req.session.user.email);
-        res.json({
-            success: true,
-            message: 'Maintenance activée avec succès'
-        });
+//         await Setting.update(
+//             { value: 'false' },
+//             { where: { section: 'maintenance', key: 'maintenance_enabled' } }
+//         );
         
-    } catch (error) {
-        console.error('❌ Erreur activation maintenance:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur serveur lors de l\'activation'
-        });
-    }
-});
+//         console.log('✅ Maintenance désactivée en urgence (GET) !');
+        
+//         res.send(`
+//             <h1>✅ Maintenance Désactivée</h1>
+//             <p>La maintenance a été désactivée avec succès !</p>
+//             <p><a href="/admin/parametres">Aller aux paramètres</a></p>
+//             <script>setTimeout(() => window.location.href = '/admin/parametres', 2000);</script>
+//         `);
+        
+//     } catch (error) {
+//         console.error('❌ Erreur désactivation urgence (GET):', error);
+//         res.send(`
+//             <h1>❌ Erreur</h1>
+//             <p>Erreur: ${error.message}</p>
+//             <p>Utilisez cette requête SQL :</p>
+//             <code>UPDATE settings SET value = 'false' WHERE section = 'maintenance' AND key = 'maintenance_enabled';</code>
+//         `);
+//     }
+// });
 
-// Désactiver la maintenance
-router.post('/api/admin/maintenance/deactivate', isAdmin, async (req, res) => {
-    try {
-        await Setting.updateOrCreate('maintenance', 'is_active', false);
-        await Setting.updateOrCreate('maintenance', 'scheduled_start', '');
-        await Setting.updateOrCreate('maintenance', 'scheduled_end', '');
-        
-        // Invalider le cache
-        global.settingsCacheExpired = true;
-        
-        console.log('✅ Maintenance désactivée par admin:', req.session.user.email);
-        res.json({
-            success: true,
-            message: 'Maintenance désactivée avec succès'
-        });
-        
-    } catch (error) {
-        console.error('❌ Erreur désactivation maintenance:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur serveur lors de la désactivation'
-        });
-    }
-});
+// // Page principale des paramètres
+// router.get('/admin/settings', isAdmin, SettingsController.showPageSettings);
 
-// Programmer une maintenance
-router.post('/api/admin/maintenance/schedule', isAdmin, async (req, res) => {
-    try {
-        const { startTime, endTime, message } = req.body;
-        
-        // Validation des dates
-        const start = new Date(startTime);
-        const end = new Date(endTime);
-        const now = new Date();
-        
-        if (start < now) {
-            return res.status(400).json({
-                success: false,
-                message: 'La date de début ne peut pas être dans le passé'
-            });
-        }
-        
-        if (end <= start) {
-            return res.status(400).json({
-                success: false,
-                message: 'La date de fin doit être après la date de début'
-            });
-        }
-        
-        // Sauvegarder les paramètres
-        await Setting.updateOrCreate('maintenance', 'scheduled_start', startTime);
-        await Setting.updateOrCreate('maintenance', 'scheduled_end', endTime);
-        
-        if (message) {
-            await Setting.updateOrCreate('maintenance', 'message', message);
-        }
-        
-        // Invalider le cache
-        global.settingsCacheExpired = true;
-        
-        console.log('📅 Maintenance programmée par admin:', {
-            admin: req.session.user.email,
-            startTime,
-            endTime
-        });
-        
-        res.json({
-            success: true,
-            message: 'Maintenance programmée avec succès',
-            scheduledStart: startTime,
-            scheduledEnd: endTime
-        });
-        
-    } catch (error) {
-        console.error('❌ Erreur programmation maintenance:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur serveur lors de la programmation'
-        });
-    }
-});
+// // Sauvegarder les paramètres
+// router.post('/admin/settings', isAdmin, SettingsController.saveSettings);
 
-// Page d'administration de la maintenance
-router.get('/admin/maintenance', isAdmin, async (req, res) => {
-    try {
-        const maintenanceSettings = await Setting.findAll({
-            where: { section: 'maintenance' }
-        });
-        
-        const status = {};
-        maintenanceSettings.forEach(setting => {
-            let value = setting.value;
-            if (setting.type === 'boolean') {
-                value = value === 'true';
-            }
-            status[setting.key] = value;
-        });
-        
-        res.render('admin-maintenance', {
-            title: 'Gestion de la Maintenance',
-            maintenanceStatus: status,
-            user: req.session.user,
-            isAuthenticated: true,
-            isAdmin: true
-        });
-    } catch (error) {
-        console.error('❌ Erreur page admin maintenance:', error);
-        res.status(500).render('error', {
-            message: 'Erreur lors du chargement de la page de maintenance'
-        });
-    }
-});
 
-// Route de test pour vérifier si le site est accessible
-router.get('/api/maintenance/test', (req, res) => {
-    res.json({
-        success: true,
-        message: 'Site accessible',
-        timestamp: new Date().toISOString()
-    });
-});
+// // API pour obtenir le statut de maintenance
+
+// // Activer la maintenance immédiatement
+// router.post('/api/admin/maintenance/activate', isAdmin, SettingsController.activateMaintenance);
+
+// // Désactiver la maintenance
+// router.post('/api/admin/maintenance/deactivate', isAdmin, SettingsController.deactivateMaintenance);
+
+// // Programmer une maintenance
+// router.post('/api/admin/maintenance/schedule', isAdmin, SettingsController.scheduleMaintenance);
+
+// // Page de maintenance pour admins (redirection vers settings)
+// router.get('/admin/maintenance', isAdmin, (req, res) => {
+//     res.redirect('/admin/settings#maintenance');
+// });
+
+// // Route principale admin (redirection)
+// router.get('/admin', (req, res) => {
+//     if (req.session?.user?.role_id === 2) {
+//         res.redirect('/admin/parametres');
+//     } else {
+//         res.redirect('/connexion-inscription?redirect=/admin');
+//     }
+// });
+
+// // Route paramètres (si pas déjà présente)
+// router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
+// router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
+
+// // Routes de maintenance (nouvelles)
+// router.get('/api/admin/maintenance/status', isAdmin, SettingsController.getMaintenanceStatus);
+// router.post('/api/admin/maintenance/activate', isAdmin, SettingsController.activateMaintenance);
+// router.post('/api/admin/maintenance/deactivate', isAdmin, SettingsController.deactivateMaintenance);
+// router.post('/api/admin/maintenance/schedule', isAdmin, SettingsController.scheduleMaintenance);
+
+// // Redirections pour compatibilité
+// router.get('/admin/maintenance', isAdmin, (req, res) => {
+//     res.redirect('/admin/parametres#maintenance');
+// });
+// router.get('/admin/settings', isAdmin, (req, res) => {
+//     res.redirect('/admin/parametres');
+// });
+
+
+// // Route de vérification du statut maintenance
+// router.get('/api/maintenance/status', async (req, res) => {
+//     try {
+//         const setting = await Setting.findOne({
+//             where: { 
+//                 section: 'maintenance',
+//                 key: 'maintenance_enabled'
+//             }
+//         });
+        
+//         const endTimeSetting = await Setting.findOne({
+//             where: { 
+//                 section: 'maintenance',
+//                 key: 'maintenance_end_time'
+//             }
+//         });
+        
+//         res.json({
+//             maintenance: setting?.value === 'true',
+//             endTime: endTimeSetting?.value || null,
+//             timestamp: new Date().toISOString()
+//         });
+        
+//     } catch (error) {
+//         res.json({ maintenance: false, error: error.message });
+//     }
+// });
 
 // Route de test général (sans authentification)
 router.get('/api/test', (req, res) => {
@@ -2818,46 +2781,6 @@ router.post('/track-view', async (req, res) => {
     }
 });
 
-// Route principale admin (redirection)
-router.get('/admin', (req, res) => {
-    if (req.session?.user?.role_id === 2) {
-        res.redirect('/admin/parametres');
-    } else {
-        res.redirect('/connexion-inscription?redirect=/admin');
-    }
-});
-
-// Route paramètres (si pas déjà présente)
-router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
-router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
-
-// Route de vérification du statut maintenance
-router.get('/api/maintenance/status', async (req, res) => {
-    try {
-        const setting = await Setting.findOne({
-            where: { 
-                section: 'maintenance',
-                key: 'maintenance_enabled'
-            }
-        });
-        
-        const endTimeSetting = await Setting.findOne({
-            where: { 
-                section: 'maintenance',
-                key: 'maintenance_end_time'
-            }
-        });
-        
-        res.json({
-            maintenance: setting?.value === 'true',
-            endTime: endTimeSetting?.value || null,
-            timestamp: new Date().toISOString()
-        });
-        
-    } catch (error) {
-        res.json({ maintenance: false, error: error.message });
-    }
-});
 
 // ==========================================
 // 3. ROUTE D'URGENCE POUR DÉSACTIVER LA MAINTENANCE

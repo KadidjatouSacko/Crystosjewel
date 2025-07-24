@@ -33,55 +33,70 @@ LoginPage(req, res) {
 
 // Fonction pour la connexion de l'utilisateur
 async login(req, res) {
-  const { email, password } = req.body;
-
-  try {
-    const customer = await Customer.findOne({ where: { email } });
-
-    if (!customer) {
-      return res.render("login", { 
-        errorMessage: "Identifiants incorrects", 
-        formData: { email }
-      });
+    const { email, password } = req.body;
+    
+    try {
+        const customer = await Customer.findOne({ where: { email } });
+        
+        if (!customer) {
+            return res.render("login", {
+                errorMessage: "Identifiants incorrects",
+                formData: { email }
+            });
+        }
+        
+        const isValidPassword = await argon2.verify(customer.password, password);
+        
+        if (!isValidPassword) {
+            return res.render("login", {
+                errorMessage: "Identifiants incorrects",
+                formData: { email }
+            });
+        }
+        
+        req.session.customerId = customer.id;
+        req.session.user = {
+            id: customer.id,
+            name: customer.first_name,
+            email: customer.email,
+            role: customer.role,
+            role_id: customer.role_id,
+            isAdmin: customer.role_id === 2,
+            cartItems: []
+        };
+        
+        // ✅ AJOUT DU LOG POUR DEBUG
+        console.log('✅ Session créée:', {
+            userId: req.session.user.id,
+            email: req.session.user.email,
+            role_id: req.session.user.role_id,
+            isAdmin: req.session.user.isAdmin
+        });
+        
+        res.cookie("customername", customer.email, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            maxAge: 1000 * 60 * 60 * 24,
+            sameSite: "strict"
+        });
+        
+        // ✅ MODIFICATION ICI - Redirection selon le rôle
+        if (customer.role_id === 2) {
+            console.log('🛡️ Redirection admin vers paramètres');
+            return res.redirect('/admin/parametres');
+        } else {
+            console.log('👤 Redirection client vers accueil');
+            return res.redirect('/');
+        }
+        
+    } catch (error) {
+        console.error("Erreur de connexion:", error);
+        return res.status(500).render("login", {
+            errorMessage: "Erreur serveur",
+            formData: { email }
+        });
     }
-
-    const isValidPassword = await argon2.verify(customer.password, password);
-
-    if (!isValidPassword) {
-      return res.render("login", { 
-        errorMessage: "Identifiants incorrects", 
-        formData: { email }
-      });
-    }
-
-    req.session.customerId = customer.id;
-    req.session.user = {
-      id: customer.id,
-      name: customer.firstname,
-      email: customer.email,
-      role: customer.role,
-      role_id: customer.role_id,  // ✅ AJOUTEZ CETTE LIGNE
-      isAdmin: customer.role_id === 2,
-      cartItems: []
-
-    };
-
-    res.cookie("customername", customer.email, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24,
-      sameSite: "strict"
-    });
-
-    res.redirect("/");
-
-  } catch (error) {
-    console.error("Erreur de connexion:", error);
-    return res.status(500).render("login", { 
-      errorMessage: "Erreur serveur", 
-      formData: { email }
-    });
-  }},
+},
 
 // Déconnexion de l'utilisateur
 logout(req, res) {
