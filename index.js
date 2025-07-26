@@ -30,6 +30,51 @@ import './app/models/associations.js';
 
 const app = express();
 
+
+// ===== CONFIGURATION DES SESSIONS =====
+const SessionStore = SequelizeStore(session.Store);
+
+const sessionStore = new SessionStore({
+  db: sequelize,
+  tableName: 'Sessions',
+  checkExpirationInterval: 15 * 60 * 1000,
+  expiration: 24 * 60 * 60 * 1000,
+  disableTouch: true,
+  extendDefaultFields: (defaults, session) => {
+    return {
+      data: defaults.data,
+      expires: defaults.expires,
+      created_at: defaults.created_at || new Date(),
+      updated_at: defaults.updated_at || new Date()
+    };
+  }
+});
+
+
+sessionStore.sync().then(() => {
+  console.log("✅ Table Sessions synchronisée");
+}).catch(err => {
+  console.error("❌ Erreur synchronisation Sessions:", err);
+});
+
+
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'Bijoux_Elegance_2025_Ultra_Secret_Key',
+  resave: false,
+  saveUninitialized: false,
+  rolling: false,
+  store: sessionStore,
+  cookie: { 
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 30 * 24 * 60 * 60 * 1000,
+    sameSite: 'lax'
+  },
+  name: 'bijouxSessionId'
+}));
+
+
+
 // MIDDLEWARES ESSENTIELS - À AJOUTER EN PREMIER
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -198,45 +243,6 @@ sequelize.authenticate()
         console.error("❌ Erreur lors de la connexion :", error);
     });
 
-// ===== CONFIGURATION DES SESSIONS =====
-const SessionStore = SequelizeStore(session.Store);
-
-const sessionStore = new SessionStore({
-  db: sequelize,
-  tableName: 'Sessions',
-  checkExpirationInterval: 15 * 60 * 1000,
-  expiration: 24 * 60 * 60 * 1000,
-  disableTouch: true,
-  extendDefaultFields: (defaults, session) => {
-    return {
-      data: defaults.data,
-      expires: defaults.expires,
-      created_at: defaults.created_at || new Date(),
-      updated_at: defaults.updated_at || new Date()
-    };
-  }
-});
-
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'Bijoux_Elegance_2025_Ultra_Secret_Key',
-  resave: false,
-  saveUninitialized: false,
-  rolling: false,
-  store: sessionStore,
-  cookie: { 
-    secure: process.env.NODE_ENV === 'production',
-    httpOnly: true,
-    maxAge: 30 * 24 * 60 * 60 * 1000,
-    sameSite: 'lax'
-  },
-  name: 'bijouxSessionId'
-}));
-
-sessionStore.sync().then(() => {
-  console.log("✅ Table Sessions synchronisée");
-}).catch(err => {
-  console.error("❌ Erreur synchronisation Sessions:", err);
-});
 
 // ===== MIDDLEWARE DE SESSION SÉCURISÉ =====
 app.use((req, res, next) => {
@@ -522,7 +528,7 @@ app.use((req, res, next) => {
 });
 
 // Middleware externes
-app.use(setUserForViews);
+
 
 // ===== ROUTES DE DEBUG =====
 app.get('/debug/cart', (req, res) => {
@@ -664,6 +670,9 @@ app.get('/debug/check-permissions', (req, res) => {
 app.get('/api/test', (req, res) => {
     res.json({ success: true, message: 'API fonctionne !' });
 });
+
+app.use(setUserForViews);
+
 
 app.use(injectSiteSettings);
 

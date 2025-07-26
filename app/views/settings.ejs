@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paramètres Essentiels</title>
+    <title><%= title || 'Paramètres Essentiels' %></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     
     <style>
         :root {
@@ -210,48 +211,86 @@
             cursor: pointer;
             font-weight: 500;
             transition: all 0.3s ease;
-            display: flex;
+            display: inline-flex;
             align-items: center;
             gap: 0.5rem;
             margin-top: 1rem;
         }
 
         .save-btn:hover {
-            background: #a05d68;
+            background: #a55963;
             transform: translateY(-2px);
         }
 
-        .save-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
+        /* Styles spéciaux pour la maintenance */
+        .maintenance-section {
+            border-left: 4px solid var(--danger);
         }
 
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            color: white;
+        .maintenance-section.active {
+            background: linear-gradient(135deg, #fff5f5, #ffffff);
+        }
+
+        .maintenance-section.inactive {
+            border-left-color: var(--success);
+            background: linear-gradient(135deg, #f0fff4, #ffffff);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            margin-bottom: 1rem;
+        }
+
+        .status-active {
+            background: #ffebee;
+            color: var(--danger);
+            border: 1px solid rgba(244, 67, 54, 0.3);
+        }
+
+        .status-inactive {
+            background: #e8f5e8;
+            color: var(--success);
+            border: 1px solid rgba(76, 175, 80, 0.3);
+        }
+
+        .status-scheduled {
+            background: #fff8e1;
+            color: var(--warning);
+            border: 1px solid rgba(255, 152, 0, 0.3);
+        }
+
+        .quick-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 6px;
             font-weight: 500;
-            z-index: 1000;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
-        .notification.show {
-            transform: translateX(0);
-        }
-
-        .notification.success {
-            background: var(--success);
-        }
-
-        .notification.error {
+        .btn-activate {
             background: var(--danger);
+            color: white;
         }
 
+<<<<<<< HEAD
         /* Styles pour les alertes dans la section maintenance */
         .maintenance-alert {
             background: rgba(244, 67, 54, 0.1);
@@ -284,29 +323,117 @@
             color: var(--success);
         }
 
+=======
+        .btn-deactivate {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-schedule {
+            background: var(--warning);
+            color: white;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .alert-success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            border-left: 4px solid var(--success);
+        }
+
+        .alert-danger {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid var(--danger);
+        }
+
+        .alert-warning {
+            background: #fff8e1;
+            color: #ef6c00;
+            border-left: 4px solid var(--warning);
+        }
+
+        /* Modal styles */
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+        }
+
+        .modal-header {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .btn-close {
+            filter: brightness(0) invert(1);
+        }
+
+        /* Loading state */
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        /* Responsive */
+>>>>>>> origin/main
         @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
             .sections-grid {
                 grid-template-columns: 1fr;
             }
-            
-            .section-card {
-                padding: 1.5rem;
-            }
-            
+
             .header h1 {
                 font-size: 2rem;
+            }
+
+            .quick-actions {
+                flex-direction: column;
             }
         }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Header -->
         <div class="header">
-            <h1><i class="fas fa-cogs"></i> Paramètres Essentiels</h1>
-            <p>Configuration des éléments principaux de votre site</p>
+            <h1><i class="fas fa-cogs me-2"></i><%= pageTitle || 'Paramètres Essentiels' %></h1>
+            <p>Gérez la configuration de votre boutique en ligne</p>
         </div>
 
+        <!-- Messages Flash -->
+        <% if (typeof success !== 'undefined' && success.length > 0) { %>
+            <% success.forEach(message => { %>
+                <div class="alert alert-success">
+                    <i class="fas fa-check-circle"></i>
+                    <%= message %>
+                </div>
+            <% }); %>
+        <% } %>
+
+        <% if (typeof error !== 'undefined' && error.length > 0) { %>
+            <% error.forEach(message => { %>
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <%= message %>
+                </div>
+            <% }); %>
+        <% } %>
+
+        <!-- Sections Grid -->
         <div class="sections-grid">
+<<<<<<< HEAD
             <!-- Section Maintenance - NOUVEAU -->
             <div class="section-card maintenance-card">
                 <div class="section-header">
@@ -380,61 +507,102 @@
 
             <!-- Section Paiements -->
             <div class="section-card">
+=======
+            <!-- Section Maintenance (prioritaire) -->
+            <% if (sections && sections.maintenance) { %>
+            <div class="section-card maintenance-section <%= settings.maintenance?.is_active?.value ? 'active' : 'inactive' %>" id="maintenance">
+>>>>>>> origin/main
                 <div class="section-header">
                     <div class="section-icon">
-                        <i class="fas fa-credit-card"></i>
+                        <i class="<%= sections.maintenance.icon %>"></i>
                     </div>
                     <div>
-                        <div class="section-title">Paiements</div>
-                        <div class="section-description">Configuration des moyens de paiement</div>
+                        <h3 class="section-title"><%= sections.maintenance.title %></h3>
+                        <p class="section-description"><%= sections.maintenance.description %></p>
                     </div>
                 </div>
-                
-                <form id="form-payment">
-                    <div class="form-group">
-                        <label class="form-label">Clé publique Stripe</label>
-                        <input type="text" class="form-input" name="stripe_public_key" 
-                            value="<%= settings.payment?.stripe_public_key || '' %>" 
-                            placeholder="pk_test_...">
+
+                <!-- Statut actuel -->
+                <% if (settings.maintenance?.is_active?.value) { %>
+                    <div class="status-badge status-active">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Site en maintenance
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Clé secrète Stripe</label>
-                        <input type="password" class="form-input" name="stripe_secret_key" 
-                               value="" placeholder="sk_live_...">
+                <% } else if (settings.maintenance?.scheduled_start?.value && settings.maintenance?.scheduled_end?.value) { %>
+                    <div class="status-badge status-scheduled">
+                        <i class="fas fa-clock"></i>
+                        Maintenance programmée
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Client ID PayPal</label>
-                        <input type="text" class="form-input" name="paypal_client_id" 
-                        value="<%= settings.payment?.paypal_client_id || '' %>" 
-                        placeholder="Votre Client ID PayPal">
+                <% } else { %>
+                    <div class="status-badge status-inactive">
+                        <i class="fas fa-check-circle"></i>
+                        Site opérationnel
                     </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Accepter les cartes de crédit</label>
-                        <label class="switch">
-                            <input type="checkbox" name="accept_credit_cards" 
-       <%= (settings.payment?.accept_credit_cards === 'true' || settings.payment?.accept_credit_cards === true) ? 'checked' : '' %>>
-                            <span class="slider"></span>
-                        </label>
+                <% } %>
+
+                <!-- Informations de maintenance programmée -->
+                <% if (settings.maintenance?.scheduled_start?.value && settings.maintenance?.scheduled_end?.value) { %>
+                <div class="alert alert-warning">
+                    <i class="fas fa-calendar-alt"></i>
+                    <div>
+                        <strong>Maintenance programmée</strong><br>
+                        <small>
+                            Début : <%= new Date(settings.maintenance.scheduled_start.value).toLocaleString('fr-FR') %><br>
+                            Fin : <%= new Date(settings.maintenance.scheduled_end.value).toLocaleString('fr-FR') %>
+                        </small>
                     </div>
+                </div>
+                <% } %>
+
+                <!-- Actions rapides -->
+                <div class="quick-actions">
+                    <% if (settings.maintenance?.is_active?.value) { %>
+                        <button class="action-btn btn-deactivate" onclick="deactivateMaintenance()">
+                            <i class="fas fa-play"></i>
+                            Réactiver le Site
+                        </button>
+                    <% } else { %>
+                        <button class="action-btn btn-activate" onclick="activateMaintenanceNow()">
+                            <i class="fas fa-pause"></i>
+                            Maintenance Immédiate
+                        </button>
+                    <% } %>
                     
-                    <div class="form-group">
-                        <label class="form-label">Accepter PayPal</label>
-                        <label class="switch">
-                            <input type="checkbox" name="accept_paypal" 
-       <%= (settings.payment?.accept_paypal === 'true' || settings.payment?.accept_paypal === true) ? 'checked' : '' %>>
-                            <span class="slider"></span>
-                        </label>
-                    </div>
+                    <button class="action-btn btn-schedule" onclick="scheduleMaintenanceModal()">
+                        <i class="fas fa-calendar-alt"></i>
+                        Programmer
+                    </button>
+                </div>
+
+                <!-- Formulaire paramètres de maintenance -->
+                <form onsubmit="saveSection(event, 'maintenance')">
+                    <% if (settings.maintenance) { %>
+                        <% Object.entries(settings.maintenance).forEach(([key, setting]) => { %>
+                            <% if (key !== 'scheduled_start' && key !== 'scheduled_end') { %>
+                            <div class="form-group">
+                                <label class="form-label"><%= setting.description %></label>
+                                <% if (setting.type === 'boolean') { %>
+                                    <label class="switch">
+                                        <input type="checkbox" name="settings[<%= key %>]" <%= setting.value ? 'checked' : '' %>>
+                                        <span class="slider"></span>
+                                    </label>
+                                <% } else { %>
+                                    <textarea class="form-textarea" name="settings[<%= key %>]" rows="3"><%= setting.value || '' %></textarea>
+                                <% } %>
+                            </div>
+                            <% } %>
+                        <% }); %>
+                    <% } %>
                     
-                    <button type="button" class="save-btn" onclick="saveSection('payment')">
-                        <i class="fas fa-save"></i> Sauvegarder
+                    <button type="submit" class="save-btn">
+                        <i class="fas fa-save"></i>
+                        Sauvegarder les paramètres
                     </button>
                 </form>
             </div>
+            <% } %>
 
+<<<<<<< HEAD
             <!-- Section Livraison -->
             <div class="section-card">
                 <div class="section-header">
@@ -723,10 +891,306 @@
             // Créer la nouvelle notification
             const notification = document.createElement('div');
             notification.className = `notification notification-${type}`;
+=======
+            <!-- Autres sections -->
+            <% if (sections) { %>
+                <% Object.entries(sections).forEach(([sectionKey, section]) => { %>
+                    <% if (sectionKey !== 'maintenance') { %>
+                    <div class="section-card" id="<%= sectionKey %>">
+                        <div class="section-header">
+                            <div class="section-icon">
+                                <i class="<%= section.icon %>"></i>
+                            </div>
+                            <div>
+                                <h3 class="section-title"><%= section.title %></h3>
+                                <p class="section-description"><%= section.description %></p>
+                            </div>
+                        </div>
+
+                        <form onsubmit="saveSection(event, '<%= sectionKey %>')">
+                            <% if (settings[sectionKey]) { %>
+                                <% Object.entries(settings[sectionKey]).forEach(([key, setting]) => { %>
+                                <div class="form-group">
+                                    <label class="form-label" for="<%= sectionKey %>_<%= key %>">
+                                        <%= setting.description %>
+                                    </label>
+                                    
+                                    <% if (setting.type === 'boolean') { %>
+                                        <label class="switch">
+                                            <input type="checkbox" 
+                                                   id="<%= sectionKey %>_<%= key %>" 
+                                                   name="settings[<%= key %>]" 
+                                                   <%= setting.value ? 'checked' : '' %>>
+                                            <span class="slider"></span>
+                                        </label>
+                                    <% } else if (setting.type === 'number') { %>
+                                        <input type="number" 
+                                               class="form-input" 
+                                               id="<%= sectionKey %>_<%= key %>" 
+                                               name="settings[<%= key %>]" 
+                                               value="<%= setting.value || '' %>"
+                                               step="0.01">
+                                    <% } else if (key.includes('url') || key.includes('link')) { %>
+                                        <input type="url" 
+                                               class="form-input" 
+                                               id="<%= sectionKey %>_<%= key %>" 
+                                               name="settings[<%= key %>]" 
+                                               value="<%= setting.value || '' %>"
+                                               placeholder="https://">
+                                    <% } else if (key.includes('email')) { %>
+                                        <input type="email" 
+                                               class="form-input" 
+                                               id="<%= sectionKey %>_<%= key %>" 
+                                               name="settings[<%= key %>]" 
+                                               value="<%= setting.value || '' %>">
+                                    <% } else if (key.includes('phone')) { %>
+                                        <input type="tel" 
+                                               class="form-input" 
+                                               id="<%= sectionKey %>_<%= key %>" 
+                                               name="settings[<%= key %>]" 
+                                               value="<%= setting.value || '' %>">
+                                    <% } else if (setting.description && setting.description.toLowerCase().includes('adresse')) { %>
+                                        <textarea class="form-input form-textarea" 
+                                                  id="<%= sectionKey %>_<%= key %>" 
+                                                  name="settings[<%= key %>]" 
+                                                  rows="3"><%= setting.value || '' %></textarea>
+                                    <% } else { %>
+                                        <input type="text" 
+                                               class="form-input" 
+                                               id="<%= sectionKey %>_<%= key %>" 
+                                               name="settings[<%= key %>]" 
+                                               value="<%= setting.value || '' %>">
+                                    <% } %>
+                                </div>
+                                <% }); %>
+                            <% } %>
+                            
+                            <button type="submit" class="save-btn">
+                                <i class="fas fa-save"></i>
+                                Sauvegarder <%= section.title %>
+                            </button>
+                        </form>
+                    </div>
+                    <% } %>
+                <% }); %>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Modal pour programmer une maintenance -->
+    <div class="modal fade" id="scheduleMaintenanceModal" tabindex="-1" aria-labelledby="scheduleModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="scheduleModalLabel">
+                        <i class="fas fa-calendar-alt me-2"></i>
+                        Programmer une Maintenance
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        La maintenance sera automatiquement activée et désactivée aux heures programmées.
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduleStartTime" class="form-label">
+                            <i class="fas fa-play me-1"></i>
+                            Date et heure de début
+                        </label>
+                        <input type="datetime-local" class="form-input" id="scheduleStartTime" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduleEndTime" class="form-label">
+                            <i class="fas fa-stop me-1"></i>
+                            Date et heure de fin
+                        </label>
+                        <input type="datetime-local" class="form-input" id="scheduleEndTime" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduleMessage" class="form-label">
+                            <i class="fas fa-message me-1"></i>
+                            Message de maintenance (optionnel)
+                        </label>
+                        <textarea class="form-input form-textarea" id="scheduleMessage" rows="3" 
+                                  placeholder="Site en maintenance pour amélioration de nos services..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                    <button type="button" class="save-btn" onclick="scheduleMaintenance()">
+                        <i class="fas fa-calendar-check"></i> Programmer
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Fonction pour sauvegarder une section
+        async function saveSection(event, section) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            const settings = {};
+            
+            // Extraire les données du formulaire
+            for (const [key, value] of formData.entries()) {
+                if (key.startsWith('settings[') && key.endsWith(']')) {
+                    const settingKey = key.slice(9, -1); // Enlever 'settings[' et ']'
+                    settings[settingKey] = value;
+                }
+            }
+            
+            // Gérer les checkboxes non cochées
+            const checkboxes = form.querySelectorAll('input[type="checkbox"]');
+            checkboxes.forEach(checkbox => {
+                if (!checkbox.checked) {
+                    const settingKey = checkbox.name.slice(9, -1);
+                    settings[settingKey] = false;
+                }
+            });
+            
+            try {
+                form.classList.add('loading');
+                
+                const response = await fetch('/admin/parametres/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        section: section,
+                        settings: settings
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Paramètres sauvegardés avec succès !', 'success');
+                    // Recharger la page après 1 seconde pour voir les changements
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showNotification('Erreur: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('Erreur de communication avec le serveur', 'error');
+            } finally {
+                form.classList.remove('loading');
+            }
+        }
+
+        // Fonctions de maintenance
+        async function activateMaintenanceNow() {
+            const message = prompt('Message de maintenance:', 'Site en maintenance. Nous revenons bientôt !');
+            if (message !== null) {
+                try {
+                    const response = await fetch('/api/admin/maintenance/activate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message })
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showNotification('Maintenance activée !', 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showNotification('Erreur: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    showNotification('Erreur de communication', 'error');
+                }
+            }
+        }
+
+        async function deactivateMaintenance() {
+            if (confirm('Êtes-vous sûr de vouloir réactiver le site ?')) {
+                try {
+                    const response = await fetch('/api/admin/maintenance/deactivate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    const result = await response.json();
+                    if (result.success) {
+                        showNotification('Site réactivé !', 'success');
+                        setTimeout(() => location.reload(), 1500);
+                    } else {
+                        showNotification('Erreur: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    showNotification('Erreur de communication', 'error');
+                }
+            }
+        }
+
+        function scheduleMaintenanceModal() {
+            const now = new Date();
+            const start = new Date(now.getTime() + 60 * 60 * 1000); // +1h
+            const end = new Date(start.getTime() + 2 * 60 * 60 * 1000); // +2h
+            
+            document.getElementById('scheduleStartTime').value = start.toISOString().slice(0, 16);
+            document.getElementById('scheduleEndTime').value = end.toISOString().slice(0, 16);
+            
+            new bootstrap.Modal(document.getElementById('scheduleMaintenanceModal')).show();
+        }
+
+        async function scheduleMaintenance() {
+            const startTime = document.getElementById('scheduleStartTime').value;
+            const endTime = document.getElementById('scheduleEndTime').value;
+            const message = document.getElementById('scheduleMessage').value;
+            
+            if (!startTime || !endTime) {
+                showNotification('Veuillez remplir les dates de début et fin', 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/admin/maintenance/schedule', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        startTime: new Date(startTime).toISOString(),
+                        endTime: new Date(endTime).toISOString(),
+                        message: message || 'Maintenance programmée en cours'
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    showNotification('Maintenance programmée avec succès !', 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('scheduleMaintenanceModal')).hide();
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showNotification('Erreur: ' + result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('Erreur de communication', 'error');
+            }
+        }
+
+        // Fonction pour afficher les notifications
+        function showNotification(message, type = 'info') {
+            // Supprimer les notifications existantes
+            const existingNotifications = document.querySelectorAll('.notification-toast');
+            existingNotifications.forEach(notif => notif.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification-toast alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'}`;
+>>>>>>> origin/main
             notification.style.cssText = `
                 position: fixed;
                 top: 20px;
                 right: 20px;
+<<<<<<< HEAD
                 padding: 15px 20px;
                 border-radius: 5px;
                 color: white;
@@ -749,10 +1213,23 @@
             }
             
             notification.textContent = message;
+=======
+                z-index: 9999;
+                min-width: 300px;
+                animation: slideIn 0.3s ease;
+            `;
+            
+            notification.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
+                ${message}
+            `;
+            
+>>>>>>> origin/main
             document.body.appendChild(notification);
             
             // Supprimer après 4 secondes
             setTimeout(() => {
+<<<<<<< HEAD
                 notification.remove();
             }, 4000);
         }
@@ -772,6 +1249,68 @@
             }
         `;
         document.head.appendChild(style);
+=======
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 4000);
+        }
+
+        // CSS pour les animations de notification
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Gestion des ancres pour navigation directe vers les sections
+        window.addEventListener('load', function() {
+            if (window.location.hash) {
+                const target = document.querySelector(window.location.hash);
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                    target.style.background = 'linear-gradient(135deg, #fff8e1, #ffffff)';
+                    setTimeout(() => {
+                        target.style.background = '';
+                    }, 2000);
+                }
+            }
+        });
+
+        // Auto-save pour certains champs (optionnel)
+        document.addEventListener('DOMContentLoaded', function() {
+            // Marquer tous les switchs pour un feedback visuel
+            const switches = document.querySelectorAll('.switch input[type="checkbox"]');
+            switches.forEach(switchEl => {
+                switchEl.addEventListener('change', function() {
+                    const label = this.closest('.form-group').querySelector('.form-label');
+                    if (label) {
+                        label.style.color = 'var(--warning)';
+                        label.innerHTML += ' <small>(non sauvegardé)</small>';
+                    }
+                });
+            });
+        });
+>>>>>>> origin/main
     </script>
 </body>
 </html>
