@@ -13,6 +13,12 @@ export const isAdmin = async (req, res, next) => {
     try {
         console.log('🔐 Vérification admin pour:', req.session?.user?.email);
         
+        // EN MODE MAINTENANCE: Vérifier d'abord si l'utilisateur a déjà les droits admin en session
+        if (res.locals.isMaintenanceMode && req.session?.user?.role_id === 2) {
+            console.log('🛡️ Accès admin autorisé en mode maintenance');
+            return next();
+        }
+        
         if (!req.session?.user) {
             if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
                 return res.status(401).json({ 
@@ -20,12 +26,11 @@ export const isAdmin = async (req, res, next) => {
                     message: 'Non authentifié' 
                 });
             }
-            return res.redirect('/connexion-inscription');
+            return res.redirect('/connexion-inscription?admin=1');
         }
 
         // Récupérer l'utilisateur avec son rôle complet
         const user = await Customer.findByPk(req.session.user.id, {
-            attributes: { include: ['role_id'] },
             include: [
                 {
                     model: Role,
@@ -43,15 +48,8 @@ export const isAdmin = async (req, res, next) => {
                     message: 'Utilisateur non trouvé' 
                 });
             }
-            return res.redirect('/connexion-inscription');
+            return res.redirect('/connexion-inscription?admin=1');
         }
-
-        console.log('👤 Utilisateur trouvé:', {
-            id: user.id,
-            email: user.email,
-            role_id: user.role_id,
-            role: user.role?.name
-        });
 
         // VÉRIFICATION STRICTE : SEULEMENT role_id = 2
         const isUserAdmin = user.role_id === 2;
@@ -104,6 +102,7 @@ export const isAdmin = async (req, res, next) => {
         });
     }
 };
+
 
 // MIDDLEWARE POUR RENDRE LES DONNÉES UTILISATEUR DISPONIBLES
 export const setUserForViews = async (req, res, next) => {

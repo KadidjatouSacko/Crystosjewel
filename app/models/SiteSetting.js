@@ -31,3 +31,30 @@ export const SiteSetting = sequelize.define('SiteSetting', {
   createdAt: 'created_at',
   updatedAt: 'updated_at'
 });
+
+// Ajouter ces paramètres par défaut lors de l'initialisation
+export const initializeMaintenanceSettings = async () => {
+    try {
+        await SiteSetting.findOrCreate({
+            where: { key: 'maintenance_mode' },
+            defaults: { 
+                key: 'maintenance_mode', 
+                value: 'false',
+                description: 'Mode maintenance du site'
+            }
+        });
+
+        await SiteSetting.findOrCreate({
+            where: { key: 'maintenance_estimated_time' },
+            defaults: { 
+                key: 'maintenance_estimated_time', 
+                value: '',
+                description: 'Temps estimé de retour'
+            }
+        });
+
+        console.log('✅ Paramètres de maintenance initialisés');
+    } catch (error) {
+        console.error('❌ Erreur initialisation maintenance:', error);
+    }
+};

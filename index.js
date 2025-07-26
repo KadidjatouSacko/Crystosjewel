@@ -20,8 +20,9 @@ import methodOverride from 'method-override';
 import { setUserForViews } from './app/middleware/authMiddleware.js';
 import { injectSiteSettings } from './app/middleware/SettingsMiddleware.js';
 import { ensurePromoCodesExist } from './migrations/migratePromoCodes.js';
-import { maintenanceMiddleware } from './app/middleware/MaintenanceMiddleware.js';
-
+// import { maintenanceMiddleware } from './app/middleware/MaintenanceMiddleware.js';
+import { maintenanceMiddleware, forceAdminAccessMiddleware } from './app/middleware/MaintenanceMiddleware.js';
+import { isAdmin } from "./app/middleware/authMiddleware.js";
 
 
 // IMPORTANT: Charger les associations EN PREMIER
@@ -677,6 +678,65 @@ app.use(maintenanceMiddleware);
 // ===== ROUTES PRINCIPALES =====
 app.use(router);
 
+
+// Route pour vérifier le statut de maintenance (utilisée par la page de maintenance)
+router.get('/api/maintenance-status', (req, res) => {
+    // Cette route doit toujours répondre, même en maintenance
+    res.json({ 
+        maintenance: false, // Remplacé dynamiquement par le middleware
+        timestamp: new Date().toISOString() 
+    });
+});
+
+// Route admin pour activer/désactiver la maintenance
+router.post('/admin/maintenance/toggle', isAdmin, async (req, res) => {
+    try {
+        const { enabled, estimatedTime } = req.body;
+        
+        // Mettre à jour le paramètre de maintenance
+        await SiteSetting.upsert({
+            key: 'maintenance_mode',
+            value: enabled ? 'true' : 'false'
+        });
+
+        if (estimatedTime) {
+            await SiteSetting.upsert({
+                key: 'maintenance_estimated_time',
+                value: estimatedTime
+            });
+        }
+
+        console.log(`🔧 Mode maintenance ${enabled ? 'ACTIVÉ' : 'DÉSACTIVÉ'} par admin:`, req.session.user.email);
+
+        res.json({
+            success: true,
+            message: `Mode maintenance ${enabled ? 'activé' : 'désactivé'}`,
+            maintenanceMode: enabled
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur toggle maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors du changement de statut'
+        });
+    }
+});
+
+// Route pour forcer l'accès admin (avec paramètre spécial)
+router.get('/connexion-inscription', forceAdminAccessMiddleware, (req, res) => {
+    // Si paramètre admin=1 dans l'URL, afficher un message spécial
+    const isAdminAccess = req.query.admin === '1';
+    
+    res.render('connexion-inscription', {
+        title: 'Connexion',
+        isAdminAccess: isAdminAccess,
+        maintenanceBypass: res.locals.isMaintenanceMode || false,
+        user: null,
+        isAuthenticated: false,
+        isAdmin: false
+    });
+});
 // ===== GESTION DES ERREURS =====
 
 // Erreurs 404

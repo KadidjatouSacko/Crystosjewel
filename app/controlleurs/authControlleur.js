@@ -10,7 +10,7 @@ import passwordValidator from "password-validator";
 // Limiteur de tentatives de connexion
 export const loginLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, 
-  max: 5,
+  max: 20,
   message: "Trop de tentatives de connexion, veuillez réessayer plus tard"
 });
 

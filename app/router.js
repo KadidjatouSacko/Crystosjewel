@@ -41,6 +41,7 @@ import { promoAdminController } from "./controlleurs/promoAdminController.js";
 import { guestOrderController } from './controlleurs/guestOrderController.js';
 import { emailManagementControlleur } from './controlleurs/emailManagementController.js';
 import { adminClientController } from './controlleurs/adminClientController.js';
+import { toggleMaintenanceAPI } from './middleware/maintenanceMiddleware.js';
 
 
 // CONTROLLERS EMAIL - CHOISISSEZ UN SEUL SYSTÈME
@@ -408,6 +409,7 @@ router.get('/api/placeholder/:width/:height', (req, res) => {
     res.send(svg);
 });
 
+
 // Route d'urgence pour désactiver la maintenance
 router.post('/maintenance/emergency-disable/:secret', async (req, res) => {
     try {
@@ -446,6 +448,8 @@ router.post('/maintenance/emergency-disable/:secret', async (req, res) => {
         });
     }
 });
+
+
 
 // Route GET aussi pour faciliter l'accès
 router.get('/maintenance/emergency-disable/:secret', async (req, res) => {
@@ -2649,32 +2653,15 @@ router.get('/admin', (req, res) => {
 router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
 router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
 
+router.post('/admin/maintenance/toggle', isAdmin, toggleMaintenanceAPI);
+
 // Route de vérification du statut maintenance
-router.get('/api/maintenance/status', async (req, res) => {
-    try {
-        const setting = await Setting.findOne({
-            where: { 
-                section: 'maintenance',
-                key: 'maintenance_enabled'
-            }
-        });
-        
-        const endTimeSetting = await Setting.findOne({
-            where: { 
-                section: 'maintenance',
-                key: 'maintenance_end_time'
-            }
-        });
-        
-        res.json({
-            maintenance: setting?.value === 'true',
-            endTime: endTimeSetting?.value || null,
-            timestamp: new Date().toISOString()
-        });
-        
-    } catch (error) {
-        res.json({ maintenance: false, error: error.message });
-    }
+router.get('/api/maintenance-status', (req, res) => {
+    // Cette route doit toujours répondre, même en maintenance
+    res.json({ 
+        maintenance: false, // Le middleware redirige avant d'arriver ici si maintenance active
+        timestamp: new Date().toISOString() 
+    });
 });
 
 // ==========================================

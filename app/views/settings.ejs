@@ -15,6 +15,7 @@
             --white: #ffffff;
             --success: #4caf50;
             --danger: #f44336;
+            --warning: #ff9800;
             --shadow: rgba(183, 110, 121, 0.1);
         }
 
@@ -94,6 +95,20 @@
             align-items: center;
             justify-content: center;
             font-size: 1.2rem;
+        }
+
+        /* Style spécial pour la section maintenance */
+        .maintenance-card {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+            border: 2px solid var(--warning);
+        }
+
+        .maintenance-card .section-icon {
+            background: var(--warning);
+        }
+
+        .maintenance-card .section-header {
+            border-bottom: 2px solid var(--warning);
         }
 
         .section-title {
@@ -237,6 +252,38 @@
             background: var(--danger);
         }
 
+        /* Styles pour les alertes dans la section maintenance */
+        .maintenance-alert {
+            background: rgba(244, 67, 54, 0.1);
+            border: 1px solid var(--danger);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .maintenance-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .maintenance-status.active {
+            background: rgba(244, 67, 54, 0.1);
+            color: var(--danger);
+        }
+
+        .maintenance-status.inactive {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--success);
+        }
+
         @media (max-width: 768px) {
             .sections-grid {
                 grid-template-columns: 1fr;
@@ -260,6 +307,77 @@
         </div>
 
         <div class="sections-grid">
+            <!-- Section Maintenance - NOUVEAU -->
+            <div class="section-card maintenance-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div>
+                        <div class="section-title">Mode Maintenance</div>
+                        <div class="section-description">Contrôle de la maintenance du site</div>
+                    </div>
+                </div>
+                
+                <!-- Statut actuel -->
+                <div class="maintenance-status <%= (settings.maintenance?.maintenance_enabled === 'true' || settings.maintenance?.maintenance_enabled === true) ? 'active' : 'inactive' %>">
+                    <i class="fas fa-circle"></i>
+                    <%= (settings.maintenance?.maintenance_enabled === 'true' || settings.maintenance?.maintenance_enabled === true) ? 'MAINTENANCE ACTIVE' : 'SITE OPÉRATIONNEL' %>
+                </div>
+
+                <% if (settings.maintenance?.maintenance_enabled === 'true' || settings.maintenance?.maintenance_enabled === true) { %>
+                <div class="maintenance-alert">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Attention :</strong> Le site est actuellement en maintenance. Seuls les administrateurs peuvent y accéder.
+                </div>
+                <% } %>
+                
+                <form id="form-maintenance">
+                    <div class="form-group">
+                        <label class="form-label">Activer le mode maintenance</label>
+                        <label class="switch">
+                            <input type="checkbox" 
+                                   name="maintenance_enabled" 
+                                   id="maintenanceToggle"
+                                   <%= (settings.maintenance?.maintenance_enabled === 'true' || settings.maintenance?.maintenance_enabled === true) ? 'checked' : '' %>>
+                            <span class="slider"></span>
+                        </label>
+                        <small style="color: #666; margin-top: 0.5rem; display: block;">
+                            ⚠️ Bloque immédiatement l'accès au site pour tous les visiteurs (sauf admins)
+                        </small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Message de maintenance</label>
+                        <textarea class="form-textarea" 
+                                  name="maintenance_message" 
+                                  placeholder="Message affiché aux visiteurs pendant la maintenance"><%= settings.maintenance?.maintenance_message || 'Site en maintenance pour améliorer votre expérience. Nous revenons bientôt !' %></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Temps de retour estimé</label>
+                        <input type="text" 
+                               class="form-input" 
+                               name="maintenance_estimated_time" 
+                               value="<%= settings.maintenance?.maintenance_estimated_time || '' %>" 
+                               placeholder="Ex: Dans 2 heures, Ce soir à 20h...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email de contact d'urgence</label>
+                        <input type="email" 
+                               class="form-input" 
+                               name="maintenance_contact_email" 
+                               value="<%= settings.maintenance?.maintenance_contact_email || 'crystosjewel@gmail.com' %>" 
+                               placeholder="Email affiché sur la page de maintenance">
+                    </div>
+                    
+                    <button type="button" class="save-btn" onclick="saveMaintenanceSection()">
+                        <i class="fas fa-save"></i> Appliquer les paramètres
+                    </button>
+                </form>
+            </div>
+
             <!-- Section Paiements -->
             <div class="section-card">
                 <div class="section-header">
@@ -358,8 +476,6 @@
        placeholder="France, Europe, International">
                     </div>
                     
-
-
                     <button type="button" class="save-btn" onclick="saveSection('shipping')">
                         <i class="fas fa-save"></i> Sauvegarder
                     </button>
@@ -511,197 +627,151 @@
                     </button>
                 </form>
             </div>
-
-            <div class="section-card">
-    <div class="section-header">
-        <div class="section-icon">
-            <i class="fas fa-tools"></i>
-        </div>
-        <div>
-            <div class="section-title">Maintenance</div>
-            <div class="section-description">Planifier et gérer la maintenance du site</div>
         </div>
     </div>
-    
-    <form id="form-maintenance">
-        <div class="form-group">
-            <label class="form-label">Mode maintenance</label>
-            <label class="switch">
-                <input type="checkbox" name="maintenance_enabled" 
-                       <%= (settings.maintenance?.maintenance_enabled === 'true' || settings.maintenance?.maintenance_enabled === true) ? 'checked' : '' %>>
-                <span class="slider"></span>
-            </label>
-            <small style="color: #666; margin-top: 0.5rem; display: block;">
-                ⚠️ Active immédiatement la maintenance (ou utilisez la programmation ci-dessous)
-            </small>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Programmer le début de maintenance</label>
-            <input type="datetime-local" class="form-input" name="maintenance_start_time" 
-                   value="<%= settings.maintenance?.maintenance_start_time || '' %>">
-            <small style="color: #666; margin-top: 0.5rem; display: block;">
-                💡 Si défini, la maintenance s'activera automatiquement à cette heure
-            </small>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Programmer la fin de maintenance</label>
-            <input type="datetime-local" class="form-input" name="maintenance_end_time" 
-                   value="<%= settings.maintenance?.maintenance_end_time || '' %>">
-            <small style="color: #666; margin-top: 0.5rem; display: block;">
-                ⏰ La maintenance se désactivera automatiquement à cette heure
-            </small>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Message de maintenance</label>
-            <textarea class="form-textarea" name="maintenance_message" placeholder="Message affiché aux visiteurs pendant la maintenance"><%= settings.maintenance?.maintenance_message || 'Site en maintenance pour améliorer votre expérience. Nous revenons bientôt !' %></textarea>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Email de contact</label>
-            <input type="email" class="form-input" name="maintenance_contact_email" 
-                   value="<%= settings.maintenance?.maintenance_contact_email || 'crystosjewel@gmail.com' %>" 
-                   placeholder="Email pour les urgences">
-        </div>
-        
-        <button type="button" class="save-btn" onclick="saveSection('maintenance')">
-            <i class="fas fa-save"></i> Sauvegarder
-        </button>
-    </form>
-</div>
-        </div>
-
-        
-    </div>
-
-
-    
 
     <script>
+        // Fonction spéciale pour la maintenance avec confirmation
+        function saveMaintenanceSection() {
+            const checkbox = document.getElementById('maintenanceToggle');
+            const enabled = checkbox.checked;
+            
+            // Confirmation pour l'activation
+            if (enabled && !confirm('⚠️ ATTENTION ⚠️\n\nVous allez activer le mode maintenance.\nCela bloquera immédiatement l\'accès au site pour tous les visiteurs.\n\nSeuls les administrateurs pourront continuer à naviguer.\n\nConfirmez-vous cette action ?')) {
+                checkbox.checked = false;
+                return;
+            }
+            
+            // Confirmation pour la désactivation
+            if (!enabled && confirm('Désactiver le mode maintenance ?\n\nLe site redeviendra accessible à tous les visiteurs.')) {
+                saveSection('maintenance');
+            } else if (enabled) {
+                saveSection('maintenance');
+            }
+        }
         
+        // Votre fonction saveSection existante (inchangée)
         function saveSection(sectionName) {
-    const form = document.getElementById(`form-${sectionName}`);
-    const btn = form.querySelector('.save-btn');
-    
-    // Désactiver le bouton
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
-    
-    // Collecter les données du formulaire
-    const formData = new FormData(form);
-    const settings = {};
-    
-    for (let [key, value] of formData.entries()) {
-        const input = form.querySelector(`[name="${key}"]`);
-        if (input.type === 'checkbox') {
-            settings[key] = input.checked;
-        } else if (input.type === 'number') {
-            settings[key] = parseFloat(value) || 0;
-        } else {
-            settings[key] = value;
-        }
-    }
-    
-    console.log('📤 Envoi des paramètres:', { section: sectionName, settings });
-    
-    // Envoyer au serveur
-    fetch('/admin/parametres/save', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-            section: sectionName,
-            settings: settings
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        console.log('📥 Réponse serveur:', data);
-        
-        if (data.success) {
-            showNotification(`✅ ${data.message}`, 'success');
+            const form = document.getElementById(`form-${sectionName}`);
+            const btn = form.querySelector('.save-btn');
             
-            // ✅ RECHARGER LA PAGE pour afficher les nouvelles valeurs
+            // Désactiver le bouton
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
+            
+            // Collecter les données du formulaire
+            const formData = new FormData(form);
+            const settings = {};
+            
+            for (let [key, value] of formData.entries()) {
+                const input = form.querySelector(`[name="${key}"]`);
+                if (input.type === 'checkbox') {
+                    settings[key] = input.checked;
+                } else if (input.type === 'number') {
+                    settings[key] = parseFloat(value) || 0;
+                } else {
+                    settings[key] = value;
+                }
+            }
+            
+            console.log('📤 Envoi des paramètres:', { section: sectionName, settings });
+            
+            // Envoyer au serveur
+            fetch('/admin/parametres/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    section: sectionName,
+                    settings: settings
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log('📥 Réponse serveur:', data);
+                
+                if (data.success) {
+                    showNotification(`✅ ${data.message}`, 'success');
+                    
+                    // ✅ RECHARGER LA PAGE pour afficher les nouvelles valeurs
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                    
+                } else {
+                    showNotification(`❌ ${data.message || 'Erreur lors de la sauvegarde'}`, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Erreur:', error);
+                showNotification('❌ Erreur de connexion', 'error');
+            })
+            .finally(() => {
+                // Réactiver le bouton
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
+            });
+        }
+
+        // Votre fonction showNotification existante (inchangée)
+        function showNotification(message, type = 'info') {
+            // Supprimer les anciennes notifications
+            const existingNotifications = document.querySelectorAll('.notification');
+            existingNotifications.forEach(notif => notif.remove());
+            
+            // Créer la nouvelle notification
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 15px 20px;
+                border-radius: 5px;
+                color: white;
+                font-weight: bold;
+                z-index: 10000;
+                max-width: 400px;
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            // Couleurs selon le type
+            switch(type) {
+                case 'success':
+                    notification.style.backgroundColor = '#28a745';
+                    break;
+                case 'error':
+                    notification.style.backgroundColor = '#dc3545';
+                    break;
+                default:
+                    notification.style.backgroundColor = '#17a2b8';
+            }
+            
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            // Supprimer après 4 secondes
             setTimeout(() => {
-                window.location.reload();
-            }, 1000);
-            
-        } else {
-            showNotification(`❌ ${data.message || 'Erreur lors de la sauvegarde'}`, 'error');
+                notification.remove();
+            }, 4000);
         }
-    })
-    .catch(error => {
-        console.error('❌ Erreur:', error);
-        showNotification('❌ Erreur de connexion', 'error');
-    })
-    .finally(() => {
-        // Réactiver le bouton
-        btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
-    });
-}
 
-   function showNotification(message, type = 'info') {
-    // Supprimer les anciennes notifications
-    const existingNotifications = document.querySelectorAll('.notification');
-    existingNotifications.forEach(notif => notif.remove());
-    
-    // Créer la nouvelle notification
-    const notification = document.createElement('div');
-    notification.className = `notification notification-${type}`;
-    notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        padding: 15px 20px;
-        border-radius: 5px;
-        color: white;
-        font-weight: bold;
-        z-index: 10000;
-        max-width: 400px;
-        animation: slideIn 0.3s ease-out;
-    `;
-    
-    // Couleurs selon le type
-    switch(type) {
-        case 'success':
-            notification.style.backgroundColor = '#28a745';
-            break;
-        case 'error':
-            notification.style.backgroundColor = '#dc3545';
-            break;
-        default:
-            notification.style.backgroundColor = '#17a2b8';
-    }
-    
-    notification.textContent = message;
-    document.body.appendChild(notification);
-    
-    // Supprimer après 4 secondes
-    setTimeout(() => {
-        notification.remove();
-    }, 4000);
-}
-
-// Ajouter le CSS pour l'animation
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes slideIn {
-        from {
-            transform: translateX(100%);
-            opacity: 0;
-        }
-        to {
-            transform: translateX(0);
-            opacity: 1;
-        }
-    }
-`;
-document.head.appendChild(style);
-
- </script>
+        // Ajouter le CSS pour l'animation (votre code existant)
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
 </body>
 </html>

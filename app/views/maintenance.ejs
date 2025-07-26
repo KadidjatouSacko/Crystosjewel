@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Site en Maintenance - Crystos Jewel</title>
+    <title>Site en maintenance | CrystosJewel</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
         * {
@@ -11,99 +11,154 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #b76e79 0%, #e8c2c8 100%);
+            background: linear-gradient(135deg, #b76e79 0%, #7d4b53 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             color: white;
+            padding: 1rem;
         }
-        
+
         .maintenance-container {
             text-align: center;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            padding: 3rem;
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+            padding: 3rem 2rem;
             max-width: 600px;
-            margin: 2rem;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
         }
-        
+
         .maintenance-icon {
             font-size: 4rem;
-            margin-bottom: 2rem;
-            color: #fff;
+            margin-bottom: 1.5rem;
             animation: pulse 2s infinite;
+            color: #fff8f0;
         }
-        
+
         @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.5; }
-            100% { opacity: 1; }
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
         }
-        
-        .maintenance-title {
+
+        h1 {
             font-size: 2.5rem;
             margin-bottom: 1rem;
-            font-weight: 700;
+            font-weight: 300;
+            color: #fff8f0;
         }
-        
+
         .maintenance-message {
             font-size: 1.2rem;
             margin-bottom: 2rem;
             line-height: 1.6;
             opacity: 0.9;
+            color: #fff8f0;
         }
-        
-        .maintenance-info {
+
+        .info-box {
             background: rgba(255, 255, 255, 0.1);
             padding: 1.5rem;
-            border-radius: 10px;
+            border-radius: 15px;
             margin-bottom: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-        
-        .maintenance-time {
-            font-size: 1.1rem;
+
+        .estimated-time {
             margin-bottom: 1rem;
         }
-        
+
         .contact-info {
+            margin-top: 1rem;
+        }
+
+        .admin-login {
             margin-top: 2rem;
             padding-top: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.3);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
         }
-        
-        .contact-link {
-            color: #fff;
-            text-decoration: none;
-            font-weight: 500;
-            transition: opacity 0.3s;
-        }
-        
-        .contact-link:hover {
-            opacity: 0.8;
-        }
-        
-        .admin-link {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
+
+        .admin-login-btn {
+            display: inline-block;
+            padding: 12px 24px;
             background: rgba(255, 255, 255, 0.2);
-            padding: 10px;
-            border-radius: 10px;
+            color: white;
             text-decoration: none;
-            color: white;
-            font-size: 0.9rem;
-            transition: all 0.3s;
+            border-radius: 25px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+            font-weight: 500;
         }
-        
-        .admin-link:hover {
+
+        .admin-login-btn:hover {
             background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 2rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #fff, rgba(255, 255, 255, 0.7));
+            border-radius: 2px;
+            animation: loading 3s infinite;
+        }
+
+        @keyframes loading {
+            0% { width: 0%; transform: translateX(-100%); }
+            50% { width: 100%; transform: translateX(0%); }
+            100% { width: 0%; transform: translateX(100%); }
+        }
+
+        .social-links {
+            margin-top: 2rem;
+        }
+
+        .social-links a {
+            display: inline-block;
+            margin: 0 10px;
             color: white;
+            font-size: 1.5rem;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+        }
+
+        .social-links a:hover {
+            opacity: 1;
+            transform: scale(1.2);
+        }
+
+        @media (max-width: 768px) {
+            .maintenance-container {
+                margin: 1rem;
+                padding: 2rem 1.5rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .maintenance-message {
+                font-size: 1rem;
+            }
+
+            .maintenance-icon {
+                font-size: 3rem;
+            }
         }
     </style>
 </head>
@@ -113,34 +168,88 @@
             <i class="fas fa-tools"></i>
         </div>
         
-        <h1 class="maintenance-title">Site en Maintenance</h1>
+        <h1>Site en maintenance</h1>
         
-        <p class="maintenance-message">${maintenanceMessage}</p>
-        
-        <div class="maintenance-info">
-            ${maintenanceEndTime ? `
-                <div class="maintenance-time">
-                    <i class="fas fa-clock"></i>
-                    Retour prévu : ${new Date(maintenanceEndTime).toLocaleString('fr-FR')}
-                </div>
-            ` : ''}
-            
-            <div class="maintenance-time">
-                <i class="fas fa-heart"></i>
-                Merci pour votre patience
+        <div class="maintenance-message">
+            <%= message %>
+        </div>
+
+        <div class="info-box">
+            <% if (estimatedTime && estimatedTime.trim() !== '') { %>
+            <div class="estimated-time">
+                <i class="fas fa-clock"></i>
+                <strong>Retour estimé :</strong> <%= estimatedTime %>
+            </div>
+            <% } %>
+
+            <div class="contact-info">
+                <i class="fas fa-envelope"></i>
+                <strong>Contact urgence :</strong> 
+                <a href="mailto:<%= contactEmail %>" style="color: #fff8f0; text-decoration: underline;">
+                    <%= contactEmail %>
+                </a>
             </div>
         </div>
-        
-        <div class="contact-info">
-            <p>Pour toute urgence :</p>
-            <a href="mailto:${contactEmail}" class="contact-link">
-                <i class="fas fa-envelope"></i> ${contactEmail}
+
+        <div class="progress-bar">
+            <div class="progress-fill"></div>
+        </div>
+
+        <!-- Section pour l'accès administrateur -->
+        <div class="admin-login">
+            <p style="font-size: 0.9rem; opacity: 0.8; margin-bottom: 1rem;">
+                Vous êtes administrateur ?
+            </p>
+            <a href="/connexion-inscription?admin=1" class="admin-login-btn">
+                <i class="fas fa-shield-alt"></i>
+                Accès administrateur
+            </a>
+        </div>
+
+        <!-- Liens sociaux -->
+        <div class="social-links">
+            <a href="https://facebook.com/crystosjewel" title="Facebook" target="_blank">
+                <i class="fab fa-facebook"></i>
+            </a>
+            <a href="https://instagram.com/crystosjewel" title="Instagram" target="_blank">
+                <i class="fab fa-instagram"></i>
+            </a>
+            <a href="https://pinterest.com/crystosjewel" title="Pinterest" target="_blank">
+                <i class="fab fa-pinterest"></i>
+            </a>
+            <a href="https://tiktok.com/@crystosjewel" title="TikTok" target="_blank">
+                <i class="fab fa-tiktok"></i>
             </a>
         </div>
     </div>
-    
-    <a href="/admin" class="admin-link">
-        <i class="fas fa-user-shield"></i> Accès Admin
-    </a>
+
+    <script>
+        // Animation d'entrée
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.maintenance-container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(20px)';
+            
+            setTimeout(() => {
+                container.style.transition = 'all 0.6s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 200);
+        });
+
+        // Vérification périodique si le site est de retour
+        setInterval(function() {
+            fetch('/')
+                .then(response => {
+                    if (response.ok && !response.url.includes('maintenance')) {
+                        // Site de retour, recharger la page
+                        window.location.href = '/';
+                    }
+                })
+                .catch(() => {
+                    // Erreur normale en maintenance
+                });
+        }, 30000); // Vérifier toutes les 30 secondes
+    </script>
 </body>
 </html>

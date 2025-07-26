@@ -1,11 +1,10 @@
-// ==========================================
-// 2. MISE À JOUR DU MIDDLEWARE - app/middleware/SettingsMiddleware.js
-// ==========================================
+// app/middleware/SettingsMiddleware.js - VERSION CORRIGÉE
 
 import Setting from '../models/SettingModel.js';
 
 let settingsCache = null;
 let lastUpdate = null;
+
 
 export const injectSiteSettings = async (req, res, next) => {
     try {
@@ -48,31 +47,13 @@ export const injectSiteSettings = async (req, res, next) => {
         // Injecter dans toutes les vues
         res.locals.siteSettings = settingsCache || {};
         
-        // Variables de commodité pour les vues
+        // Variables de commodité
         res.locals.siteName = settingsCache?.company?.company_name || 'Crystos Jewel';
-        res.locals.companyEmail = settingsCache?.company?.company_email || 'crystosjewel@gmail.com';
+        res.locals.companyEmail = settingsCache?.company?.company_email || 'contact@crystosjewel.com';
         res.locals.companyPhone = settingsCache?.company?.company_phone || '+33 1 23 45 67 89';
-        res.locals.companyAddress = settingsCache?.company?.company_address || '';
-        res.locals.companyVat = settingsCache?.company?.vat_number || '';
-        res.locals.companySiret = settingsCache?.company?.siret || '';
         
-        // Réseaux sociaux
-        res.locals.footerFacebook = settingsCache?.footer?.facebook_url || '';
-        res.locals.footerInstagram = settingsCache?.footer?.instagram_url || '';
-        res.locals.footerTwitter = settingsCache?.footer?.twitter_url || '';
-        res.locals.footerLinkedin = settingsCache?.footer?.linkedin_url || '';
-        res.locals.footerYoutube = settingsCache?.footer?.youtube_url || '';
-        res.locals.copyrightText = settingsCache?.footer?.copyright_text || '© 2025 Crystos Jewel';
-        
-        // Paiements
-        res.locals.stripeEnabled = settingsCache?.payment?.stripe_enabled || false;
-        res.locals.paypalEnabled = settingsCache?.payment?.paypal_enabled || false;
-        res.locals.minimumOrder = settingsCache?.payment?.minimum_order || '50';
-        
-        // Livraison
-        res.locals.freeShippingThreshold = settingsCache?.shipping?.free_shipping_threshold || '100';
-        res.locals.standardShippingCost = settingsCache?.shipping?.standard_shipping_cost || '5.99';
-        res.locals.expressShippingCost = settingsCache?.shipping?.express_shipping_cost || '12.99';
+        // *** FIX CRITIQUE: S'assurer que maintenanceActive est toujours défini ***
+        res.locals.maintenanceActive = settingsCache?.maintenance?.maintenanceActive || false;
         
         next();
         
@@ -82,16 +63,73 @@ export const injectSiteSettings = async (req, res, next) => {
         // Valeurs par défaut en cas d'erreur
         res.locals.siteSettings = {};
         res.locals.siteName = 'Crystos Jewel';
-        res.locals.companyEmail = 'crystosjewel@gmail.com';
+        res.locals.companyEmail = 'contact@crystosjewel.com';
         res.locals.companyPhone = '+33 1 23 45 67 89';
-        res.locals.companyAddress = '';
-        res.locals.footerFacebook = '';
-        res.locals.footerInstagram = '';
-        res.locals.footerTwitter = '';
-        res.locals.copyrightText = '© 2025 Crystos Jewel';
-        res.locals.minimumOrder = '50';
-        res.locals.freeShippingThreshold = '100';
         
+        // *** FIX CRITIQUE: Toujours définir maintenanceActive ***
+        res.locals.maintenanceActive = false;
+        
+        next();
+    }
+};
+
+// *** NOUVEAU: Middleware spécifique pour la vérification de maintenance ***
+export const checkMaintenanceMode = async (req, res, next) => {
+    try {
+        console.log('🔍 Vérification maintenance:', {
+            maintenanceActive: res.locals.maintenanceActive,
+            maintenanceActiveRaw: res.locals.siteSettings?.maintenance?.maintenanceActive,
+            maintenanceActiveType: typeof res.locals.siteSettings?.maintenance?.maintenanceActive,
+            isAdmin: res.locals.isAdmin,
+            path: req.path,
+            userId: req.session?.user?.id,
+            roleId: req.session?.user?.role_id
+        });
+
+        // Si maintenanceActive n'est pas encore défini, aller le chercher
+        if (typeof res.locals.maintenanceActive === 'undefined') {
+            console.log('🔄 Vérification statut maintenance...');
+            
+            const maintenanceSettings = await Setting.findAll({
+                where: { section: 'maintenance' }
+            });
+            
+            const maintenanceSetting = maintenanceSettings.find(s => s.key === 'maintenanceActive');
+            const isMaintenanceActive = maintenanceSetting ? 
+                (maintenanceSetting.value === 'true' || maintenanceSetting.value === true) : 
+                false;
+            
+            res.locals.maintenanceActive = isMaintenanceActive;
+            
+            console.log('🔧 Statut maintenance récupéré:', isMaintenanceActive);
+        }
+
+        // Vérifier si le mode maintenance est activé
+        if (res.locals.maintenanceActive === true) {
+            // Permettre l'accès aux admins
+            if (res.locals.isAdmin) {
+                console.log('✅ Admin détecté - accès autorisé malgré la maintenance');
+                return next();
+            }
+
+            // Permettre l'accès à la page de maintenance elle-même
+            if (req.path === '/maintenance') {
+                return next();
+            }
+
+            // Rediriger vers la page de maintenance
+            console.log('🚧 Mode maintenance actif - redirection');
+            return res.redirect('/maintenance');
+        }
+
+        // Mode maintenance désactivé - continuer
+        next();
+        
+    } catch (error) {
+        console.error('❌ Erreur vérification maintenance:', error);
+        
+        // En cas d'erreur, désactiver la maintenance et continuer
+        res.locals.maintenanceActive = false;
         next();
     }
 };
