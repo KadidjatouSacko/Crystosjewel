@@ -41,7 +41,7 @@ import { promoAdminController } from "./controlleurs/promoAdminController.js";
 import { guestOrderController } from './controlleurs/guestOrderController.js';
 import { emailManagementControlleur } from './controlleurs/emailManagementController.js';
 import { adminClientController } from './controlleurs/adminClientController.js';
-import { maintenanceController } from "./controlleurs/MaintenanceController.js";
+import { maintenanceController } from "./controlleurs/maintenanceController.js";
 
 // CONTROLLERS EMAIL - CHOISISSEZ UN SEUL SYSTÈME
 
@@ -386,7 +386,7 @@ const emailUpload = multer({
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-export const router = Router();
+const router = Router();
 
 // ==========================================
 // ROUTES PUBLIQUES EN PREMIER (SANS MIDDLEWARE)
@@ -462,15 +462,72 @@ router.get('/admin', (req, res) => {
     }
 });
 
-// Routes paramètres principales
-router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
-router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
+// Routes paramètres (versions temporaires fonctionnelles)
+router.get('/admin/parametres', isAdmin, (req, res) => {
+    console.log('🔧 Route paramètres temporaire atteinte');
+    res.send(`
+        <h1>🔧 Paramètres du Site</h1>
+        <p>Interface temporaire en cours de développement...</p>
+        <div style="margin: 20px 0;">
+            <h2>🔧 Maintenance</h2>
+            <button onclick="alert('Fonctionnalité en développement')">Activer Maintenance</button>
+        </div>
+        <a href="/admin">← Retour Admin</a>
+    `);
+});
 
-// Routes API maintenance
-router.get('/api/admin/maintenance/status', isAdmin, SettingsController.getMaintenanceStatus);
-router.post('/api/admin/maintenance/activate', isAdmin, SettingsController.activateMaintenance);
-router.post('/api/admin/maintenance/deactivate', isAdmin, SettingsController.deactivateMaintenance);
-router.post('/api/admin/maintenance/schedule', isAdmin, SettingsController.scheduleMaintenance);
+router.post('/admin/parametres/save', isAdmin, (req, res) => {
+    console.log('💾 Sauvegarde paramètres temporaire');
+    res.json({ success: true, message: 'Paramètres sauvegardés (temporaire)' });
+});
+
+// Routes API maintenance (versions temporaires)
+router.get('/api/admin/maintenance/status', isAdmin, (req, res) => {
+    res.json({
+        success: true,
+        maintenance: {
+            enabled: false,
+            scheduled_start: null,
+            scheduled_end: null,
+            message: 'Site opérationnel'
+        }
+    });
+});
+
+router.post('/api/admin/maintenance/activate', isAdmin, (req, res) => {
+    console.log('🚧 Activation maintenance (temporaire)');
+    res.json({ success: true, message: 'Fonctionnalité de maintenance en développement' });
+});
+
+router.post('/api/admin/maintenance/deactivate', isAdmin, (req, res) => {
+    console.log('✅ Désactivation maintenance (temporaire)');
+    res.json({ success: true, message: 'Fonctionnalité de maintenance en développement' });
+});
+
+router.post('/api/admin/maintenance/schedule', isAdmin, (req, res) => {
+    console.log('📅 Programmation maintenance (temporaire)');
+    res.json({ success: true, message: 'Fonctionnalité de maintenance en développement' });
+});
+
+// Routes paramètres principales
+// router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
+// router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
+
+// router.get('/admin/parametres', isAdmin, (req, res) => {
+//     console.log('🔧 Route paramètres atteinte');
+//     res.send('<h1>Page des paramètres</h1><p>En cours de développement...</p>');
+// });
+
+// router.post('/parametres/save', isAdmin, (req, res) => {
+//     console.log('💾 Route sauvegarde atteinte');
+//     res.json({ success: true, message: 'Test sauvegarde OK' });
+// });
+
+// // Routes API maintenance
+// router.get('/api/admin/maintenance/status', isAdmin, SettingsController.getMaintenanceStatus);
+// router.post('/api/admin/maintenance/activate', isAdmin, SettingsController.activateMaintenance);
+// router.post('/api/admin/maintenance/deactivate', isAdmin, SettingsController.deactivateMaintenance);
+// router.post('/api/admin/maintenance/schedule', isAdmin, SettingsController.scheduleMaintenance);
 
 // Redirections pour compatibilité
 router.get('/admin/settings', isAdmin, (req, res) => {

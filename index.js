@@ -11,7 +11,7 @@ import cookieParser from 'cookie-parser';
 import path from 'path';
 import fs from 'fs';
 import slugify from 'slugify';
-import { router } from "./app/router.js";
+import router from "./app/router.js";
 import { SiteVisit } from "./app/models/siteVisiteModel.js";
 import { Customer } from "./app/models/customerModel.js";
 import { Role } from "./app/models/roleModel.js";
