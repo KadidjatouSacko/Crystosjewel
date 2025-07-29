@@ -409,7 +409,7 @@ router.get('/api/placeholder/:width/:height', (req, res) => {
     res.send(svg);
 });
 
-<<<<<<< HEAD
+
 
 // Route d'urgence pour désactiver la maintenance
 router.post('/maintenance/emergency-disable/:secret', async (req, res) => {
@@ -453,7 +453,7 @@ router.post('/maintenance/emergency-disable/:secret', async (req, res) => {
 
 
 // Route GET aussi pour faciliter l'accès
-=======
+
 // Route principale admin (redirection)
 router.get('/admin', (req, res) => {
     if (req.session?.user?.role_id === 2) {
@@ -482,7 +482,7 @@ router.get('/admin/maintenance', isAdmin, (req, res) => {
 });
 
 // Route d'urgence pour désactiver la maintenance (gardez votre route existante)
->>>>>>> origin/main
+
 router.get('/maintenance/emergency-disable/:secret', async (req, res) => {
     try {
         const emergencySecret = 'URGENCE-CRYSTOS-2025';
@@ -2828,7 +2828,7 @@ router.post('/track-view', async (req, res) => {
     }
 });
 
-<<<<<<< HEAD
+
 // Route principale admin (redirection)
 router.get('/admin', (req, res) => {
     if (req.session?.user?.role_id === 2) {
@@ -2852,8 +2852,7 @@ router.get('/api/maintenance-status', (req, res) => {
         timestamp: new Date().toISOString() 
     });
 });
-=======
->>>>>>> origin/main
+
 
 // ==========================================
 // 3. ROUTE D'URGENCE POUR DÉSACTIVER LA MAINTENANCE

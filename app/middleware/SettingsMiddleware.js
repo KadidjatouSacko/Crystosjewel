@@ -1,8 +1,3 @@
-<<<<<<< HEAD
-// app/middleware/SettingsMiddleware.js - VERSION CORRIGÉE
-=======
-// app/middleware/SettingsMiddleware.js - VERSION FINALE CORRIGÉE
->>>>>>> origin/main
 
 import Setting from '../models/SettingModel.js';
 
@@ -54,7 +49,7 @@ export const injectSiteSettings = async (req, res, next) => {
         // VÉRIFICATION MAINTENANCE PROGRAMMÉE
         // =====================================================
         
-<<<<<<< HEAD
+
         // Variables de commodité
         res.locals.siteName = settingsCache?.company?.company_name || 'Crystos Jewel';
         res.locals.companyEmail = settingsCache?.company?.company_email || 'contact@crystosjewel.com';
@@ -62,7 +57,7 @@ export const injectSiteSettings = async (req, res, next) => {
         
         // *** FIX CRITIQUE: S'assurer que maintenanceActive est toujours défini ***
         res.locals.maintenanceActive = settingsCache?.maintenance?.maintenanceActive || false;
-=======
+
         if (settingsCache?.maintenance) {
             const maintenanceSettings = settingsCache.maintenance;
 
@@ -170,7 +165,7 @@ export const injectSiteSettings = async (req, res, next) => {
         res.locals.siteName = publicSettings?.company?.company_name || 'Crystos Jewel';
         res.locals.companyEmail = publicSettings?.company?.company_email || 'contact@crystosjewel.com';
         res.locals.companyPhone = publicSettings?.company?.company_phone || '+33 1 23 45 67 89';
->>>>>>> origin/main
+
         
         next();
         
@@ -182,12 +177,11 @@ export const injectSiteSettings = async (req, res, next) => {
         res.locals.siteName = 'Crystos Jewel';
         res.locals.companyEmail = 'contact@crystosjewel.com';
         res.locals.companyPhone = '+33 1 23 45 67 89';
-<<<<<<< HEAD
+
         
         // *** FIX CRITIQUE: Toujours définir maintenanceActive ***
         res.locals.maintenanceActive = false;
-=======
->>>>>>> origin/main
+
         
         next();
     }
@@ -221,7 +215,6 @@ console.log('🔍 Vérification maintenance:', {
 });
 };
 
-<<<<<<< HEAD
 // *** NOUVEAU: Middleware spécifique pour la vérification de maintenance ***
 export const checkMaintenanceMode = async (req, res, next) => {
     try {
@@ -282,7 +275,7 @@ export const checkMaintenanceMode = async (req, res, next) => {
         next();
     }
 };
-=======
+
 // Fonction utilitaire pour mettre à jour un paramètre de maintenance
 async function updateMaintenanceSetting(key, value) {
     try {
@@ -293,4 +286,4 @@ async function updateMaintenanceSetting(key, value) {
     }
 }
 
->>>>>>> origin/main
+
