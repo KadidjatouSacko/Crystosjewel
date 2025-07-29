@@ -1,220 +1,389 @@
-// app/controlleurs/MaintenanceController.js
+// app/controlleurs/maintenanceController.js
 
 import Setting from '../models/SettingModel.js';
-import { invalidateMaintenanceCache } from '../middleware/MaintenanceMiddleware.js';
+import { invalidateMaintenanceCache, getMaintenanceStatus } from '../middleware/maintenanceMiddleware.js';
 
+/**
+ * Contrôleur pour la gestion de la maintenance du site
+ */
 export const maintenanceController = {
-    
+
     /**
-     * Afficher la page de maintenance
+     * Page d'administration de la maintenance
      */
-    showMaintenancePage: async (req, res) => {
+    async renderAdminPage(req, res) {
         try {
-            console.log('🚧 Page de maintenance demandée');
-            
-            // Récupérer le message personnalisé de maintenance
-            const messageSettings = await Setting.findAll({
-                where: { section: 'maintenance' }
+            console.log('🔧 Chargement page admin maintenance');
+
+            // Récupérer le statut actuel
+            const status = await getMaintenanceStatus();
+
+            // Messages flash
+            const flashMessages = [];
+            if (req.session.flashMessage) {
+                flashMessages.push(req.session.flashMessage);
+                delete req.session.flashMessage;
+            }
+
+            res.render('admin/maintenance', {
+                title: 'Gestion de la Maintenance',
+                maintenance: status,
+                flashMessages,
+                user: req.session.user,
+                currentTime: new Date().toISOString()
             });
+
+        } catch (error) {
+            console.error('❌ Erreur page admin maintenance:', error);
             
-            const settings = {};
-            messageSettings.forEach(setting => {
-                settings[setting.key] = setting.value;
-            });
-            
-            const maintenanceMessage = settings.message || 
-                'Nous effectuons actuellement une maintenance pour améliorer votre expérience. Merci de votre patience !';
-            
-            // Données pour le template
-            const templateData = {
-                title: 'Site en maintenance | Crystos Jewel',
-                message: maintenanceMessage,
-                scheduledEnd: settings.scheduled_end || null,
-                user: req.session?.user || null,
-                isAuthenticated: !!req.session?.user,
-                isAdmin: req.session?.user?.role_id === 2,
-                cartItemCount: 0, // Pas de panier en maintenance
-                siteSettings: res.locals.siteSettings || {},
-                siteName: res.locals.siteName || 'Crystos Jewel',
-                companyEmail: res.locals.companyEmail || 'contact@crystosjewel.com',
-                companyPhone: res.locals.companyPhone || '+33 1 23 45 67 89'
+            req.session.flashMessage = {
+                type: 'error',
+                message: 'Erreur lors du chargement de la page de maintenance'
             };
             
-            res.render('maintenance', templateData);
-            
-        } catch (error) {
-            console.error('❌ Erreur page maintenance:', error);
-            // Page de maintenance de secours en HTML pur
-            res.status(500).send(`
-                <!DOCTYPE html>
-                <html lang="fr">
-                <head>
-                    <meta charset="UTF-8">
-                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                    <title>Maintenance - Crystos Jewel</title>
-                    <style>
-                        body { 
-                            font-family: 'Segoe UI', sans-serif; 
-                            text-align: center; 
-                            padding: 50px; 
-                            background: linear-gradient(135deg, #b76e79 0%, #8a5465 100%);
-                            color: white;
-                            min-height: 100vh;
-                            display: flex;
-                            align-items: center;
-                            justify-content: center;
-                        }
-                        .maintenance { 
-                            background: rgba(255,255,255,0.1); 
-                            padding: 40px; 
-                            border-radius: 15px; 
-                            max-width: 500px; 
-                            backdrop-filter: blur(10px);
-                        }
-                        h1 { margin-bottom: 20px; }
-                        .icon { font-size: 4rem; margin-bottom: 20px; }
-                    </style>
-                </head>
-                <body>
-                    <div class="maintenance">
-                        <div class="icon">🔧</div>
-                        <h1>Site en maintenance</h1>
-                        <p>Nous effectuons actuellement une maintenance technique.</p>
-                        <p>Merci de votre patience !</p>
-                        <hr style="margin: 20px 0; opacity: 0.3;">
-                        <p><strong>Contact :</strong> contact@crystosjewel.com</p>
-                    </div>
-                </body>
-                </html>
-            `);
+            res.redirect('/admin');
         }
     },
 
     /**
-     * Activer/désactiver la maintenance (API)
+     * Activer/désactiver la maintenance immédiatement
      */
-    toggleMaintenance: async (req, res) => {
+    async toggleMaintenance(req, res) {
         try {
-            const { enabled, message, allowAdminAccess } = req.body;
-            
-            console.log('🔧 Toggle maintenance:', { enabled, message, allowAdminAccess });
-            
-            // Mettre à jour les paramètres en base
-            const updates = [
-                { key: 'is_active', value: enabled ? 'true' : 'false', type: 'boolean' },
-                { key: 'allow_admin_access', value: allowAdminAccess !== false ? 'true' : 'false', type: 'boolean' }
-            ];
-            
-            if (message) {
-                updates.push({ key: 'message', value: message, type: 'string' });
+            const { enabled } = req.body;
+            const isEnabled = enabled === true || enabled === 'true';
+
+            console.log(`🔧 ${isEnabled ? 'Activation' : 'Désactivation'} maintenance immédiate`);
+
+            // Sauvegarder le paramètre
+            await Setting.setValue('maintenance', 'enabled', isEnabled, 'boolean', 
+                'Maintenance manuelle activée/désactivée');
+
+            // Si on désactive, nettoyer aussi la programmation
+            if (!isEnabled) {
+                await Setting.setValue('maintenance', 'scheduled_start', null, 'string');
+                await Setting.setValue('maintenance', 'scheduled_end', null, 'string');
             }
-            
-            // Sauvegarder chaque paramètre
-            for (const update of updates) {
-                await Setting.setSetting('maintenance', update.key, update.value, update.type);
-            }
-            
-            // Invalider le cache pour effet immédiat
+
+            // Invalider le cache
             invalidateMaintenanceCache();
-            
-            console.log(`🚧 Mode maintenance ${enabled ? 'activé' : 'désactivé'}`);
-            
-            res.json({
-                success: true,
-                message: `Mode maintenance ${enabled ? 'activé' : 'désactivé'}`,
-                enabled: enabled,
-                allowAdminAccess: allowAdminAccess !== false
-            });
-            
+
+            // Log et notification
+            const message = isEnabled ? 
+                'Maintenance activée immédiatement' : 
+                'Maintenance désactivée';
+
+            console.log(`✅ ${message}`);
+
+            // Réponse JSON
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.json({
+                    success: true,
+                    message,
+                    enabled: isEnabled,
+                    timestamp: new Date().toISOString()
+                });
+            }
+
+            // Réponse formulaire
+            req.session.flashMessage = {
+                type: 'success',
+                message
+            };
+
+            res.redirect('/admin/maintenance');
+
         } catch (error) {
             console.error('❌ Erreur toggle maintenance:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la modification du mode maintenance',
-                error: error.message
-            });
+
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Erreur lors de la modification du statut'
+                });
+            }
+
+            req.session.flashMessage = {
+                type: 'error',
+                message: 'Erreur lors de la modification du statut de maintenance'
+            };
+
+            res.redirect('/admin/maintenance');
         }
     },
 
     /**
-     * Obtenir le statut de la maintenance (API)
+     * Programmer la maintenance
      */
-    getMaintenanceStatus: async (req, res) => {
+    async scheduleMaintenance(req, res) {
         try {
-            const maintenanceSettings = await Setting.findAll({
-                where: { section: 'maintenance' }
-            });
+            const { scheduled_start, scheduled_end, message } = req.body;
 
-            const settings = {};
-            maintenanceSettings.forEach(setting => {
-                let value = setting.value;
-                if (setting.type === 'boolean') {
-                    value = value === 'true' || value === 'on' || value === true;
-                }
-                settings[setting.key] = value;
-            });
+            console.log('📅 Programmation maintenance:', { scheduled_start, scheduled_end });
 
-            res.json({
-                success: true,
-                maintenance: {
-                    isActive: settings.is_active || false,
-                    allowAdminAccess: settings.allow_admin_access !== false,
-                    message: settings.message || 'Site en maintenance',
-                    scheduledEnd: settings.scheduled_end || null
-                },
-                timestamp: new Date().toISOString()
-            });
-            
-        } catch (error) {
-            console.error('❌ Erreur statut maintenance:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la vérification du statut',
-                maintenance: { isActive: false } // Mode sécurisé
-            });
-        }
-    },
-
-    /**
-     * Programmer une maintenance (optionnel)
-     */
-    scheduleMaintenance: async (req, res) => {
-        try {
-            const { scheduledStart, scheduledEnd, message } = req.body;
-            
-            const updates = [];
-            
-            if (scheduledStart) {
-                updates.push({ key: 'scheduled_start', value: scheduledStart, type: 'string' });
+            // Validation des dates
+            if (!scheduled_start || !scheduled_end) {
+                throw new Error('Dates de début et fin requises');
             }
-            
-            if (scheduledEnd) {
-                updates.push({ key: 'scheduled_end', value: scheduledEnd, type: 'string' });
+
+            const startDate = new Date(scheduled_start);
+            const endDate = new Date(scheduled_end);
+            const now = new Date();
+
+            if (startDate <= now) {
+                throw new Error('La date de début doit être dans le futur');
             }
+
+            if (endDate <= startDate) {
+                throw new Error('La date de fin doit être après la date de début');
+            }
+
+            // Sauvegarder les paramètres
+            await Setting.setValue('maintenance', 'scheduled_start', 
+                startDate.toISOString(), 'string', 'Date/heure de début de maintenance programmée');
             
+            await Setting.setValue('maintenance', 'scheduled_end', 
+                endDate.toISOString(), 'string', 'Date/heure de fin de maintenance programmée');
+
             if (message) {
-                updates.push({ key: 'message', value: message, type: 'string' });
+                await Setting.setValue('maintenance', 'message', 
+                    message, 'string', 'Message affiché pendant la maintenance');
             }
-            
-            // Sauvegarder
-            for (const update of updates) {
-                await Setting.setSetting('maintenance', update.key, update.value, update.type);
-            }
-            
+
+            // Désactiver la maintenance manuelle si elle était active
+            await Setting.setValue('maintenance', 'enabled', false, 'boolean');
+
+            // Invalider le cache
             invalidateMaintenanceCache();
-            
-            res.json({
-                success: true,
-                message: 'Maintenance programmée avec succès'
-            });
-            
+
+            const successMessage = `Maintenance programmée du ${startDate.toLocaleString('fr-FR')} au ${endDate.toLocaleString('fr-FR')}`;
+            console.log(`✅ ${successMessage}`);
+
+            // Réponse JSON
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.json({
+                    success: true,
+                    message: successMessage,
+                    scheduled_start: startDate.toISOString(),
+                    scheduled_end: endDate.toISOString()
+                });
+            }
+
+            // Réponse formulaire
+            req.session.flashMessage = {
+                type: 'success',
+                message: successMessage
+            };
+
+            res.redirect('/admin/maintenance');
+
         } catch (error) {
             console.error('❌ Erreur programmation maintenance:', error);
+
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.status(400).json({
+                    success: false,
+                    message: error.message
+                });
+            }
+
+            req.session.flashMessage = {
+                type: 'error',
+                message: error.message
+            };
+
+            res.redirect('/admin/maintenance');
+        }
+    },
+
+    /**
+     * Annuler la maintenance programmée
+     */
+    async cancelScheduledMaintenance(req, res) {
+        try {
+            console.log('❌ Annulation maintenance programmée');
+
+            // Supprimer les paramètres de programmation
+            await Setting.setValue('maintenance', 'scheduled_start', null, 'string');
+            await Setting.setValue('maintenance', 'scheduled_end', null, 'string');
+            await Setting.setValue('maintenance', 'enabled', false, 'boolean');
+
+            // Invalider le cache
+            invalidateMaintenanceCache();
+
+            const message = 'Maintenance programmée annulée';
+            console.log(`✅ ${message}`);
+
+            // Réponse JSON
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.json({
+                    success: true,
+                    message
+                });
+            }
+
+            // Réponse formulaire
+            req.session.flashMessage = {
+                type: 'success',
+                message
+            };
+
+            res.redirect('/admin/maintenance');
+
+        } catch (error) {
+            console.error('❌ Erreur annulation maintenance:', error);
+
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Erreur lors de l\'annulation'
+                });
+            }
+
+            req.session.flashMessage = {
+                type: 'error',
+                message: 'Erreur lors de l\'annulation de la maintenance'
+            };
+
+            res.redirect('/admin/maintenance');
+        }
+    },
+
+    /**
+     * Mettre à jour le message de maintenance
+     */
+    async updateMessage(req, res) {
+        try {
+            const { message } = req.body;
+
+            console.log('💬 Mise à jour message maintenance');
+
+            await Setting.setValue('maintenance', 'message', 
+                message || 'Site en maintenance. Veuillez revenir plus tard.', 
+                'string', 'Message affiché pendant la maintenance');
+
+            // Invalider le cache
+            invalidateMaintenanceCache();
+
+            const successMessage = 'Message de maintenance mis à jour';
+            console.log(`✅ ${successMessage}`);
+
+            // Réponse JSON
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.json({
+                    success: true,
+                    message: successMessage
+                });
+            }
+
+            // Réponse formulaire
+            req.session.flashMessage = {
+                type: 'success',
+                message: successMessage
+            };
+
+            res.redirect('/admin/maintenance');
+
+        } catch (error) {
+            console.error('❌ Erreur mise à jour message:', error);
+
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Erreur lors de la mise à jour du message'
+                });
+            }
+
+            req.session.flashMessage = {
+                type: 'error',
+                message: 'Erreur lors de la mise à jour du message'
+            };
+
+            res.redirect('/admin/maintenance');
+        }
+    },
+
+    /**
+     * API pour obtenir le statut de maintenance
+     */
+    async getStatus(req, res) {
+        try {
+            const status = await getMaintenanceStatus();
+            
+            res.json({
+                success: true,
+                data: status
+            });
+
+        } catch (error) {
+            console.error('❌ Erreur API statut maintenance:', error);
+            
             res.status(500).json({
                 success: false,
-                message: 'Erreur lors de la programmation',
-                error: error.message
+                message: 'Erreur lors de la récupération du statut'
             });
+        }
+    },
+
+    /**
+     * Gérer les IPs autorisées
+     */
+    async updateAllowedIPs(req, res) {
+        try {
+            const { allowed_ips } = req.body;
+            
+            // Parser et valider les IPs
+            let ips = [];
+            if (typeof allowed_ips === 'string') {
+                ips = allowed_ips.split(',').map(ip => ip.trim()).filter(ip => ip);
+            } else if (Array.isArray(allowed_ips)) {
+                ips = allowed_ips;
+            }
+
+            console.log('🌐 Mise à jour IPs autorisées:', ips);
+
+            await Setting.setValue('maintenance', 'allowed_ips', 
+                ips, 'json', 'Adresses IP autorisées pendant la maintenance');
+
+            // Invalider le cache
+            invalidateMaintenanceCache();
+
+            const message = `${ips.length} adresse(s) IP autorisée(s)`;
+            console.log(`✅ ${message}`);
+
+            // Réponse JSON
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.json({
+                    success: true,
+                    message,
+                    allowed_ips: ips
+                });
+            }
+
+            // Réponse formulaire
+            req.session.flashMessage = {
+                type: 'success',
+                message
+            };
+
+            res.redirect('/admin/maintenance');
+
+        } catch (error) {
+            console.error('❌ Erreur IPs autorisées:', error);
+
+            if (req.xhr || req.headers.accept?.includes('application/json')) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Erreur lors de la mise à jour des IPs'
+                });
+            }
+
+            req.session.flashMessage = {
+                type: 'error',
+                message: 'Erreur lors de la mise à jour des IPs autorisées'
+            };
+
+            res.redirect('/admin/maintenance');
         }
     }
 };

@@ -33,7 +33,7 @@ import { favoritesController } from "./controlleurs/favoritesControlleur.js";
 import { adminStatsController } from "./controlleurs/adminStatsControlleur.js";
 import { orderController } from "./controlleurs/orderController.js";
 import { adminOrdersController } from "./controlleurs/adminOrdersController.js";
-import SettingsController from './controlleurs/SettingsController.js'
+import{ SettingsController} from './controlleurs/SettingsController.js'
 import { jewelryController } from "./controlleurs/jewelryController.js";
 import { categoryController } from './controlleurs/categoryController.js';
 import { sendTestMail } from "./services/mailService.js";
@@ -41,8 +41,7 @@ import { promoAdminController } from "./controlleurs/promoAdminController.js";
 import { guestOrderController } from './controlleurs/guestOrderController.js';
 import { emailManagementControlleur } from './controlleurs/emailManagementController.js';
 import { adminClientController } from './controlleurs/adminClientController.js';
-import { toggleMaintenanceAPI } from './middleware/maintenanceMiddleware.js';
-
+import { maintenanceController } from "./controlleurs/MaintenanceController.js";
 
 // CONTROLLERS EMAIL - CHOISISSEZ UN SEUL SYSTÈME
 
@@ -2842,7 +2841,6 @@ router.get('/admin', (req, res) => {
 router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
 router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
 
-router.post('/admin/maintenance/toggle', isAdmin, toggleMaintenanceAPI);
 
 // Route de vérification du statut maintenance
 router.get('/api/maintenance-status', (req, res) => {
@@ -4655,6 +4653,49 @@ router.get('/api/bijoux/filtered', isAdmin, async (req, res) => {
     }
 });
 
+// Page d'administration de la maintenance
+router.get('/admin/maintenance', isAdmin, maintenanceController.renderAdminPage);
+
+// Activer/désactiver la maintenance immédiatement
+router.post('/admin/maintenance/toggle', isAdmin, maintenanceController.toggleMaintenance);
+
+// Programmer la maintenance
+router.post('/admin/maintenance/schedule', isAdmin, maintenanceController.scheduleMaintenance);
+
+// Annuler la maintenance programmée
+router.post('/admin/maintenance/cancel', isAdmin, maintenanceController.cancelScheduledMaintenance);
+
+// Mettre à jour le message de maintenance
+router.post('/admin/maintenance/message', isAdmin, maintenanceController.updateMessage);
+
+// Gérer les IPs autorisées
+router.post('/admin/maintenance/allowed-ips', isAdmin, maintenanceController.updateAllowedIPs);
+
+// ==========================================
+// 🔧 API MAINTENANCE (accessible pendant maintenance)
+// ==========================================
+
+// Statut de la maintenance (pour vérification côté client)
+router.get('/api/maintenance/status', maintenanceController.getStatus);
+
+// Santé du serveur (pour monitoring)
+router.get('/api/health', (req, res) => {
+    res.json({
+        success: true,
+        status: 'operational',
+        timestamp: new Date().toISOString(),
+        server: 'Crystos Jewel'
+    });
+});
+
+// Test de connectivité (toujours accessible)
+router.get('/api/ping', (req, res) => {
+    res.json({ 
+        success: true, 
+        message: 'pong',
+        timestamp: new Date().toISOString()
+    });
+});
 
 // Export par défaut
 export default router;

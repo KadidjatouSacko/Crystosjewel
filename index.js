@@ -21,7 +21,7 @@ import { setUserForViews } from './app/middleware/authMiddleware.js';
 import { injectSiteSettings } from './app/middleware/SettingsMiddleware.js';
 import { ensurePromoCodesExist } from './migrations/migratePromoCodes.js';
 // import { maintenanceMiddleware } from './app/middleware/MaintenanceMiddleware.js';
-import { maintenanceMiddleware, forceAdminAccessMiddleware } from './app/middleware/MaintenanceMiddleware.js';
+import { maintenanceMiddleware } from './app/middleware/maintenanceMiddleware.js';
 import { isAdmin } from "./app/middleware/authMiddleware.js";
 
 
@@ -733,8 +733,9 @@ router.post('/admin/maintenance/toggle', isAdmin, async (req, res) => {
 });
 
 // Route pour forcer l'accès admin (avec paramètre spécial)
-router.get('/connexion-inscription', forceAdminAccessMiddleware, (req, res) => {
-    // Si paramètre admin=1 dans l'URL, afficher un message spécial
+router.get('/connexion-inscription', (req, res) => {
+
+// Si paramètre admin=1 dans l'URL, afficher un message spécial
     const isAdminAccess = req.query.admin === '1';
     
     res.render('connexion-inscription', {

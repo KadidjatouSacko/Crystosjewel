@@ -2,9 +2,9 @@
 
 import Setting from '../models/SettingModel.js';
 
-export default class SettingsController {
+export class SettingsController {
     
-    // Affichage de la page paramètres
+    // Afficher la page des paramètres - VERSION CORRIGÉE
     static async showPageSettings(req, res) {
         try {
             console.log('🔧 Chargement page paramètres avec maintenance');
@@ -33,7 +33,7 @@ export default class SettingsController {
                     };
                 });
             } else {
-                // Paramètres par défaut existants
+                // Paramètres par défaut si vides
                 settingsBySection.payment = {
                     stripe_public_key: { value: "", type: "string", description: "Clé publique Stripe" },
                     stripe_secret_key: { value: "", type: "string", description: "Clé secrète Stripe" },
@@ -49,114 +49,84 @@ export default class SettingsController {
                     shipping_zones: { value: "France, Europe, International", type: "string", description: "Zones de livraison" }
                 };
                 
-                settingsBySection.security = {
-                    session_timeout: { value: "3600", type: "number", description: "Timeout session (secondes)" },
-                    max_login_attempts: { value: "5", type: "number", description: "Tentatives de connexion max" },
-                    require_email_verification: { value: true, type: "boolean", description: "Vérification email requise" }
-                };
-                
                 settingsBySection.company = {
                     company_name: { value: "Crystos Jewel", type: "string", description: "Nom de l'entreprise" },
                     company_email: { value: "contact@crystosjewel.com", type: "string", description: "Email de contact" },
-                    company_phone: { value: "+33 1 23 45 67 89", type: "string", description: "Téléphone" },
-                    company_address: { value: "", type: "string", description: "Adresse complète" }
+                    company_phone: { value: "+33 1 23 45 67 89", type: "string", description: "Téléphone" }
                 };
-                
-                settingsBySection.footer = {
-                    facebook_url: { value: "", type: "string", description: "URL Facebook" },
-                    instagram_url: { value: "", type: "string", description: "URL Instagram" },
-                    twitter_url: { value: "", type: "string", description: "URL Twitter" },
-                    copyright_text: { value: "© 2025 Crystos Jewel", type: "string", description: "Texte copyright" },
-                    about_us_link: { value: "/notre-histoire", type: "string", description: "Lien Notre histoire" },
-                    values_link: { value: "/nos-valeurs", type: "string", description: "Lien Nos valeurs" }
-                };
-            }
 
-            // =====================================================
-            // NOUVELLE SECTION MAINTENANCE
-            // =====================================================
-            
-            if (!settingsBySection.maintenance) {
+                // ✅ AJOUTER LA SECTION MAINTENANCE
                 settingsBySection.maintenance = {
-                    is_active: { value: false, type: "boolean", description: "Maintenance active" },
-                    message: { value: "Site en maintenance. Nous revenons bientôt !", type: "string", description: "Message de maintenance" },
+                    enabled: { value: false, type: "boolean", description: "Maintenance manuelle activée" },
                     scheduled_start: { value: "", type: "string", description: "Début maintenance programmée" },
                     scheduled_end: { value: "", type: "string", description: "Fin maintenance programmée" },
-                    allow_admin_access: { value: true, type: "boolean", description: "Autoriser accès admin" }
+                    message: { value: "Site en maintenance. Veuillez revenir plus tard.", type: "string", description: "Message de maintenance" },
+                    allowed_ips: { value: "[]", type: "json", description: "IPs autorisées (JSON)" }
                 };
             }
 
-            // Configuration des sections MISE À JOUR
-            const sections = {
-                payment: {
-                    title: 'Paiements',
-                    icon: 'fas fa-credit-card',
-                    description: 'Configuration des moyens de paiement'
-                },
-                shipping: {
-                    title: 'Livraison',
-                    icon: 'fas fa-truck',
-                    description: 'Frais et zones de livraison'
-                },
-                security: {
-                    title: 'Sécurité',
-                    icon: 'fas fa-shield-alt',
-                    description: 'Paramètres de sécurité'
-                },
-                company: {
-                    title: 'Coordonnées Entreprise',
-                    icon: 'fas fa-building',
-                    description: 'Informations pour les factures'
-                },
-                footer: {
-                    title: 'Footer & Réseaux sociaux',
-                    icon: 'fas fa-link',
-                    description: 'Liens du pied de page'
-                },
-                // NOUVELLE SECTION
-                maintenance: {
-                    title: 'Maintenance du Site',
-                    icon: 'fas fa-tools',
-                    description: 'Gestion de la maintenance'
+            // ✅ VÉRIFIER LE STATUT DE MAINTENANCE (si les paramètres existent)
+            let maintenanceActive = false;
+            try {
+                if (settingsBySection.maintenance) {
+                    const maintenanceEnabled = settingsBySection.maintenance.enabled?.value === true || 
+                                             settingsBySection.maintenance.enabled?.value === 'true';
+                    
+                    let scheduledActive = false;
+                    if (settingsBySection.maintenance.scheduled_start?.value && 
+                        settingsBySection.maintenance.scheduled_end?.value) {
+                        const now = new Date();
+                        const start = new Date(settingsBySection.maintenance.scheduled_start.value);
+                        const end = new Date(settingsBySection.maintenance.scheduled_end.value);
+                        scheduledActive = now >= start && now <= end;
+                    }
+                    
+                    maintenanceActive = maintenanceEnabled || scheduledActive;
                 }
-            };
+            } catch (maintenanceError) {
+                console.error('❌ Erreur vérification maintenance:', maintenanceError);
+                maintenanceActive = false;
+            }
 
-            // Données pour la vue
+            // Données à passer à la vue
             const viewData = {
-                title: 'Paramètres Essentiels',
-                pageTitle: 'Configuration du Site',
-                
-                settings: settingsBySection,
-                sections: sections,
+                title: 'Paramètres du Site',
+                settingsBySection,
+                maintenanceActive, // ✅ VARIABLE DÉFINIE
                 
                 // Données utilisateur
                 user: req.session?.user || null,
                 isAuthenticated: !!req.session?.user,
                 isAdmin: req.session?.user?.role_id === 2,
                 
-                // Messages vides
+                // Messages vides par défaut
                 success: [],
                 error: [],
                 info: []
             };
 
             console.log('✅ Paramètres essentiels avec maintenance chargés');
-            res.render('settings', viewData);
+            
+            // ✅ IMPORTANT: UN SEUL RENDU DE RÉPONSE
+            res.render('admin/settings', viewData); // ou 'settings' selon votre structure
 
         } catch (error) {
             console.error('❌ Erreur chargement paramètres:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors du chargement des paramètres',
-                error: error.message
-            });
+            
+            // ✅ IMPORTANT: Ne pas envoyer de JSON si on a déjà essayé de render
+            if (!res.headersSent) {
+                res.status(500).render('error', {
+                    title: 'Erreur',
+                    message: 'Erreur lors du chargement des paramètres',
+                    user: req.session?.user || null,
+                    isAuthenticated: !!req.session?.user,
+                    isAdmin: req.session?.user?.role_id === 2
+                });
+            }
         }
     }
 
-    // ==========================================
-    // MÉTHODE SAUVEGARDE PARAMÈTRES
-    // ==========================================
-
+    // Sauvegarder les paramètres - VERSION CORRIGÉE
     static async saveSettings(req, res) {
         try {
             console.log('💾 Sauvegarde paramètres:', req.body);
@@ -170,30 +140,22 @@ export default class SettingsController {
                 });
             }
 
-            // Sauvegarder chaque paramètre avec findOrCreate
+            // Sauvegarder chaque paramètre
             const savedSettings = [];
-            const errors = [];
-
             for (const [key, value] of Object.entries(settings)) {
                 try {
-                    console.log(`🔄 Traitement ${section}.${key} = "${value}"`);
-
                     const [setting, created] = await Setting.findOrCreate({
-                        where: { 
-                            section: section, 
-                            key: key 
-                        },
+                        where: { section, key },
                         defaults: {
-                            section: section,
-                            key: key,
+                            section,
+                            key,
                             value: String(value),
                             type: SettingsController.getValueType(value),
                             description: `Paramètre ${key}`,
-                            is_public: section === 'footer' || section === 'company'
+                            is_public: section === 'footer' || section === 'company' || section === 'maintenance'
                         }
                     });
 
-                    // Si le paramètre existe déjà, le mettre à jour
                     if (!created) {
                         setting.value = String(value);
                         setting.type = SettingsController.getValueType(value);
@@ -205,205 +167,39 @@ export default class SettingsController {
                         section,
                         key,
                         value: setting.value,
-                        created,
-                        action: created ? 'créé' : 'mis à jour'
+                        created
                     });
 
-                    console.log(`✅ ${section}.${key} ${created ? 'créé' : 'mis à jour'}`);
-
                 } catch (settingError) {
-                    console.error(`❌ Erreur paramètre ${key}:`, settingError.message);
-                    errors.push(`${key}: ${settingError.message}`);
+                    console.error(`Erreur paramètre ${key}:`, settingError);
                 }
             }
 
-            console.log('✅ Paramètres traités:', savedSettings.length);
-            if (errors.length > 0) {
-                console.warn('⚠️ Erreurs:', errors);
-            }
+            console.log('✅ Paramètres sauvegardés:', savedSettings.length);
 
             // Invalider le cache pour que les changements soient visibles immédiatement
             SettingsController.invalidateCache();
 
-            // Réponse détaillée
+            // ✅ IMPORTANT: Une seule réponse
             res.json({
                 success: true,
-                message: `${savedSettings.length} paramètres sauvegardés avec succès`,
-                data: savedSettings,
-                errors: errors.length > 0 ? errors : undefined,
-                summary: {
-                    total: Object.keys(settings).length,
-                    saved: savedSettings.length,
-                    errors: errors.length,
-                    section: section
-                }
+                message: `${savedSettings.length} paramètres sauvegardés`,
+                data: savedSettings
             });
 
         } catch (error) {
             console.error('❌ Erreur sauvegarde paramètres:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la sauvegarde',
-                error: error.message
-            });
-        }
-    }
-
-    // ==========================================
-    // MÉTHODES MAINTENANCE
-    // ==========================================
-
-    static async activateMaintenance(req, res) {
-        try {
-            const { message } = req.body;
             
-            await Setting.updateOrCreate('maintenance', 'is_active', true);
-            
-            if (message) {
-                await Setting.updateOrCreate('maintenance', 'message', message);
-            }
-            
-            // Invalider le cache
-            global.settingsCacheExpired = true;
-            
-            console.log('🔧 Maintenance activée par admin:', req.session.user.email);
-            res.json({
-                success: true,
-                message: 'Maintenance activée avec succès'
-            });
-            
-        } catch (error) {
-            console.error('❌ Erreur activation maintenance:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur lors de l\'activation'
-            });
-        }
-    }
-
-    static async deactivateMaintenance(req, res) {
-        try {
-            await Setting.updateOrCreate('maintenance', 'is_active', false);
-            await Setting.updateOrCreate('maintenance', 'scheduled_start', '');
-            await Setting.updateOrCreate('maintenance', 'scheduled_end', '');
-            
-            // Invalider le cache
-            global.settingsCacheExpired = true;
-            
-            console.log('✅ Maintenance désactivée par admin:', req.session.user.email);
-            res.json({
-                success: true,
-                message: 'Maintenance désactivée avec succès'
-            });
-            
-        } catch (error) {
-            console.error('❌ Erreur désactivation maintenance:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur lors de la désactivation'
-            });
-        }
-    }
-
-    static async scheduleMaintenance(req, res) {
-        try {
-            const { startTime, endTime, message } = req.body;
-            
-            // Validation des dates
-            const start = new Date(startTime);
-            const end = new Date(endTime);
-            const now = new Date();
-            
-            if (start < now) {
-                return res.status(400).json({
+            // ✅ IMPORTANT: Vérifier si les headers ne sont pas déjà envoyés
+            if (!res.headersSent) {
+                res.status(500).json({
                     success: false,
-                    message: 'La date de début ne peut pas être dans le passé'
+                    message: 'Erreur lors de la sauvegarde',
+                    error: error.message
                 });
             }
-            
-            if (end <= start) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'La date de fin doit être après la date de début'
-                });
-            }
-            
-            // Sauvegarder les paramètres
-            await Setting.updateOrCreate('maintenance', 'scheduled_start', startTime);
-            await Setting.updateOrCreate('maintenance', 'scheduled_end', endTime);
-            
-            if (message) {
-                await Setting.updateOrCreate('maintenance', 'message', message);
-            }
-            
-            // Invalider le cache
-            global.settingsCacheExpired = true;
-            
-            console.log('📅 Maintenance programmée par admin:', {
-                admin: req.session.user.email,
-                startTime,
-                endTime
-            });
-            
-            res.json({
-                success: true,
-                message: 'Maintenance programmée avec succès',
-                scheduledStart: startTime,
-                scheduledEnd: endTime
-            });
-            
-        } catch (error) {
-            console.error('❌ Erreur programmation maintenance:', error);
-            res.status(500).json({
-                success: false,
-                message: 'Erreur serveur lors de la programmation'
-            });
         }
     }
-
-   static async getMaintenanceStatus(req, res) {
-    try {
-        // ✅ VÉRIFICATION: Ne pas répondre si déjà répondu
-        if (res.headersSent) {
-            console.log('⚠️ Headers déjà envoyés, abandon de la réponse');
-            return;
-        }
-        
-        const maintenanceSettings = await Setting.findAll({
-            where: { section: 'maintenance' }
-        });
-        
-        const status = {};
-        maintenanceSettings.forEach(setting => {
-            let value = setting.value;
-            if (setting.type === 'boolean') {
-                // ✅ CORRECTION: Gérer les différents formats
-                value = value === 'true' || value === true || value === 'on' || value === '1';
-            }
-            status[setting.key] = value;
-        });
-        
-        res.json({
-            success: true,
-            ...status,
-            currentTime: new Date().toISOString()
-        });
-    } catch (error) {
-        console.error('❌ Erreur récupération statut maintenance:', error);
-        
-        // ✅ VÉRIFICATION avant de répondre
-        if (!res.headersSent) {
-            res.status(500).json({
-                success: false,
-                message: 'Erreur lors de la récupération du statut'
-            });
-        }
-    }
-}
-
-    // ==========================================
-    // MÉTHODES UTILITAIRES
-    // ==========================================
 
     // Fonctions utilitaires
     static getValueType(value) {
@@ -419,7 +215,3 @@ export default class SettingsController {
         console.log('💨 Cache paramètres invalidé');
     }
 }
-
-// IMPORTANT: Export par défaut du CONSTRUCTEUR, pas de la classe
-// export { SettingsController }; // Ancienne syntaxe
-// export default SettingsController; // Nouvelle syntaxe correcte

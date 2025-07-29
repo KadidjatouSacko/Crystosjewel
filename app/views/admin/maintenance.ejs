@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - <%= siteName || 'Crystos Jewel' %></title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/css/admin.css">
+    
+    <style>
+        .maintenance-card {
+            border-left: 4px solid #dc3545;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-badge {
+            font-size: 0.9em;
+            padding: 0.5rem 1rem;
+            border-radius: 50px;
+        }
+        
+        .status-active {
+            background: linear-gradient(45deg, #dc3545, #fd7e14);
+            color: white;
+        }
+        
+        .status-inactive {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+        }
+        
+        .datetime-input {
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+            transition: border-color 0.3s;
+        }
+        
+        .datetime-input:focus {
+            border-color: #0d6efd;
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+        }
+        
+        .action-btn {
+            border-radius: 50px;
+            padding: 0.75rem 2rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s;
+        }
+        
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+        
+        .current-time {
+            background: linear-gradient(135deg, #6c757d, #495057);
+            color: white;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 2rem;
+        }
+        
+        .ip-list {
+            max-height: 120px;
+            overflow-y: auto;
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 0.75rem;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <%- include('../partials/navbarre') %>
+    
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <!-- Sidebar Admin -->
+            <div class="col-md-3">
+                <%- include('../partials/admin-sidebar') %>
+            </div>
+            
+            <!-- Contenu Principal -->
+            <div class="col-md-9">
+                <!-- En-tête -->
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h1><i class="fas fa-tools"></i> Gestion de la Maintenance</h1>
+                    <div class="status-badge <%= maintenance.isActive ? 'status-active' : 'status-inactive' %>">
+                        <i class="fas fa-<%= maintenance.isActive ? 'exclamation-triangle' : 'check-circle' %>"></i>
+                        <%= maintenance.isActive ? 'MAINTENANCE ACTIVE' : 'SITE OPÉRATIONNEL' %>
+                    </div>
+                </div>
+
+                <!-- Messages Flash -->
+                <% if (typeof flashMessages !== 'undefined' && flashMessages.length > 0) { %>
+                    <% flashMessages.forEach(function(flash) { %>
+                        <div class="alert alert-<%= flash.type === 'error' ? 'danger' : flash.type %> alert-dismissible fade show">
+                            <i class="fas fa-<%= flash.type === 'error' ? 'exclamation-circle' : flash.type === 'success' ? 'check-circle' : 'info-circle' %>"></i>
+                            <%= flash.message %>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    <% }); %>
+                <% } %>
+
+                <!-- Heure Actuelle -->
+                <div class="current-time text-center">
+                    <h4><i class="fas fa-clock"></i> <span id="currentTime"></span></h4>
+                    <small>Serveur : <%= currentTime %></small>
+                </div>
+
+                <div class="row">
+                    <!-- Statut Actuel -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card maintenance-card">
+                            <div class="card-header bg-dark text-white">
+                                <h5><i class="fas fa-info-circle"></i> Statut Actuel</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Maintenance Manuelle:</strong></label>
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox" id="maintenanceToggle" 
+                                               <%= maintenance.enabled ? 'checked' : '' %>>
+                                        <label class="form-check-label" for="maintenanceToggle">
+                                            <%= maintenance.enabled ? 'Activée' : 'Désactivée' %>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <% if (maintenance.scheduled_start && maintenance.scheduled_end) { %>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-calendar-alt"></i>
+                                        <strong>Maintenance Programmée:</strong><br>
+                                        Du <%= new Date(maintenance.scheduled_start).toLocaleString('fr-FR') %><br>
+                                        Au <%= new Date(maintenance.scheduled_end).toLocaleString('fr-FR') %>
+                                    </div>
+                                <% } %>
+
+                                <div class="mb-3">
+                                    <label class="form-label"><strong>Message Actuel:</strong></label>
+                                    <div class="alert alert-secondary">
+                                        <%= maintenance.message || 'Site en maintenance. Veuillez revenir plus tard.' %>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions Rapides -->
+                    <div class="col-md-6 mb-4">
+                        <div class="card">
+                            <div class="card-header bg-primary text-white">
+                                <h5><i class="fas fa-bolt"></i> Actions Rapides</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-grid gap-2">
+                                    <button type="button" class="btn btn-danger action-btn" onclick="toggleMaintenance(true)" 
+                                            <%= maintenance.enabled ? 'disabled' : '' %>>
+                                        <i class="fas fa-power-off"></i> Activer Maintenance Immédiatement
+                                    </button>
+                                    
+                                    <button type="button" class="btn btn-success action-btn" onclick="toggleMaintenance(false)" 
+                                            <%= !maintenance.isActive ? 'disabled' : '' %>>
+                                        <i class="fas fa-play"></i> Désactiver Maintenance
+                                    </button>
+                                    
+                                    <% if (maintenance.scheduled_start && maintenance.scheduled_end) { %>
+                                        <button type="button" class="btn btn-warning action-btn" onclick="cancelScheduled()">
+                                            <i class="fas fa-times"></i> Annuler Programmation
+                                        </button>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Programmer la Maintenance -->
+                <div class="card mb-4">
+                    <div class="card-header bg-warning text-dark">
+                        <h5><i class="fas fa-calendar-plus"></i> Programmer la Maintenance</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="scheduleForm">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="scheduled_start" class="form-label">
+                                        <i class="fas fa-play"></i> Date/Heure de Début
+                                    </label>
+                                    <input type="datetime-local" class="form-control datetime-input" 
+                                           id="scheduled_start" name="scheduled_start" required
+                                           value="<%= maintenance.scheduled_start ? new Date(maintenance.scheduled_start).toISOString().slice(0, 16) : '' %>">
+                                </div>
+                                
+                                <div class="col-md-6 mb-3">
+                                    <label for="scheduled_end" class="form-label">
+                                        <i class="fas fa-stop"></i> Date/Heure de Fin
+                                    </label>
+                                    <input type="datetime-local" class="form-control datetime-input" 
+                                           id="scheduled_end" name="scheduled_end" required
+                                           value="<%= maintenance.scheduled_end ? new Date(maintenance.scheduled_end).toISOString().slice(0, 16) : '' %>">
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="message" class="form-label">
+                                    <i class="fas fa-comment"></i> Message Personnalisé
+                                </label>
+                                <textarea class="form-control" id="message" name="message" rows="3" 
+                                          placeholder="Message affiché aux visiteurs pendant la maintenance"><%=
+                                    maintenance.message || 'Site en maintenance. Veuillez revenir plus tard.'
+                                %></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-warning action-btn">
+                                <i class="fas fa-clock"></i> Programmer la Maintenance
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Configuration Avancée -->
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h5><i class="fas fa-cogs"></i> Configuration Avancée</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Message de Maintenance -->
+                            <div class="col-md-6 mb-3">
+                                <h6><i class="fas fa-edit"></i> Modifier le Message</h6>
+                                <form id="messageForm">
+                                    <div class="input-group">
+                                        <textarea class="form-control" id="maintenanceMessage" name="message" rows="2" 
+                                                  placeholder="Message de maintenance"><%=
+                                            maintenance.message || 'Site en maintenance. Veuillez revenir plus tard.'
+                                        %></textarea>
+                                        <button type="submit" class="btn btn-info">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- IPs Autorisées -->
+                            <div class="col-md-6 mb-3">
+                                <h6><i class="fas fa-shield-alt"></i> IPs Autorisées</h6>
+                                <form id="ipsForm">
+                                    <div class="input-group mb-2">
+                                        <input type="text" class="form-control" id="allowedIPs" name="allowed_ips" 
+                                               placeholder="127.0.0.1, 192.168.1.100"
+                                               value="<%= maintenance.allowed_ips ? maintenance.allowed_ips.join(', ') : '' %>">
+                                        <button type="submit" class="btn btn-info">
+                                            <i class="fas fa-save"></i>
+                                        </button>
+                                    </div>
+                                    <small class="text-muted">
+                                        Séparer les IPs par des virgules. Les admins connectés ont toujours accès.
+                                    </small>
+                                </form>
+                                
+                                <% if (maintenance.allowed_ips && maintenance.allowed_ips.length > 0) { %>
+                                    <div class="ip-list mt-2">
+                                        <strong>IPs actuelles:</strong>
+                                        <% maintenance.allowed_ips.forEach(function(ip) { %>
+                                            <span class="badge bg-secondary me-1"><%= ip %></span>
+                                        <% }); %>
+                                    </div>
+                                <% } %>
+                                
+                                <div class="mt-2">
+                                    <small class="text-info">
+                                        <i class="fas fa-info-circle"></i> 
+                                        Votre IP actuelle: <code id="currentIP">Chargement...</code>
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Historique et Logs -->
+                <div class="card">
+                    <div class="card-header bg-secondary text-white">
+                        <h5><i class="fas fa-history"></i> Informations Système</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-4">
+                                <h6>Statut du Serveur</h6>
+                                <div id="serverStatus" class="alert alert-info">
+                                    <i class="fas fa-spinner fa-spin"></i> Vérification...
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Dernière Vérification</h6>
+                                <p id="lastCheck">-</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6>Actions</h6>
+                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="checkStatus()">
+                                    <i class="fas fa-sync-alt"></i> Actualiser Statut
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Variables globales
+        let statusCheckInterval;
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            updateCurrentTime();
+            setInterval(updateCurrentTime, 1000);
+            getCurrentIP();
+            checkStatus();
+            
+            // Vérifier le statut toutes les 30 secondes
+            statusCheckInterval = setInterval(checkStatus, 30000);
+            
+            // Configuration des formulaires
+            setupForms();
+        });
+
+        // Mettre à jour l'heure actuelle
+        function updateCurrentTime() {
+            const now = new Date();
+            document.getElementById('currentTime').textContent = now.toLocaleString('fr-FR');
+        }
+
+        // Obtenir l'IP actuelle du client
+        async function getCurrentIP() {
+            try {
+                const response = await fetch('https://api.ipify.org?format=json');
+                const data = await response.json();
+                document.getElementById('currentIP').textContent = data.ip;
+            } catch (error) {
+                document.getElementById('currentIP').textContent = 'Impossible de détecter';
+            }
+        }
+
+        // Activer/désactiver la maintenance
+        async function toggleMaintenance(enabled) {
+            const action = enabled ? 'activation' : 'désactivation';
+            
+            if (!confirm(`Êtes-vous sûr de vouloir ${enabled ? 'activer' : 'désactiver'} la maintenance immédiatement ?`)) {
+                return;
+            }
+
+            showLoading(`${action} de la maintenance...`);
+
+            try {
+                const response = await fetch('/admin/maintenance/toggle', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ enabled })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showAlert('danger', result.message || `Erreur lors de l'${action}`);
+                }
+            } catch (error) {
+                console.error('Erreur toggle maintenance:', error);
+                showAlert('danger', `Erreur lors de l'${action} de la maintenance`);
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Annuler la maintenance programmée
+        async function cancelScheduled() {
+            if (!confirm('Êtes-vous sûr de vouloir annuler la maintenance programmée ?')) {
+                return;
+            }
+
+            showLoading('Annulation de la programmation...');
+
+            try {
+                const response = await fetch('/admin/maintenance/cancel', {
+                    method: 'POST'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', result.message);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showAlert('danger', result.message || 'Erreur lors de l\'annulation');
+                }
+            } catch (error) {
+                console.error('Erreur annulation:', error);
+                showAlert('danger', 'Erreur lors de l\'annulation');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        // Vérifier le statut du serveur
+        async function checkStatus() {
+            try {
+                const response = await fetch('/api/maintenance/status');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const status = result.data;
+                    const statusDiv = document.getElementById('serverStatus');
+                    
+                    statusDiv.className = `alert ${status.isActive ? 'alert-warning' : 'alert-success'}`;
+                    statusDiv.innerHTML = `
+                        <i class="fas fa-${status.isActive ? 'exclamation-triangle' : 'check-circle'}"></i>
+                        ${status.isActive ? 'Maintenance Active' : 'Opérationnel'}
+                    `;
+                    
+                    document.getElementById('lastCheck').textContent = new Date().toLocaleString('fr-FR');
+                } else {
+                    throw new Error('Erreur API');
+                }
+            } catch (error) {
+                const statusDiv = document.getElementById('serverStatus');
+                statusDiv.className = 'alert alert-danger';
+                statusDiv.innerHTML = '<i class="fas fa-exclamation-circle"></i> Erreur de connexion';
+            }
+        }
+
+        // Configuration des formulaires
+        function setupForms() {
+            // Formulaire de programmation
+            document.getElementById('scheduleForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(this);
+                const data = Object.fromEntries(formData);
+                
+                // Validation côté client
+                const start = new Date(data.scheduled_start);
+                const end = new Date(data.scheduled_end);
+                const now = new Date();
+                
+                if (start <= now) {
+                    showAlert('warning', 'La date de début doit être dans le futur');
+                    return;
+                }
+                
+                if (end <= start) {
+                    showAlert('warning', 'La date de fin doit être après la date de début');
+                    return;
+                }
+
+                showLoading('Programmation de la maintenance...');
+
+                try {
+                    const response = await fetch('/admin/maintenance/schedule', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showAlert('success', result.message);
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        showAlert('danger', result.message);
+                    }
+                } catch (error) {
+                    console.error('Erreur programmation:', error);
+                    showAlert('danger', 'Erreur lors de la programmation');
+                } finally {
+                    hideLoading();
+                }
+            });
+
+            // Formulaire message
+            document.getElementById('messageForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await updateSetting('/admin/maintenance/message', new FormData(this), 'Message mis à jour');
+            });
+
+            // Formulaire IPs
+            document.getElementById('ipsForm').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                await updateSetting('/admin/maintenance/allowed-ips', new FormData(this), 'IPs mises à jour');
+            });
+        }
+
+        // Fonction générique pour mettre à jour un paramètre
+        async function updateSetting(url, formData, successMessage) {
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', successMessage);
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showAlert('danger', result.message);
+                }
+            } catch (error) {
+                console.error('Erreur mise à jour:', error);
+                showAlert('danger', 'Erreur lors de la mise à jour');
+            }
+        }
+
+        // Fonctions utilitaires
+        function showAlert(type, message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+            alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+            alertDiv.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'danger' ? 'exclamation-circle' : 'info-circle'}"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(alertDiv);
+            
+            // Auto-remove après 5 secondes
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        function showLoading(message) {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loadingOverlay';
+            loadingDiv.className = 'position-fixed w-100 h-100 d-flex align-items-center justify-content-center';
+            loadingDiv.style.cssText = 'top: 0; left: 0; background: rgba(0,0,0,0.7); z-index: 9999;';
+            loadingDiv.innerHTML = `
+                <div class="bg-white p-4 rounded shadow text-center">
+                    <div class="spinner-border text-primary mb-3"></div>
+                    <div>${message}</div>
+                </div>
+            `;
+            
+            document.body.appendChild(loadingDiv);
+        }
+
+        function hideLoading() {
+            const loadingDiv = document.getElementById('loadingOverlay');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
+
+        // Nettoyage à la fermeture de la page
+        window.addEventListener('beforeunload', function() {
+            if (statusCheckInterval) {
+                clearInterval(statusCheckInterval);
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,222 +1,200 @@
-// ====================================
-        // REDIRECTION EN MODE MAINTENANCE
-        // ====================================// middleware/maintenanceMiddleware.js - VERSION CORRIGÉE
+// app/middleware/maintenanceMiddleware.js
+
 import Setting from '../models/SettingModel.js';
-import { Customer } from '../models/customerModel.js';
-import { Role } from '../models/roleModel.js';
+
+let maintenanceCache = null;
+let lastMaintenanceCheck = null;
 
 /**
- * Middleware de maintenance avec exception pour les administrateurs
+ * Middleware de maintenance pour gérer l'accès au site
+ * Permet l'activation/désactivation immédiate et programmée
  */
 export const maintenanceMiddleware = async (req, res, next) => {
     try {
-        console.log('🔧 Vérification mode maintenance...');
+        const now = new Date();
         
-        // Vérifier si le mode maintenance est activé en utilisant la table 'settings'
-        const maintenanceSetting = await Setting.findOne({
-            where: { 
-                section: 'maintenance', 
-                key: 'maintenance_enabled' 
+        // Vérifier le cache (rafraîchir toutes les 30 secondes)
+        const shouldRefresh = !maintenanceCache || 
+                             !lastMaintenanceCheck || 
+                             (now.getTime() - lastMaintenanceCheck) > 30000;
+
+        if (shouldRefresh) {
+            console.log('🔄 Vérification statut maintenance...');
+            
+            // Récupérer les paramètres de maintenance
+            const settings = await Setting.findAll({
+                where: {
+                    section: 'maintenance',
+                    key: ['enabled', 'scheduled_start', 'scheduled_end', 'message', 'allowed_ips']
+                }
+            });
+
+            maintenanceCache = {};
+            settings.forEach(setting => {
+                let value = setting.value;
+                if (setting.type === 'boolean') {
+                    value = value === 'true' || value === true;
+                } else if (setting.type === 'json') {
+                    try {
+                        value = JSON.parse(value);
+                    } catch (e) {
+                        value = [];
+                    }
+                }
+                maintenanceCache[setting.key] = value;
+            });
+
+            lastMaintenanceCheck = now.getTime();
+        }
+
+        // Déterminer si la maintenance est active
+        let isMaintenanceActive = false;
+        let maintenanceMessage = maintenanceCache.message || 'Site en maintenance. Veuillez revenir plus tard.';
+
+        // 1. Maintenance manuelle activée
+        if (maintenanceCache.enabled === true) {
+            isMaintenanceActive = true;
+            console.log('🚧 Maintenance manuelle active');
+        }
+        
+        // 2. Maintenance programmée
+        if (maintenanceCache.scheduled_start && maintenanceCache.scheduled_end) {
+            const scheduledStart = new Date(maintenanceCache.scheduled_start);
+            const scheduledEnd = new Date(maintenanceCache.scheduled_end);
+            
+            if (now >= scheduledStart && now <= scheduledEnd) {
+                isMaintenanceActive = true;
+                maintenanceMessage = `Maintenance programmée en cours. Fin prévue à ${scheduledEnd.toLocaleString('fr-FR')}.`;
+                console.log('🚧 Maintenance programmée active');
             }
-        });
+        }
 
-        const isMaintenanceMode = maintenanceSetting?.value === 'true';
-        console.log(`🔧 Mode maintenance: ${isMaintenanceMode ? 'ACTIF' : 'INACTIF'}`);
-
-        if (!isMaintenanceMode) {
-            // Pas en maintenance, continuer normalement
+        // Si pas de maintenance, continuer normalement
+        if (!isMaintenanceActive) {
             return next();
         }
 
-        // ====================================
-        // EXCEPTIONS POUR LES ADMINISTRATEURS
-        // ====================================
+        // Vérifier les exceptions
 
-        // 1. Vérifier si l'utilisateur est connecté et est admin
+        // 1. Utilisateur admin connecté (role_id = 2)
         if (req.session?.user?.role_id === 2) {
-            console.log('🛡️ Admin détecté, bypass maintenance autorisé');
-            // Ajouter des variables pour indiquer que le site est en maintenance
-            res.locals.isMaintenanceMode = true;
-            res.locals.isAdminBypass = true;
+            console.log('🛡️ Admin détecté, bypass maintenance');
+            
+            // Ajouter un header pour notifier l'admin
+            res.locals.maintenanceActive = true;
+            res.locals.maintenanceMessage = maintenanceMessage;
+            
             return next();
         }
 
-        // 2. Vérifier si c'est une requête vers l'interface admin
-        const adminPaths = [
-            '/admin',
-            '/connexion-inscription',
-            '/connexion',  // Ajouter pour votre route de connexion
-            '/login',      // Au cas où
-            '/api/admin',
-            '/login-admin'
-        ];
-
-        const isAdminPath = adminPaths.some(path => 
-            req.path.startsWith(path)
-        );
-
-        if (isAdminPath) {
-            console.log('🔧 Chemin admin détecté, autorisation d\'accès:', req.path);
-            res.locals.isMaintenanceMode = true;
+        // 2. Routes admin (pour la connexion admin)
+        if (req.path.startsWith('/admin') || req.path === '/connexion-inscription') {
+            console.log('🔐 Route admin/connexion autorisée pendant maintenance');
             return next();
         }
 
-        // 3. Permettre l'accès aux assets statiques nécessaires ET aux routes de connexion
-        const allowedStaticPaths = [
-            '/css/',
-            '/js/',
-            '/images/',
-            '/favicon.ico',
-            '/assets/',
-            '/fonts/',
-            '/api/auth/',      // Routes d'authentification
-            '/deconnexion',    // Déconnexion
-            '/logout'          // Déconnexion alternative
-        ];
-
-        const isStaticPath = allowedStaticPaths.some(path => 
-            req.path.startsWith(path)
-        );
-
-        if (isStaticPath) {
-            console.log('🔧 Chemin autorisé détecté:', req.path);
+        // 3. IP autorisées
+        const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress;
+        const allowedIPs = maintenanceCache.allowed_ips || [];
+        
+        if (allowedIPs.includes(clientIP)) {
+            console.log(`🌐 IP autorisée: ${clientIP}`);
             return next();
         }
 
-        // 4. Ignorer les requêtes de Chrome DevTools et autres outils
-        const ignoredPaths = [
-            '/.well-known/',
-            '/manifest.json',
-            '/robots.txt',
-            '/sitemap.xml'
-        ];
-
-        const isIgnoredPath = ignoredPaths.some(path => 
-            req.path.startsWith(path)
-        );
-
-        if (isIgnoredPath) {
-            console.log('🔧 Chemin ignoré:', req.path);
+        // 4. Routes API essentielles
+        if (req.path.startsWith('/api/maintenance') || req.path.startsWith('/api/health')) {
             return next();
         }
 
-        console.log('🚫 Accès bloqué - Mode maintenance actif pour:', req.path);
+        // Bloquer l'accès - afficher page de maintenance
+        console.log(`🚧 Accès bloqué pour: ${req.path} (IP: ${clientIP})`);
 
-        // Récupérer le message et les infos de maintenance
-        const maintenanceMessage = await Setting.findOne({
-            where: { section: 'maintenance', key: 'maintenance_message' }
-        });
+        // Réponse JSON pour les requêtes AJAX
+        if (req.xhr || req.headers.accept?.includes('application/json')) {
+            return res.status(503).json({
+                success: false,
+                maintenance: true,
+                message: maintenanceMessage,
+                estimatedEnd: maintenanceCache.scheduled_end || null
+            });
+        }
 
-        const estimatedTime = await Setting.findOne({
-            where: { section: 'maintenance', key: 'maintenance_estimated_time' }
-        });
-
-        const contactEmail = await Setting.findOne({
-            where: { section: 'maintenance', key: 'maintenance_contact_email' }
-        });
-
-        // Pour tous les autres utilisateurs, afficher la page de maintenance
+        // Page de maintenance HTML
         return res.status(503).render('maintenance', {
             title: 'Site en maintenance',
-            message: maintenanceMessage?.value || 'Le site est temporairement en maintenance. Nous serons de retour très bientôt !',
-            estimatedTime: estimatedTime?.value || null,
-            contactEmail: contactEmail?.value || 'crystosjewel@gmail.com',
-            user: null,
-            isAuthenticated: false,
-            isAdmin: false
+            message: maintenanceMessage,
+            estimatedEnd: maintenanceCache.scheduled_end || null,
+            siteName: res.locals.siteName || 'Crystos Jewel'
         });
 
     } catch (error) {
-        console.error('❌ Erreur dans maintenanceMiddleware:', error);
-        // En cas d'erreur, laisser passer pour éviter de bloquer le site
+        console.error('❌ Erreur middleware maintenance:', error);
+        
+        // En cas d'erreur, laisser passer (éviter de casser le site)
         next();
     }
 };
 
 /**
- * Middleware spécifique pour forcer l'accès admin en maintenance
+ * Fonction utilitaire pour invalider le cache maintenance
  */
-export const forceAdminAccessMiddleware = async (req, res, next) => {
+export const invalidateMaintenanceCache = () => {
+    maintenanceCache = null;
+    lastMaintenanceCheck = null;
+    console.log('💨 Cache maintenance invalidé');
+};
+
+/**
+ * Fonction pour obtenir le statut actuel de la maintenance
+ */
+export const getMaintenanceStatus = async () => {
     try {
-        // Si on est déjà identifié comme admin, passer
-        if (req.session?.user?.role_id === 2) {
-            return next();
-        }
+        const settings = await Setting.findAll({
+            where: {
+                section: 'maintenance'
+            }
+        });
 
-        // Vérifier si l'utilisateur a un token de session valide mais role non défini
-        if (req.session?.user?.id) {
-            const user = await Customer.findByPk(req.session.user.id, {
-                include: [
-                    {
-                        model: Role,
-                        as: 'role',
-                        attributes: ['id', 'name']
-                    }
-                ]
-            });
+        const status = {};
+        settings.forEach(setting => {
+            let value = setting.value;
+            if (setting.type === 'boolean') {
+                value = value === 'true' || value === true;
+            } else if (setting.type === 'json') {
+                try {
+                    value = JSON.parse(value);
+                } catch (e) {
+                    value = setting.type === 'json' ? [] : setting.value;
+                }
+            }
+            status[setting.key] = value;
+        });
 
-            if (user && user.role_id === 2) {
-                // Mettre à jour la session avec les droits admin
-                req.session.user = {
-                    ...req.session.user,
-                    role_id: user.role_id,
-                    role: user.role,
-                    isAdmin: true
-                };
-                
-                console.log('🔄 Session admin restaurée pendant la maintenance');
-                return next();
+        // Déterminer si maintenance active
+        const now = new Date();
+        let isActive = status.enabled === true;
+        
+        if (status.scheduled_start && status.scheduled_end) {
+            const start = new Date(status.scheduled_start);
+            const end = new Date(status.scheduled_end);
+            if (now >= start && now <= end) {
+                isActive = true;
             }
         }
 
-        next();
-    } catch (error) {
-        console.error('❌ Erreur dans forceAdminAccessMiddleware:', error);
-        next();
-    }
-};
-
-/**
- * Route API pour toggle la maintenance
- */
-export const toggleMaintenanceAPI = async (req, res) => {
-    try {
-        const { enabled, estimatedTime } = req.body;
-        
-        console.log('🔧 Toggle maintenance:', { enabled, estimatedTime });
-        
-        // Mettre à jour le paramètre de maintenance
-        await Setting.upsert({
-            section: 'maintenance',
-            key: 'maintenance_enabled',
-            value: enabled ? 'true' : 'false',
-            type: 'boolean',
-            description: 'Mode maintenance du site'
-        });
-
-        if (estimatedTime) {
-            await Setting.upsert({
-                section: 'maintenance',
-                key: 'maintenance_estimated_time',
-                value: estimatedTime,
-                type: 'string',
-                description: 'Temps estimé de retour'
-            });
-        }
-
-        console.log(`🔧 Mode maintenance ${enabled ? 'ACTIVÉ' : 'DÉSACTIVÉ'} par admin:`, req.session.user.email);
-
-        res.json({
-            success: true,
-            message: `Mode maintenance ${enabled ? 'activé' : 'désactivé'}`,
-            maintenanceMode: enabled
-        });
+        return {
+            ...status,
+            isActive,
+            currentTime: now.toISOString()
+        };
 
     } catch (error) {
-        console.error('❌ Erreur toggle maintenance:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors du changement de statut'
-        });
+        console.error('❌ Erreur getMaintenanceStatus:', error);
+        return {
+            enabled: false,
+            isActive: false,
+            message: 'Erreur lors de la vérification du statut'
+        };
     }
 };
