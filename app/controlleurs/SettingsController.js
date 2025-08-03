@@ -1,4 +1,4 @@
-// app/controlleurs/SettingsController.js - VERSION CORRIGÉE COMPLÈTE
+// app/controlleurs/SettingsController.js - VERSION COMPLÈTE CORRIGÉE
 
 import Setting from '../models/SettingModel.js';
 
@@ -34,28 +34,6 @@ export class SettingsController {
                 });
             } else {
                 // Paramètres par défaut si vides
-                settingsBySection.payment = {
-                    stripe_public_key: { value: "", type: "string", description: "Clé publique Stripe" },
-                    stripe_secret_key: { value: "", type: "string", description: "Clé secrète Stripe" },
-                    paypal_client_id: { value: "", type: "string", description: "Client ID PayPal" },
-                    accept_credit_cards: { value: true, type: "boolean", description: "Accepter les cartes" },
-                    accept_paypal: { value: true, type: "boolean", description: "Accepter PayPal" }
-                };
-                
-                settingsBySection.shipping = {
-                    free_shipping_threshold: { value: "100", type: "number", description: "Livraison gratuite à partir de (€)" },
-                    standard_shipping_cost: { value: "7.50", type: "number", description: "Frais livraison standard (€)" },
-                    express_shipping_cost: { value: "15.00", type: "number", description: "Frais livraison express (€)" },
-                    shipping_zones: { value: "France, Europe, International", type: "string", description: "Zones de livraison" }
-                };
-                
-                settingsBySection.company = {
-                    company_name: { value: "Crystos Jewel", type: "string", description: "Nom de l'entreprise" },
-                    company_email: { value: "contact@crystosjewel.com", type: "string", description: "Email de contact" },
-                    company_phone: { value: "+33 1 23 45 67 89", type: "string", description: "Téléphone" }
-                };
-
-                // ✅ AJOUTER LA SECTION MAINTENANCE
                 settingsBySection.maintenance = {
                     enabled: { value: false, type: "boolean", description: "Maintenance manuelle activée" },
                     scheduled_start: { value: "", type: "string", description: "Début maintenance programmée" },
@@ -63,9 +41,48 @@ export class SettingsController {
                     message: { value: "Site en maintenance. Veuillez revenir plus tard.", type: "string", description: "Message de maintenance" },
                     allowed_ips: { value: "[]", type: "json", description: "IPs autorisées (JSON)" }
                 };
+
+                settingsBySection.shipping = {
+                    free_shipping_threshold: { value: "100", type: "number", description: "Livraison gratuite à partir de (€)" },
+                    standard_shipping_cost: { value: "7.50", type: "number", description: "Frais livraison standard (€)" },
+                    express_shipping_cost: { value: "15.00", type: "number", description: "Frais livraison express (€)" },
+                    shipping_zones: { value: "France, Europe, International", type: "string", description: "Zones de livraison" }
+                };
+                
+                settingsBySection.security = {
+                    session_timeout: { value: "3600", type: "number", description: "Timeout session (secondes)" },
+                    max_login_attempts: { value: "5", type: "number", description: "Tentatives de connexion max" },
+                    require_email_verification: { value: true, type: "boolean", description: "Vérification email obligatoire" }
+                };
+                
+                settingsBySection.company = {
+                    company_name: { value: "Crystos Jewel", type: "string", description: "Nom de l'entreprise" },
+                    company_address: { value: "123 Rue de la Paix, 75001 Paris", type: "string", description: "Adresse de facturation" },
+                    company_phone: { value: "+33 1 23 45 67 89", type: "string", description: "Téléphone" },
+                    company_email: { value: "contact@crystosjewel.com", type: "string", description: "Email officiel" },
+                    siret: { value: "", type: "string", description: "Numéro SIRET" },
+                    vat_number: { value: "", type: "string", description: "Numéro TVA" }
+                };
+
+                settingsBySection.footer = {
+                    instagram_url: { value: "https://instagram.com/crystosjewel", type: "string", description: "Lien Instagram" },
+                    facebook_url: { value: "https://facebook.com/crystosjewel", type: "string", description: "Lien Facebook" },
+                    pinterest_url: { value: "https://pinterest.com/crystosjewel", type: "string", description: "Lien Pinterest" },
+                    tiktok_url: { value: "https://tiktok.com/@crystosjewel", type: "string", description: "Lien TikTok" },
+                    copyright_text: { value: "2025 CrystosJewel - Tous droits réservés.", type: "string", description: "Texte copyright" }
+                };
+
+                // ✅ PAIEMENTS EN DERNIER
+                settingsBySection.payment = {
+                    stripe_public_key: { value: "", type: "string", description: "Clé publique Stripe" },
+                    stripe_secret_key: { value: "", type: "string", description: "Clé secrète Stripe" },
+                    paypal_client_id: { value: "", type: "string", description: "Client ID PayPal" },
+                    accept_credit_cards: { value: true, type: "boolean", description: "Accepter les cartes" },
+                    accept_paypal: { value: true, type: "boolean", description: "Accepter PayPal" }
+                };
             }
 
-            // ✅ VÉRIFIER LE STATUT DE MAINTENANCE (si les paramètres existent)
+            // Vérifier le statut de maintenance
             let maintenanceActive = false;
             try {
                 if (settingsBySection.maintenance) {
@@ -88,11 +105,52 @@ export class SettingsController {
                 maintenanceActive = false;
             }
 
+            // ✅ Configuration des sections DANS L'ORDRE SOUHAITÉ
+            const sections = {
+                maintenance: {
+                    title: 'Mode Maintenance',
+                    icon: 'fas fa-tools',
+                    description: 'Contrôle de la maintenance du site'
+                },
+                shipping: {
+                    title: 'Livraison',
+                    icon: 'fas fa-truck',
+                    description: 'Frais et zones de livraison'
+                },
+                security: {
+                    title: 'Sécurité',
+                    icon: 'fas fa-shield-alt',
+                    description: 'Paramètres de sécurité'
+                },
+                company: {
+                    title: 'Coordonnées Entreprise',
+                    icon: 'fas fa-building',
+                    description: 'Informations pour les factures'
+                },
+                footer: {
+                    title: 'Footer & Réseaux sociaux',
+                    icon: 'fas fa-link',
+                    description: 'Liens du pied de page'
+                },
+                // ✅ PAIEMENTS EN DERNIER
+                payment: {
+                    title: 'Paiements',
+                    icon: 'fas fa-credit-card',
+                    description: 'Configuration des moyens de paiement'
+                }
+            };
+
             // Données à passer à la vue
             const viewData = {
+                // Variables de titre
                 title: 'Paramètres du Site',
+                pageTitle: 'Paramètres Essentiels',
+                
+                // Données des paramètres
                 settingsBySection,
-                maintenanceActive, // ✅ VARIABLE DÉFINIE
+                settings: settingsBySection,  // Alias pour compatibilité template
+                sections,
+                maintenanceActive,
                 
                 // Données utilisateur
                 user: req.session?.user || null,
@@ -106,17 +164,18 @@ export class SettingsController {
             };
 
             console.log('✅ Paramètres essentiels avec maintenance chargés');
+            console.log('🔍 ViewData keys:', Object.keys(viewData));
             
-            // ✅ IMPORTANT: UN SEUL RENDU DE RÉPONSE
-            res.render('settings', viewData); // ou 'settings' selon votre structure
+            // Rendu de la page
+            res.render('settings', viewData);
 
         } catch (error) {
             console.error('❌ Erreur chargement paramètres:', error);
             
-            // ✅ IMPORTANT: Ne pas envoyer de JSON si on a déjà essayé de render
             if (!res.headersSent) {
                 res.status(500).render('error', {
                     title: 'Erreur',
+                    pageTitle: 'Erreur',
                     message: 'Erreur lors du chargement des paramètres',
                     user: req.session?.user || null,
                     isAuthenticated: !!req.session?.user,
@@ -126,24 +185,30 @@ export class SettingsController {
         }
     }
 
-    // Sauvegarder les paramètres - VERSION CORRIGÉE
+    // ✅ CORRECTION : Sauvegarder les paramètres avec la bonne route
     static async saveSettings(req, res) {
         try {
-            console.log('💾 Sauvegarde paramètres:', req.body);
+            console.log('💾 Sauvegarde paramètres reçue:', req.body);
+            console.log('💾 URL appelée:', req.originalUrl);
 
             const { section, settings } = req.body;
 
             if (!section || !settings) {
+                console.error('❌ Données manquantes:', { section, settings });
                 return res.status(400).json({
                     success: false,
                     message: 'Section et paramètres requis'
                 });
             }
 
+            console.log(`📝 Traitement section: ${section}, ${Object.keys(settings).length} paramètres`);
+
             // Sauvegarder chaque paramètre
             const savedSettings = [];
             for (const [key, value] of Object.entries(settings)) {
                 try {
+                    console.log(`💾 Sauvegarde ${section}.${key} = ${value}`);
+
                     const [setting, created] = await Setting.findOrCreate({
                         where: { section, key },
                         defaults: {
@@ -167,30 +232,32 @@ export class SettingsController {
                         section,
                         key,
                         value: setting.value,
-                        created
+                        created: created ? 'créé' : 'mis à jour'
                     });
 
+                    console.log(`✅ ${created ? 'Créé' : 'Mis à jour'}: ${section}.${key}`);
+
                 } catch (settingError) {
-                    console.error(`Erreur paramètre ${key}:`, settingError);
+                    console.error(`❌ Erreur paramètre ${key}:`, settingError);
                 }
             }
 
-            console.log('✅ Paramètres sauvegardés:', savedSettings.length);
+            console.log(`✅ ${savedSettings.length} paramètres sauvegardés pour ${section}`);
 
             // Invalider le cache pour que les changements soient visibles immédiatement
             SettingsController.invalidateCache();
 
-            // ✅ IMPORTANT: Une seule réponse
+            // Réponse de succès
             res.json({
                 success: true,
-                message: `${savedSettings.length} paramètres sauvegardés`,
+                message: `${savedSettings.length} paramètres sauvegardés pour ${section}`,
                 data: savedSettings
             });
 
         } catch (error) {
             console.error('❌ Erreur sauvegarde paramètres:', error);
+            console.error('❌ Stack:', error.stack);
             
-            // ✅ IMPORTANT: Vérifier si les headers ne sont pas déjà envoyés
             if (!res.headersSent) {
                 res.status(500).json({
                     success: false,

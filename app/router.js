@@ -464,10 +464,10 @@ router.get('/admin', (req, res) => {
 
 // Routes paramètres (versions temporaires fonctionnelles)
 
-router.post('/admin/parametres/save', isAdmin, (req, res) => {
-    console.log('💾 Sauvegarde paramètres temporaire');
-    res.json({ success: true, message: 'Paramètres sauvegardés (temporaire)' });
-});
+// router.post('/admin/parametres/save', isAdmin, (req, res) => {
+//     console.log('💾 Sauvegarde paramètres temporaire');
+//     res.json({ success: true, message: 'Paramètres sauvegardés (temporaire)' });
+// });
 
 // Routes API maintenance (versions temporaires)
 router.get('/api/admin/maintenance/status', isAdmin, (req, res) => {
@@ -2900,8 +2900,8 @@ router.get('/admin', (req, res) => {
 
 // Route paramètres (si pas déjà présente)
 router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
-router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
 router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
+router.post('/parametres/save', isAdmin, SettingsController.saveSettings);
 
 
 // Route de vérification du statut maintenance
