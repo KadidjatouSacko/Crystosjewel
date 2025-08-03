@@ -10,6 +10,7 @@ import path from 'path';
 import fs from 'fs';
 import slugify from 'slugify';
 import methodOverride from 'method-override';
+import { maintenanceCheck } from './app/middleware/maintenanceMiddleware.js';
 
 // Import des modèles et services
 import router from "./app/router.js";
@@ -430,6 +431,7 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use(maintenanceCheck);
 // ==========================================
 // ROUTES PRINCIPALES
 // ==========================================

@@ -3,21 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= title || 'Paramètres Essentiels' %></title>
+    <title><%= title || 'Paramètres Administration' %></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    
     <style>
         :root {
-            --primary-color: #b76e79;
+            --primary: #b76e79;
             --primary-light: #e8c2c8;
-            --cream: #fff8f0;
-            --dark-text: #3a3a3a;
-            --white: #ffffff;
-            --success: #4caf50;
-            --danger: #f44336;
-            --warning: #ff9800;
-            --shadow: rgba(183, 110, 121, 0.1);
+            --primary-dark: #7d4b53;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --danger: #e74c3c;
+            --info: #3498db;
+            --light: #f8f9fa;
+            --dark: #343a40;
         }
 
         * {
@@ -28,30 +26,27 @@
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, var(--cream) 0%, #f5f5f5 100%);
-            color: var(--dark-text);
+            background: linear-gradient(135deg, #fff8f0 0%, #f5f5f5 100%);
+            color: #333;
             line-height: 1.6;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-
+        /* ===== HEADER ===== */
         .header {
-            text-align: center;
-            margin-bottom: 3rem;
             background: white;
             padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 4px 15px var(--shadow);
+            margin-bottom: 2rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            border-left: 5px solid var(--primary);
         }
 
         .header h1 {
+            color: var(--primary);
             font-size: 2.5rem;
-            color: var(--primary-color);
             margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
         .header p {
@@ -59,17 +54,27 @@
             font-size: 1.1rem;
         }
 
+        /* ===== CONTAINER ===== */
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 1rem;
+        }
+
+        /* ===== GRILLE DES SECTIONS ===== */
         .sections-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
             gap: 2rem;
+            margin-bottom: 2rem;
         }
 
+        /* ===== CARTES SECTION ===== */
         .section-card {
             background: white;
             border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
             padding: 2rem;
-            box-shadow: 0 4px 15px var(--shadow);
             transition: transform 0.3s ease;
         }
 
@@ -80,60 +85,65 @@
         .section-header {
             display: flex;
             align-items: center;
-            gap: 1rem;
-            margin-bottom: 1.5rem;
+            margin-bottom: 2rem;
             padding-bottom: 1rem;
-            border-bottom: 2px solid var(--primary-light);
+            border-bottom: 2px solid var(--light);
         }
 
         .section-icon {
-            background: var(--primary-color);
-            color: white;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 15px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.2rem;
+            margin-right: 1rem;
+        }
+
+        .section-icon i {
+            font-size: 1.5rem;
+            color: white;
         }
 
         .section-title {
-            font-size: 1.3rem;
-            font-weight: 600;
-            color: var(--dark-text);
+            font-size: 1.4rem;
+            font-weight: bold;
+            color: var(--dark);
+            margin-bottom: 0.3rem;
         }
 
         .section-description {
-            font-size: 0.9rem;
             color: #666;
+            font-size: 0.9rem;
         }
 
+        /* ===== FORMULAIRES ===== */
         .form-group {
             margin-bottom: 1.5rem;
         }
 
         .form-label {
             display: block;
-            font-weight: 500;
             margin-bottom: 0.5rem;
-            color: var(--dark-text);
+            font-weight: 600;
+            color: var(--dark);
+            font-size: 0.95rem;
         }
 
-        .form-input,
-        .form-textarea {
+        .form-input, .form-textarea, .form-select {
             width: 100%;
             padding: 0.75rem;
-            border: 2px solid #e0e0e0;
+            border: 2px solid #e9ecef;
             border-radius: 8px;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             transition: all 0.3s ease;
+            background: white;
         }
 
-        .form-input:focus,
-        .form-textarea:focus {
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
             outline: none;
-            border-color: var(--primary-color);
+            border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.1);
         }
 
@@ -142,12 +152,12 @@
             min-height: 80px;
         }
 
-        /* Switch pour les booléens */
+        /* ===== SWITCH TOGGLE ===== */
         .switch {
             position: relative;
             display: inline-block;
-            width: 50px;
-            height: 24px;
+            width: 60px;
+            height: 34px;
         }
 
         .switch input {
@@ -164,442 +174,952 @@
             right: 0;
             bottom: 0;
             background-color: #ccc;
-            transition: 0.3s;
-            border-radius: 24px;
+            transition: .4s;
+            border-radius: 34px;
         }
 
         .slider:before {
             position: absolute;
             content: "";
-            height: 18px;
-            width: 18px;
-            left: 3px;
-            bottom: 3px;
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
             background-color: white;
-            transition: 0.3s;
+            transition: .4s;
             border-radius: 50%;
         }
 
         input:checked + .slider {
-            background-color: var(--primary-color);
+            background-color: var(--success);
         }
 
         input:checked + .slider:before {
             transform: translateX(26px);
         }
 
+        /* ===== BOUTONS ===== */
         .save-btn {
-            background: var(--primary-color);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
             border: none;
-            padding: 0.75rem 2rem;
+            padding: 0.75rem 1.5rem;
             border-radius: 8px;
+            font-weight: 600;
             cursor: pointer;
-            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.3s ease;
+            font-size: 0.95rem;
+        }
+
+        .save-btn:hover {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(183, 110, 121, 0.3);
+        }
+
+        .save-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* ===== MAINTENANCE SECTION ===== */
+        .maintenance-card {
+            grid-column: 1 / -1;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .maintenance-card .section-icon {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .maintenance-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            text-align: center;
+            min-width: 100px;
+            margin-left: auto;
+        }
+
+        .maintenance-status.active {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .maintenance-status.inactive {
+            background: #2ecc71;
+            color: white;
+        }
+
+        .maintenance-actions {
+            margin-top: 1.5rem;
+        }
+
+        .action-group {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .action-group h4 {
+            color: white;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .action-group p {
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .scheduled-form {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            flex-wrap: wrap;
+        }
+
+        .scheduled-form .form-group {
+            flex: 1;
+            min-width: 200px;
+            margin-bottom: 0;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
             gap: 0.5rem;
-            margin-top: 1rem;
+            font-size: 0.9rem;
+            text-decoration: none;
         }
 
-        .save-btn:hover {
-            background: #a55963;
+        .btn-warning {
+            background: #f39c12;
+            color: white;
+        }
+
+        .btn-warning:hover {
+            background: #e67e22;
             transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
         }
 
-        /* Styles spéciaux pour la maintenance */
-        .maintenance-section {
-            border-left: 4px solid var(--warning);
+        .btn-success {
+            background: #2ecc71;
+            color: white;
         }
 
-        .maintenance-section.active {
-            background: linear-gradient(135deg, #fff5f5, #ffffff);
-            border-left-color: var(--danger);
+        .btn-success:hover {
+            background: #27ae60;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
         }
 
-        .maintenance-section.inactive {
-            border-left-color: var(--success);
-            background: linear-gradient(135deg, #f0fff4, #ffffff);
+        .btn-info {
+            background: #3498db;
+            color: white;
         }
 
-        /* Ordre d'affichage des sections */
-        .section-card[data-section="maintenance"] { order: 1; }
-        .section-card[data-section="shipping"] { order: 2; }
-        .section-card[data-section="security"] { order: 3; }
-        .section-card[data-section="company"] { order: 4; }
-        .section-card[data-section="footer"] { order: 5; }
-        .section-card[data-section="payment"] { order: 6; } /* EN DERNIER */
-
-        .status-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            font-weight: 600;
-            font-size: 0.85rem;
-            margin-bottom: 1rem;
+        .btn-info:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
         }
 
-        .status-active {
-            background: #ffebee;
-            color: var(--danger);
-            border: 1px solid rgba(244, 67, 54, 0.3);
-        }
-
-        .status-inactive {
-            background: #e8f5e8;
-            color: var(--success);
-            border: 1px solid rgba(76, 175, 80, 0.3);
-        }
-
-        .alert {
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-        }
-
-        .alert-success {
-            background: #e8f5e8;
-            color: #2e7d32;
-            border-left: 4px solid var(--success);
-        }
-
-        .alert-danger {
-            background: #ffebee;
-            color: #c62828;
-            border-left: 4px solid var(--danger);
-        }
-
-        /* Loading state */
-        .loading {
+        .btn:disabled {
             opacity: 0.6;
-            pointer-events: none;
+            cursor: not-allowed;
+            transform: none !important;
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .container {
-                padding: 1rem;
-            }
+        /* ===== NOTIFICATIONS ===== */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+            max-width: 300px;
+        }
 
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            background: var(--success);
+        }
+
+        .notification.error {
+            background: var(--danger);
+        }
+
+        .notification.info {
+            background: var(--info);
+        }
+
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 768px) {
             .sections-grid {
                 grid-template-columns: 1fr;
             }
-
+            
+            .section-card {
+                padding: 1.5rem;
+            }
+            
             .header h1 {
                 font-size: 2rem;
+            }
+            
+            .scheduled-form {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                justify-content: center;
             }
         }
     </style>
 </head>
 <body>
+    <%- include('partials/navbarre.ejs') %>
+    
     <div class="container">
-        <!-- Header -->
         <div class="header">
-            <h1><i class="fas fa-cogs me-2"></i><%= pageTitle || 'Paramètres Essentiels' %></h1>
-            <p>Gérez la configuration de votre boutique en ligne</p>
+            <h1><i class="fas fa-cogs"></i> Paramètres du Site</h1>
+            <p>Configuration des éléments essentiels de votre boutique</p>
         </div>
 
-        <!-- Messages Flash -->
-        <% if (typeof success !== 'undefined' && success.length > 0) { %>
-            <% success.forEach(message => { %>
-                <div class="alert alert-success">
-                    <i class="fas fa-check-circle"></i>
-                    <%= message %>
-                </div>
-            <% }); %>
-        <% } %>
-
-        <% if (typeof error !== 'undefined' && error.length > 0) { %>
-            <% error.forEach(message => { %>
-                <div class="alert alert-danger">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    <%= message %>
-                </div>
-            <% }); %>
-        <% } %>
-
-        <!-- Sections Grid -->
         <div class="sections-grid">
-            <!-- ✅ ORDRE SPÉCIFIQUE DES SECTIONS -->
-            <% 
-            // Ordre souhaité : maintenance, shipping, security, company, footer, payment (en dernier)
-            const sectionOrder = ['maintenance', 'shipping', 'security', 'company', 'footer', 'payment'];
-            
-            if (sections && settings) {
-                sectionOrder.forEach(sectionKey => {
-                    const section = sections[sectionKey];
-                    const sectionSettings = settings[sectionKey];
-                    
-                    if (section && sectionSettings) {
-            %>
-            
-            <div class="section-card <%= sectionKey === 'maintenance' ? 'maintenance-section' : '' %>" 
-                 data-section="<%= sectionKey %>" 
-                 id="<%= sectionKey %>">
+            <!-- Section Paiements -->
+            <div class="section-card">
                 <div class="section-header">
                     <div class="section-icon">
-                        <i class="<%= section.icon %>"></i>
+                        <i class="fas fa-credit-card"></i>
                     </div>
                     <div>
-                        <h3 class="section-title"><%= section.title %></h3>
-                        <p class="section-description"><%= section.description %></p>
+                        <div class="section-title">Paiements</div>
+                        <div class="section-description">Configuration des moyens de paiement</div>
                     </div>
                 </div>
-
-                <!-- Statut spécial pour maintenance -->
-                <% if (sectionKey === 'maintenance') { %>
-                    <% if (sectionSettings.enabled?.value === true || sectionSettings.enabled?.value === 'true') { %>
-                        <div class="status-badge status-active">
-                            <i class="fas fa-exclamation-triangle"></i>
-                            Site en maintenance
-                        </div>
-                    <% } else { %>
-                        <div class="status-badge status-inactive">
-                            <i class="fas fa-check-circle"></i>
-                            Site opérationnel
-                        </div>
-                    <% } %>
-                <% } %>
-
-                <!-- Formulaire de la section -->
-                <form onsubmit="saveSection(event, '<%= sectionKey %>')">
-                    <% Object.entries(sectionSettings).forEach(([key, setting]) => { %>
-                        <% if (key !== 'scheduled_start' && key !== 'scheduled_end') { %>
-                        <div class="form-group">
-                            <label class="form-label" for="<%= sectionKey %>_<%= key %>">
-                                <%= setting.description %>
-                            </label>
-                            
-                            <% if (setting.type === 'boolean') { %>
-                                <label class="switch">
-                                    <input type="checkbox" 
-                                           id="<%= sectionKey %>_<%= key %>" 
-                                           name="settings[<%= key %>]" 
-                                           <%= (setting.value === true || setting.value === 'true') ? 'checked' : '' %>>
-                                    <span class="slider"></span>
-                                </label>
-                            <% } else if (setting.type === 'number') { %>
-                                <input type="number" 
-                                       class="form-input" 
-                                       id="<%= sectionKey %>_<%= key %>" 
-                                       name="settings[<%= key %>]" 
-                                       value="<%= setting.value || '' %>"
-                                       step="0.01">
-                            <% } else if (key.includes('url') || key.includes('link')) { %>
-                                <input type="url" 
-                                       class="form-input" 
-                                       id="<%= sectionKey %>_<%= key %>" 
-                                       name="settings[<%= key %>]" 
-                                       value="<%= setting.value || '' %>"
-                                       placeholder="https://">
-                            <% } else if (key.includes('email')) { %>
-                                <input type="email" 
-                                       class="form-input" 
-                                       id="<%= sectionKey %>_<%= key %>" 
-                                       name="settings[<%= key %>]" 
-                                       value="<%= setting.value || '' %>">
-                            <% } else if (key.includes('phone')) { %>
-                                <input type="tel" 
-                                       class="form-input" 
-                                       id="<%= sectionKey %>_<%= key %>" 
-                                       name="settings[<%= key %>]" 
-                                       value="<%= setting.value || '' %>">
-                            <% } else if (setting.description && setting.description.toLowerCase().includes('adresse')) { %>
-                                <textarea class="form-input form-textarea" 
-                                          id="<%= sectionKey %>_<%= key %>" 
-                                          name="settings[<%= key %>]" 
-                                          rows="3"><%= setting.value || '' %></textarea>
-                            <% } else { %>
-                                <input type="text" 
-                                       class="form-input" 
-                                       id="<%= sectionKey %>_<%= key %>" 
-                                       name="settings[<%= key %>]" 
-                                       value="<%= setting.value || '' %>">
-                            <% } %>
-                        </div>
-                        <% } %>
-                    <% }); %>
+                
+                <form id="form-payment">
+                    <div class="form-group">
+                        <label class="form-label">Clé publique Stripe</label>
+                        <input type="text" class="form-input" name="stripe_public_key" 
+                               value="<%= settings.payment?.stripe_public_key?.value || '' %>" 
+                               placeholder="pk_live_...">
+                    </div>
                     
-                    <button type="submit" class="save-btn">
-                        <i class="fas fa-save"></i>
-                        Sauvegarder <%= section.title %>
+                    <div class="form-group">
+                        <label class="form-label">Clé secrète Stripe</label>
+                        <input type="password" class="form-input" name="stripe_secret_key" 
+                               value="<%= settings.payment?.stripe_secret_key?.value || '' %>" 
+                               placeholder="sk_live_...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Client ID PayPal</label>
+                        <input type="text" class="form-input" name="paypal_client_id" 
+                               value="<%= settings.payment?.paypal_client_id?.value || '' %>" 
+                               placeholder="AYiPOwl...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Accepter les cartes de crédit</label>
+                        <label class="switch">
+                            <input type="checkbox" name="accept_credit_cards" 
+                                   <%= settings.payment?.accept_credit_cards?.value ? 'checked' : '' %>>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Accepter PayPal</label>
+                        <label class="switch">
+                            <input type="checkbox" name="accept_paypal" 
+                                   <%= settings.payment?.accept_paypal?.value ? 'checked' : '' %>>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <button type="button" class="save-btn" onclick="saveSection('payment')">
+                        <i class="fas fa-save"></i> Sauvegarder
                     </button>
                 </form>
             </div>
-            
-            <% 
-                    } // fin if section && sectionSettings
-                }); // fin forEach sectionOrder
-            } // fin if sections && settings
-            %>
+
+            <!-- Section Livraison -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-truck"></i>
+                    </div>
+                    <div>
+                        <div class="section-title">Livraison</div>
+                        <div class="section-description">Frais et zones de livraison</div>
+                    </div>
+                </div>
+                
+                <form id="form-shipping">
+                    <div class="form-group">
+                        <label class="form-label">Livraison gratuite à partir de (€)</label>
+                        <input type="number" class="form-input" name="free_shipping_threshold" 
+                               value="<%= settings.shipping?.free_shipping_threshold?.value || '100' %>" 
+                               step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Frais livraison standard (€)</label>
+                        <input type="number" class="form-input" name="standard_shipping_cost" 
+                               value="<%= settings.shipping?.standard_shipping_cost?.value || '7.50' %>" 
+                               step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Frais livraison express (€)</label>
+                        <input type="number" class="form-input" name="express_shipping_cost" 
+                               value="<%= settings.shipping?.express_shipping_cost?.value || '15.00' %>" 
+                               step="0.01">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Zones de livraison</label>
+                        <input type="text" class="form-input" name="shipping_zones" 
+                               value="<%= settings.shipping?.shipping_zones?.value || 'France, Europe, International' %>" 
+                               placeholder="France, Europe, International">
+                    </div>
+                    
+                    <button type="button" class="save-btn" onclick="saveSection('shipping')">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </form>
+            </div>
+
+            <!-- Section Sécurité -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div>
+                        <div class="section-title">Sécurité</div>
+                        <div class="section-description">Paramètres de sécurité</div>
+                    </div>
+                </div>
+                
+                <form id="form-security">
+                    <div class="form-group">
+                        <label class="form-label">Timeout session (secondes)</label>
+                        <input type="number" class="form-input" name="session_timeout" 
+                               value="<%= settings.security?.session_timeout?.value || '3600' %>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Tentatives de connexion max</label>
+                        <input type="number" class="form-input" name="max_login_attempts" 
+                               value="<%= settings.security?.max_login_attempts?.value || '5' %>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Vérification email obligatoire</label>
+                        <label class="switch">
+                            <input type="checkbox" name="require_email_verification" 
+                                   <%= settings.security?.require_email_verification?.value ? 'checked' : '' %>>
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    
+                    <button type="button" class="save-btn" onclick="saveSection('security')">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </form>
+            </div>
+
+            <!-- Section Coordonnées Entreprise -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div>
+                        <div class="section-title">Coordonnées Entreprise</div>
+                        <div class="section-description">Informations pour les factures</div>
+                    </div>
+                </div>
+                
+                <form id="form-company">
+                    <div class="form-group">
+                        <label class="form-label">Nom de l'entreprise</label>
+                        <input type="text" class="form-input" name="company_name" 
+                               value="<%= settings.company?.company_name?.value || 'Crystos Jewel' %>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Adresse de facturation</label>
+                        <textarea class="form-textarea" name="company_address"><%= settings.company?.company_address?.value || '123 Rue de la Paix, 75001 Paris' %></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Téléphone</label>
+                        <input type="tel" class="form-input" name="company_phone" 
+                               value="<%= settings.company?.company_phone?.value || '+33 1 23 45 67 89' %>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email officiel</label>
+                        <input type="email" class="form-input" name="company_email" 
+                               value="<%= settings.company?.company_email?.value || 'contact@crystosjewel.com' %>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Numéro SIRET</label>
+                        <input type="text" class="form-input" name="siret" 
+                               value="<%= settings.company?.siret?.value || '' %>" 
+                               placeholder="12345678901234">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Numéro TVA</label>
+                        <input type="text" class="form-input" name="vat_number" 
+                               value="<%= settings.company?.vat_number?.value || '' %>" 
+                               placeholder="FR12345678901">
+                    </div>
+                    
+                    <button type="button" class="save-btn" onclick="saveSection('company')">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </form>
+            </div>
+
+            <!-- Section Footer & Réseaux sociaux -->
+            <div class="section-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-link"></i>
+                    </div>
+                    <div>
+                        <div class="section-title">Footer & Réseaux sociaux</div>
+                        <div class="section-description">Liens du pied de page</div>
+                    </div>
+                </div>
+                
+                <form id="form-footer">
+                    <div class="form-group">
+                        <label class="form-label">Instagram URL</label>
+                        <input type="url" class="form-input" name="instagram_url" 
+                               value="<%= settings.footer?.instagram_url?.value || '' %>" 
+                               placeholder="https://instagram.com/...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Facebook URL</label>
+                        <input type="url" class="form-input" name="facebook_url" 
+                               value="<%= settings.footer?.facebook_url?.value || '' %>" 
+                               placeholder="https://facebook.com/...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Pinterest URL</label>
+                        <input type="url" class="form-input" name="pinterest_url" 
+                               value="<%= settings.footer?.pinterest_url?.value || '' %>" 
+                               placeholder="https://pinterest.com/...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">TikTok URL</label>
+                        <input type="url" class="form-input" name="tiktok_url" 
+                               value="<%= settings.footer?.tiktok_url?.value || '' %>" 
+                               placeholder="https://tiktok.com/@...">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Texte copyright</label>
+                        <input type="text" class="form-input" name="copyright_text" 
+                               value="<%= settings.footer?.copyright_text?.value || '2025 CrystosJewel - Tous droits réservés.' %>">
+                    </div>
+                    
+                    <button type="button" class="save-btn" onclick="saveSection('footer')">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                </form>
+            </div>
+
+            <!-- Section Maintenance -->
+            <div class="section-card maintenance-card">
+                <div class="section-header">
+                    <div class="section-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div>
+                        <div class="section-title">Maintenance du Site</div>
+                        <div class="section-description">Gestion du mode maintenance</div>
+                    </div>
+                    <div id="maintenanceStatus" class="maintenance-status inactive">
+                        ✅ <strong>INACTIVE</strong>
+                    </div>
+                </div>
+                
+                <form id="form-maintenance">
+                    <div class="form-group">
+                        <label class="form-label">Message de maintenance</label>
+                        <textarea class="form-textarea" id="maintenanceMessage" name="maintenanceMessage" 
+                                  placeholder="Site temporairement indisponible pour maintenance. Nous reviendrons bientôt !"></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Durée estimée (optionnel)</label>
+                        <input type="text" class="form-input" id="estimatedDuration" name="estimatedDuration" 
+                               placeholder="Ex: 30 minutes, 2 heures...">
+                    </div>
+                    
+                    <div class="maintenance-actions">
+                        <div class="action-group">
+                            <h4><i class="fas fa-power-off"></i> Maintenance Immédiate</h4>
+                            <p>Activer ou désactiver la maintenance instantanément</p>
+                            <div class="button-group">
+                                <button type="button" id="activateMaintenanceBtn" class="btn btn-warning"
+                                        onclick="MaintenanceManager.activate()">
+                                    <i class="fas fa-power-off"></i> Activer Maintenance
+                                </button>
+                                
+                                <button type="button" id="deactivateMaintenanceBtn" class="btn btn-success" 
+                                        onclick="MaintenanceManager.deactivate()" style="display: none;">
+                                    <i class="fas fa-check"></i> Désactiver Maintenance
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="action-group">
+                            <h4><i class="fas fa-calendar-alt"></i> Maintenance Programmée</h4>
+                            <p>Programmer une maintenance pour plus tard</p>
+                            <div class="scheduled-form">
+                                <div class="form-group">
+                                    <label class="form-label">Date et heure :</label>
+                                    <input type="datetime-local" class="form-input" id="scheduledTime" name="scheduledTime">
+                                </div>
+                                <button type="button" class="btn btn-info" onclick="MaintenanceManager.schedule()">
+                                    <i class="fas fa-calendar-plus"></i> Programmer
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // ✅ Fonction pour sauvegarder une section - VERSION CORRIGÉE
-        async function saveSection(event, section) {
-            event.preventDefault();
+        // ===== FONCTION GÉNÉRALE DE SAUVEGARDE =====
+        function saveSection(sectionName) {
+            const form = document.getElementById(`form-${sectionName}`);
+            const btn = form.querySelector('.save-btn');
             
-            console.log('💾 Début sauvegarde section:', section);
+            // Désactiver le bouton
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
             
-            const form = event.target;
+            // Collecter les données du formulaire
             const formData = new FormData(form);
             const settings = {};
             
-            // Extraire les données du formulaire
-            for (const [key, value] of formData.entries()) {
-                if (key.startsWith('settings[') && key.endsWith(']')) {
-                    const settingKey = key.slice(9, -1); // Enlever 'settings[' et ']'
-                    settings[settingKey] = value;
-                    console.log(`📝 ${settingKey} = ${value}`);
-                }
-            }
-            
-            // ✅ IMPORTANT: Gérer les checkboxes non cochées
-            const checkboxes = form.querySelectorAll('input[type="checkbox"]');
-            checkboxes.forEach(checkbox => {
-                if (checkbox.name.startsWith('settings[')) {
-                    const settingKey = checkbox.name.slice(9, -1);
-                    if (!checkbox.checked && !settings.hasOwnProperty(settingKey)) {
-                        settings[settingKey] = false;
-                        console.log(`☑️ Checkbox non cochée: ${settingKey} = false`);
-                    }
-                }
-            });
-            
-            console.log('📤 Données à envoyer:', { section, settings });
-            
-            try {
-                form.classList.add('loading');
-                
-                // ✅ Appel vers la bonne route
-                const response = await fetch('/admin/parametres/save', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        section: section,
-                        settings: settings
-                    })
-                });
-                
-                console.log('📥 Statut réponse:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`Erreur HTTP: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                console.log('📥 Résultat:', result);
-                
-                if (result.success) {
-                    showNotification(`✅ ${result.message}`, 'success');
-                    // Recharger la page après 1 seconde pour voir les changements
-                    setTimeout(() => {
-                        console.log('🔄 Rechargement de la page...');
-                        location.reload();
-                    }, 1000);
+            for (let [key, value] of formData.entries()) {
+                const input = form.querySelector(`[name="${key}"]`);
+                if (input.type === 'checkbox') {
+                    settings[key] = input.checked;
+                } else if (input.type === 'number') {
+                    settings[key] = parseFloat(value) || 0;
                 } else {
-                    showNotification(`❌ Erreur: ${result.message}`, 'error');
+                    settings[key] = value;
                 }
-            } catch (error) {
-                console.error('❌ Erreur sauvegarde:', error);
-                showNotification('❌ Erreur de communication avec le serveur', 'error');
-            } finally {
-                form.classList.remove('loading');
             }
+            
+            // Envoyer au serveur
+            fetch('/admin/parametres/save', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    section: sectionName,
+                    settings: settings
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('✅ Paramètres sauvegardés avec succès', 'success');
+                } else {
+                    showNotification(data.message || 'Erreur lors de la sauvegarde', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showNotification('Erreur de connexion', 'error');
+            })
+            .finally(() => {
+                // Réactiver le bouton
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
+            });
         }
 
-        // Fonction pour afficher les notifications
+        // ===== GESTIONNAIRE DE MAINTENANCE =====
+        const MaintenanceManager = {
+            async getStatus() {
+                try {
+                    const response = await fetch('/api/maintenance/status');
+                    const data = await response.json();
+                    this.updateUI(data.status);
+                } catch (error) {
+                    console.error('Erreur statut maintenance:', error);
+                }
+            },
+            
+            async activate() {
+                const message = document.getElementById('maintenanceMessage')?.value || 'Site en maintenance';
+                const estimatedDuration = document.getElementById('estimatedDuration')?.value || null;
+                
+                if (!confirm('⚠️ Activer la maintenance maintenant ? Le site sera inaccessible aux visiteurs.')) {
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/maintenance/activate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ message, estimatedDuration })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        showNotification('🔧 Maintenance activée avec succès', 'success');
+                        this.getStatus();
+                    } else {
+                        showNotification(data.message || 'Erreur activation', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Erreur de connexion', 'error');
+                }
+            },
+            
+            async schedule() {
+                const scheduledTime = document.getElementById('scheduledTime')?.value;
+                const message = document.getElementById('maintenanceMessage')?.value || 'Maintenance programmée';
+                const estimatedDuration = document.getElementById('estimatedDuration')?.value || null;
+                
+                if (!scheduledTime) {
+                    showNotification('⏰ Veuillez sélectionner une date et heure', 'error');
+                    return;
+                }
+                
+                const scheduledDate = new Date(scheduledTime);
+                if (scheduledDate <= new Date()) {
+                    showNotification('⏰ La date doit être dans le futur', 'error');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/maintenance/schedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ scheduledTime, message, estimatedDuration })
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        showNotification(`📅 ${data.message}`, 'success');
+                        this.getStatus();
+                        // Vider le champ
+                        document.getElementById('scheduledTime').value = '';
+                    } else {
+                        showNotification(data.message || 'Erreur programmation', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Erreur de connexion', 'error');
+                }
+            },
+            
+            async deactivate() {
+                if (!confirm('✅ Désactiver la maintenance ? Le site redeviendra accessible à tous.')) {
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/maintenance/deactivate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    if (data.success) {
+                        showNotification('✅ Maintenance désactivée', 'success');
+                        this.getStatus();
+                    } else {
+                        showNotification(data.message || 'Erreur désactivation', 'error');
+                    }
+                } catch (error) {
+                    showNotification('Erreur de connexion', 'error');
+                }
+            },
+            
+            updateUI(status) {
+                const statusIndicator = document.getElementById('maintenanceStatus');
+                const activateBtn = document.getElementById('activateMaintenanceBtn');
+                const deactivateBtn = document.getElementById('deactivateMaintenanceBtn');
+                
+                if (!statusIndicator || !activateBtn || !deactivateBtn) return;
+                
+                if (status.active) {
+                    statusIndicator.innerHTML = '🔧 <strong>ACTIVE</strong>';
+                    statusIndicator.className = 'maintenance-status active';
+                    activateBtn.style.display = 'none';
+                    deactivateBtn.style.display = 'inline-flex';
+                } else {
+                    statusIndicator.innerHTML = '✅ <strong>INACTIVE</strong>';
+                    statusIndicator.className = 'maintenance-status inactive';
+                    activateBtn.style.display = 'inline-flex';
+                    deactivateBtn.style.display = 'none';
+                }
+                
+                // Remplir les champs avec les valeurs actuelles
+                if (status.message) {
+                    document.getElementById('maintenanceMessage').value = status.message;
+                }
+                if (status.estimatedEnd) {
+                    document.getElementById('estimatedDuration').value = status.estimatedEnd;
+                }
+            }
+        };
+
+        // ===== SYSTÈME DE NOTIFICATIONS =====
         function showNotification(message, type = 'info') {
-            console.log('🔔 Notification:', message, type);
-            
             // Supprimer les notifications existantes
-            const existingNotifications = document.querySelectorAll('.notification-toast');
-            existingNotifications.forEach(notif => notif.remove());
+            const existingNotification = document.querySelector('.notification');
+            if (existingNotification) {
+                existingNotification.remove();
+            }
             
+            // Créer la nouvelle notification
             const notification = document.createElement('div');
-            notification.className = `notification-toast alert alert-${type === 'success' ? 'success' : type === 'error' ? 'danger' : 'info'}`;
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                z-index: 9999;
-                min-width: 300px;
-                max-width: 500px;
-                animation: slideIn 0.3s ease;
-                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            `;
+            notification.className = `notification ${type}`;
+            notification.innerHTML = message;
             
-            notification.innerHTML = `
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
-                ${message}
-            `;
-            
+            // Ajouter au DOM
             document.body.appendChild(notification);
             
-            // Supprimer après 4 secondes
+            // Afficher avec animation
             setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
+                notification.classList.add('show');
+            }, 100);
+            
+            // Masquer après 4 secondes
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
             }, 4000);
         }
 
-        // CSS pour les animations de notification
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-                to {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-            }
-            
-            @keyframes slideOut {
-                from {
-                    transform: translateX(0);
-                    opacity: 1;
-                }
-                to {
-                    transform: translateX(100%);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-
-        // Debug au chargement de la page
+        // ===== INITIALISATION =====
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('✅ Page paramètres chargée');
-            console.log('🔍 Sections trouvées:', document.querySelectorAll('.section-card').length);
+            console.log('🔧 Page paramètres chargée');
             
-            // Vérifier l'ordre des sections
-            const sections = Array.from(document.querySelectorAll('.section-card'));
-            sections.forEach((section, index) => {
-                const sectionName = section.getAttribute('data-section');
-                console.log(`📍 Section ${index + 1}: ${sectionName}`);
+            // Initialiser la maintenance si les éléments existent
+            if (document.getElementById('maintenanceStatus')) {
+                MaintenanceManager.getStatus();
+                // Vérifier le statut toutes les 30 secondes
+                setInterval(() => MaintenanceManager.getStatus(), 30000);
+            }
+            
+            // Ajouter des validations en temps réel
+            const inputs = document.querySelectorAll('.form-input, .form-textarea');
+            inputs.forEach(input => {
+                input.addEventListener('input', function() {
+                    // Retirer les classes d'erreur si l'utilisateur tape
+                    this.classList.remove('error');
+                });
+            });
+            
+            // Validation des URLs
+            const urlInputs = document.querySelectorAll('input[type="url"]');
+            urlInputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value && !isValidUrl(this.value)) {
+                        this.classList.add('error');
+                        showNotification('URL invalide', 'error');
+                    }
+                });
+            });
+            
+            // Validation des emails
+            const emailInputs = document.querySelectorAll('input[type="email"]');
+            emailInputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    if (this.value && !isValidEmail(this.value)) {
+                        this.classList.add('error');
+                        showNotification('Email invalide', 'error');
+                    }
+                });
             });
         });
 
-        // Debug des formulaires
-        document.addEventListener('submit', function(e) {
-            if (e.target.closest('.section-card')) {
-                console.log('📝 Soumission formulaire détectée');
+        // ===== FONCTIONS DE VALIDATION =====
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function isValidEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+
+        // ===== GESTION DES ERREURS GLOBALES =====
+        window.addEventListener('error', function(e) {
+            console.error('Erreur JavaScript:', e.error);
+            showNotification('Une erreur inattendue s\'est produite', 'error');
+        });
+
+        // ===== RACCOURCIS CLAVIER =====
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+S pour sauvegarder la section active
+            if (e.ctrlKey && e.key === 's') {
+                e.preventDefault();
+                const activeSection = document.activeElement.closest('.section-card');
+                if (activeSection) {
+                    const form = activeSection.querySelector('form');
+                    if (form) {
+                        const sectionName = form.id.replace('form-', '');
+                        saveSection(sectionName);
+                    }
+                }
             }
         });
     </script>
+
+    <style>
+        /* ===== STYLES POUR LES ERREURS =====  */
+        .form-input.error, .form-textarea.error {
+            border-color: var(--danger);
+            background-color: #fff5f5;
+        }
+        
+        .form-input.error:focus, .form-textarea.error:focus {
+            border-color: var(--danger);
+            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+        }
+        
+        /* ===== ANIMATIONS SUPPLÉMENTAIRES ===== */
+        .section-card {
+            animation: fadeInUp 0.6s ease-out;
+            animation-fill-mode: both;
+        }
+        
+        .section-card:nth-child(1) { animation-delay: 0.1s; }
+        .section-card:nth-child(2) { animation-delay: 0.2s; }
+        .section-card:nth-child(3) { animation-delay: 0.3s; }
+        .section-card:nth-child(4) { animation-delay: 0.4s; }
+        .section-card:nth-child(5) { animation-delay: 0.5s; }
+        .section-card:nth-child(6) { animation-delay: 0.6s; }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* ===== LOADING STATES ===== */
+        .btn.loading {
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .btn.loading i {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* ===== AMÉLIORATION MOBILE ===== */
+        @media (max-width: 480px) {
+            .container {
+                padding: 0 0.5rem;
+            }
+            
+            .header {
+                padding: 1rem;
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 1.8rem;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .section-card {
+                padding: 1rem;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 1rem;
+            }
+            
+            .maintenance-status {
+                margin-left: 0;
+            }
+        }
+    </style>
 </body>
 </html>

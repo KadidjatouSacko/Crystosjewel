@@ -2904,6 +2904,15 @@ router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
 router.post('/parametres/save', isAdmin, SettingsController.saveSettings);
 
 
+router.get('/maintenance', maintenanceController.showMaintenancePage);
+
+// API de gestion (admin uniquement)
+router.post('/api/maintenance/activate', isAdmin, maintenanceController.activateMaintenance);
+router.post('/api/maintenance/schedule', isAdmin, maintenanceController.scheduleMaintenance);
+router.post('/api/maintenance/deactivate', isAdmin, maintenanceController.deactivateMaintenance);
+router.get('/api/maintenance/status', isAdmin, maintenanceController.getMaintenanceStatus);
+
+
 // Route de vérification du statut maintenance
 router.get('/api/maintenance-status', (req, res) => {
     // Cette route doit toujours répondre, même en maintenance

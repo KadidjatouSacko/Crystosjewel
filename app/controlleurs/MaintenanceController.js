@@ -385,5 +385,152 @@ export const maintenanceController = {
 
             res.redirect('/admin/maintenance');
         }
-    }
+    },
+ // Page de maintenance pour les visiteurs
+   showMaintenancePage: (req, res) => {
+        console.log('🔧 Affichage page maintenance pour:', {
+            isAdmin: req.session?.user?.role_id === 2,
+            userId: req.session?.user?.id,
+            maintenanceActive: global.maintenanceMode || false
+        });
+
+        const estimatedDuration = global.maintenanceEstimatedEnd || null;
+        const message = global.maintenanceMessage || 'Site temporairement indisponible pour maintenance.';
+        
+        res.render('maintenance', {
+            title: 'Maintenance en cours',
+            message,
+            estimatedDuration,
+            user: req.session?.user || null,
+            isAdmin: req.session?.user?.role_id === 2,
+            isAuthenticated: !!req.session?.user
+        });
+    },
+    
+    
+    // API: Activer la maintenance (instantané)
+    activateMaintenance: (req, res) => {
+        try {
+            const { message, estimatedDuration } = req.body;
+            
+            global.maintenanceMode = true;
+            global.maintenanceMessage = message || 'Site en maintenance. Nous reviendrons bientôt !';
+            global.maintenanceEstimatedEnd = estimatedDuration || null;
+            global.scheduledMaintenance = null; // Annuler toute maintenance programmée
+            
+            console.log('🔧 Maintenance activée immédiatement par admin:', req.session.user.email);
+            
+            res.json({
+                success: true,
+                message: 'Maintenance activée',
+                status: {
+                    active: true,
+                    message: global.maintenanceMessage,
+                    estimatedEnd: global.maintenanceEstimatedEnd
+                }
+            });
+            
+        } catch (error) {
+            console.error('❌ Erreur activation maintenance:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de l\'activation de la maintenance'
+            });
+        }
+    },
+    
+    // API: Programmer la maintenance
+    scheduleMaintenance: (req, res) => {
+        try {
+            const { scheduledTime, message, estimatedDuration } = req.body;
+            
+            if (!scheduledTime) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Heure de maintenance requise'
+                });
+            }
+            
+            const scheduledDate = new Date(scheduledTime);
+            if (scheduledDate <= new Date()) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'L\'heure de maintenance doit être dans le futur'
+                });
+            }
+            
+            global.scheduledMaintenance = scheduledDate.toISOString();
+            global.maintenanceMessage = message || 'Maintenance programmée en cours';
+            global.maintenanceEstimatedEnd = estimatedDuration || null;
+            
+            console.log('⏰ Maintenance programmée pour:', scheduledDate, 'par admin:', req.session.user.email);
+            
+            res.json({
+                success: true,
+                message: `Maintenance programmée pour ${scheduledDate.toLocaleString('fr-FR')}`,
+                scheduledFor: scheduledDate.toISOString()
+            });
+            
+        } catch (error) {
+            console.error('❌ Erreur programmation maintenance:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la programmation'
+            });
+        }
+    },
+    
+    // API: Désactiver la maintenance
+    deactivateMaintenance: (req, res) => {
+        try {
+            global.maintenanceMode = false;
+            global.maintenanceMessage = null;
+            global.maintenanceEstimatedEnd = null;
+            global.scheduledMaintenance = null;
+            
+            console.log('✅ Maintenance désactivée par admin:', req.session.user.email);
+            
+            res.json({
+                success: true,
+                message: 'Maintenance désactivée',
+                status: {
+                    active: false
+                }
+            });
+            
+        } catch (error) {
+            console.error('❌ Erreur désactivation maintenance:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la désactivation'
+            });
+        }
+    },
+    
+   async getMaintenanceStatus(req, res) {
+        try {
+            console.log('📊 Statut maintenance demandé par:', {
+                isAdmin: req.session?.user?.role_id === 2,
+                userId: req.session?.user?.id
+            });
+
+            res.json({
+                success: true,
+                status: {
+                    active: global.maintenanceMode || false,
+                    message: global.maintenanceMessage || null,
+                    estimatedEnd: global.maintenanceEstimatedEnd || null,
+                    scheduledFor: global.scheduledMaintenance || null
+                }
+            });
+        } catch (error) {
+            console.error('❌ Erreur statut maintenance:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la récupération du statut'
+            });
+        }
+    },
+    
 };
+
