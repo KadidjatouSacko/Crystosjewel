@@ -45,21 +45,21 @@ Setting.init({
     tableName: "settings",
     timestamps: true,
     underscored: true,
-    indexes: [
-        {
-            unique: true,
-            fields: ['section', 'key'],
-            name: 'settings_section_key_unique'
-        },
-        {
-            fields: ['section'],
-            name: 'settings_section_idx'
-        },
-        {
-            fields: ['is_public'],
-            name: 'settings_public_idx'
-        }
-    ]
+    // indexes: [
+    //     {
+    //         unique: true,
+    //         fields: ['section', 'key'],
+    //         name: 'settings_section_key_unique'
+    //     },
+    //     {
+    //         fields: ['section'],
+    //         name: 'settings_section_idx'
+    //     },
+    //     {
+    //         fields: ['is_public'],
+    //         name: 'settings_public_idx'
+    //     }
+    // ]
 });
 
 export default Setting;

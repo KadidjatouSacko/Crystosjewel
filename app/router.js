@@ -463,18 +463,6 @@ router.get('/admin', (req, res) => {
 });
 
 // Routes paramètres (versions temporaires fonctionnelles)
-router.get('/admin/parametres', isAdmin, (req, res) => {
-    console.log('🔧 Route paramètres temporaire atteinte');
-    res.send(`
-        <h1>🔧 Paramètres du Site</h1>
-        <p>Interface temporaire en cours de développement...</p>
-        <div style="margin: 20px 0;">
-            <h2>🔧 Maintenance</h2>
-            <button onclick="alert('Fonctionnalité en développement')">Activer Maintenance</button>
-        </div>
-        <a href="/admin">← Retour Admin</a>
-    `);
-});
 
 router.post('/admin/parametres/save', isAdmin, (req, res) => {
     console.log('💾 Sauvegarde paramètres temporaire');
@@ -2911,6 +2899,7 @@ router.get('/admin', (req, res) => {
 });
 
 // Route paramètres (si pas déjà présente)
+router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
 router.get('/admin/parametres', isAdmin, SettingsController.showPageSettings);
 router.post('/admin/parametres/save', isAdmin, SettingsController.saveSettings);
 

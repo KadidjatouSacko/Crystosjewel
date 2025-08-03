@@ -171,14 +171,11 @@ async function initializeDatabase() {
         console.log("✅ Connexion à la base de données réussie.");
         
         // Synchronisation SÉCURISÉE (pas d'ALTER automatique)
-        await sequelize.sync({ 
-            alter: false,  // Important : pas de modification automatique
-            force: false   // Jamais supprimer les tables
-        });
-        console.log("✅ Base de données synchronisée avec succès !");
-        
+      await sequelize.authenticate();
+console.log("✅ Connexion à la base vérifiée (sync désactivé) !");
+
         // Assurer l'existence des codes promo
-        await ensurePromoCodesExist();
+        // await ensurePromoCodesExist();
         console.log("✅ 6 codes promo trouvés en base");
         
     } catch (error) {

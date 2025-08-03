@@ -108,7 +108,7 @@ export class SettingsController {
             console.log('✅ Paramètres essentiels avec maintenance chargés');
             
             // ✅ IMPORTANT: UN SEUL RENDU DE RÉPONSE
-            res.render('admin/settings', viewData); // ou 'settings' selon votre structure
+            res.render('settings', viewData); // ou 'settings' selon votre structure
 
         } catch (error) {
             console.error('❌ Erreur chargement paramètres:', error);
