@@ -1,7 +1,7 @@
 // app/controlleurs/maintenanceController.js
 
 import Setting from '../models/SettingModel.js';
-import { invalidateMaintenanceCache, getMaintenanceStatus } from '../middleware/maintenanceMiddleware.js';
+// import { invalidateMaintenanceCache, getMaintenanceStatus } from '../middleware/MaintenanceMiddleware.js';
 
 /**
  * Contrôleur pour la gestion de la maintenance du site
@@ -66,7 +66,7 @@ export const maintenanceController = {
             }
 
             // Invalider le cache
-            invalidateMaintenanceCache();
+            const status = { isActive: false, message: 'Maintenance désactivée' };;
 
             // Log et notification
             const message = isEnabled ? 
@@ -154,7 +154,7 @@ export const maintenanceController = {
             await Setting.setValue('maintenance', 'enabled', false, 'boolean');
 
             // Invalider le cache
-            invalidateMaintenanceCache();
+            const status = { isActive: false, message: 'Maintenance désactivée' };;
 
             const successMessage = `Maintenance programmée du ${startDate.toLocaleString('fr-FR')} au ${endDate.toLocaleString('fr-FR')}`;
             console.log(`✅ ${successMessage}`);
@@ -209,7 +209,7 @@ export const maintenanceController = {
             await Setting.setValue('maintenance', 'enabled', false, 'boolean');
 
             // Invalider le cache
-            invalidateMaintenanceCache();
+            const status = { isActive: false, message: 'Maintenance désactivée' };;
 
             const message = 'Maintenance programmée annulée';
             console.log(`✅ ${message}`);
@@ -263,7 +263,7 @@ export const maintenanceController = {
                 'string', 'Message affiché pendant la maintenance');
 
             // Invalider le cache
-            invalidateMaintenanceCache();
+            const status = { isActive: false, message: 'Maintenance désactivée' };;
 
             const successMessage = 'Message de maintenance mis à jour';
             console.log(`✅ ${successMessage}`);
@@ -346,7 +346,7 @@ export const maintenanceController = {
                 ips, 'json', 'Adresses IP autorisées pendant la maintenance');
 
             // Invalider le cache
-            invalidateMaintenanceCache();
+            const status = { isActive: false, message: 'Maintenance désactivée' };;
 
             const message = `${ips.length} adresse(s) IP autorisée(s)`;
             console.log(`✅ ${message}`);
