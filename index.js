@@ -732,6 +732,30 @@ router.post('/admin/maintenance/toggle', isAdmin, async (req, res) => {
     }
 });
 
+let maintenanceActive = false; // Variable pour contrôler le mode maintenance
+
+// 2. MIDDLEWARE DE MAINTENANCE (à ajouter dans index.js avant les routes)
+app.use((req, res, next) => {
+    // Si maintenance active, rediriger vers page de maintenance
+    if (maintenanceActive && !req.url.includes('/admin/maintenance')) {
+        return res.status(503).render('maintenance', {
+            title: 'Maintenance en cours',
+            message: 'Site temporairement indisponible pour maintenance'
+        });
+    }
+    next();
+});
+
+// 3. ROUTE POUR ACTIVER/DÉSACTIVER LA MAINTENANCE
+app.get('/admin/maintenance/toggle', isAdmin, (req, res) => {
+    maintenanceActive = !maintenanceActive;
+    res.json({
+        success: true,
+        maintenanceActive: maintenanceActive,
+        message: maintenanceActive ? 'Maintenance activée' : 'Maintenance désactivée'
+    });
+});
+
 // Route pour forcer l'accès admin (avec paramètre spécial)
 router.get('/connexion-inscription', (req, res) => {
 

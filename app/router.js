@@ -537,6 +537,22 @@ router.get('/admin/maintenance', isAdmin, (req, res) => {
     res.redirect('/admin/parametres#maintenance');
 });
 
+router.get('/admin/some-route', isAdmin, (req, res) => {
+    try {
+        console.log('🔧 Route paramètres temporaire atteinte');
+        
+        // S'assurer qu'on ne répond qu'une seule fois
+        if (!res.headersSent) {
+            return res.json({ success: true });
+        }
+    } catch (error) {
+        console.error('❌ Erreur route admin:', error);
+        if (!res.headersSent) {
+            return res.status(500).json({ error: 'Erreur serveur' });
+        }
+    }
+});
+
 // Route d'urgence pour désactiver la maintenance (gardez votre route existante)
 
 router.get('/maintenance/emergency-disable/:secret', async (req, res) => {

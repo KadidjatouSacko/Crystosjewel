@@ -13,12 +13,6 @@ export const isAdmin = async (req, res, next) => {
     try {
         console.log('🔐 Vérification admin pour:', req.session?.user?.email);
         
-        // EN MODE MAINTENANCE: Vérifier d'abord si l'utilisateur a déjà les droits admin en session
-        if (res.locals.isMaintenanceMode && req.session?.user?.role_id === 2) {
-            console.log('🛡️ Accès admin autorisé en mode maintenance');
-            return next();
-        }
-        
         if (!req.session?.user) {
             if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
                 return res.status(401).json({ 
@@ -26,7 +20,7 @@ export const isAdmin = async (req, res, next) => {
                     message: 'Non authentifié' 
                 });
             }
-            return res.redirect('/connexion-inscription?admin=1');
+            return res.redirect('/connexion-inscription');
         }
 
         // Récupérer l'utilisateur avec son rôle complet
@@ -48,8 +42,15 @@ export const isAdmin = async (req, res, next) => {
                     message: 'Utilisateur non trouvé' 
                 });
             }
-            return res.redirect('/connexion-inscription?admin=1');
+            return res.redirect('/connexion-inscription');
         }
+
+        console.log('👤 Utilisateur trouvé:', {
+            id: user.id,
+            email: user.email,
+            role_id: user.role_id,
+            role: user.role?.name
+        });
 
         // VÉRIFICATION STRICTE : SEULEMENT role_id = 2
         const isUserAdmin = user.role_id === 2;
@@ -72,6 +73,7 @@ export const isAdmin = async (req, res, next) => {
             });
         }
 
+        console.log('🔧 Route paramètres temporaire atteinte');
         console.log('✅ Accès admin accordé pour role_id:', user.role_id);
 
         // Mettre à jour la session avec les données complètes
@@ -82,24 +84,28 @@ export const isAdmin = async (req, res, next) => {
             isAdmin: true
         };
 
+        // IMPORTANT: Appeler next() UNE SEULE FOIS à la fin
         next();
         
     } catch (error) {
         console.error('❌ Erreur dans isAdmin:', error);
         
-        if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
-            return res.status(500).json({ 
-                success: false, 
-                message: 'Erreur serveur lors de la vérification des permissions' 
+        // S'assurer qu'on ne répond qu'une seule fois
+        if (!res.headersSent) {
+            if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+                return res.status(500).json({ 
+                    success: false, 
+                    message: 'Erreur serveur lors de la vérification des permissions' 
+                });
+            }
+            
+            return res.status(500).render('error', { 
+                message: 'Erreur serveur',
+                user: req.session?.user || null,
+                isAuthenticated: !!req.session?.user,
+                isAdmin: false
             });
         }
-        
-        return res.status(500).render('error', { 
-            message: 'Erreur serveur',
-            user: req.session?.user || null,
-            isAuthenticated: !!req.session?.user,
-            isAdmin: false
-        });
     }
 };
 
