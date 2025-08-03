@@ -35,6 +35,10 @@ const app = express();
 // CONFIGURATION DE BASE
 // ==========================================
 
+app.use((req, res, next) => {
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+    next();
+});
 // Configuration du moteur de template
 app.set("view engine", "ejs");
 app.set("views", "./app/views");
@@ -198,6 +202,8 @@ console.log("✅ Connexion à la base vérifiée (sync désactivé) !");
 // ==========================================
 // MIDDLEWARES ESSENTIELS
 // ==========================================
+
+
 
 // Flash messages
 app.use(flash());

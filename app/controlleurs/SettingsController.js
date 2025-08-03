@@ -1,39 +1,56 @@
-// app/controlleurs/SettingsController.js - VERSION COMPLÈTE CORRIGÉE
-
 import Setting from '../models/SettingModel.js';
 
 export class SettingsController {
     
-    // Afficher la page des paramètres - VERSION CORRIGÉE
     static async showPageSettings(req, res) {
         try {
-            console.log('🔧 Chargement page paramètres avec maintenance');
+            console.log('🔧 Chargement page paramètres avec encodage UTF-8');
 
-            // Récupérer tous les paramètres
+            // Force l'encodage UTF-8 pour la réponse
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+
             let allSettings = [];
             try {
                 allSettings = await Setting.findAll({
                     order: [['section', 'ASC'], ['key', 'ASC']]
                 });
+                console.log('📊 Paramètres récupérés de la base:', allSettings.length);
             } catch (error) {
                 console.warn('⚠️ Pas de paramètres en base, utilisation des défauts');
             }
 
-            // Grouper par section
             const settingsBySection = {};
             if (allSettings.length > 0) {
                 allSettings.forEach(setting => {
                     if (!settingsBySection[setting.section]) {
                         settingsBySection[setting.section] = {};
                     }
+                    
+                    // ✅ FORCER L'ENCODAGE UTF-8 pour les descriptions
+                    let description = setting.description;
+                    if (description && typeof description === 'string') {
+                        // Nettoyer les caractères d'encodage corrompu
+                        description = description
+                            .replace(/Â/g, '')
+                            .replace(/â€™/g, "'")
+                            .replace(/â€œ/g, '"')
+                            .replace(/â€/g, '"')
+                            .replace(/Ã©/g, 'é')
+                            .replace(/Ã¨/g, 'è')
+                            .replace(/Ã /g, 'à')
+                            .replace(/Ã§/g, 'ç')
+                            .replace(/Ã¹/g, 'ù')
+                            .replace(/â€¦/g, '…');
+                    }
+                    
                     settingsBySection[setting.section][setting.key] = {
                         value: setting.value,
                         type: setting.type,
-                        description: setting.description
+                        description: description
                     };
                 });
             } else {
-                // Paramètres par défaut si vides
+                // ✅ Paramètres par défaut avec encodage UTF-8 correct
                 settingsBySection.maintenance = {
                     enabled: { value: false, type: "boolean", description: "Maintenance manuelle activée" },
                     scheduled_start: { value: "", type: "string", description: "Début maintenance programmée" },
@@ -72,7 +89,6 @@ export class SettingsController {
                     copyright_text: { value: "2025 CrystosJewel - Tous droits réservés.", type: "string", description: "Texte copyright" }
                 };
 
-                // ✅ PAIEMENTS EN DERNIER
                 settingsBySection.payment = {
                     stripe_public_key: { value: "", type: "string", description: "Clé publique Stripe" },
                     stripe_secret_key: { value: "", type: "string", description: "Clé secrète Stripe" },
@@ -82,30 +98,19 @@ export class SettingsController {
                 };
             }
 
-            // Vérifier le statut de maintenance
+            // Vérifier la maintenance
             let maintenanceActive = false;
             try {
                 if (settingsBySection.maintenance) {
                     const maintenanceEnabled = settingsBySection.maintenance.enabled?.value === true || 
                                              settingsBySection.maintenance.enabled?.value === 'true';
-                    
-                    let scheduledActive = false;
-                    if (settingsBySection.maintenance.scheduled_start?.value && 
-                        settingsBySection.maintenance.scheduled_end?.value) {
-                        const now = new Date();
-                        const start = new Date(settingsBySection.maintenance.scheduled_start.value);
-                        const end = new Date(settingsBySection.maintenance.scheduled_end.value);
-                        scheduledActive = now >= start && now <= end;
-                    }
-                    
-                    maintenanceActive = maintenanceEnabled || scheduledActive;
+                    maintenanceActive = maintenanceEnabled;
                 }
             } catch (maintenanceError) {
                 console.error('❌ Erreur vérification maintenance:', maintenanceError);
                 maintenanceActive = false;
             }
 
-            // ✅ Configuration des sections DANS L'ORDRE SOUHAITÉ
             const sections = {
                 maintenance: {
                     title: 'Mode Maintenance',
@@ -132,7 +137,6 @@ export class SettingsController {
                     icon: 'fas fa-link',
                     description: 'Liens du pied de page'
                 },
-                // ✅ PAIEMENTS EN DERNIER
                 payment: {
                     title: 'Paiements',
                     icon: 'fas fa-credit-card',
@@ -140,38 +144,26 @@ export class SettingsController {
                 }
             };
 
-            // Données à passer à la vue
             const viewData = {
-                // Variables de titre
                 title: 'Paramètres du Site',
                 pageTitle: 'Paramètres Essentiels',
-                
-                // Données des paramètres
                 settingsBySection,
-                settings: settingsBySection,  // Alias pour compatibilité template
+                settings: settingsBySection,
                 sections,
                 maintenanceActive,
-                
-                // Données utilisateur
                 user: req.session?.user || null,
                 isAuthenticated: !!req.session?.user,
                 isAdmin: req.session?.user?.role_id === 2,
-                
-                // Messages vides par défaut
                 success: [],
                 error: [],
                 info: []
             };
 
-            console.log('✅ Paramètres essentiels avec maintenance chargés');
-            console.log('🔍 ViewData keys:', Object.keys(viewData));
-            
-            // Rendu de la page
+            console.log('✅ Rendu de la page avec encodage UTF-8');
             res.render('settings', viewData);
 
         } catch (error) {
             console.error('❌ Erreur chargement paramètres:', error);
-            
             if (!res.headersSent) {
                 res.status(500).render('error', {
                     title: 'Erreur',
@@ -185,30 +177,66 @@ export class SettingsController {
         }
     }
 
-    // ✅ CORRECTION : Sauvegarder les paramètres avec la bonne route
     static async saveSettings(req, res) {
         try {
-            console.log('💾 Sauvegarde paramètres reçue:', req.body);
-            console.log('💾 URL appelée:', req.originalUrl);
+            console.log('💾 Sauvegarde paramètres avec encodage UTF-8');
+            res.setHeader('Content-Type', 'application/json; charset=utf-8');
 
             const { section, settings } = req.body;
 
             if (!section || !settings) {
-                console.error('❌ Données manquantes:', { section, settings });
                 return res.status(400).json({
                     success: false,
                     message: 'Section et paramètres requis'
                 });
             }
 
-            console.log(`📝 Traitement section: ${section}, ${Object.keys(settings).length} paramètres`);
-
-            // Sauvegarder chaque paramètre
             const savedSettings = [];
             for (const [key, value] of Object.entries(settings)) {
                 try {
-                    console.log(`💾 Sauvegarde ${section}.${key} = ${value}`);
+                    // ✅ DESCRIPTIONS CORRECTES AVEC ENCODAGE UTF-8
+                    const descriptions = {
+                        // Company
+                        'company_name': 'Nom de l\'entreprise',
+                        'company_address': 'Adresse de facturation',
+                        'company_phone': 'Téléphone',
+                        'company_email': 'Email officiel',
+                        'siret': 'Numéro SIRET',
+                        'vat_number': 'Numéro TVA',
+                        
+                        // Shipping
+                        'free_shipping_threshold': 'Livraison gratuite à partir de (€)',
+                        'standard_shipping_cost': 'Frais livraison standard (€)',
+                        'express_shipping_cost': 'Frais livraison express (€)',
+                        'shipping_zones': 'Zones de livraison',
+                        
+                        // Security
+                        'session_timeout': 'Timeout session (secondes)',
+                        'max_login_attempts': 'Tentatives de connexion max',
+                        'require_email_verification': 'Vérification email obligatoire',
+                        
+                        // Payment
+                        'stripe_public_key': 'Clé publique Stripe',
+                        'stripe_secret_key': 'Clé secrète Stripe',
+                        'paypal_client_id': 'Client ID PayPal',
+                        'accept_credit_cards': 'Accepter les cartes',
+                        'accept_paypal': 'Accepter PayPal',
+                        
+                        // Footer
+                        'instagram_url': 'Lien Instagram',
+                        'facebook_url': 'Lien Facebook',
+                        'pinterest_url': 'Lien Pinterest',
+                        'tiktok_url': 'Lien TikTok',
+                        'copyright_text': 'Texte copyright',
+                        
+                        // Maintenance
+                        'enabled': 'Maintenance manuelle activée',
+                        'message': 'Message de maintenance',
+                        'allowed_ips': 'IPs autorisées (JSON)'
+                    };
 
+                    const description = descriptions[key] || `Paramètre ${key}`;
+                    
                     const [setting, created] = await Setting.findOrCreate({
                         where: { section, key },
                         defaults: {
@@ -216,7 +244,7 @@ export class SettingsController {
                             key,
                             value: String(value),
                             type: SettingsController.getValueType(value),
-                            description: `Paramètre ${key}`,
+                            description: description, // ✅ Description UTF-8 correcte
                             is_public: section === 'footer' || section === 'company' || section === 'maintenance'
                         }
                     });
@@ -224,6 +252,7 @@ export class SettingsController {
                     if (!created) {
                         setting.value = String(value);
                         setting.type = SettingsController.getValueType(value);
+                        setting.description = description; // ✅ Mise à jour de la description
                         setting.updated_at = new Date();
                         await setting.save();
                     }
@@ -232,10 +261,11 @@ export class SettingsController {
                         section,
                         key,
                         value: setting.value,
+                        description: setting.description,
                         created: created ? 'créé' : 'mis à jour'
                     });
 
-                    console.log(`✅ ${created ? 'Créé' : 'Mis à jour'}: ${section}.${key}`);
+                    console.log(`✅ ${created ? 'Créé' : 'Mis à jour'}: ${section}.${key} = "${description}"`);
 
                 } catch (settingError) {
                     console.error(`❌ Erreur paramètre ${key}:`, settingError);
@@ -243,11 +273,8 @@ export class SettingsController {
             }
 
             console.log(`✅ ${savedSettings.length} paramètres sauvegardés pour ${section}`);
-
-            // Invalider le cache pour que les changements soient visibles immédiatement
             SettingsController.invalidateCache();
 
-            // Réponse de succès
             res.json({
                 success: true,
                 message: `${savedSettings.length} paramètres sauvegardés pour ${section}`,
@@ -256,7 +283,6 @@ export class SettingsController {
 
         } catch (error) {
             console.error('❌ Erreur sauvegarde paramètres:', error);
-            console.error('❌ Stack:', error.stack);
             
             if (!res.headersSent) {
                 res.status(500).json({
@@ -268,7 +294,6 @@ export class SettingsController {
         }
     }
 
-    // Fonctions utilitaires
     static getValueType(value) {
         if (typeof value === 'boolean') return 'boolean';
         if (typeof value === 'number') return 'number';
@@ -276,7 +301,6 @@ export class SettingsController {
         return 'string';
     }
 
-    // Fonction pour invalider le cache
     static invalidateCache() {
         global.settingsCacheExpired = true;
         console.log('💨 Cache paramètres invalidé');

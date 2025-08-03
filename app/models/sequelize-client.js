@@ -17,3 +17,5 @@ export const sequelize = new Sequelize(
 sequelize.authenticate()
     .then(() => console.log('La connexion à la base de données a réussi.'))
     .catch((error) => console.error('Impossible de se connecter à la base de données:', error));
+
+    
