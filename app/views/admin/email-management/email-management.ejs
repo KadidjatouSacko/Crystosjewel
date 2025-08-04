@@ -1,0 +1,1518 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Email Management - CrystosJewel Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #E8B4B8;
+            --primary-dark: #B8868A;
+            --secondary: #f8fafc;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --dark: #1e293b;
+            --border: #e2e8f0;
+            --radius: 8px;
+            --radius-lg: 12px;
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.15);
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        /* Layout principal en 3 colonnes */
+        .email-management {
+            display: grid;
+            grid-template-columns: 320px 1fr 340px;
+            height: 100vh;
+            gap: 0;
+        }
+
+        /* Sidebar gauche - Templates et contenu */
+        .sidebar-left {
+            background: linear-gradient(145deg, #1e293b 0%, #334155 100%);
+            color: white;
+            padding: 0;
+            overflow-y: auto;
+            border-right: 1px solid #475569;
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            border-bottom: 1px solid #475569;
+            text-align: center;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--primary) 0%, #fff 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sidebar-header p {
+            font-size: 0.85rem;
+            opacity: 0.8;
+        }
+
+        .content-sections {
+            padding: 20px 0;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            padding: 12px 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--primary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #475569;
+            margin-bottom: 15px;
+        }
+
+        .content-list {
+            list-style: none;
+        }
+
+        .content-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: var(--transition);
+            border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .content-item:hover {
+            background: rgba(232, 180, 184, 0.1);
+            border-left-color: var(--primary);
+        }
+
+        .content-item.active {
+            background: rgba(232, 180, 184, 0.15);
+            border-left-color: var(--primary);
+        }
+
+        .content-item i {
+            width: 18px;
+            color: var(--primary);
+        }
+
+        .content-item-info {
+            flex: 1;
+        }
+
+        .content-item-title {
+            font-weight: 500;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+
+        .content-item-desc {
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+
+        .content-item-count {
+            background: var(--primary);
+            color: var(--dark);
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        /* Zone centrale - Éditeur */
+        .main-editor {
+            background: white;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .editor-header {
+            background: white;
+            padding: 20px 25px;
+            border-bottom: 2px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .editor-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .editor-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: var(--dark);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: #f1f5f9;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        /* Zone d'édition */
+        .editor-content {
+            flex: 1;
+            padding: 25px;
+            overflow-y: auto;
+        }
+
+        .editor-tabs {
+            display: flex;
+            gap: 2px;
+            margin-bottom: 25px;
+            background: #f8fafc;
+            padding: 4px;
+            border-radius: var(--radius);
+        }
+
+        .editor-tab {
+            flex: 1;
+            padding: 12px 16px;
+            text-align: center;
+            background: transparent;
+            border: none;
+            border-radius: calc(var(--radius) - 2px);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+
+        .editor-tab.active {
+            background: white;
+            color: var(--primary);
+            box-shadow: var(--shadow);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(232, 180, 184, 0.1);
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .html-editor {
+            min-height: 400px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85rem;
+        }
+
+        /* Sidebar droite - Aperçu et stats */
+        .sidebar-right {
+            background: #f8fafc;
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .preview-header {
+            padding: 20px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .preview-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 12px;
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .preview-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: var(--transition);
+        }
+
+        .preview-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .preview-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .email-preview {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+            max-width: 100%;
+            margin-bottom: 20px;
+        }
+
+        .email-preview iframe {
+            width: 100%;
+            height: 400px;
+            border: none;
+        }
+
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 16px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+
+        /* Liste des emails envoyés */
+        .sent-emails {
+            background: white;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            overflow: hidden;
+        }
+
+        .sent-emails-header {
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .email-item {
+            padding: 12px 20px;
+            border-bottom: 1px solid #f1f5f9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: var(--transition);
+        }
+
+        .email-item:hover {
+            background: #f8fafc;
+        }
+
+        .email-item:last-child {
+            border-bottom: none;
+        }
+
+        .email-info h4 {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .email-meta {
+            font-size: 0.75rem;
+            color: #64748b;
+        }
+
+        .email-status {
+            font-size: 0.75rem;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .status-sent {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-draft {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-scheduled {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .status-failed {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        /* Variables d'email */
+        .variables-section {
+            background: #f8fafc;
+            padding: 16px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+        }
+
+        .variables-title {
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--dark);
+            font-size: 0.9rem;
+        }
+
+        .variable-tag {
+            display: inline-block;
+            padding: 4px 8px;
+            background: var(--primary);
+            color: white;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            margin: 2px 4px 2px 0;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .variable-tag:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Tab content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .email-management {
+                grid-template-columns: 280px 1fr 300px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .email-management {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr auto;
+            }
+            
+            .sidebar-left, .sidebar-right {
+                position: static;
+                height: auto;
+            }
+        }
+
+        /* Animations */
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .content-item, .email-item {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Alert messages */
+        .alert {
+            padding: 15px 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            border-left: 4px solid;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .alert-success {
+            background: #f0fdf4;
+            color: #166534;
+            border-color: var(--success);
+        }
+
+        .alert-error {
+            background: #fef2f2;
+            color: #991b1b;
+            border-color: var(--danger);
+        }
+
+        .alert-warning {
+            background: #fffbeb;
+            color: #92400e;
+            border-color: var(--warning);
+        }
+
+        .alert-info {
+            background: #eff6ff;
+            color: #1e40af;
+            border-color: var(--info);
+        }
+    </style>
+</head>
+<body>
+    <!-- Include navbar -->
+    <%- include('../partials/navbarre.ejs') %>
+
+    <div class="email-management">
+        <!-- Sidebar Gauche - Templates et contenu -->
+        <div class="sidebar-left">
+            <div class="sidebar-header">
+                <h1><i class="fas fa-envelope"></i> Email Center</h1>
+                <p>Gestion complète des communications</p>
+            </div>
+
+            <div class="content-sections">
+                <!-- Templates -->
+                <div class="section">
+                    <div class="section-title">
+                        <i class="fas fa-templates"></i> Templates
+                    </div>
+                    <ul class="content-list">
+                        <% 
+                        const defaultTemplates = [
+                            { id: 'newsletter', name: 'Newsletter', icon: 'fas fa-newspaper', desc: 'Actualités & nouveautés' },
+                            { id: 'promo', name: 'Promotion', icon: 'fas fa-tags', desc: 'Codes promo & offres' },
+                            { id: 'welcome', name: 'Bienvenue', icon: 'fas fa-user-plus', desc: 'Nouveaux clients' },
+                            { id: 'abandon', name: 'Panier abandonné', icon: 'fas fa-shopping-cart', desc: 'Récupération de ventes' },
+                            { id: 'birthday', name: 'Anniversaire', icon: 'fas fa-birthday-cake', desc: 'Offres personnalisées' },
+                            { id: 'winback', name: 'Réactivation', icon: 'fas fa-undo-alt', desc: 'Clients inactifs' }
+                        ];
+                        
+                        if (typeof emailTemplates !== 'undefined' && emailTemplates.length > 0) {
+                            emailTemplates.forEach((template, index) => {
+                        %>
+                            <li class="content-item <%= index === 0 ? 'active' : '' %>" 
+                                data-type="template" 
+                                data-id="<%= template.id %>"
+                                onclick="loadTemplate('<%= template.id %>', 'template')">
+                                <i class="fas fa-file-alt"></i>
+                                <div class="content-item-info">
+                                    <div class="content-item-title"><%= template.template_name %></div>
+                                    <div class="content-item-desc">
+                                        <%= template.subject ? template.subject.substring(0, 30) + '...' : 'Aucun sujet' %>
+                                    </div>
+                                </div>
+                                <% if (template.is_active) { %>
+                                    <span class="content-item-count">Actif</span>
+                                <% } %>
+                            </li>
+                        <% 
+                            });
+                        } else {
+                            defaultTemplates.forEach((template, index) => {
+                        %>
+                            <li class="content-item <%= index === 0 ? 'active' : '' %>" 
+                                data-type="<%= template.id %>"
+                                onclick="loadTemplate('<%= template.id %>', 'default')">
+                                <i class="<%= template.icon %>"></i>
+                                <div class="content-item-info">
+                                    <div class="content-item-title"><%= template.name %></div>
+                                    <div class="content-item-desc"><%= template.desc %></div>
+                                </div>
+                            </li>
+                        <% 
+                            });
+                        }
+                        %>
+                    </ul>
+                </div>
+
+                <!-- Campagnes -->
+                <div class="section">
+                    <div class="section-title">
+                        <i class="fas fa-bullhorn"></i> Campagnes
+                    </div>
+                    <ul class="content-list">
+                        <li class="content-item" data-type="campaign-new" onclick="loadTemplate('campaign-new', 'campaign')">
+                            <i class="fas fa-plus-circle"></i>
+                            <div class="content-item-info">
+                                <div class="content-item-title">Nouvelle campagne</div>
+                                <div class="content-item-desc">Créer une campagne</div>
+                            </div>
+                        </li>
+                        <li class="content-item" data-type="campaign-scheduled" onclick="loadTemplate('campaign-scheduled', 'campaign')">
+                            <i class="fas fa-clock"></i>
+                            <div class="content-item-info">
+                                <div class="content-item-title">Planifiées</div>
+                                <div class="content-item-desc">
+                                    <% 
+                                    const scheduledCount = typeof emailLogs !== 'undefined' ? 
+                                        emailLogs.filter(log => log.status === 'scheduled').length : 3;
+                                    %>
+                                    <%= scheduledCount %> campagnes en attente
+                                </div>
+                            </div>
+                            <span class="content-item-count"><%= scheduledCount %></span>
+                        </li>
+                        <li class="content-item" data-type="campaign-sent" onclick="loadTemplate('campaign-sent', 'campaign')">
+                            <i class="fas fa-paper-plane"></i>
+                            <div class="content-item-info">
+                                <div class="content-item-title">Envoyées</div>
+                                <div class="content-item-desc">
+                                    <% 
+                                    const sentCount = typeof emailLogs !== 'undefined' ? 
+                                        emailLogs.filter(log => log.status === 'sent').length : 12;
+                                    %>
+                                    <%= sentCount %> campagnes envoyées
+                                </div>
+                            </div>
+                            <span class="content-item-count"><%= sentCount %></span>
+                        </li>
+                    </ul>
+                </div>
+
+                <!-- Audiences -->
+                <div class="section">
+                    <div class="section-title">
+                        <i class="fas fa-users"></i> Audiences
+                    </div>
+                    <ul class="content-list">
+                        <li class="content-item" data-type="list-all" onclick="loadTemplate('list-all', 'audience')">
+                            <i class="fas fa-globe"></i>
+                            <div class="content-item-info">
+                                <div class="content-item-title">Tous les clients</div>
+                                <div class="content-item-desc">
+                                    <% 
+                                    const totalUsers = typeof users !== 'undefined' ? users.length : 1247;
+                                    %>
+                                    <%= totalUsers %> contacts
+                                </div>
+                            </div>
+                            <span class="content-item-count"><%= totalUsers %></span>
+                        </li>
+                        <li class="content-item" data-type="list-vip" onclick="loadTemplate('list-vip', 'audience')">
+                            <i class="fas fa-crown"></i>
+                            <div class="content-item-info">
+                                <div class="content-item-title">Clients VIP</div>
+                                <div class="content-item-desc">
+                                    <% 
+                                    const vipUsers = typeof users !== 'undefined' ? 
+                                        users.filter(u => u.totalSpent > 500).length : 89;
+                                    %>
+                                    <%= vipUsers %> contacts
+                                </div>
+                            </div>
+                            <span class="content-item-count"><%= vipUsers %></span>
+                        </li>
+                        <li class="content-item" data-type="list-inactive" onclick="loadTemplate('list-inactive', 'audience')">
+                            <i class="fas fa-user-clock"></i>
+                            <div class="content-item-info">
+                                <div class="content-item-title">Inactifs</div>
+                                <div class="content-item-desc">
+                                    <% 
+                                    const inactiveUsers = typeof users !== 'undefined' ? 
+                                        users.filter(u => !u.lastLoginAt || new Date() - new Date(u.lastLoginAt) > 30*24*60*60*1000).length : 156;
+                                    %>
+                                    <%= inactiveUsers %> contacts
+                                </div>
+                            </div>
+                            <span class="content-item-count"><%= inactiveUsers %></span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone Centrale - Éditeur -->
+        <div class="main-editor">
+            <div class="editor-header">
+                <div class="editor-title">
+                    <i class="fas fa-newspaper"></i>
+                    <span id="current-template-title">Newsletter Mensuelle</span>
+                </div>
+                <div class="editor-actions">
+                    <button class="btn btn-secondary" onclick="saveTemplate()">
+                        <i class="fas fa-save"></i> Sauvegarder
+                    </button>
+                    <button class="btn btn-warning" onclick="sendTestEmail()">
+                        <i class="fas fa-eye"></i> Test
+                    </button>
+                    <button class="btn btn-success" onclick="scheduleEmail()">
+                        <i class="fas fa-clock"></i> Programmer
+                    </button>
+                    <button class="btn btn-primary" onclick="sendEmail()">
+                        <i class="fas fa-paper-plane"></i> Envoyer
+                    </button>
+                </div>
+            </div>
+
+            <div class="editor-content">
+                <!-- Flash Messages -->
+                <% if (typeof flashMessages !== 'undefined' && flashMessages.length > 0) { %>
+                    <% flashMessages.forEach(flash => { %>
+                        <div class="alert alert-<%= flash.type %>">
+                            <i class="fas fa-<%= flash.type === 'success' ? 'check-circle' : flash.type === 'error' ? 'exclamation-circle' : 'info-circle' %>"></i>
+                            <%= flash.message %>
+                        </div>
+                    <% }) %>
+                <% } %>
+
+                <!-- Onglets d'édition -->
+                <div class="editor-tabs">
+                    <button class="editor-tab active" data-tab="content" onclick="switchTab('content')">
+                        <i class="fas fa-edit"></i> Contenu
+                    </button>
+                    <button class="editor-tab" data-tab="design" onclick="switchTab('design')">
+                        <i class="fas fa-palette"></i> Design
+                    </button>
+                    <button class="editor-tab" data-tab="settings" onclick="switchTab('settings')">
+                        <i class="fas fa-cog"></i> Paramètres
+                    </button>
+                </div>
+
+                <!-- Variables disponibles -->
+                <div class="variables-section">
+                    <div class="variables-title">Variables disponibles :</div>
+                    <span class="variable-tag" data-var="{{firstName}}" onclick="insertVariable('{{firstName}}')">{{firstName}}</span>
+                    <span class="variable-tag" data-var="{{lastName}}" onclick="insertVariable('{{lastName}}')">{{lastName}}</span>
+                    <span class="variable-tag" data-var="{{email}}" onclick="insertVariable('{{email}}')">{{email}}</span>
+                    <span class="variable-tag" data-var="{{orderCount}}" onclick="insertVariable('{{orderCount}}')">{{orderCount}}</span>
+                    <span class="variable-tag" data-var="{{lastOrder}}" onclick="insertVariable('{{lastOrder}}')">{{lastOrder}}</span>
+                    <span class="variable-tag" data-var="{{totalSpent}}" onclick="insertVariable('{{totalSpent}}')">{{totalSpent}}</span>
+                </div>
+
+                <!-- Formulaire d'édition -->
+                <form id="emailForm" method="POST" action="/admin/emails/save">
+                    <input type="hidden" id="templateId" name="templateId" value="">
+                    <input type="hidden" id="templateType" name="templateType" value="newsletter">
+
+                    <!-- Tab Contenu -->
+                    <div id="content-tab" class="tab-content active">
+                        <div class="form-group">
+                            <label class="form-label">Nom du template</label>
+                            <input type="text" class="form-control" id="template-name" name="templateName" 
+                                   value="Newsletter Mensuelle" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Objet de l'email</label>
+                            <input type="text" class="form-control" id="email-subject" name="subject" 
+                                   value="✨ Découvrez nos nouvelles collections - CrystosJewel" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Texte d'aperçu</label>
+                            <input type="text" class="form-control" id="email-preview" name="previewText" 
+                                   placeholder="Ce texte apparaît dans l'aperçu email...">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Contenu principal</label>
+                            <textarea class="form-control" id="email-content" name="textContent" rows="8" required>Bonjour {{firstName}},
+
+Nous avons le plaisir de vous présenter nos nouvelles créations bijoux qui viennent d'arriver dans nos collections.
+
+🌟 Découvrez nos nouveautés :
+• Bagues en or rose 18 carats
+• Colliers avec pierres précieuses  
+• Bracelets élégants et raffinés
+
+Profitez de -20% sur toute commande avec le code : NOUVEAU20
+
+Au plaisir de vous retrouver sur crystosjewel.com
+
+L'équipe CrystosJewel</textarea>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Code HTML personnalisé</label>
+                            <textarea class="form-control html-editor" id="email-html" name="htmlContent"><!-- HTML sera généré automatiquement ou vous pouvez le personnaliser ici --></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Tab Design -->
+                    <div id="design-tab" class="tab-content">
+                        <div class="form-group">
+                            <label class="form-label">Couleur principale</label>
+                            <input type="color" class="form-control" name="primaryColor" value="#E8B4B8">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Police de caractères</label>
+                            <select class="form-control" name="fontFamily">
+                                <option value="Arial, sans-serif">Arial, sans-serif</option>
+                                <option value="Georgia, serif">Georgia, serif</option>
+                                <option value="Helvetica, sans-serif">Helvetica, sans-serif</option>
+                                <option value="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">Système</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Largeur de l'email</label>
+                            <select class="form-control" name="emailWidth">
+                                <option value="600">600px (Recommandé)</option>
+                                <option value="650">650px</option>
+                                <option value="100%">100% (Responsive)</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Style de boutons</label>
+                            <select class="form-control" name="buttonStyle">
+                                <option value="rounded">Arrondis</option>
+                                <option value="square">Carrés</option>
+                                <option value="pill">Pilule</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Tab Paramètres -->
+                    <div id="settings-tab" class="tab-content">
+                        <div class="form-group">
+                            <label class="form-label">Audience cible</label>
+                            <select class="form-control" name="targetAudience" id="target-audience">
+                                <option value="all">Tous les clients</option>
+                                <option value="vip">Clients VIP (>500€)</option>
+                                <option value="new">Nouveaux clients</option>
+                                <option value="inactive">Clients inactifs (>30j)</option>
+                                <option value="birthday">Anniversaires ce mois</option>
+                                <option value="custom">Sélection personnalisée</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Mode d'envoi</label>
+                            <select class="form-control" name="sendMode" id="send-mode" onchange="toggleScheduleFields()">
+                                <option value="now">Envoyer maintenant</option>
+                                <option value="schedule">Programmer l'envoi</option>
+                                <option value="draft">Sauvegarder comme brouillon</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" id="schedule-fields" style="display: none;">
+                            <label class="form-label">Date et heure d'envoi</label>
+                            <input type="datetime-local" class="form-control" name="scheduledAt" id="scheduled-at">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Priorité</label>
+                            <select class="form-control" name="priority">
+                                <option value="normal">Normale</option>
+                                <option value="high">Haute</option>
+                                <option value="low">Basse</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" name="trackOpens" checked> 
+                                Suivre les ouvertures
+                            </label>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">
+                                <input type="checkbox" name="trackClicks" checked> 
+                                Suivre les clics
+                            </label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Sidebar Droite - Aperçu et Stats -->
+        <div class="sidebar-right">
+            <div class="preview-header">
+                <div class="preview-title">Aperçu en temps réel</div>
+                <div class="preview-actions">
+                    <button class="preview-btn active" onclick="switchPreview('desktop')">Desktop</button>
+                    <button class="preview-btn" onclick="switchPreview('mobile')">Mobile</button>
+                </div>
+            </div>
+
+            <div class="preview-content">
+                <!-- Stats -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value">
+                            <% 
+                            const totalSubscribers = typeof users !== 'undefined' ? users.length : 1247;
+                            %>
+                            <%= totalSubscribers.toLocaleString() %>
+                        </div>
+                        <div class="stat-label">Abonnés</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">
+                            <% 
+                            const avgOpenRate = typeof emailStats !== 'undefined' ? emailStats.avgOpenRate : 23.5;
+                            %>
+                            <%= avgOpenRate %>%
+                        </div>
+                        <div class="stat-label">Taux d'ouverture</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">
+                            <% 
+                            const avgClickRate = typeof emailStats !== 'undefined' ? emailStats.avgClickRate : 4.2;
+                            %>
+                            <%= avgClickRate %>%
+                        </div>
+                        <div class="stat-label">Taux de clic</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">
+                            <% 
+                            const totalConversions = typeof emailStats !== 'undefined' ? emailStats.totalConversions : 156;
+                            %>
+                            <%= totalConversions %>
+                        </div>
+                        <div class="stat-label">Conversions</div>
+                    </div>
+                </div>
+
+                <!-- Aperçu de l'email -->
+                <div class="email-preview">
+                    <iframe id="email-preview-frame" src="about:blank"></iframe>
+                </div>
+
+                <!-- Derniers emails envoyés -->
+                <div class="sent-emails">
+                    <div class="sent-emails-header">
+                        <i class="fas fa-history"></i> Derniers envois
+                    </div>
+                    
+                    <% 
+                    if (typeof emailLogs !== 'undefined' && emailLogs.length > 0) {
+                        emailLogs.slice(0, 5).forEach(log => {
+                    %>
+                        <div class="email-item">
+                            <div class="email-info">
+                                <h4><%= log.subject || 'Sans sujet' %></h4>
+                                <div class="email-meta">
+                                    <%= log.sent_at ? new Date(log.sent_at).toLocaleDateString('fr-FR') : 'Non envoyé' %> • 
+                                    <%= log.recipient_count || 'N/A' %> destinataires
+                                </div>
+                            </div>
+                            <span class="email-status status-<%= log.status %>">
+                                <%= log.status === 'sent' ? 'Envoyé' : 
+                                    log.status === 'scheduled' ? 'Programmé' : 
+                                    log.status === 'draft' ? 'Brouillon' : 
+                                    log.status === 'failed' ? 'Échec' : log.status %>
+                            </span>
+                        </div>
+                    <% 
+                        });
+                    } else {
+                        // Données d'exemple si pas de logs
+                        const sampleEmails = [
+                            { subject: 'Soldes d\'été 2024', date: 'Il y a 2 jours', recipients: 1180, status: 'sent' },
+                            { subject: 'Nouvelle collection automne', date: 'Il y a 1 semaine', recipients: 1247, status: 'sent' },
+                            { subject: 'Offre spéciale VIP', date: 'Demain', recipients: 89, status: 'scheduled' },
+                            { subject: 'Panier abandonné', date: 'Il y a 3 jours', recipients: 45, status: 'sent' },
+                            { subject: 'Newsletter hebdomadaire', date: 'Brouillon', recipients: 0, status: 'draft' }
+                        ];
+                        
+                        sampleEmails.forEach(email => {
+                    %>
+                        <div class="email-item">
+                            <div class="email-info">
+                                <h4><%= email.subject %></h4>
+                                <div class="email-meta">
+                                    <%= email.date %> • <%= email.recipients %> destinataires
+                                </div>
+                            </div>
+                            <span class="email-status status-<%= email.status %>">
+                                <%= email.status === 'sent' ? 'Envoyé' : 
+                                    email.status === 'scheduled' ? 'Programmé' : 
+                                    email.status === 'draft' ? 'Brouillon' : email.status %>
+                            </span>
+                        </div>
+                    <% 
+                        });
+                    }
+                    %>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour confirmation d'envoi -->
+    <div id="confirmModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 500px; margin: 10% auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <div class="modal-header" style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: var(--dark); margin: 0;">Confirmer l'envoi</h2>
+            </div>
+            <div class="modal-body" style="text-align: center; margin-bottom: 25px;">
+                <p id="confirmMessage" style="margin: 0; color: #64748b;">
+                    Êtes-vous sûr de vouloir envoyer cet email ?
+                </p>
+                <div id="recipientCount" style="margin-top: 15px; padding: 10px; background: #f8fafc; border-radius: 8px; font-weight: 600;">
+                    Destinataires : <span id="recipientNumber">0</span>
+                </div>
+            </div>
+            <div class="modal-actions" style="display: flex; gap: 15px; justify-content: center;">
+                <button class="btn btn-secondary" onclick="closeConfirmModal()">Annuler</button>
+                <button class="btn btn-primary" onclick="confirmSendEmail()">
+                    <i class="fas fa-paper-plane"></i> Envoyer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast notifications -->
+    <div id="toast" class="toast" style="position: fixed; top: 20px; right: 20px; background: var(--success); color: white; padding: 15px 20px; border-radius: 8px; box-shadow: var(--shadow-md); transform: translateX(400px); transition: transform 0.3s ease; z-index: 1000;">
+        <i class="fas fa-check-circle"></i>
+        <span id="toastMessage">Message</span>
+    </div>
+
+    <script>
+        // Variables globales
+        let currentTemplate = null;
+        let previewMode = 'desktop';
+        let currentTab = 'content';
+
+        // ===== GESTION DES ONGLETS =====
+        function switchTab(tabName) {
+            // Désactiver tous les onglets
+            document.querySelectorAll('.editor-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Activer l'onglet sélectionné
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}-tab`).classList.add('active');
+            
+            currentTab = tabName;
+        }
+
+        // ===== GESTION DES TEMPLATES =====
+        function loadTemplate(templateId, templateType) {
+            // Mettre à jour l'interface
+            document.querySelectorAll('.content-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            document.querySelector(`[data-id="${templateId}"], [data-type="${templateId}"]`).classList.add('active');
+            
+            // Charger les données du template
+            if (templateType === 'template') {
+                // Charger depuis la base de données
+                fetch(`/admin/emails/template/${templateId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            populateForm(data.template);
+                        } else {
+                            showToast('Erreur lors du chargement du template', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Erreur:', error);
+                        showToast('Erreur de communication', 'error');
+                    });
+            } else {
+                // Templates par défaut
+                loadDefaultTemplate(templateId);
+            }
+            
+            currentTemplate = { id: templateId, type: templateType };
+            updatePreview();
+        }
+
+        function loadDefaultTemplate(templateId) {
+            const templates = {
+                newsletter: {
+                    name: 'Newsletter Mensuelle',
+                    subject: '✨ Découvrez nos nouvelles collections - CrystosJewel',
+                    content: `Bonjour {{firstName}},
+
+Nous avons le plaisir de vous présenter nos nouvelles créations bijoux qui viennent d'arriver dans nos collections.
+
+🌟 Découvrez nos nouveautés :
+• Bagues en or rose 18 carats
+• Colliers avec pierres précieuses
+• Bracelets élégants et raffinés
+
+Profitez de -20% sur toute commande avec le code : NOUVEAU20
+
+Au plaisir de vous retrouver sur crystosjewel.com
+
+L'équipe CrystosJewel`
+                },
+                promo: {
+                    name: 'Email Promotion',
+                    subject: '🏷️ PROMOTION EXCEPTIONNELLE : -50% sur nos bijoux !',
+                    content: `Bonjour {{firstName}},
+
+🎉 VENTE FLASH EXCEPTIONNELLE ! 🎉
+
+Pendant 48h seulement, profitez de -50% sur TOUS nos bijoux !
+
+Code promo : FLASH50
+
+✨ Cette offre comprend :
+• Toutes nos bagues
+• Tous nos colliers
+• Tous nos bracelets
+• Livraison offerte dès 50€
+
+⏰ Offre valable jusqu'au dimanche soir !
+
+Commandez maintenant sur crystosjewel.com`
+                },
+                welcome: {
+                    name: 'Email de Bienvenue',
+                    subject: '🎊 Bienvenue dans la famille CrystosJewel, {{firstName}} !',
+                    content: `Bonjour {{firstName}},
+
+🎊 Bienvenue dans la famille CrystosJewel ! 🎊
+
+Nous sommes ravis de vous compter parmi nos clients et vous remercions pour votre confiance.
+
+🎁 Cadeau de bienvenue : -15% sur votre prochaine commande avec le code BIENVENUE15
+
+✨ Découvrez nos collections :
+• Bagues tendance
+• Colliers élégants
+• Bracelets raffinés
+
+Notre équipe reste à votre disposition pour toute question.
+
+Bienvenue chez CrystosJewel !`
+                },
+                abandon: {
+                    name: 'Panier Abandonné',
+                    subject: '🛒 {{firstName}}, vos bijoux vous attendent...',
+                    content: `Bonjour {{firstName}},
+
+Vous avez oublié quelque chose ! 😊
+
+Vos magnifiques bijoux sélectionnés vous attendent dans votre panier.
+
+🎁 Pour vous décider, nous vous offrons -10% avec le code RETOUR10
+
+⏰ Votre panier sera conservé encore 24h.
+
+Ne laissez pas passer ces merveilles !
+
+Finaliser ma commande maintenant`
+                },
+                birthday: {
+                    name: 'Anniversaire Client',
+                    subject: '🎂 Joyeux anniversaire {{firstName}} ! Votre cadeau vous attend',
+                    content: `Joyeux anniversaire {{firstName}} ! 🎂
+
+En ce jour si spécial, toute l'équipe CrystosJewel vous souhaite un très joyeux anniversaire !
+
+🎁 Votre cadeau d'anniversaire : -25% sur tout le site avec le code ANNIV25
+
+Cette offre spéciale est valable pendant 7 jours, rien que pour vous !
+
+Profitez-en pour vous faire plaisir ou préparer vos cadeaux.
+
+Très bon anniversaire ! 🎉`
+                }
+            };
+
+            const template = templates[templateId] || templates.newsletter;
+            populateForm(template);
+        }
+
+        function populateForm(template) {
+            document.getElementById('template-name').value = template.name || template.template_name || '';
+            document.getElementById('email-subject').value = template.subject || '';
+            document.getElementById('email-content').value = template.content || template.text_content || '';
+            document.getElementById('email-html').value = template.html_content || '';
+            document.getElementById('current-template-title').textContent = template.name || template.template_name || 'Template';
+            
+            if (template.id) {
+                document.getElementById('templateId').value = template.id;
+            }
+        }
+
+        // ===== GESTION DES VARIABLES =====
+        function insertVariable(variable) {
+            const activeTextarea = document.activeElement;
+            if (activeTextarea && activeTextarea.tagName === 'TEXTAREA') {
+                const start = activeTextarea.selectionStart;
+                const end = activeTextarea.selectionEnd;
+                const value = activeTextarea.value;
+                
+                activeTextarea.value = value.substring(0, start) + variable + value.substring(end);
+                activeTextarea.focus();
+                activeTextarea.setSelectionRange(start + variable.length, start + variable.length);
+                
+                updatePreview();
+            } else {
+                // Si aucun textarea sélectionné, insérer dans le contenu principal
+                const contentTextarea = document.getElementById('email-content');
+                contentTextarea.value += variable;
+                updatePreview();
+            }
+        }
+
+        // ===== APERÇU EMAIL =====
+        function updatePreview() {
+            const subject = document.getElementById('email-subject').value;
+            const content = document.getElementById('email-content').value;
+            const htmlContent = document.getElementById('email-html').value;
+            
+            // Générer l'aperçu HTML
+            const previewHtml = generateEmailHtml(subject, content, htmlContent);
+            
+            // Mettre à jour l'iframe d'aperçu
+            const previewFrame = document.getElementById('email-preview-frame');
+            const previewDoc = previewFrame.contentDocument || previewFrame.contentWindow.document;
+            previewDoc.open();
+            previewDoc.write(previewHtml);
+            previewDoc.close();
+        }
+
+        function generateEmailHtml(subject, content, customHtml) {
+            if (customHtml && customHtml.trim()) {
+                return customHtml;
+            }
+
+            // Remplacer les variables par des exemples
+            const sampleContent = content
+                .replace(/\{\{firstName\}\}/g, 'Marie')
+                .replace(/\{\{lastName\}\}/g, 'Dupont')
+                .replace(/\{\{email\}\}/g, 'marie.dupont@email.com')
+                .replace(/\{\{orderCount\}\}/g, '3')
+                .replace(/\{\{lastOrder\}\}/g, '15/01/2024')
+                .replace(/\{\{totalSpent\}\}/g, '234,50€');
+
+            return `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>${subject}</title>
+                    <style>
+                        body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: #f8fafc; }
+                        .email-container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+                        .email-header { background: linear-gradient(135deg, #E8B4B8 0%, #B8868A 100%); padding: 30px; text-align: center; color: white; }
+                        .email-content { padding: 30px; line-height: 1.6; white-space: pre-line; }
+                        .email-footer { background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #64748b; }
+                        h1 { margin: 0; font-size: 24px; }
+                        .logo { font-size: 18px; font-weight: 600; margin-bottom: 10px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="email-container">
+                        <div class="email-header">
+                            <div class="logo">✨ CrystosJewel</div>
+                            <h1>${subject}</h1>
+                        </div>
+                        <div class="email-content">
+                            ${sampleContent}
+                        </div>
+                        <div class="email-footer">
+                            CrystosJewel - Bijoux d'exception<br>
+                            Pour vous désabonner, <a href="#">cliquez ici</a>
+                        </div>
+                    </div>
+                </body>
+                </html>
+            `;
+        }
+
+        function switchPreview(mode) {
+            document.querySelectorAll('.preview-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`[onclick="switchPreview('${mode}')"]`).classList.add('active');
+            
+            const frame = document.getElementById('email-preview-frame');
+            if (mode === 'mobile') {
+                frame.style.width = '320px';
+                frame.style.margin = '0 auto';
+            } else {
+                frame.style.width = '100%';
+                frame.style.margin = '0';
+            }
+            
+            previewMode = mode;
+        }
+
+        // ===== ACTIONS EMAIL =====
+        function saveTemplate() {
+            const formData = new FormData(document.getElementById('emailForm'));
+            
+            fetch('/admin/emails/save', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Template sauvegardé avec succès', 'success');
+                    if (data.templateId) {
+                        document.getElementById('templateId').value = data.templateId;
+                    }
+                } else {
+                    showToast(data.message || 'Erreur lors de la sauvegarde', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showToast('Erreur de communication', 'error');
+            });
+        }
+
+        function sendTestEmail() {
+            const email = prompt('Adresse email pour le test:');
+            if (email) {
+                const formData = new FormData(document.getElementById('emailForm'));
+                formData.append('testEmail', email);
+                
+                fetch('/admin/emails/test', {
+                    method: 'POST',
+                    body: formData
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        showToast(`Email de test envoyé à ${email}`, 'success');
+                    } else {
+                        showToast(data.message || 'Erreur lors de l\'envoi', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Erreur:', error);
+                    showToast('Erreur de communication', 'error');
+                });
+            }
+        }
+
+        function scheduleEmail() {
+            document.getElementById('send-mode').value = 'schedule';
+            toggleScheduleFields();
+            showToast('Mode programmation activé', 'info');
+        }
+
+        function sendEmail() {
+            const targetAudience = document.getElementById('target-audience').value;
+            const recipientCount = getRecipientCount(targetAudience);
+            
+            document.getElementById('recipientNumber').textContent = recipientCount;
+            document.getElementById('confirmMessage').textContent = 
+                `Êtes-vous sûr de vouloir envoyer cet email à ${recipientCount} destinataires ?`;
+            
+            document.getElementById('confirmModal').style.display = 'block';
+        }
+
+        function confirmSendEmail() {
+            const formData = new FormData(document.getElementById('emailForm'));
+            formData.append('action', 'send');
+            
+            fetch('/admin/emails/send', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                closeConfirmModal();
+                if (data.success) {
+                    showToast(`Email envoyé à ${data.recipientCount} destinataires`, 'success');
+                } else {
+                    showToast(data.message || 'Erreur lors de l\'envoi', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                closeConfirmModal();
+                showToast('Erreur de communication', 'error');
+            });
+        }
+
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').style.display = 'none';
+        }
+
+        // ===== UTILITAIRES =====
+        function toggleScheduleFields() {
+            const sendMode = document.getElementById('send-mode').value;
+            const scheduleFields = document.getElementById('schedule-fields');
+            
+            if (sendMode === 'schedule') {
+                scheduleFields.style.display = 'block';
+                // Définir une date par défaut (demain à 10h)
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(10, 0, 0, 0);
+                document.getElementById('scheduled-at').value = tomorrow.toISOString().slice(0, 16);
+            } else {
+                scheduleFields.style.display = 'none';
+            }
+        }
+
+        function getRecipientCount(audience) {
+            // Calculer le nombre de destinataires selon l'audience
+            const counts = {
+                'all': <%= typeof users !== 'undefined' ? users.length : 1247 %>,
+                'vip': <%= typeof users !== 'undefined' ? users.filter(u => u.totalSpent > 500).length : 89 %>,
+                'new': <%= typeof users !== 'undefined' ? users.filter(u => new Date() - new Date(u.createdAt) < 30*24*60*60*1000).length : 156 %>,
+                'inactive': <%= typeof users !== 'undefined' ? users.filter(u => !u.lastLoginAt || new Date() - new Date(u.lastLoginAt) > 30*24*60*60*1000).length : 156 %>,
+                'birthday': 45,
+                'custom': 0
+            };
+            
+            return counts[audience] || 0;
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toastMessage');
+            
+            toastMessage.textContent = message;
+            toast.className = `toast toast-${type}`;
+            
+            // Couleurs selon le type
+            const colors = {
+                success: '#10b981',
+                error: '#ef4444',
+                warning: '#f59e0b',
+                info: '#3b82f6'
+            };
+            
+            toast.style.background = colors[type] || colors.success;
+            toast.style.transform = 'translateX(0)';
+            
+            setTimeout(() => {
+                toast.style.transform = 'translateX(400px)';
+            }, 3000);
+        }
+
+        // ===== INITIALISATION =====
+        document.addEventListener('DOMContentLoaded', function() {
+            // Charger le premier template par défaut
+            loadTemplate('newsletter', 'default');
+            
+            // Écouter les changements dans les champs pour mettre à jour l'aperçu
+            document.getElementById('email-subject').addEventListener('input', updatePreview);
+            document.getElementById('email-content').addEventListener('input', updatePreview);
+            document.getElementById('email-html').addEventListener('input', updatePreview);
+            
+            // Mettre à jour l'aperçu initial
+            updatePreview();
+        });
+    </script>
+</body>
+</html>
