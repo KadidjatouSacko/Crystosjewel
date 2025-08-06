@@ -5425,6 +5425,126 @@ function calculateEndTime(duration) {
     return null;
 }
 
+// Route pour afficher la page de maintenance
+router.get('/maintenance', (req, res) => {
+    // Cette page doit être accessible même en maintenance
+    res.render('maintenance', { 
+        title: 'Maintenance en cours',
+        message: 'Site temporairement indisponible pour maintenance.',
+        user: null,
+        isAuthenticated: false,
+        isAdmin: false
+    });
+});
+
+// API pour vérifier le statut
+router.get('/api/maintenance/status', async (req, res) => {
+    try {
+        const status = await getMaintenanceStatus();
+        res.json({
+            success: true,
+            maintenance: status,
+            active: status.active || false,
+            message: status.message || ''
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Erreur serveur'
+        });
+    }
+});
+
+// API pour activer la maintenance (ADMIN ONLY)
+router.post('/api/maintenance/activate', isAdmin, async (req, res) => {
+    try {
+        const { message, estimatedDuration } = req.body;
+        
+        const maintenanceData = {
+            active: true,
+            message: message || 'Site en maintenance',
+            startedAt: new Date().toISOString(),
+            startedBy: req.session.user.email
+        };
+
+        // ✅ N'ajouter la durée QUE si spécifiée
+        if (estimatedDuration && estimatedDuration.trim() !== '') {
+            maintenanceData.estimatedDuration = estimatedDuration.trim();
+            // Calculer une heure de fin estimée (optionnel)
+            maintenanceData.estimatedEnd = calculateEndTime(estimatedDuration);
+        }
+
+        await saveMaintenance(maintenanceData);
+
+        res.json({
+            success: true,
+            message: 'Maintenance activée avec succès',
+            maintenance: maintenanceData
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur activation maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'activation'
+        });
+    }
+});
+
+// API pour désactiver la maintenance (ADMIN ONLY)
+router.post('/api/maintenance/deactivate', isAdmin, async (req, res) => {
+    try {
+        const maintenanceData = {
+            active: false,
+            message: '',
+            endedAt: new Date().toISOString(),
+            endedBy: req.session.user.email
+        };
+
+        await saveMaintenance(maintenanceData);
+
+        res.json({
+            success: true,
+            message: 'Maintenance désactivée avec succès'
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur désactivation maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la désactivation'
+        });
+    }
+});
+
+// ===== FONCTIONS UTILITAIRES =====
+async function saveMaintenance(data) {
+    try {
+        // OPTION 1: Sauvegarde dans un fichier JSON
+        const fs = require('fs').promises;
+        const path = require('path');
+        const maintenanceFile = path.join(__dirname, 'maintenance.json');
+        await fs.writeFile(maintenanceFile, JSON.stringify(data, null, 2));
+
+        // OPTION 2: Sauvegarde en base de données
+        /*
+        const { Setting } = require('./app/models');
+        await Setting.upsert({
+            key: 'maintenance',
+            value: JSON.stringify(data)
+        });
+        */
+
+        console.log('✅ Statut maintenance sauvegardé:', data);
+        return true;
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde maintenance:', error);
+        throw error;
+    }
+}
+
+
+
 // Export par défaut
 export default router;
 

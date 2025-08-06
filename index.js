@@ -232,6 +232,141 @@ app.use((req, res, next) => {
     next();
 });
 
+app.use(async (req, res, next) => {
+    try {
+        // 1. VÉRIFIER LE STATUT DE MAINTENANCE
+        const maintenanceStatus = await getMaintenanceStatus(); // Votre fonction pour récupérer le statut
+        
+        if (!maintenanceStatus || !maintenanceStatus.active) {
+            return next(); // Pas de maintenance, continuer normalement
+        }
+
+        // 2. ROUTES TOUJOURS ACCESSIBLES (même en maintenance)
+        const alwaysAllowedPaths = [
+            '/maintenance',
+            '/api/maintenance/status',
+            '/api/maintenance/activate',
+            '/api/maintenance/deactivate',
+            '/api/maintenance/schedule',
+            '/css/',
+            '/js/',
+            '/images/',
+            '/favicon.ico'
+        ];
+
+        const isAlwaysAllowed = alwaysAllowedPaths.some(path => req.path.startsWith(path));
+        if (isAlwaysAllowed) {
+            return next();
+        }
+
+        // 3. VÉRIFIER SI L'UTILISATEUR EST ADMIN
+        let isAdmin = false;
+        
+        if (req.session?.user?.role_id === 2) {
+            // Admin selon le role_id
+            isAdmin = true;
+        } else if (req.session?.user?.isAdmin === true) {
+            // Admin selon la propriété isAdmin
+            isAdmin = true;
+        } else if (req.session?.user) {
+            // Vérification supplémentaire en base si nécessaire
+            try {
+                const { Customer, Role } = require('./app/models'); // Ajustez le chemin
+                const user = await Customer.findByPk(req.session.user.id, {
+                    include: [{ model: Role, as: 'role' }]
+                });
+                isAdmin = user && user.role_id === 2;
+            } catch (dbError) {
+                console.error('❌ Erreur vérification admin en BDD:', dbError);
+            }
+        }
+
+        // 4. ROUTES ADMIN TOUJOURS ACCESSIBLES EN MAINTENANCE
+        const adminPaths = [
+            '/admin',
+            '/admin/stats',
+            '/admin/parametres',
+            '/admin/commandes',
+            '/admin/bijoux',
+            '/admin/users',
+            '/admin/promos'
+        ];
+
+        const isAdminPath = adminPaths.some(path => req.path.startsWith(path));
+
+        // 5. DÉCISION DE REDIRECTION
+        if (isAdmin && isAdminPath) {
+            // ✅ Admin accédant à une page admin = ACCÈS AUTORISÉ
+            console.log('✅ Admin bypassing maintenance:', req.session.user.email, 'accessing:', req.path);
+            return next();
+        }
+
+        if (isAdmin && !isAdminPath) {
+            // ✅ Admin accédant à une page publique = REDIRECTION VERS ADMIN
+            console.log('🔀 Admin redirect to admin area during maintenance');
+            return res.redirect('/admin/stats');
+        }
+
+        // 6. UTILISATEURS NON-ADMIN = PAGE MAINTENANCE
+        console.log('🚧 Redirecting to maintenance page:', req.path);
+        
+        if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+            return res.status(503).json({
+                success: false,
+                message: maintenanceStatus.message || 'Site en maintenance',
+                maintenance: true
+            });
+        }
+
+        return res.redirect('/maintenance');
+
+    } catch (error) {
+        console.error('❌ Erreur middleware maintenance:', error);
+        // En cas d'erreur, laisser passer (sécurité)
+        next();
+    }
+});
+
+// ===== FONCTION POUR RÉCUPÉRER LE STATUT MAINTENANCE =====
+async function getMaintenanceStatus() {
+    try {
+        // OPTION 1: Si vous stockez dans un fichier JSON
+        const fs = require('fs');
+        const path = require('path');
+        const maintenanceFile = path.join(__dirname, 'maintenance.json');
+        
+        if (fs.existsSync(maintenanceFile)) {
+            const data = fs.readFileSync(maintenanceFile, 'utf8');
+            return JSON.parse(data);
+        }
+
+        // OPTION 2: Si vous stockez en base de données
+        /*
+        const { Setting } = require('./app/models');
+        const setting = await Setting.findOne({ where: { key: 'maintenance' } });
+        if (setting) {
+            return JSON.parse(setting.value);
+        }
+        */
+
+        // OPTION 3: Si vous stockez en mémoire/cache
+        /*
+        const redis = require('redis');
+        const client = redis.createClient();
+        const data = await client.get('maintenance_status');
+        if (data) {
+            return JSON.parse(data);
+        }
+        */
+
+        return { active: false };
+
+    } catch (error) {
+        console.error('❌ Erreur récupération statut maintenance:', error);
+        return { active: false };
+    }
+}
+
 // Middleware de synchronisation panier
 app.use((req, res, next) => {
     try {
