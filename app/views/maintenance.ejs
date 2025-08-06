@@ -207,6 +207,7 @@
             justify-content: center;
             gap: 1rem;
             margin-top: 2rem;
+            flex-wrap: wrap;
         }
 
         .contact-link {
@@ -229,9 +230,61 @@
             transform: translateY(-2px);
         }
 
-        /* Section Admin - supprimée */
+        /* Section Admin */
+        .admin-panel {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: linear-gradient(135deg, var(--danger), #c82333);
+            color: white;
+            border-radius: 12px;
+            border: 2px solid rgba(220, 53, 69, 0.3);
+        }
 
-        /* Modal - supprimée */
+        .admin-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .admin-info {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
+        .admin-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 0.8rem;
+            flex-wrap: wrap;
+        }
+
+        .admin-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 0.8rem 1.2rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: var(--transition);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .admin-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
 
         /* Toast */
         .toast {
@@ -282,8 +335,9 @@
                 grid-template-columns: 1fr;
             }
 
-            .contact-links {
+            .contact-links, .admin-buttons {
                 flex-direction: column;
+                align-items: center;
             }
         }
 
@@ -314,8 +368,12 @@
         <!-- Titre et message -->
         <h2 class="maintenance-title">Site en Maintenance</h2>
         <p class="maintenance-message">
-            Nous effectuons actuellement une maintenance pour améliorer votre expérience. 
-            Nous serons de retour très bientôt !
+            <% if (maintenance && maintenance.reason) { %>
+                <%= maintenance.reason %>
+            <% } else { %>
+                Nous effectuons actuellement une maintenance pour améliorer votre expérience. 
+                Nous serons de retour très bientôt !
+            <% } %>
         </p>
 
         <!-- Planning de maintenance -->
@@ -328,8 +386,8 @@
                 <div class="date-item">
                     <div class="date-label">Début</div>
                     <div class="date-value" id="startDateDisplay">
-                        <% if (typeof maintenanceStart !== "undefined" && maintenanceStart) { %>
-                            <%= new Date(maintenanceStart).toLocaleDateString('fr-FR', {
+                        <% if (maintenance && maintenance.activatedAt) { %>
+                            <%= new Date(maintenance.activatedAt).toLocaleDateString('fr-FR', {
                                 day: '2-digit',
                                 month: '2-digit',
                                 hour: '2-digit',
@@ -343,16 +401,7 @@
                 <div class="date-item">
                     <div class="date-label">Fin prévue</div>
                     <div class="date-value" id="endDateDisplay">
-                        <% if (typeof maintenanceEnd !== "undefined" && maintenanceEnd) { %>
-                            <%= new Date(maintenanceEnd).toLocaleDateString('fr-FR', {
-                                day: '2-digit',
-                                month: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit'
-                            }) %>
-                        <% } else { %>
-                            Bientôt
-                        <% } %>
+                        Bientôt
                     </div>
                 </div>
             </div>
@@ -363,19 +412,19 @@
             <h3 class="countdown-title">Temps restant</h3>
             <div class="countdown-timer" id="countdown">
                 <div class="time-unit">
-                    <span class="time-number" id="days">00</span>
+                    <span class="time-number" id="days">--</span>
                     <span class="time-label">Jours</span>
                 </div>
                 <div class="time-unit">
-                    <span class="time-number" id="hours">00</span>
+                    <span class="time-number" id="hours">--</span>
                     <span class="time-label">Heures</span>
                 </div>
                 <div class="time-unit">
-                    <span class="time-number" id="minutes">00</span>
+                    <span class="time-number" id="minutes">--</span>
                     <span class="time-label">Minutes</span>
                 </div>
                 <div class="time-unit">
-                    <span class="time-number" id="seconds">00</span>
+                    <span class="time-number" id="seconds">--</span>
                     <span class="time-label">Secondes</span>
                 </div>
             </div>
@@ -399,14 +448,49 @@
                 <i class="fas fa-phone"></i>
                 Appeler
             </a>
-            <a href="/login" class="contact-link">
+            <% if (!isAuthenticated) { %>
+            <a href="/connexion-inscription" class="contact-link">
                 <i class="fas fa-user-shield"></i>
                 Administration
             </a>
+            <% } %>
         </div>
-    </div>
 
-    <!-- Modal de confirmation - supprimée -->
+        <!-- Section Admin -->
+        <% if (isAdmin) { %>
+        <div class="admin-panel">
+            <h3 class="admin-title">
+                <i class="fas fa-shield-alt"></i>
+                Panneau Administrateur
+            </h3>
+            
+            <div class="admin-info">
+                <strong>Connecté en tant que :</strong> <%= user ? user.email : 'Admin' %>
+                <br>
+                <% if (maintenance && maintenance.activatedBy) { %>
+                    <strong>Maintenance activée par :</strong> <%= maintenance.activatedBy %>
+                <% } %>
+            </div>
+            
+            <div class="admin-buttons">
+                <button class="admin-btn" onclick="deactivateMaintenance()">
+                    <i class="fas fa-power-off"></i>
+                    Désactiver la maintenance
+                </button>
+                
+                <a href="/admin/stats" class="admin-btn">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Dashboard
+                </a>
+                
+                <button class="admin-btn" onclick="checkStatus()">
+                    <i class="fas fa-info-circle"></i>
+                    Vérifier le statut
+                </button>
+            </div>
+        </div>
+        <% } %>
+    </div>
 
     <!-- Toast -->
     <div class="toast" id="toast">
@@ -415,22 +499,152 @@
     </div>
 
     <script>
-        // Configuration
+        console.log('🚀 Chargement page de maintenance');
+        
+        // Configuration basée sur les données du serveur
         const config = {
-            startDate: new Date('<%= typeof maintenanceStart !== "undefined" && maintenanceStart ? maintenanceStart : new Date().toISOString() %>'),
-            endDate: new Date('<%= typeof maintenanceEnd !== "undefined" && maintenanceEnd ? maintenanceEnd : new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString() %>'),
-            isActive: <%= typeof maintenanceActive !== "undefined" ? maintenanceActive : 'true' %>
+            startDate: new Date('<%= maintenance && maintenance.activatedAt ? maintenance.activatedAt : new Date().toISOString() %>'),
+            endDate: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2h par défaut
+            isActive: <%= maintenance ? maintenance.active : 'false' %>,
+            isAdmin: <%= isAdmin ? 'true' : 'false' %>
         };
+
+        console.log('📊 Configuration maintenance:', config);
 
         let countdownInterval;
         let progressInterval;
+        let statusCheckInterval;
 
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            startCountdown();
-            startProgressBar();
-        });
+        // ==========================================
+        // GESTIONNAIRE DE MAINTENANCE
+        // ==========================================
+        const MaintenanceManager = {
+            async checkStatus() {
+                try {
+                    console.log('📊 Vérification du statut...');
+                    
+                    const response = await fetch('/api/maintenance/status');
+                    if (!response.ok) {
+                        throw new Error(`Erreur HTTP: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log('📊 Réponse statut:', data);
+                    
+                    // Gérer les différents formats de réponse
+                    let isActive = false;
+                    if (data.success) {
+                        // Format avec maintenance object
+                        if (data.maintenance && typeof data.maintenance.active !== 'undefined') {
+                            isActive = data.maintenance.active;
+                        }
+                        // Format avec active au niveau racine
+                        else if (typeof data.active !== 'undefined') {
+                            isActive = data.active;
+                        }
+                    }
+                    
+                    console.log('📊 Maintenance active:', isActive);
+                    
+                    // Si maintenance désactivée, rediriger les non-admins
+                    if (!isActive && !config.isAdmin) {
+                        this.showToast('Maintenance terminée ! Redirection...', 'success');
+                        setTimeout(() => {
+                            window.location.href = '/';
+                        }, 2000);
+                    }
+                    
+                    return isActive;
+                    
+                } catch (error) {
+                    console.error('❌ Erreur vérification statut:', error);
+                    return null;
+                }
+            },
 
+            showToast(message, type = 'success') {
+                console.log(`🔔 Toast: ${message} (${type})`);
+                
+                const toast = document.getElementById('toast');
+                const toastMessage = document.getElementById('toastMessage');
+                const icon = toast.querySelector('i');
+                
+                if (!toast || !toastMessage || !icon) {
+                    console.warn('⚠️ Éléments toast non trouvés');
+                    alert(message); // Fallback
+                    return;
+                }
+                
+                toastMessage.textContent = message;
+                
+                if (type === 'error') {
+                    toast.classList.add('error');
+                    icon.className = 'fas fa-exclamation-circle';
+                } else {
+                    toast.classList.remove('error');
+                    icon.className = 'fas fa-check-circle';
+                }
+                
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 4000);
+            }
+        };
+
+        // ==========================================
+        // FONCTIONS ADMIN
+        // ==========================================
+        <% if (isAdmin) { %>
+        async function deactivateMaintenance() {
+            if (!confirm('Êtes-vous sûr de vouloir désactiver la maintenance ?')) {
+                return;
+            }
+            
+            try {
+                console.log('🔧 Désactivation maintenance...');
+                
+                const response = await fetch('/api/maintenance/deactivate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                console.log('✅ Réponse désactivation:', data);
+                
+                if (data.success) {
+                    MaintenanceManager.showToast('Maintenance désactivée ! Redirection...', 'success');
+                    setTimeout(() => {
+                        window.location.href = '/admin/stats';
+                    }, 1500);
+                } else {
+                    throw new Error(data.message || 'Échec de la désactivation');
+                }
+                
+            } catch (error) {
+                console.error('❌ Erreur désactivation:', error);
+                MaintenanceManager.showToast('Erreur: ' + error.message, 'error');
+            }
+        }
+        
+        async function checkStatus() {
+            const status = await MaintenanceManager.checkStatus();
+            if (status !== null) {
+                const message = status ? 'Maintenance active' : 'Service normal';
+                MaintenanceManager.showToast('Statut: ' + message, 'success');
+            } else {
+                MaintenanceManager.showToast('Erreur lors de la vérification', 'error');
+            }
+        }
+        <% } %>
+
+        // ==========================================
+        // COMPTE À REBOURS
+        // ==========================================
         function startCountdown() {
             if (countdownInterval) clearInterval(countdownInterval);
 
@@ -445,8 +659,6 @@
                     document.getElementById('minutes').textContent = '00';
                     document.getElementById('seconds').textContent = '00';
                     
-                    showToast('Maintenance terminée !', 'success');
-                    setTimeout(() => window.location.href = '/', 3000);
                     clearInterval(countdownInterval);
                     return;
                 }
@@ -463,6 +675,9 @@
             }, 1000);
         }
 
+        // ==========================================
+        // BARRE DE PROGRESSION
+        // ==========================================
         function startProgressBar() {
             if (progressInterval) clearInterval(progressInterval);
 
@@ -478,30 +693,62 @@
                     progress = Math.min((elapsed / totalDuration) * 100, 100);
                 }
 
-                document.getElementById('progressBar').style.width = progress + '%';
-                document.getElementById('progressText').textContent = 
-                    `Progression: ${Math.round(progress)}%`;
+                const progressBar = document.getElementById('progressBar');
+                const progressText = document.getElementById('progressText');
+                
+                if (progressBar) {
+                    progressBar.style.width = progress + '%';
+                }
+                
+                if (progressText) {
+                    progressText.textContent = `Progression: ${Math.round(progress)}%`;
+                }
             }, 1000);
         }
 
-        function showToast(message, type = 'success') {
-            const toast = document.getElementById('toast');
-            const toastMessage = document.getElementById('toastMessage');
-            const icon = toast.querySelector('i');
-            
-            toastMessage.textContent = message;
-            
-            if (type === 'error') {
-                toast.classList.add('error');
-                icon.className = 'fas fa-exclamation-circle';
+        // ==========================================
+        // VÉRIFICATION PÉRIODIQUE DU STATUT
+        // ==========================================
+        function startStatusCheck() {
+            // Vérifier le statut toutes les 30 secondes (non-admins uniquement)
+            if (!config.isAdmin) {
+                console.log('🔄 Démarrage vérification périodique du statut');
+                statusCheckInterval = setInterval(function() {
+                    MaintenanceManager.checkStatus();
+                }, 30000); // 30 secondes
             } else {
-                toast.classList.remove('error');
-                icon.className = 'fas fa-check-circle';
+                console.log('ℹ️ Admin détecté - pas de vérification périodique');
             }
-            
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 4000);
         }
+
+        // ==========================================
+        // INITIALISATION
+        // ==========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Initialisation page de maintenance');
+            
+            // Démarrer toutes les fonctionnalités
+            startCountdown();
+            startProgressBar();
+            startStatusCheck();
+            
+            // Vérification initiale du statut
+            setTimeout(() => {
+                MaintenanceManager.checkStatus();
+            }, 2000);
+            
+            console.log('✅ Page de maintenance initialisée');
+        });
+
+        // ==========================================
+        // NETTOYAGE
+        // ==========================================
+        window.addEventListener('beforeunload', function() {
+            console.log('🧹 Nettoyage des intervalles');
+            if (countdownInterval) clearInterval(countdownInterval);
+            if (progressInterval) clearInterval(progressInterval);
+            if (statusCheckInterval) clearInterval(statusCheckInterval);
+        });
     </script>
 </body>
 </html>

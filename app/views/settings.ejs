@@ -698,14 +698,13 @@
                 <form id="form-maintenance">
                     <div class="form-group">
                         <label class="form-label">Message de maintenance</label>
-                        <textarea class="form-textarea" id="maintenanceMessage" name="maintenanceMessage" 
-                                  placeholder="Site temporairement indisponible pour maintenance. Nous reviendrons bientôt !"></textarea>
+                        <textarea id="maintenanceMessage" placeholder="Site temporairement indisponible pour maintenance..."></textarea>
+
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Durée estimée (optionnel)</label>
-                        <input type="text" class="form-input" id="estimatedDuration" name="estimatedDuration" 
-                               placeholder="Ex: 30 minutes, 2 heures...">
+                        <input type="text" id="estimatedDuration" value="" placeholder="Ex: 30 minutes, 2 heures...">
                     </div>
                     
                     <div class="maintenance-actions">
@@ -800,132 +799,205 @@
         }
 
         // ===== GESTIONNAIRE DE MAINTENANCE =====
-        const MaintenanceManager = {
-            async getStatus() {
-                try {
-                    const response = await fetch('/api/maintenance/status');
-                    const data = await response.json();
-                    this.updateUI(data.status);
-                } catch (error) {
-                    console.error('Erreur statut maintenance:', error);
-                }
-            },
+     const MaintenanceManager = {
+    async getStatus() {
+        try {
+            const response = await fetch('/api/maintenance/status');
+            const data = await response.json();
+            console.log('📊 Réponse API maintenance:', data);
             
-            async activate() {
-                const message = document.getElementById('maintenanceMessage')?.value || 'Site en maintenance';
-                const estimatedDuration = document.getElementById('estimatedDuration')?.value || null;
-                
-                if (!confirm('⚠️ Activer la maintenance maintenant ? Le site sera inaccessible aux visiteurs.')) {
-                    return;
-                }
-                
-                try {
-                    const response = await fetch('/api/maintenance/activate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ message, estimatedDuration })
-                    });
-                    
-                    const data = await response.json();
-                    if (data.success) {
-                        showNotification('🔧 Maintenance activée avec succès', 'success');
-                        this.getStatus();
-                    } else {
-                        showNotification(data.message || 'Erreur activation', 'error');
-                    }
-                } catch (error) {
-                    showNotification('Erreur de connexion', 'error');
-                }
-            },
+            // Gérer différentes structures de réponse
+            let status = {
+                active: false,
+                message: '',
+                estimatedEnd: ''
+            };
             
-            async schedule() {
-                const scheduledTime = document.getElementById('scheduledTime')?.value;
-                const message = document.getElementById('maintenanceMessage')?.value || 'Maintenance programmée';
-                const estimatedDuration = document.getElementById('estimatedDuration')?.value || null;
-                
-                if (!scheduledTime) {
-                    showNotification('⏰ Veuillez sélectionner une date et heure', 'error');
-                    return;
-                }
-                
-                const scheduledDate = new Date(scheduledTime);
-                if (scheduledDate <= new Date()) {
-                    showNotification('⏰ La date doit être dans le futur', 'error');
-                    return;
-                }
-                
-                try {
-                    const response = await fetch('/api/maintenance/schedule', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ scheduledTime, message, estimatedDuration })
-                    });
-                    
-                    const data = await response.json();
-                    if (data.success) {
-                        showNotification(`📅 ${data.message}`, 'success');
-                        this.getStatus();
-                        // Vider le champ
-                        document.getElementById('scheduledTime').value = '';
-                    } else {
-                        showNotification(data.message || 'Erreur programmation', 'error');
-                    }
-                } catch (error) {
-                    showNotification('Erreur de connexion', 'error');
-                }
-            },
-            
-            async deactivate() {
-                if (!confirm('✅ Désactiver la maintenance ? Le site redeviendra accessible à tous.')) {
-                    return;
-                }
-                
-                try {
-                    const response = await fetch('/api/maintenance/deactivate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' }
-                    });
-                    
-                    const data = await response.json();
-                    if (data.success) {
-                        showNotification('✅ Maintenance désactivée', 'success');
-                        this.getStatus();
-                    } else {
-                        showNotification(data.message || 'Erreur désactivation', 'error');
-                    }
-                } catch (error) {
-                    showNotification('Erreur de connexion', 'error');
-                }
-            },
-            
-            updateUI(status) {
-                const statusIndicator = document.getElementById('maintenanceStatus');
-                const activateBtn = document.getElementById('activateMaintenanceBtn');
-                const deactivateBtn = document.getElementById('deactivateMaintenanceBtn');
-                
-                if (!statusIndicator || !activateBtn || !deactivateBtn) return;
-                
-                if (status.active) {
-                    statusIndicator.innerHTML = '🔧 <strong>ACTIVE</strong>';
-                    statusIndicator.className = 'maintenance-status active';
-                    activateBtn.style.display = 'none';
-                    deactivateBtn.style.display = 'inline-flex';
-                } else {
-                    statusIndicator.innerHTML = '✅ <strong>INACTIVE</strong>';
-                    statusIndicator.className = 'maintenance-status inactive';
-                    activateBtn.style.display = 'inline-flex';
-                    deactivateBtn.style.display = 'none';
-                }
-                
-                // Remplir les champs avec les valeurs actuelles
-                if (status.message) {
-                    document.getElementById('maintenanceMessage').value = status.message;
-                }
-                if (status.estimatedEnd) {
-                    document.getElementById('estimatedDuration').value = status.estimatedEnd;
+            if (data.success) {
+                if (data.maintenance) {
+                    // Structure: { success: true, maintenance: { active: true, ... } }
+                    status = {
+                        active: data.maintenance.active || false,
+                        message: data.maintenance.message || '',
+                        estimatedEnd: data.maintenance.estimatedEnd || ''
+                    };
+                } else if (data.status) {
+                    // Structure: { success: true, status: { active: true, ... } }
+                    status = {
+                        active: data.status.active || false,
+                        message: data.status.message || '',
+                        estimatedEnd: data.status.estimatedEnd || ''
+                    };
+                } else if (typeof data.active !== 'undefined') {
+                    // Structure: { success: true, active: true, ... }
+                    status = {
+                        active: data.active || false,
+                        message: data.message || '',
+                        estimatedEnd: data.estimatedEnd || ''
+                    };
                 }
             }
+            
+            this.updateUI(status);
+        } catch (error) {
+            console.error('❌ Erreur statut maintenance:', error);
+            // En cas d'erreur, afficher un statut par défaut
+            this.updateUI({ active: false, message: '', estimatedEnd: '' });
+        }
+    },
+    
+async activate() {
+    const message = document.getElementById('maintenanceMessage')?.value || 'Site en maintenance';
+    const estimatedDuration = document.getElementById('estimatedDuration')?.value || null; // ❌ NE PAS mettre de durée par défaut
+    
+    if (!confirm('⚠️ Activer la maintenance maintenant ? Le site sera inaccessible aux visiteurs.')) {
+        return;
+    }
+    
+    try {
+        // ✅ N'envoyer estimatedDuration que si une valeur est saisie
+        const payload = { message };
+        if (estimatedDuration && estimatedDuration.trim() !== '') {
+            payload.estimatedDuration = estimatedDuration;
+        }
+        
+        const response = await fetch('/api/maintenance/activate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload) // ✅ Payload sans durée automatique
+        });
+        
+        const data = await response.json();
+        console.log('📊 Réponse activation:', data);
+        
+        if (data.success) {
+            showNotification('🔧 Maintenance activée avec succès', 'success');
+            this.getStatus();
+        } else {
+            showNotification(data.message || 'Erreur activation', 'error');
+        }
+    } catch (error) {
+        console.error('❌ Erreur activation:', error);
+        showNotification('Erreur de connexion', 'error');
+    }
+},
+
+// 2. MODIFIER LA PROGRAMMATION MAINTENANCE
+async schedule() {
+    const scheduledTime = document.getElementById('scheduledTime')?.value;
+    const message = document.getElementById('maintenanceMessage')?.value || 'Maintenance programmée';
+    const estimatedDuration = document.getElementById('estimatedDuration')?.value || null;
+    
+    if (!scheduledTime) {
+        showNotification('⏰ Veuillez sélectionner une date et heure', 'error');
+        return;
+    }
+    
+    const scheduledDate = new Date(scheduledTime);
+    if (scheduledDate <= new Date()) {
+        showNotification('⏰ La date doit être dans le futur', 'error');
+        return;
+    }
+    
+    try {
+        // ✅ Construire le payload sans durée automatique
+        const payload = { 
+            scheduledTime,
+            message 
         };
+        
+        // ✅ N'ajouter estimatedDuration que si spécifié
+        if (estimatedDuration && estimatedDuration.trim() !== '') {
+            payload.estimatedDuration = estimatedDuration;
+        }
+        
+        const response = await fetch('/api/maintenance/schedule', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        
+        const data = await response.json();
+        console.log('📊 Réponse programmation:', data);
+        
+        if (data.success) {
+            showNotification(`📅 ${data.message}`, 'success');
+            this.getStatus();
+            document.getElementById('scheduledTime').value = '';
+        } else {
+            showNotification(data.message || 'Erreur programmation', 'error');
+        }
+    } catch (error) {
+        console.error('❌ Erreur programmation:', error);
+        showNotification('Erreur de connexion', 'error');
+    }
+},
+
+    async deactivate() {
+        if (!confirm('✅ Désactiver la maintenance ? Le site redeviendra accessible à tous.')) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/maintenance/deactivate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            const data = await response.json();
+            console.log('📊 Réponse désactivation:', data);
+            
+            if (data.success) {
+                showNotification('✅ Maintenance désactivée', 'success');
+                this.getStatus();
+            } else {
+                showNotification(data.message || 'Erreur désactivation', 'error');
+            }
+        } catch (error) {
+            console.error('❌ Erreur désactivation:', error);
+            showNotification('Erreur de connexion', 'error');
+        }
+    },
+    
+    updateUI(status) {
+        console.log('🔄 Mise à jour UI avec:', status);
+        
+        const statusIndicator = document.getElementById('maintenanceStatus');
+        const activateBtn = document.getElementById('activateMaintenanceBtn');
+        const deactivateBtn = document.getElementById('deactivateMaintenanceBtn');
+        
+        if (!statusIndicator || !activateBtn || !deactivateBtn) {
+            console.log('⚠️ Éléments UI introuvables');
+            return;
+        }
+        
+        // Vérifier si le statut est actif
+        const isActive = status && (status.active === true || status.active === 'true');
+        
+        if (isActive) {
+            statusIndicator.innerHTML = '🔧 <strong>ACTIVE</strong>';
+            statusIndicator.className = 'maintenance-status active';
+            activateBtn.style.display = 'none';
+            deactivateBtn.style.display = 'inline-flex';
+        } else {
+            statusIndicator.innerHTML = '✅ <strong>INACTIVE</strong>';
+            statusIndicator.className = 'maintenance-status inactive';
+            activateBtn.style.display = 'inline-flex';
+            deactivateBtn.style.display = 'none';
+        }
+        
+        // Remplir les champs avec les valeurs actuelles (si disponibles)
+        const messageField = document.getElementById('maintenanceMessage');
+        const durationField = document.getElementById('estimatedDuration');
+        
+        if (status && status.message && messageField) {
+            messageField.value = status.message;
+        }
+        if (status && status.estimatedEnd && durationField) {
+            durationField.value = status.estimatedEnd;
+        }
+    }
+};
 
         // ===== SYSTÈME DE NOTIFICATIONS =====
         function showNotification(message, type = 'info') {
@@ -1038,6 +1110,52 @@
         });
     </script>
 
+
+<script>
+    // AJOUTEZ ce JavaScript dans votre page de paramètres (admin/parametres.ejs)
+unction activerMaintenance() {
+    MaintenanceManager.activate();
+}
+
+function desactiverMaintenance() {
+    MaintenanceManager.deactivate();
+}
+
+function verifierStatutMaintenance() {
+    MaintenanceManager.getStatus().then(() => {
+        // Le statut est déjà affiché dans updateUI
+        // Pas besoin d'alert supplémentaire
+    });
+}
+
+function updateMaintenanceUI(isActive) {
+    // Cette fonction est maintenant gérée par MaintenanceManager.updateUI
+    MaintenanceManager.updateUI({ active: isActive });
+}
+
+// Vérifier le statut au chargement de la page
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initialisation gestion maintenance');
+    
+    // Vérifier si les éléments de maintenance existent
+    const maintenanceSection = document.getElementById('maintenanceStatus');
+    if (!maintenanceSection) {
+        console.log('ℹ️ Section maintenance non trouvée sur cette page');
+        return;
+    }
+    
+    // Initialiser le gestionnaire de maintenance
+    MaintenanceManager.getStatus();
+    
+    // Vérifier le statut toutes les 30 secondes (seulement si la section existe)
+    setInterval(() => {
+        MaintenanceManager.getStatus();
+    }, 30000);
+    
+    console.log('✅ Gestionnaire de maintenance initialisé');
+});
+
+</script>
     <style>
         /* ===== STYLES POUR LES ERREURS =====  */
         .form-input.error, .form-textarea.error {

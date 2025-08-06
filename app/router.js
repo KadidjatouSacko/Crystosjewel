@@ -388,6 +388,179 @@ const __dirname = dirname(__filename);
 
 const router = Router();
 
+// AJOUTEZ ces lignes au début de votre app/router.js, juste après les imports
+
+// ==========================================
+// VARIABLE DE MAINTENANCE GLOBALE
+// ==========================================
+let isMaintenanceActive = false;
+let maintenanceInfo = {
+    activatedAt: null,
+    activatedBy: null,
+    reason: null
+};
+
+// ==========================================
+// MIDDLEWARE DE MAINTENANCE - EXISTANT MAIS CORRIGÉ
+// ==========================================
+function checkMaintenanceStatus(req, res, next) {
+    // Ne pas bloquer les admins
+    const isAdmin = req.session?.user?.role_id === 2;
+    
+    // Routes autorisées pendant la maintenance
+    const allowedRoutes = [
+        '/api/maintenance',
+        '/maintenance',
+        '/admin',
+        '/connexion-inscription'
+    ];
+    
+    const isAllowedRoute = allowedRoutes.some(route => req.path.startsWith(route));
+    
+    console.log('🔍 Vérification maintenance:', {
+        maintenanceActive: isMaintenanceActive,
+        isAdmin,
+        path: req.path,
+        userId: req.session?.user?.id,
+        roleId: req.session?.user?.role_id
+    });
+    
+    // Si maintenance active ET pas admin ET pas route autorisée
+    if (isMaintenanceActive && !isAdmin && !isAllowedRoute) {
+        // Pour les requêtes AJAX, renvoyer JSON
+        if (req.xhr || req.headers.accept?.indexOf('json') > -1) {
+            return res.status(503).json({
+                success: false,
+                message: 'Site en maintenance',
+                maintenance: true
+            });
+        }
+        
+        // Pour les requêtes normales, rediriger vers page de maintenance
+        return res.redirect('/maintenance');
+    }
+    
+    next();
+}
+
+// ==========================================
+// ROUTES DE MAINTENANCE - RÉPARATION DES EXISTANTES
+// ==========================================
+
+// Route statut maintenance (celle qui existe déjà dans vos logs)
+router.get('/api/maintenance/status', (req, res) => {
+    console.log('📊 Statut maintenance demandé par:', {
+        isAdmin: req.session?.user?.role_id === 2,
+        userId: req.session?.user?.id
+    });
+    
+    res.json({
+        success: true,
+        maintenance: {
+            active: isMaintenanceActive,
+            activatedAt: maintenanceInfo.activatedAt,
+            activatedBy: maintenanceInfo.activatedBy,
+            reason: maintenanceInfo.reason
+        }
+    });
+});
+
+// Route activation maintenance (celle qui existe déjà dans vos logs)
+router.post('/api/maintenance/activate', isAdmin, (req, res) => {
+    try {
+        console.log('🔧 Maintenance activée immédiatement par admin:', req.session.user.email);
+        
+        // Activer la maintenance
+        isMaintenanceActive = true;
+        maintenanceInfo = {
+            activatedAt: new Date().toISOString(),
+            activatedBy: req.session.user.email,
+            reason: req.body.reason || 'Maintenance d\'urgence'
+        };
+        
+        res.json({
+            success: true,
+            message: 'Maintenance activée avec succès',
+            maintenance: {
+                active: isMaintenanceActive,
+                ...maintenanceInfo
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur activation maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'activation'
+        });
+    }
+});
+
+// Route désactivation maintenance
+router.post('/api/maintenance/deactivate', isAdmin, (req, res) => {
+    try {
+        console.log('🔧 Maintenance désactivée par admin:', req.session.user.email);
+        
+        // Désactiver la maintenance
+        isMaintenanceActive = false;
+        maintenanceInfo = {
+            activatedAt: null,
+            activatedBy: null,
+            reason: null
+        };
+        
+        res.json({
+            success: true,
+            message: 'Maintenance désactivée avec succès',
+            maintenance: {
+                active: isMaintenanceActive
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur désactivation maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la désactivation'
+        });
+    }
+});
+
+// Page de maintenance simple
+router.get('/maintenance', (req, res) => {
+    const isAdmin = req.session?.user?.role_id === 2;
+    
+    console.log('🔧 Page de maintenance affichée pour:', {
+        isAdmin,
+        userId: req.session?.user?.id,
+        maintenanceActive: isMaintenanceActive
+    });
+    
+    // Utiliser votre template EJS avec toutes les variables nécessaires
+    res.render('maintenance', {
+        title: 'Maintenance - CrystosJewel',
+        maintenance: {
+            active: isMaintenanceActive,
+            activatedAt: maintenanceInfo.activatedAt,
+            activatedBy: maintenanceInfo.activatedBy,
+            reason: maintenanceInfo.reason || 'Nous effectuons actuellement une maintenance pour améliorer votre expérience.'
+        },
+        user: req.session?.user || null,
+        isAdmin: isAdmin,
+        isAuthenticated: !!req.session?.user,
+        // Variables supplémentaires pour votre template
+        maintenanceStart: maintenanceInfo.activatedAt,
+        maintenanceEnd: maintenanceInfo.activatedAt ? 
+            new Date(new Date(maintenanceInfo.activatedAt).getTime() + 2 * 60 * 60 * 1000).toISOString() : 
+            new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2h après le début
+        maintenanceActive: isMaintenanceActive
+    });
+});
+
+// APPLIQUER LE MIDDLEWARE DE MAINTENANCE À TOUTES LES ROUTES
+// IMPORTANT: Ajoutez cette ligne APRÈS avoir défini toutes les routes de maintenance
+router.use(checkMaintenanceStatus);
+
 // ==========================================
 // ROUTES PUBLIQUES EN PREMIER (SANS MIDDLEWARE)
 // ==========================================
@@ -5029,6 +5202,228 @@ router.get('/api/ping', (req, res) => {
 
 
 
+
+
+// ==========================================
+// ROUTES DE MAINTENANCE - VERSION FINALE
+// ==========================================
+
+// 1. Vérifier le statut de maintenance
+router.get('/api/maintenance/status', (req, res) => {
+    console.log('📊 Statut maintenance demandé par:', {
+        isAdmin: req.session?.user?.role_id === 2,
+        userId: req.session?.user?.id,
+        currentStatus: isMaintenanceActive
+    });
+    
+    res.json({
+        success: true,
+        maintenance: {
+            active: isMaintenanceActive,
+            activatedAt: maintenanceInfo.activatedAt,
+            activatedBy: maintenanceInfo.activatedBy,
+            reason: maintenanceInfo.reason
+        },
+        // Aussi au niveau racine pour compatibilité
+        active: isMaintenanceActive,
+        status: isMaintenanceActive ? 'active' : 'inactive'
+    });
+});
+
+// 2. Activer la maintenance (admin seulement)
+router.post('/api/maintenance/activate', isAdmin, (req, res) => {
+    try {
+        const { reason, duration } = req.body;
+        
+        console.log('🔧 Activation maintenance par:', req.session.user.email);
+        console.log('📋 Données reçues:', req.body);
+        
+        // IMPORTANT : Mettre à jour la variable globale
+        isMaintenanceActive = true;
+        maintenanceInfo = {
+            activatedAt: new Date().toISOString(),
+            activatedBy: req.session.user.email,
+            reason: reason || 'Maintenance d\'urgence'
+        };
+        
+        console.log('✅ Maintenance activée avec succès:', {
+            active: isMaintenanceActive,
+            info: maintenanceInfo
+        });
+        
+        res.json({
+            success: true,
+            message: 'Maintenance activée avec succès',
+            maintenance: {
+                active: isMaintenanceActive,
+                ...maintenanceInfo
+            },
+            // Aussi au niveau racine pour compatibilité
+            active: isMaintenanceActive
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur activation maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'activation',
+            error: error.message
+        });
+    }
+});
+
+// 3. Désactiver la maintenance (admin seulement)
+router.post('/api/maintenance/deactivate', isAdmin, (req, res) => {
+    try {
+        console.log('🔧 Désactivation maintenance par:', req.session.user.email);
+        
+        // IMPORTANT : Mettre à jour la variable globale
+        isMaintenanceActive = false;
+        maintenanceInfo = {
+            activatedAt: null,
+            activatedBy: null,
+            reason: null
+        };
+        
+        console.log('✅ Maintenance désactivée avec succès');
+        
+        res.json({
+            success: true,
+            message: 'Maintenance désactivée avec succès',
+            maintenance: {
+                active: isMaintenanceActive
+            },
+            // Aussi au niveau racine pour compatibilité
+            active: isMaintenanceActive
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur désactivation maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la désactivation',
+            error: error.message
+        });
+    }
+});
+
+// 4. Page de maintenance
+router.get('/maintenance', (req, res) => {
+    const isAdmin = req.session?.user?.role_id === 2;
+    
+    console.log('🔧 Page de maintenance affichée pour:', {
+        isAdmin,
+        userId: req.session?.user?.id,
+        maintenanceActive: isMaintenanceActive
+    });
+    
+    // Utiliser votre template EJS avec toutes les variables nécessaires
+    res.render('maintenance', {
+        title: 'Maintenance - CrystosJewel',
+        maintenance: {
+            active: isMaintenanceActive,
+            activatedAt: maintenanceInfo.activatedAt,
+            activatedBy: maintenanceInfo.activatedBy,
+            reason: maintenanceInfo.reason || 'Nous effectuons actuellement une maintenance pour améliorer votre expérience.'
+        },
+        user: req.session?.user || null,
+        isAdmin: isAdmin,
+        isAuthenticated: !!req.session?.user,
+        // Variables supplémentaires pour votre template
+        maintenanceStart: maintenanceInfo.activatedAt,
+        maintenanceEnd: maintenanceInfo.activatedAt ? 
+            new Date(new Date(maintenanceInfo.activatedAt).getTime() + 2 * 60 * 60 * 1000).toISOString() : 
+            new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2h après le début
+        maintenanceActive: isMaintenanceActive
+    });
+});
+
+// ==========================================
+// PLACER LE MIDDLEWARE AVANT TOUTES LES AUTRES ROUTES
+// ==========================================
+// IMPORTANT: Cette ligne doit être APRÈS les routes de maintenance mais AVANT toutes les autres
+router.use(checkMaintenanceStatus);
+
+router.post('/api/maintenance/activate', isAdmin, async (req, res) => {
+    try {
+        const { message, estimatedDuration } = req.body;
+        
+        // ✅ Maintenance sans durée par défaut
+        const maintenanceData = {
+            active: true,
+            message: message || 'Site en maintenance',
+            startedAt: new Date(),
+            // ❌ PAS de durée par défaut automatique
+            // estimatedEnd: estimatedDuration ? calculateEndTime(estimatedDuration) : null
+        };
+        
+        // ✅ N'ajouter estimatedEnd que si une durée est spécifiée
+        if (estimatedDuration) {
+            maintenanceData.estimatedEnd = calculateEndTime(estimatedDuration);
+        }
+        
+        // Sauvegarder dans votre système (fichier, base de données, etc.)
+        await saveMaintenance(maintenanceData);
+        
+        res.json({
+            success: true,
+            message: 'Maintenance activée',
+            maintenance: maintenanceData
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur activation maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'activation'
+        });
+    }
+});
+
+// 4. API MAINTENANCE STATUS (Backend)
+router.get('/api/maintenance/status', async (req, res) => {
+    try {
+        const maintenanceStatus = await getMaintenance();
+        
+        res.json({
+            success: true,
+            status: {
+                active: maintenanceStatus.active || false,
+                message: maintenanceStatus.message || '',
+                startedAt: maintenanceStatus.startedAt || null,
+                estimatedEnd: maintenanceStatus.estimatedEnd || null // ✅ Peut être null
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur statut maintenance:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la récupération du statut'
+        });
+    }
+});
+
+// 5. FONCTION UTILITAIRE POUR CALCULER LA FIN (si durée spécifiée)
+function calculateEndTime(duration) {
+    if (!duration) return null;
+    
+    const now = new Date();
+    const match = duration.match(/(\d+)\s*(minutes?|heures?|hours?|mins?|h)/i);
+    
+    if (!match) return null;
+    
+    const value = parseInt(match[1]);
+    const unit = match[2].toLowerCase();
+    
+    if (unit.includes('min')) {
+        return new Date(now.getTime() + (value * 60 * 1000));
+    } else if (unit.includes('h')) {
+        return new Date(now.getTime() + (value * 60 * 60 * 1000));
+    }
+    
+    return null;
+}
 
 // Export par défaut
 export default router;
