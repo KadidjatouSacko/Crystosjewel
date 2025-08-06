@@ -74,9 +74,9 @@ export class SettingsController {
                 
                 settingsBySection.company = {
                     company_name: { value: "Crystos Jewel", type: "string", description: "Nom de l'entreprise" },
-                    company_address: { value: "123 Rue de la Paix, 75001 Paris", type: "string", description: "Adresse de facturation" },
-                    company_phone: { value: "+33 1 23 45 67 89", type: "string", description: "Téléphone" },
-                    company_email: { value: "contact@crystosjewel.com", type: "string", description: "Email officiel" },
+                    company_address: { value: "", type: "string", description: "Adresse de facturation" },
+                    company_phone: { value: "<%= companyPhone || '+33 1 23 45 67 89' %>", type: "string", description: "Téléphone" },
+                    company_email: { value: "<%= companyEmail || 'contact@crystosjewel.com' %>", type: "string", description: "Email officiel" },
                     siret: { value: "", type: "string", description: "Numéro SIRET" },
                     vat_number: { value: "", type: "string", description: "Numéro TVA" }
                 };

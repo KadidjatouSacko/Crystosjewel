@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Éditeur d'Emails Avancé - CrystosJewel</title>
+    <title>Éditeur d'Emails Avancé - <%= siteSettings.company?.company_name || 'CrystosJewel' %>Jewel</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -827,7 +827,7 @@
                     </div>
                     <div class="form-group">
                         <label for="fromName">Nom expéditeur</label>
-                        <input type="text" id="fromName" class="form-input" value="CrystosJewel" placeholder="Nom affiché...">
+                        <input type="text" id="fromName" class="form-input" value="<%= siteSettings.company?.company_name || 'CrystosJewel' %>Jewel" placeholder="Nom affiché...">
                     </div>
                 </div>
                 
@@ -842,7 +842,7 @@
                         <h2>Bonjour [NOM_CLIENT],</h2>
                         <p>Nous espérons que vous allez bien !</p>
                         <p>Votre message personnalisé ici...</p>
-                        <p>L'équipe CrystosJewel</p>
+                        <p>L'équipe <%= siteSettings.company?.company_name || 'CrystosJewel' %>Jewel</p>
                     </div>
                 </div>
             </div>
@@ -1154,13 +1154,13 @@
                         <h2 style="color: ${template.colors.primary};">Bonjour [NOM_CLIENT],</h2>
                         <p>Nous sommes ravis de vous présenter notre nouvelle collection de bijoux d'exception.</p>
                         <p>Découvrez des pièces uniques, créées avec passion par nos artisans joailliers.</p>
-                        <p style="margin-top: 30px;">Cordialement,<br><strong>L'équipe CrystosJewel</strong></p>
+                        <p style="margin-top: 30px;">Cordialement,<br><strong>L'équipe <%= siteSettings.company?.company_name || 'CrystosJewel' %>Jewel</strong></p>
                     `;
                     break;
                     
                 case 'modern':
                     defaultContent = `
-                        <h1 style="color: ${template.colors.primary};">Actualités CrystosJewel</h1>
+                        <h1 style="color: ${template.colors.primary};">Actualités <%= siteSettings.company?.company_name || 'CrystosJewel' %>Jewel</h1>
                         <p><strong>Bonjour [NOM_CLIENT],</strong></p>
                         <p>Restez à la pointe des tendances avec nos dernières nouveautés.</p>
                         <ul>
@@ -1168,7 +1168,7 @@
                             <li>Bijoux personnalisables</li>
                             <li>Offres exclusives membres</li>
                         </ul>
-                        <p>À bientôt,<br>CrystosJewel</p>
+                        <p>À bientôt,<br><%= siteSettings.company?.company_name || 'CrystosJewel' %>Jewel</p>
                     `;
                     break;
                     
@@ -1188,7 +1188,7 @@
                     
                 case 'newsletter':
                     defaultContent = `
-                        <h2 style="color: ${template.colors.primary};">Newsletter CrystosJewel</h2>
+                        <h2 style="color: ${template.colors.primary};">Newsletter <%= siteSettings.company?.company_name || 'CrystosJewel' %>Jewel</h2>
                         <p>Bonjour [NOM_CLIENT],</p>
                         <p>Voici les actualités de ce mois :</p>
                         <h3>📰 À la une</h3>
@@ -1197,7 +1197,7 @@
                         <p>Nos coups de cœur sélectionnés spécialement pour vous.</p>
                         <h3>💝 Offres membres</h3>
                         <p>Bénéficiez d'avantages exclusifs en tant que membre privilégié.</p>
-                        <p>Bonne lecture !<br>L'équipe CrystosJewel</p>
+                        <p>Bonne lecture !<br>L'équipe <%= siteSettings.company?.company_name || 'CrystosJewel' %>Jewel</p>
                     `;
                     break;
             }
@@ -1212,7 +1212,7 @@
             const template = emailTemplates[currentTemplate];
             const subject = document.getElementById('emailSubject')?.value || 'Sujet de l\'email';
             const preheader = document.getElementById('preheader')?.value || '';
-            const fromName = document.getElementById('fromName')?.value || 'CrystosJewel';
+            const fromName = document.getElementById('fromName')?.value || '<%= siteSettings.company?.company_name || 'CrystosJewel' %>Jewel';
             const content = document.getElementById('emailContent')?.innerHTML || '';
 
             const previewHTML = generateEmailHTML(template, subject, preheader, fromName, content);
@@ -1420,7 +1420,7 @@
                 title: subject,
                 content: document.getElementById('emailContent')?.innerHTML || '',
                 preheader: document.getElementById('preheader')?.value || '',
-                fromName: document.getElementById('fromName')?.value || 'CrystosJewel'
+                fromName: document.getElementById('fromName')?.value || '<%= siteSettings.company?.company_name || 'CrystosJewel' %>Jewel'
             };
 
             showNotification('Envoi en cours...', 'info');

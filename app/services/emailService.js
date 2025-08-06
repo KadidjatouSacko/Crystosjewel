@@ -238,7 +238,7 @@ export const sendBulkEmailService = {
                                         <strong>${fromName}</strong><br>
                                         Bijouterie d'exception <br>
                                         📍 123 Avenue des Bijoux, 75001 Paris<br>
-                                        📞 01 23 45 67 89
+                                        📞 <%= companyPhone || '+33 1 23 45 67 89' %>
                                     </p>
                                     
                                     <!-- Social Links -->

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CrystosJewel - Navigation</title>
+    <title><%= siteSettings.company?.company_name || 'CrystosJewel' %> - Navigation</title>
     
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -635,7 +635,7 @@
 <nav class="navbar navbar-expand-lg admin-navbar" id="adminNavbar" style="display: none;">
         <div class="container-fluid">
             <a class="navbar-brand" href="/admin/stats">
-                <i class="fas fa-shield-alt me-2"></i>Administration CrystosJewel 
+                <i class="fas fa-shield-alt me-2"></i>Administration <%= siteSettings.company?.company_name || 'CrystosJewel' %> 
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbarContent">
@@ -773,7 +773,7 @@
         <div class="nav-container">
             <div class="nav-header">
                 <a href="/" class="logo">
-                    <h1>CrystosJewel </h1> 
+                    <h1><%= siteSettings.company?.company_name || 'CrystosJewel' %> </h1> 
                     <span>Bijoux précieux !</span>
                 </a>
                 <button class="menu-toggle" id="menuToggle">
@@ -888,7 +888,7 @@
                             <div id="userNotConnected">
                                 <div class="dropdown-header">
                                     <i class="fas fa-user"></i>
-                                    <span>Bienvenue chez CrystosJewel </span>
+                                    <span>Bienvenue chez <%= siteSettings.company?.company_name || 'CrystosJewel' %> </span>
                                 </div>
                                 
                                 <div class="dropdown-divider"></div>

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title><%= jewel ? jewel.name + ' - ÉCLAT DORÉ' : 'Détail du bijou - ÉCLAT DORÉ' %></title>
+  <title><%= jewel ? jewel.name + ' - ' + (siteName || 'CrystosJewel') : 'Détail du bijou - ' + (siteName || 'CrystosJewel') %></title>
 
   <!-- FontAwesome -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet"/>
@@ -11,421 +11,1806 @@
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
   
-  <style>
-    /* Styles pour la bannière de réduction */
-    .promo-banner {
-      background: linear-gradient(135deg, #ff6b6b, #ee5a24);
-      color: white;
-      text-align: center;
-      padding: 10px 0;
-      font-weight: 600;
-      font-size: 14px;
-      animation: pulse 2s infinite;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .promo-banner::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: -100%;
-      width: 100%;
-      height: 100%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
-      animation: shine 3s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { transform: scale(1); }
-      50% { transform: scale(1.02); }
-    }
-    
-    @keyframes shine {
-      0% { left: -100%; }
-      100% { left: 100%; }
-    }
+ <style>
 
-    /* Styles pour les prix avec réduction */
-    .product-price {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-      margin: 20px 0;
-    }
-    
-    .price-current {
-      font-size: 28px;
-      font-weight: 700;
-      color: #e74c3c;
-    }
-    
-    .price-original {
-      font-size: 20px;
-      color: #7f8c8d;
-      text-decoration: line-through;
-      position: relative;
-    }
-    
-    .discount-badge {
-      background: #e74c3c;
-      color: white;
-      padding: 4px 8px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: 600;
-      animation: bounce 1s infinite alternate;
-    }
-    
-    @keyframes bounce {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-3px); }
-    }
+  /* ===== STYLES POUR LA PAGE DÉTAIL BIJOU ===== */
 
-    /* ===== STYLES ADMIN UNIQUEMENT ===== */
-    .admin-debug {
-      background: linear-gradient(135deg, #2c3e50, #34495e);
-      color: #ecf0f1;
-      padding: 15px;
-      margin: 20px 0;
-      border-radius: 10px;
-      border-left: 4px solid #f39c12;
-      font-family: 'Courier New', monospace;
-      font-size: 12px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    
-    .admin-debug h4 {
-      color: #f39c12;
-      margin: 0 0 10px 0;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .admin-debug .debug-item {
-      margin: 5px 0;
-      padding: 3px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-    }
-    
-    .admin-debug .debug-item:last-child {
-      border-bottom: none;
-    }
-    
-    .admin-debug .debug-label {
-      color: #3498db;
-      font-weight: bold;
-    }
-    
-    .admin-debug .debug-value-true {
-      color: #2ecc71;
-      font-weight: bold;
-    }
-    
-    .admin-debug .debug-value-false {
-      color: #e74c3c;
-      font-weight: bold;
-    }
+/* Container principal */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
 
-    /* Styles pour les boutons admin */
-    .admin-actions {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      padding: 25px;
-      border-radius: 15px;
-      margin: 40px 0;
-      box-shadow: 0 10px 40px rgba(102, 126, 234, 0.3);
-      border: 2px solid rgba(255, 255, 255, 0.1);
-    }
-    
-    .admin-notice {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      color: white;
-      font-weight: 600;
-      margin-bottom: 20px;
-      font-size: 16px;
-      background: rgba(255, 255, 255, 0.1);
-      padding: 15px;
-      border-radius: 10px;
-      backdrop-filter: blur(5px);
-    }
-    
-    .admin-notice i {
-      font-size: 22px;
-      color: #ffd700;
-      animation: pulse 2s infinite;
-    }
-    
-    .admin-buttons {
-      display: flex;
-      gap: 15px;
-      flex-wrap: wrap;
-      justify-content: center;
-    }
-    
-    .btn-admin {
-      padding: 14px 24px;
-      border: none;
-      border-radius: 10px;
-      font-weight: 600;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      transition: all 0.3s ease;
-      cursor: pointer;
-      font-size: 15px;
-      min-width: 160px;
-      justify-content: center;
-      text-align: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    }
-    
-    .btn-edit {
-      background: linear-gradient(135deg, #f39c12, #e67e22);
-      color: white;
-    }
-    
-    .btn-edit:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(243, 156, 18, 0.4);
-      background: linear-gradient(135deg, #e67e22, #d35400);
-      text-decoration: none;
-      color: white;
-    }
-    
-    .btn-delete {
-      background: linear-gradient(135deg, #e74c3c, #c0392b);
-      color: white;
-    }
-    
-    .btn-delete:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(231, 76, 60, 0.4);
-      background: linear-gradient(135deg, #c0392b, #a93226);
-    }
-    
-    .btn-discount {
-      background: linear-gradient(135deg, #9b59b6, #8e44ad);
-      color: white;
-    }
-    
-    .btn-discount:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 8px 25px rgba(155, 89, 182, 0.4);
-      background: linear-gradient(135deg, #8e44ad, #7d3c98);
-    }
+/* Breadcrumb */
+.breadcrumb {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 1.5rem;
+}
 
-    /* Modal pour les réductions */
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.7);
-      z-index: 1000;
-      backdrop-filter: blur(5px);
-    }
-    
-    .modal.show {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .modal-content {
-      background: white;
-      padding: 30px;
-      border-radius: 15px;
-      max-width: 500px;
-      width: 90%;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      animation: modalAppear 0.3s ease;
-    }
-    
-    @keyframes modalAppear {
-      from { transform: scale(0.7); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-    
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      padding-bottom: 15px;
-      border-bottom: 2px solid #eee;
-    }
-    
-    .modal-header h3 {
-      margin: 0;
-      color: #2c3e50;
-    }
-    
-    .close-btn {
-      background: none;
-      border: none;
-      font-size: 24px;
-      cursor: pointer;
-      color: #7f8c8d;
-      transition: color 0.3s;
-    }
-    
-    .close-btn:hover {
-      color: #e74c3c;
-    }
-    
-    .form-group {
-      margin-bottom: 20px;
-    }
-    
-    .form-group label {
-      display: block;
-      margin-bottom: 8px;
-      font-weight: 600;
-      color: #2c3e50;
-    }
-    
-    .form-group input,
-    .form-group select {
-      width: 100%;
-      padding: 12px;
-      border: 2px solid #ecf0f1;
-      border-radius: 8px;
-      font-size: 14px;
-      transition: border-color 0.3s;
-    }
-    
-    .form-group input:focus,
-    .form-group select:focus {
-      outline: none;
-      border-color: #3498db;
-    }
-    
-    .modal-footer {
-      display: flex;
-      gap: 15px;
-      justify-content: flex-end;
-      margin-top: 30px;
-    }
-    
-    .btn-secondary {
-      background: #95a5a6;
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: background 0.3s;
-    }
-    
-    .btn-secondary:hover {
-      background: #7f8c8d;
-    }
-    
-    .btn-primary {
-      background: linear-gradient(135deg, #3498db, #2980b9);
-      color: white;
-      padding: 10px 20px;
-      border: none;
-      border-radius: 6px;
-      cursor: pointer;
-      transition: all 0.3s;
-    }
-    
-    .btn-primary:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
-    }
+.breadcrumb a {
+  color: #b76e79;
+  text-decoration: none;
+}
 
-    /* Responsive */
-    @media (max-width: 768px) {
-      .admin-actions, .admin-debug {
-        margin: 20px 0;
-        padding: 20px;
-      }
-      
-      .admin-buttons {
-        flex-direction: column;
-      }
-      
-      .btn-admin {
-        width: 100%;
-        min-width: auto;
-      }
-      
-      .admin-notice {
-        font-size: 14px;
-        padding: 12px;
-      }
-      
-      .product-price {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 8px;
-      }
-    }
-  </style>
+.breadcrumb a:hover {
+  text-decoration: underline;
+}
+
+/* ===== LAYOUT PRODUIT ===== */
+.product-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin-bottom: 2rem;
+}
+
+/* ===== GALERIE D'IMAGES (GAUCHE) ===== */
+.product-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.main-image-container {
+  position: relative;
+  background: #f8f9fa;
+  border-radius: 12px;
+  overflow: hidden;
+  aspect-ratio: 1;
+}
+
+.main-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.main-image:hover {
+  transform: scale(1.05);
+}
+
+/* Boutons navigation galerie */
+.gallery-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.gallery-nav:hover {
+  background: white;
+  transform: translateY(-50%) scale(1.05);
+}
+
+.prev-btn {
+  left: 10px;
+}
+
+.next-btn {
+  right: 10px;
+}
+
+/* Thumbnails */
+.thumbnail-gallery {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+}
+
+.thumbnail {
+  min-width: 70px;
+  height: 70px;
+  object-fit: cover;
+  border-radius: 6px;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+}
+
+.thumbnail:hover,
+.thumbnail.active {
+  opacity: 1;
+  border-color: #b76e79;
+  transform: scale(1.03);
+}
+
+/* ===== INFORMATIONS PRODUIT DROITE (PLUS COMPACT) ===== */
+.product-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: white;
+  padding: 1.75rem;
+  border-radius: 12px;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+  position: relative;
+  overflow: hidden;
+}
+
+.product-info::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #b76e79, #d4a574, #8b4a55);
+}
+
+.product-title {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #2c3e50;
+  margin: 0 0 0.5rem 0;
+  line-height: 1.3;
+}
+
+.product-category {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #7f8c8d;
+  font-weight: 500;
+  margin-bottom: 0.75rem;
+  font-size: 0.9rem;
+  flex-wrap: wrap;
+}
+
+.product-category i {
+  color: #b76e79;
+  font-size: 1rem;
+}
+
+/* Prix plus compact */
+.product-price {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1rem 0;
+  flex-wrap: wrap;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8f9fa, #ecf0f1);
+  border-radius: 10px;
+  border-left: 3px solid #b76e79;
+}
+
+.price-current {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #2c3e50;
+  line-height: 1;
+}
+
+.price-current.discounted {
+  color: #e74c3c;
+}
+
+.price-original {
+  font-size: 1.1rem;
+  color: #95a5a6;
+  text-decoration: line-through;
+}
+
+.discount-badge {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+  padding: 0.3rem 0.7rem;
+  border-radius: 15px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  animation: pulse 2s infinite;
+}
+
+.product-price-details {
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(183, 110, 121, 0.08);
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  width: 100%;
+}
+
+.product-price-details i {
+  color: #b76e79;
+}
+
+/* Description plus compacte */
+.product-description {
+  color: #555;
+  line-height: 1.5;
+  font-size: 0.9rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f8f9fa, #ecf0f1);
+  border-radius: 8px;
+  border-left: 3px solid #3498db;
+}
+
+.product-description p {
+  margin: 0;
+}
+
+/* ===== CARACTÉRISTIQUES COMPACTES ===== */
+.product-specs {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+  border: 1px solid #ecf0f1;
+}
+
+.product-specs h3 {
+  font-size: 1rem;
+  color: white;
+  margin: 0;
+  padding: 1rem;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.product-specs i {
+  font-size: 1.1rem;
+}
+
+.specs-list {
+  padding: 1rem;
+}
+
+.spec-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid #ecf0f1;
+  transition: all 0.3s ease;
+}
+
+.spec-item:hover {
+  background: #f8f9fa;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  margin: 0 -0.5rem;
+  border-radius: 5px;
+}
+
+.spec-item:last-child {
+  border-bottom: none;
+}
+
+.spec-label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.85rem;
+}
+
+.spec-value {
+  color: #555;
+  font-weight: 500;
+  padding: 0.2rem 0.5rem;
+  background: rgba(183, 110, 121, 0.08);
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+/* ===== SÉLECTION TAILLES COMPACTE ===== */
+.product-sizes {
+  background: white;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.05);
+  border: 1px solid #ecf0f1;
+}
+
+.product-sizes h3 {
+  font-size: 1rem;
+  color: white;
+  margin: 0;
+  padding: 1rem;
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.sizes-selector {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  gap: 0.5rem;
+  padding: 1rem;
+  background: linear-gradient(135deg, #ffffff, #f8f9fa);
+}
+
+.size-option {
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  padding: 0.6rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: center;
+  background: white;
+}
+
+.size-option:hover {
+  border-color: #b76e79;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(183, 110, 121, 0.2);
+}
+
+.size-option.selected {
+  border-color: #b76e79;
+  background: linear-gradient(135deg, #b76e79, #d4a574);
+  color: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(183, 110, 121, 0.3);
+}
+
+.size-label {
+  display: block;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.size-stock {
+  display: block;
+  font-size: 0.7rem;
+  opacity: 0.9;
+  margin-top: 0.1rem;
+}
+
+.size-error {
+  color: #e74c3c;
+  font-size: 0.8rem;
+  margin-top: 0.75rem;
+  padding: 0.6rem;
+  background: #fff5f5;
+  border-radius: 5px;
+  border-left: 3px solid #e74c3c;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* ===== ACTIONS PRODUIT COMPACTES ===== */
+.product-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  background: linear-gradient(135deg, #f8f9fa, #ecf0f1);
+  padding: 1.25rem;
+  border-radius: 10px;
+  border: 1px solid #ecf0f1;
+}
+
+/* Sélecteur quantité compact */
+.quantity-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.quantity-selector label {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.95rem;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  justify-content: center;
+}
+
+.quantity-btn {
+  width: 35px;
+  height: 35px;
+  border: 2px solid #ddd;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-btn:hover {
+  border-color: #b76e79;
+  background: linear-gradient(135deg, #b76e79, #d4a574);
+  color: white;
+}
+
+#quantity {
+  width: 70px;
+  height: 35px;
+  text-align: center;
+  border: 2px solid #ddd;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1rem;
+  background: white;
+}
+
+.stock-info {
+  font-size: 0.85rem;
+  color: #28a745;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  justify-content: center;
+  padding: 0.5rem;
+  background: rgba(40, 167, 69, 0.08);
+  border-radius: 5px;
+  font-weight: 500;
+}
+
+/* Boutons d'action compacts */
+.action-buttons {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: 0.8rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-decoration: none;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #b76e79, #a05d68);
+  color: white;
+  flex: 1;
+  min-width: 180px;
+  font-size: 0.95rem;
+  padding: 0.9rem 1.5rem;
+  box-shadow: 0 3px 12px rgba(183, 110, 121, 0.25);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a05d68, #8b4a55);
+  transform: translateY(-1px);
+  box-shadow: 0 5px 16px rgba(183, 110, 121, 0.35);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #6c757d, #5a6268);
+  color: white;
+  box-shadow: 0 2px 8px rgba(108, 117, 125, 0.25);
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #5a6268, #495057);
+  transform: translateY(-1px);
+}
+
+.btn-info {
+  background: linear-gradient(135deg, #17a2b8, #138496);
+  color: white;
+  box-shadow: 0 2px 8px rgba(23, 162, 184, 0.25);
+}
+
+.btn-info:hover {
+  background: linear-gradient(135deg, #138496, #117a8b);
+  transform: translateY(-1px);
+}
+
+/* Compteur de vues admin */
+#view-counter {
+  font-size: 0.8rem;
+  color: #7f8c8d;
+  margin-top: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.5rem;
+  background: rgba(183, 110, 121, 0.08);
+  border-radius: 5px;
+  font-weight: 500;
+}
+
+#view-counter i {
+  color: #b76e79;
+}
+
+/* ===== ONGLETS ===== */
+.product-tabs {
+  margin-top: 2rem;
+}
+
+.tabs-nav {
+  display: flex;
+  border-bottom: 2px solid #eee;
+  margin-bottom: 1.5rem;
+  overflow-x: visible;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  font-weight: 600;
+  color: #666;
+  transition: all 0.3s ease;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+
+.tab-btn:hover,
+.tab-btn.active {
+  color: #b76e79;
+  border-bottom-color: #b76e79;
+}
+
+.tab-content {
+  display: none;
+  animation: fadeIn 0.3s ease;
+}
+
+.tab-content.active {
+  display: block;
+}
+
+.tab-content h3 {
+  color: #2c3e50;
+  margin-bottom: 1rem;
+}
+
+/* Informations de livraison */
+.delivery-info {
+  display: grid;
+  gap: 1rem;
+}
+
+.delivery-option {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #b76e79;
+}
+
+.delivery-option i {
+  font-size: 1.5rem;
+  color: #b76e79;
+}
+
+.delivery-option strong {
+  color: #2c3e50;
+}
+
+/* Conseils d'entretien */
+.care-tips {
+  display: grid;
+  gap: 1rem;
+}
+
+.care-tip {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #f8f9fa;
+  border-radius: 8px;
+}
+
+.care-tip i {
+  font-size: 1.5rem;
+  color: #28a745;
+}
+
+/* ===== PRODUITS SIMILAIRES ===== */
+.related-products {
+  margin-top: 3rem;
+}
+
+.related-products h2 {
+  text-align: center;
+  color: #2c3e50;
+  margin-bottom: 2rem;
+}
+
+.products-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1.5rem;
+}
+
+.product-card {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  transition: transform 0.3s ease;
+}
+
+.product-card:hover {
+  transform: translateY(-3px);
+}
+
+.product-card a {
+  text-decoration: none;
+  color: inherit;
+}
+
+.product-card-img {
+  height: 180px;
+  background-size: cover;
+  background-position: center;
+  background-color: #f8f9fa;
+}
+
+.product-card-info {
+  padding: 1rem;
+}
+
+.product-card-info h4 {
+  color: #2c3e50;
+  margin: 0 0 0.5rem 0;
+}
+
+.product-card-category {
+  color: #666;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.product-card-price {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #b76e79;
+}
+
+/* ===== NOTIFICATIONS ===== */
+.notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: #28a745;
+  color: white;
+  padding: 1rem 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+  z-index: 1000;
+  transform: translateX(400px);
+  transition: transform 0.3s ease;
+}
+
+.notification.show {
+  transform: translateX(0);
+}
+
+.notification.error {
+  background: #dc3545;
+}
+
+.notification.warning {
+  background: #ffc107;
+  color: #212529;
+}
+
+.notification-content {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.notification.hidden {
+  display: none;
+}
+
+/* Styles pour la bannière de réduction */
+.promo-banner {
+  background: linear-gradient(135deg, #ff6b6b, #ee5a24);
+  color: white;
+  text-align: center;
+  padding: 8px 0;
+  font-weight: 600;
+  font-size: 0.85rem;
+  animation: pulse 2s infinite;
+}
+
+/* ===== STYLES ADMIN UNIQUEMENT ===== */
+.admin-actions {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 1.5rem;
+  border-radius: 12px;
+  margin: 2rem 0;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.25);
+}
+
+.admin-notice {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: white;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  font-size: 0.95rem;
+  background: rgba(255, 255, 255, 0.1);
+  padding: 1rem;
+  border-radius: 8px;
+}
+
+.admin-notice i {
+  font-size: 1.2rem;
+  color: #ffd700;
+}
+
+.admin-buttons {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-admin {
+  padding: 0.8rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  font-size: 0.9rem;
+  min-width: 140px;
+  justify-content: center;
+  text-align: center;
+}
+
+.btn-edit {
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  color: white;
+}
+
+.btn-edit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(243, 156, 18, 0.3);
+  text-decoration: none;
+  color: white;
+}
+
+.btn-delete {
+  background: linear-gradient(135deg, #e74c3c, #c0392b);
+  color: white;
+}
+
+.btn-delete:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(231, 76, 60, 0.3);
+}
+
+.btn-discount {
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  color: white;
+}
+
+.btn-discount:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(155, 89, 182, 0.3);
+}
+
+/* Modal pour les réductions */
+.modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  z-index: 1000;
+  backdrop-filter: blur(5px);
+}
+
+.modal.show {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 480px;
+  width: 90%;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #eee;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #7f8c8d;
+  transition: color 0.3s;
+}
+
+.close-btn:hover {
+  color: #e74c3c;
+}
+
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #ecf0f1;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  transition: border-color 0.3s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  outline: none;
+  border-color: #3498db;
+}
+
+.modal-footer {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+  margin-top: 2rem;
+}
+
+.btn-secondary {
+  background: #95a5a6;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+.btn-secondary:hover {
+  background: #7f8c8d;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 12px rgba(52, 152, 219, 0.3);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes shine {
+  0% { left: -100%; }
+  100% { left: 100%; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-3px); }
+  75% { transform: translateX(3px); }
+}
+
+/* ===== RESPONSIVE MOBILE FIRST - SANS SCROLL HORIZONTAL ===== */
+
+/* Tablettes */
+@media (max-width: 1024px) {
+  .container {
+    padding: 1.25rem;
+  }
+  
+  .product-container {
+    gap: 1.75rem;
+  }
+  
+  .product-info {
+    padding: 1.5rem;
+  }
+  
+  .product-title {
+    font-size: 1.5rem;
+  }
+  
+  .price-current {
+    font-size: 1.7rem;
+  }
+}
+
+/* Mobile - Layout en colonne */
+@media (max-width: 768px) {
+  .container {
+    padding: 0.75rem;
+    max-width: 100%;
+  }
+  
+  .product-container {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  /* Image principale mobile */
+  .main-image-container {
+    max-width: 100%;
+    margin: 0 auto;
+  }
+  
+  .thumbnail-gallery {
+    justify-content: center;
+    overflow-x: auto;
+    padding: 0.5rem 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  .thumbnail {
+    min-width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+  }
+  
+  .product-info {
+    padding: 1rem;
+    gap: 0.75rem;
+    margin: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  
+  .product-title {
+    font-size: 1.3rem;
+    text-align: left;
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+  }
+  
+  .product-category {
+    justify-content: flex-start;
+    text-align: left;
+    flex-wrap: wrap;
+    font-size: 0.85rem;
+  }
+  
+  .price-current {
+    font-size: 1.5rem;
+  }
+  
+  .product-price {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    text-align: left;
+    margin: 0.5rem 0;
+  }
+  
+  .product-description {
+    text-align: left;
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  .product-description::before {
+    font-size: 2rem;
+    top: 0.2rem;
+    left: 0.5rem;
+  }
+  
+  .product-description p {
+    padding-left: 1.25rem;
+  }
+  
+  /* Caractéristiques en ligne sur mobile */
+  .spec-item {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    text-align: left;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+  }
+  
+  .spec-item:hover {
+    margin: 0;
+    padding-left: 0;
+    padding-right: 0;
+    transform: none;
+  }
+  
+  .spec-label {
+    font-size: 0.8rem;
+  }
+  
+  .spec-value {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.4rem;
+  }
+  
+  .specs-list {
+    padding: 0.75rem;
+  }
+  
+  .product-specs h3,
+  .product-sizes h3 {
+    padding: 0.875rem;
+    font-size: 0.95rem;
+  }
+  
+  /* Tailles en grille plus compacte */
+  .sizes-selector {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.5rem;
+    padding: 0.75rem;
+    max-width: 100%;
+  }
+  
+  .size-option {
+    padding: 0.6rem 0.3rem;
+    min-width: 0;
+    font-size: 0.8rem;
+  }
+  
+  .size-label {
+    font-size: 0.75rem;
+  }
+  
+  .size-stock {
+    font-size: 0.6rem;
+  }
+  
+  .product-actions {
+    padding: 0.875rem;
+    gap: 0.75rem;
+  }
+  
+  .quantity-selector label {
+    font-size: 0.9rem;
+  }
+  
+  
+  .action-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+  
+  .btn-primary {
+    min-width: auto;
+    width: 100%;
+    padding: 0.9rem;
+    font-size: 0.9rem;
+  }
+  
+  .btn-secondary,
+  .btn-info {
+    padding: 0.7rem;
+    font-size: 0.85rem;
+  }
+  
+  .quantity-controls {
+    justify-content: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .quantity-btn {
+    width: 38px;
+    height: 38px;
+  }
+  
+  #quantity {
+    width: 70px;
+    height: 38px;
+  }
+  
+  .stock-info {
+    text-align: left;
+    justify-content: flex-start;
+    font-size: 0.8rem;
+  }
+  
+  /* Onglets compacts sur mobile */
+  .tabs-nav {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+    border-bottom: 1px solid #eee;
+    margin-bottom: 1rem;
+  }
+  
+  .tab-btn {
+    padding: 0.75rem 0.5rem;
+    font-size: 0.8rem;
+    text-align: center;
+    border-radius: 0;
+    border-right: 1px solid #eee;
+  }
+  
+  .tab-btn:last-child {
+    border-right: none;
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  
+  .product-card-img {
+    height: 120px;
+  }
+  
+  .product-card-info {
+    padding: 0.75rem;
+  }
+  
+  .product-card-info h4 {
+    font-size: 0.9rem;
+    margin-bottom: 0.25rem;
+  }
+  
+  .product-card-category {
+    font-size: 0.75rem;
+  }
+  
+  .product-card-price {
+    font-size: 0.9rem;
+  }
+  
+  .admin-actions {
+    margin: 1rem 0;
+    padding: 1rem;
+  }
+  
+  .admin-buttons {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+  
+  .btn-admin {
+    width: 100%;
+    min-width: auto;
+    justify-content: center;
+    padding: 0.8rem;
+    font-size: 0.85rem;
+  }
+  
+  .admin-notice {
+    font-size: 0.8rem;
+    padding: 0.75rem;
+    text-align: center;
+  }
+}
+
+/* Petits mobiles - optimisé */
+@media (max-width: 480px) {
+  .container {
+    padding: 0.5rem;
+  }
+  
+  .product-info {
+    padding: 0.75rem;
+    gap: 0.6rem;
+  }
+  
+  .product-title {
+    font-size: 1.2rem;
+    line-height: 1.3;
+  }
+  
+  .price-current {
+    font-size: 1.35rem;
+  }
+  
+  .product-price {
+    padding: 0.6rem;
+    margin: 0.4rem 0;
+  }
+  
+  .product-price-details {
+    font-size: 0.7rem;
+    padding: 0.4rem;
+  }
+  
+  .product-description {
+    padding: 0.6rem;
+    font-size: 0.8rem;
+  }
+  
+  .product-specs h3,
+  .product-sizes h3 {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  .specs-list {
+    padding: 0.6rem;
+  }
+  
+  .spec-item {
+    padding: 0.4rem 0;
+  }
+  
+  .spec-label {
+    font-size: 0.75rem;
+  }
+  
+  .spec-value {
+    font-size: 0.7rem;
+  }
+  
+  /* Tailles en 3 colonnes sur petit mobile */
+  .sizes-selector {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.4rem;
+    padding: 0.6rem;
+  }
+  
+  .size-option {
+    padding: 0.5rem 0.2rem;
+    min-width: 0;
+  }
+  
+  .size-label {
+    font-size: 0.7rem;
+  }
+  
+  .size-stock {
+    font-size: 0.55rem;
+  }
+  
+  .product-actions {
+    padding: 0.75rem;
+    gap: 0.6rem;
+  }
+  
+  .quantity-btn {
+    width: 35px;
+    height: 35px;
+    font-size: 0.9rem;
+  }
+  
+  #quantity {
+    width: 60px;
+    height: 35px;
+    font-size: 0.9rem;
+  }
+  
+  .btn-primary {
+    padding: 0.8rem;
+    font-size: 0.85rem;
+  }
+  
+  .btn-secondary,
+  .btn-info {
+    padding: 0.65rem;
+    font-size: 0.8rem;
+  }
+  
+  .stock-info {
+    font-size: 0.75rem;
+    padding: 0.4rem;
+  }
+  
+  .tab-btn {
+    padding: 0.6rem 0.3rem;
+    font-size: 0.75rem;
+  }
+  
+  .products-grid {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+  
+  .product-card-img {
+    height: 140px;
+  }
+  
+  .modal-content {
+    padding: 1rem;
+    margin: 0.5rem;
+  }
+  
+  .notification {
+    right: 0.25rem;
+    left: 0.25rem;
+    padding: 0.6rem;
+    font-size: 0.8rem;
+  }
+  
+  #view-counter {
+    font-size: 0.7rem;
+    padding: 0.4rem;
+  }
+}
+
+/* Petits mobiles */
+@media (max-width: 480px) {
+  .container {
+    padding: 0.75rem;
+  }
+  
+  .product-info {
+    padding: 1rem;
+    gap: 0.875rem;
+    border-radius: 10px;
+  }
+  
+  .product-title {
+    font-size: 1.25rem;
+    line-height: 1.3;
+  }
+  
+  .price-current {
+    font-size: 1.4rem;
+  }
+  
+  .product-price {
+    padding: 0.75rem;
+    margin: 0.75rem 0;
+  }
+  
+  .product-price-details {
+    font-size: 0.75rem;
+    padding: 0.4rem;
+  }
+  
+  .product-description {
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  .product-specs h3,
+  .product-sizes h3 {
+    padding: 0.875rem;
+    font-size: 0.9rem;
+  }
+  
+  .specs-list {
+    padding: 0.75rem;
+  }
+  
+  .spec-item {
+    padding: 0.5rem 0;
+  }
+  
+  .spec-label,
+  .spec-value {
+    font-size: 0.8rem;
+  }
+  
+  .sizes-selector {
+    grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+    gap: 0.3rem;
+    padding: 0.75rem;
+  }
+  
+  .size-option {
+    padding: 0.4rem;
+    min-width: 60px;
+  }
+  
+  .size-label {
+    font-size: 0.75rem;
+  }
+  
+  .size-stock {
+    font-size: 0.6rem;
+  }
+  
+  .product-actions {
+    padding: 0.875rem;
+    gap: 0.875rem;
+  }
+  
+  .quantity-controls {
+    gap: 0.5rem;
+  }
+  
+  .quantity-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+  
+  #quantity {
+    width: 60px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+  
+  .btn {
+    padding: 0.8rem;
+    font-size: 0.8rem;
+    gap: 0.3rem;
+  }
+  
+  .btn-primary {
+    padding: 0.875rem;
+  }
+  
+  .stock-info {
+    font-size: 0.8rem;
+    padding: 0.4rem;
+  }
+  
+  .modal-content {
+    padding: 1.25rem;
+    margin: 0.75rem;
+    border-radius: 10px;
+  }
+  
+  .notification {
+    right: 0.5rem;
+    left: 0.5rem;
+    transform: translateY(-100px);
+    padding: 0.75rem;
+    font-size: 0.85rem;
+  }
+  
+  .notification.show {
+    transform: translateY(0);
+  }
+  
+  .promo-banner {
+    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+  
+  #view-counter {
+    font-size: 0.75rem;
+    padding: 0.4rem;
+    margin-top: 0.6rem;
+  }
+  
+  .tab-btn {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.8rem;
+  }
+  
+  .products-grid {
+    grid-template-columns: 1fr;
+    gap: 0.875rem;
+  }
+  
+  .product-card-img {
+    height: 140px;
+  }
+}
+
+/* Très petits mobiles - ultra compact */
+@media (max-width: 360px) {
+  .container {
+    padding: 0.375rem;
+  }
+  
+  .product-info {
+    padding: 0.6rem;
+    gap: 0.5rem;
+  }
+  
+  .product-title {
+    font-size: 1.1rem;
+    line-height: 1.25;
+  }
+  
+  .price-current {
+    font-size: 1.25rem;
+  }
+  
+  .product-category {
+    font-size: 0.75rem;
+  }
+  
+  .product-price {
+    padding: 0.5rem;
+    gap: 0.4rem;
+  }
+  
+  .product-description {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  .product-description::before {
+    font-size: 1.5rem;
+    top: 0.1rem;
+    left: 0.3rem;
+  }
+  
+  .product-description p {
+    padding-left: 1rem;
+  }
+  
+  .product-specs h3,
+  .product-sizes h3 {
+    padding: 0.6rem;
+    font-size: 0.8rem;
+  }
+  
+  .specs-list {
+    padding: 0.5rem;
+  }
+  
+  .spec-item {
+    padding: 0.35rem 0;
+    gap: 0.3rem;
+  }
+  
+  .spec-label,
+  .spec-value {
+    font-size: 0.7rem;
+  }
+  
+  /* Tailles en 3 colonnes très compactes */
+  .sizes-selector {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.3rem;
+    padding: 0.5rem;
+  }
+  
+  .size-option {
+    padding: 0.4rem 0.15rem;
+    border-radius: 6px;
+  }
+  
+  .size-label {
+    font-size: 0.65rem;
+  }
+  
+  .size-stock {
+    font-size: 0.5rem;
+  }
+  
+  .product-actions {
+    padding: 0.6rem;
+    gap: 0.5rem;
+  }
+  
+  .quantity-controls {
+    gap: 0.5rem;
+  }
+  
+  .quantity-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  
+  #quantity {
+    width: 55px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+  
+  .btn-primary {
+    padding: 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  .btn-secondary,
+  .btn-info {
+    padding: 0.6rem;
+    font-size: 0.75rem;
+  }
+  
+  .stock-info {
+    font-size: 0.7rem;
+    padding: 0.35rem;
+  }
+  
+  .tab-btn {
+    padding: 0.5rem 0.25rem;
+    font-size: 0.7rem;
+  }
+  
+  .admin-actions {
+    padding: 0.75rem;
+  }
+  
+  .admin-notice {
+    font-size: 0.75rem;
+    padding: 0.6rem;
+  }
+  
+  .btn-admin {
+    padding: 0.7rem;
+    font-size: 0.8rem;
+  }
+  
+  .notification {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+  }
+  
+  #view-counter {
+    font-size: 0.65rem;
+    padding: 0.35rem;
+  }
+}
+
+/* ===== ACCESSIBILITÉ ===== */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .gallery-nav:hover {
+    transform: translateY(-50%);
+  }
+  
+  .thumbnail:hover,
+  .thumbnail.active {
+    transform: scale(1);
+  }
+  
+  .btn:hover {
+    transform: none;
+  }
+  
+  .size-option:hover,
+  .size-option.selected {
+    transform: none;
+  }
+}
+
+/* ===== ÉTATS DE FOCUS POUR L'ACCESSIBILITÉ ===== */
+.btn:focus,
+.quantity-btn:focus,
+#quantity:focus,
+.size-option:focus,
+.tab-btn:focus {
+  outline: 2px solid #b76e79;
+  outline-offset: 2px;
+}
+
+.thumbnail:focus {
+  outline: 2px solid #b76e79;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* ===== AMÉLIORATIONS DE PERFORMANCE ===== */
+.main-image,
+.thumbnail,
+.product-card-img {
+  will-change: transform;
+}
+
+.btn,
+.size-option,
+.quantity-btn {
+  will-change: transform, box-shadow;
+}
+
+.discount-badge,
+.notification {
+  transform: translateZ(0);
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .gallery-nav,
+  .admin-actions,
+  .action-buttons,
+  .tabs-nav,
+  .notification,
+  .promo-banner {
+    display: none !important;
+  }
+  
+  .product-container {
+    grid-template-columns: 1fr;
+  }
+  
+  .product-info {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .product-price {
+    background: white;
+    border: 1px solid #ddd;
+  }
+  
+  body {
+    background: white;
+    color: black;
+  }
+}
+ </style>
   
   <link rel="stylesheet" href="/css/detailjewel.css">
 </head>
 
 <body>
-
-  <!-- DEBUG ADMIN UNIQUEMENT -->
-  <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-    <div class="admin-debug">
-      <h4><i class="fas fa-bug"></i> DEBUG ADMINISTRATEUR</h4>
-      <div class="debug-item">
-        <span class="debug-label">Utilisateur connecté:</span> 
-        <span class="<%= user ? 'debug-value-true' : 'debug-value-false' %>">
-          <%= user ? 'OUI' : 'NON' %>
-        </span>
-      </div>
-      <% if (user) { %>
-        <div class="debug-item">
-          <span class="debug-label">ID utilisateur:</span> 
-          <span class="debug-value-true"><%= user.id || 'Non défini' %></span>
-        </div>
-        <div class="debug-item">
-          <span class="debug-label">Rôle objet:</span> 
-          <span class="<%= user.role ? 'debug-value-true' : 'debug-value-false' %>">
-            <%= user.role ? 'OUI' : 'NON' %>
-          </span>
-        </div>
-        <% if (user.role) { %>
-          <div class="debug-item">
-            <span class="debug-label">Nom du rôle:</span> 
-            <span class="debug-value-true"><%= user.role.name || 'Non défini' %></span>
-          </div>
-        <% } %>
-        <div class="debug-item">
-          <span class="debug-label">Role ID:</span> 
-          <span class="debug-value-true"><%= user.role_id || 'Non défini' %></span>
-        </div>
-        <div class="debug-item">
-          <span class="debug-label">Est administrateur:</span> 
-          <span class="<%= ((user.role && user.role.name === 'administrateur') || user.role_id === 2) ? 'debug-value-true' : 'debug-value-false' %>">
-            <%= ((user.role && user.role.name === 'administrateur') || user.role_id === 2) ? 'OUI' : 'NON' %>
-          </span>
-        </div>
-        <div class="debug-item">
-          <span class="debug-label">Bijou ID:</span> 
-          <span class="debug-value-true"><%= jewel.id %></span>
-        </div>
-        <div class="debug-item">
-          <span class="debug-label">Vues actuelles:</span> 
-          <span class="debug-value-true"><%= jewel.views_count || 0 %></span>
-        </div>
-      <% } %>
-    </div>
-  <% } %>
-
   <!-- Bannière promotionnelle -->
   <% if (jewel.discount_percentage > 0) { %>
   <div class="promo-banner">
@@ -448,7 +1833,7 @@
     </div>
 
     <div class="product-container">
-      <!-- GALERIE D'IMAGES -->
+      <!-- GALERIE D'IMAGES (À GAUCHE) -->
       <div class="product-gallery">
         <div class="main-image-container">
           <% 
@@ -504,7 +1889,7 @@
         <% } %>
       </div>
 
-      <!-- INFORMATIONS PRODUIT -->
+      <!-- INFORMATIONS PRODUIT (À DROITE) -->
       <div class="product-info">
         <h1 class="product-title"><%= jewel.name %></h1>
         
@@ -529,7 +1914,7 @@
           }
           %>
           
-          <span class="price-current">
+          <span class="price-current <%= hasDiscount ? 'discounted' : '' %>">
             <%= new Intl.NumberFormat('fr-FR', {
               style: 'currency',
               currency: 'EUR'
@@ -645,11 +2030,13 @@
           </div>
         </div>
 
-        <!-- Compteur de vues (visible pour tous) -->
+        <!-- Compteur de vues (ADMIN UNIQUEMENT) -->
+        <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
         <div id="view-counter" style="font-size: 0.9em; color: #666; margin-top: 15px; display: flex; align-items: center; gap: 5px;">
           <i class="fas fa-eye"></i>
           <span><%= jewel.views_count || 0 %> vues</span>
         </div>
+        <% } %>
       </div>
     </div>
 
@@ -661,8 +2048,7 @@
           Panneau d'administration - Bijou: <%= jewel.name %>
         </div>
         <div class="admin-buttons">
-          <a href="/admin/bijoux/<%= jewel.slug %>/edit
-            " class="btn-admin btn-edit">
+          <a href="/admin/bijoux/<%= jewel.slug %>/edit" class="btn-admin btn-edit">
             <i class="fas fa-edit"></i> Modifier le bijou
           </a>
           <button type="button" class="btn-admin btn-delete" onclick="confirmDelete()">
@@ -695,21 +2081,21 @@
             <i class="fas fa-truck"></i>
             <div>
               <strong>Livraison standard</strong>
-              <p>4,90€ - 3-5 jours ouvrés</p>
+              <p><%= siteSettings.shipping?.standard_shipping_cost || 7.50 %>€ - 3-5 jours ouvrés</p>
             </div>
           </div>
           <div class="delivery-option">
             <i class="fas fa-tachometer-alt"></i>
             <div>
               <strong>Livraison express</strong>
-              <p>8,90€ - 24-48h</p>
+              <p><%= siteSettings.shipping?.express_shipping_cost || 15 %>€ - 24-48h</p>
             </div>
           </div>
           <div class="delivery-option">
             <i class="fas fa-gift"></i>
             <div>
               <strong>Livraison gratuite</strong>
-              <p>Dès 75€ d'achat</p>
+              <p>Dès <%= siteSettings.shipping?.free_shipping_threshold || 100 %>€ d'achat</p>
             </div>
           </div>
         </div>
@@ -849,8 +2235,7 @@
 <footer>
   <%- include('partials/footer.ejs') %>
 </footer>
-
-  <script>
+<script>
     // VARIABLES GLOBALES
     const images = [
       <% allImages.forEach((image, index) => { %>
@@ -1100,7 +2485,8 @@
     });
   </script>
 
-  <!-- TRACKING DES VUES (INTELLIGENT) -->
+  <!-- TRACKING DES VUES (INTELLIGENT) - ADMIN UNIQUEMENT -->
+  <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
   <script>
   document.addEventListener('DOMContentLoaded', function() {
       let startTime = Date.now();
@@ -1108,9 +2494,7 @@
       let hasInteracted = false;
       let hasScrolled = false;
       
-      <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-        console.log('🎯 Tracking initialisé pour bijou <%= jewel.id %> (Mode Admin)');
-      <% } %>
+      console.log('🎯 Tracking initialisé pour bijou <%= jewel.id %> (Mode Admin)');
       
       // Détecter les interactions utilisateur réelles
       const interactions = ['click', 'scroll', 'keydown', 'mousemove'];
@@ -1119,9 +2503,7 @@
           document.addEventListener(eventType, function() {
               if (!hasInteracted) {
                   hasInteracted = true;
-                  <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-                    console.log('👆 Interaction utilisateur détectée:', eventType);
-                  <% } %>
+                  console.log('👆 Interaction utilisateur détectée:', eventType);
               }
           }, { once: true, passive: true });
       });
@@ -1130,9 +2512,7 @@
       window.addEventListener('scroll', function() {
           if (!hasScrolled && window.scrollY > 50) {
               hasScrolled = true;
-              <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-                console.log('📜 Scroll détecté');
-              <% } %>
+              console.log('📜 Scroll détecté');
           }
       }, { passive: true });
       
@@ -1142,9 +2522,7 @@
           
           const timeOnPage = (Date.now() - startTime) / 1000;
           
-          <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-            console.log(`⏱️ Tentative tracking: ${timeOnPage}s, interagi: ${hasInteracted}, scrollé: ${hasScrolled}`);
-          <% } %>
+          console.log(`⏱️ Tentative tracking: ${timeOnPage}s, interagi: ${hasInteracted}, scrollé: ${hasScrolled}`);
           
           // CONDITIONS STRICTES POUR UNE VUE VALIDE :
           // 1. Au moins 3 secondes sur la page
@@ -1154,9 +2532,7 @@
           if (isValidView) {
               viewTracked = true;
               
-              <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-                console.log('✅ Conditions remplies, tracking de la vue...');
-              <% } %>
+              console.log('✅ Conditions remplies, tracking de la vue...');
               
               fetch('/api/bijoux/<%= jewel.id %>/track-vue-unique', {
                   method: 'POST',
@@ -1173,13 +2549,9 @@
               .then(data => {
                   if (data.success) {
                       if (data.alreadyCounted) {
-                          <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-                            console.log('🚫 Vue déjà comptée:', data.message);
-                          <% } %>
+                          console.log('🚫 Vue déjà comptée:', data.message);
                       } else {
-                          <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-                            console.log('🎯 Vue trackée avec succès! Total:', data.views);
-                          <% } %>
+                          console.log('🎯 Vue trackée avec succès! Total:', data.views);
                           
                           // Mettre à jour le compteur sur la page
                           const viewCounter = document.querySelector('#view-counter span');
@@ -1188,15 +2560,11 @@
                           }
                       }
                   } else {
-                      <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-                        console.log('❌ Erreur tracking:', data.message);
-                      <% } %>
+                      console.log('❌ Erreur tracking:', data.message);
                   }
               })
               .catch(error => {
-                  <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-                    console.log('❌ Erreur réseau tracking:', error);
-                  <% } %>
+                  console.log('❌ Erreur réseau tracking:', error);
               });
           }
       }
@@ -1214,9 +2582,7 @@
       setTimeout(function() {
           clearInterval(trackingInterval);
           if (!viewTracked) {
-              <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-                console.log('⏰ Timeout tracking - pas de vue comptée');
-              <% } %>
+              console.log('⏰ Timeout tracking - pas de vue comptée');
           }
       }, 30000);
       
@@ -1227,9 +2593,7 @@
               
               // Conditions allégées pour la sortie de page
               if (timeOnPage >= 2 && (hasInteracted || hasScrolled)) {
-                  <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-                    console.log('🚪 Tracking de sortie de page');
-                  <% } %>
+                  console.log('🚪 Tracking de sortie de page');
                   
                   // Utiliser sendBeacon pour l'envoi synchrone
                   const data = JSON.stringify({
@@ -1246,16 +2610,15 @@
       });
       
       // Debug en mode admin uniquement
-      <% if (typeof user !== 'undefined' && user && ((user.role && user.role.name === 'administrateur') || user.role_id === 2)) { %>
-        setInterval(function() {
-            if (!viewTracked) {
-                const time = Math.round((Date.now() - startTime) / 1000);
-                console.log(`📊 Debug Admin: ${time}s, interagi: ${hasInteracted}, scrollé: ${hasScrolled}`);
-            }
-        }, 5000);
-      <% } %>
+      setInterval(function() {
+          if (!viewTracked) {
+              const time = Math.round((Date.now() - startTime) / 1000);
+              console.log(`📊 Debug Admin: ${time}s, interagi: ${hasInteracted}, scrollé: ${hasScrolled}`);
+          }
+      }, 5000);
   });
   </script>
+  <% } %>
 
 </body>
 </html>

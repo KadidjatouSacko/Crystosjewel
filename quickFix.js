@@ -248,7 +248,7 @@ const maintenanceView = `<!DOCTYPE html>
         <p>Le site sera de nouveau disponible très prochainement.</p>
         <div class="progress"><div class="progress-bar"></div></div>
         <div class="contact">
-            Questions ? <a href="mailto:contact@crystosjewel.com">contact@crystosjewel.com</a>
+            Questions ? <a href="mailto:@crytosjewel@gmail.com">crystosjewel@gmail.com</a>
         </div>
     </div>
     <a href="/admin" class="admin">Admin</a>

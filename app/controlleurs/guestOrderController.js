@@ -41,8 +41,8 @@ export const guestOrderController = {
       }
 
       // Frais de livraison
-      const shippingThreshold = 50;
-      const baseDeliveryFee = 5.90;
+      const shippingThreshold = res.locals.freeShippingThreshold || 100;
+const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
       const deliveryFee = discountedSubtotal >= shippingThreshold ? 0 : baseDeliveryFee;
       const finalTotal = discountedSubtotal + deliveryFee;
 
@@ -281,46 +281,69 @@ async validateOrder(req, res) {
         // 🆔 GESTION DU CLIENT (INVITÉ OU CONNECTÉ)
         // ========================================
         let customerId = userId;
-        
-        if (isGuest) {
-            // Créer ou récupérer le client invité
-            let existingCustomer = await Customer.findOne({
-                where: { email: finalCustomerInfo.email },
-                transaction
-            });
 
-            if (existingCustomer) {
-                // Mettre à jour les informations si nécessaire
-                await existingCustomer.update({
-                    first_name: finalCustomerInfo.firstName,
-                    last_name: finalCustomerInfo.lastName,
-                    phone: finalCustomerInfo.phone,
-                    address: finalCustomerInfo.address,
-                    city: finalCustomerInfo.city,
-                    postal_code: finalCustomerInfo.postalCode
-                }, { transaction });
-                
-                customerId = existingCustomer.id;
-                console.log('👤 Client existant mis à jour:', customerId);
-            } else {
-                // Créer un nouveau client
-                const newCustomer = await Customer.create({
-                    first_name: finalCustomerInfo.firstName,
-                    last_name: finalCustomerInfo.lastName,
-                    email: finalCustomerInfo.email,
-                    phone: finalCustomerInfo.phone,
-                    address: finalCustomerInfo.address,
-                    city: finalCustomerInfo.city,
-                    postal_code: finalCustomerInfo.postalCode,
-                    password: null, // Compte invité sans mot de passe
-                    is_guest: true,
-                    is_email_verified: false
-                }, { transaction });
-                
-                customerId = newCustomer.id;
-                console.log('👥 Nouveau client invité créé:', customerId);
-            }
+if (isGuest) {
+    // Créer ou récupérer le client invité
+    let existingCustomer = await Customer.findOne({
+        where: { email: finalCustomerInfo.email },
+        transaction
+    });
+
+    if (existingCustomer) {
+        // ✅ MISE À JOUR CLIENT EXISTANT
+        const updateData = {
+            first_name: finalCustomerInfo.firstName,
+            last_name: finalCustomerInfo.lastName,
+            phone: finalCustomerInfo.phone,
+            address: finalCustomerInfo.address,
+            city: finalCustomerInfo.city || '',
+            postal_code: finalCustomerInfo.postalCode || '',
+            updated_at: new Date()
+        };
+
+        // ✅ Si le client existant n'est pas un invité et n'a pas de mot de passe, le marquer comme invité
+        if (!existingCustomer.password && !existingCustomer.is_guest) {
+            updateData.is_guest = true;
         }
+
+        await existingCustomer.update(updateData, { transaction });
+        
+        customerId = existingCustomer.id;
+        console.log('👤 Client existant mis à jour:', customerId);
+        
+    } else {
+        // ✅ CRÉER UN NOUVEAU CLIENT INVITÉ AVEC LES BONS CHAMPS
+        const newCustomer = await Customer.create({
+            first_name: finalCustomerInfo.firstName,
+            last_name: finalCustomerInfo.lastName,
+            email: finalCustomerInfo.email,
+            phone: finalCustomerInfo.phone || '',
+            address: finalCustomerInfo.address,
+            city: finalCustomerInfo.city || '',
+            postal_code: finalCustomerInfo.postalCode || '',
+            
+            // ✅ CHAMPS INVITÉ CRITIQUES
+            password: null, // Explicitement null
+            is_guest: true, // Marquer comme invité
+            is_email_verified: false,
+            email_verified: false, // Support ancien champ
+            role_id: 1, // Rôle client par défaut
+            
+            // ✅ CHAMPS OPTIONNELS
+            marketing_opt_in: false,
+            email_notifications: true,
+            preferred_delivery_mode: finalCustomerInfo.deliveryMode || 'standard',
+            
+            // ✅ TIMESTAMPS
+            created_at: new Date(),
+            updated_at: new Date()
+            
+        }, { transaction });
+        
+        customerId = newCustomer.id;
+        console.log('👥 Nouveau client invité créé:', customerId);
+    }
+}
 
         // ========================================
         // 📋 CRÉATION DE LA COMMANDE AVEC VRAIES DONNÉES

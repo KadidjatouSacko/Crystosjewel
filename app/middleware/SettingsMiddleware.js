@@ -149,8 +149,8 @@ export const injectSiteSettings = async (req, res, next) => {
         // Valeurs par défaut en cas d'erreur
         res.locals.siteSettings = {};
         res.locals.siteName = 'CrystosJewel';
-        res.locals.companyEmail = 'contact@crystosjewel.com';
-        res.locals.companyPhone = '+33 1 23 45 67 89';
+        res.locals.companyEmail = '<%= companyEmail || crystosjewel@gmail.com %>';
+        res.locals.companyPhone = '<%= companyPhone || +33 1 23 45 67 89 %>';
         res.locals.maintenanceActive = false;
         
         next();

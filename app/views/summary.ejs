@@ -1306,8 +1306,8 @@
                             <% } else { %>
                                 <div class="status-indicator warning" style="width: 100%; justify-content: center;">
                                     <i class="fas fa-info-circle"></i>
-                                    Plus que <%= (50 - subtotal).toFixed(2) %> € pour la livraison gratuite
-                                </div>
+                                    Plus que <%= (siteSettings.shipping?.free_shipping_threshold || 100 - subtotal).toFixed(2) %> € pour la livraison gratuite
+                                    </div>
                             <% } %>
 
                             <div class="button-group">
@@ -1384,8 +1384,8 @@
                                 <div class="form-group">
                                     <label class="form-label" for="deliveryMode">Mode de livraison</label>
                                     <select class="form-select" name="deliveryMode" id="deliveryMode">
-                                        <option value="standard">Livraison standard (5-7 jours) - Gratuite dès 50€</option>
-                                        <option value="express">Livraison express (2-3 jours) - +5€</option>
+                                        <option value="standard">Livraison standard (5-7 jours) - Gratuite dès <%= siteSettings.shipping?.free_shipping_threshold || 100 %>€</option>
+<option value="express">Livraison express (2-3 jours) - +<%= siteSettings.shipping?.express_shipping_cost || 15 %>€</option>
                                         <option value="pickup">Retrait en magasin - Gratuit</option>
                                     </select>
                                 </div>

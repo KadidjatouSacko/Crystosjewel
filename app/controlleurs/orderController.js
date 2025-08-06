@@ -97,8 +97,11 @@ function calculateTotalsWithPromo(subtotal, appliedPromo) {
         discountedSubtotal = Math.max(0, subtotal - discount);
     }
     
-    const shipping = discountedSubtotal >= 50 ? 0 : 5.99;
-    const total = discountedSubtotal + shipping;
+   const freeShippingThreshold = res.locals.freeShippingThreshold || 100;
+const standardShippingCost = res.locals.standardShippingCost || 7.50;
+const shipping = discountedSubtotal >= freeShippingThreshold ? 0 : standardShippingCost;
+const deliveryFee = subtotal >= freeShippingThreshold ? 0 : standardShippingCost;
+    // const total = discountedSubtotal + shipping;
     
     return {
         subtotal: parseFloat(subtotal.toFixed(2)),
