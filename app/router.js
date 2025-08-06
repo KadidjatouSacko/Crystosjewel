@@ -2582,45 +2582,304 @@ router.get('/admin/commandes/:id', isAdmin, async (req, res) => {
 // Diagnostic du module bijoux
 router.get('/api/bijoux/diagnostic', isAdmin, async (req, res) => {
     try {
-        const diagnostics = await jewelryController.getDiagnostics();
+        console.log('🔍 Diagnostic système...');
+        
+        // Utiliser directement des vérifications sans fonction getDiagnostics
+        const diagnostics = {
+            timestamp: new Date().toISOString(),
+            database: 'unknown',
+            bijoux: {
+                total: 0,
+                actifs: 0,
+                stock_faible: 0
+            },
+            tables: {},
+            status: 'unknown',
+            errors: []
+        };
+        
+        // Test connexion DB
+        try {
+            await sequelize.authenticate();
+            diagnostics.database = 'OK';
+        } catch (error) {
+            diagnostics.database = 'ERREUR';
+            diagnostics.errors.push(`DB: ${error.message}`);
+        }
+        
+        // Test table jewel
+        try {
+            const stats = await sequelize.query(`
+                SELECT 
+                    COUNT(*) as total,
+                    COUNT(CASE WHEN is_active = true THEN 1 END) as actifs,
+                    COUNT(CASE WHEN stock < 5 THEN 1 END) as stock_faible
+                FROM jewel
+            `, { type: QueryTypes.SELECT });
+            
+            diagnostics.bijoux = {
+                total: parseInt(stats[0].total) || 0,
+                actifs: parseInt(stats[0].actifs) || 0,
+                stock_faible: parseInt(stats[0].stock_faible) || 0
+            };
+            diagnostics.tables.jewel = 'OK';
+        } catch (error) {
+            diagnostics.tables.jewel = 'ERREUR';
+            diagnostics.errors.push(`Table jewel: ${error.message}`);
+        }
+        
+        // Test table category
+        try {
+            await sequelize.query('SELECT 1 FROM category LIMIT 1');
+            diagnostics.tables.category = 'OK';
+        } catch (error) {
+            diagnostics.tables.category = 'ERREUR';
+            diagnostics.errors.push(`Table category: ${error.message}`);
+        }
+        
+        // Déterminer le statut global
+        if (diagnostics.errors.length === 0) {
+            diagnostics.status = 'GOOD';
+        } else if (diagnostics.errors.length <= 2) {
+            diagnostics.status = 'WARNING';
+        } else {
+            diagnostics.status = 'CRITICAL';
+        }
+        
+        console.log(`✅ Diagnostic terminé - Statut: ${diagnostics.status}`);
+        
         res.json({
             success: true,
             diagnostics
         });
+        
     } catch (error) {
-        console.error('Erreur diagnostics:', error);
+        console.error('❌ Erreur diagnostics:', error);
         res.status(500).json({
             success: false,
-            message: 'Erreur lors du diagnostic'
+            message: 'Erreur lors du diagnostic',
+            error: error.message
         });
     }
 });
 
 // Maintenance manuelle
 router.post('/api/bijoux/maintenance', isAdmin, async (req, res) => {
+    console.log('🔧 === MAINTENANCE MANUELLE DÉMARRÉE ===');
+    const startTime = Date.now();
+    
     try {
-        const success = await jewelryController.performMaintenance();
+        let success = true;
+        const results = {
+            completed: [],
+            errors: [],
+            startTime: new Date(),
+            endTime: null
+        };
+        
+        // 1. Test de connexion DB
+        try {
+            await sequelize.authenticate();
+            results.completed.push('Connexion DB vérifiée');
+            console.log('✅ Connexion DB OK');
+        } catch (error) {
+            results.errors.push(`Connexion DB: ${error.message}`);
+            success = false;
+        }
+        
+        // 2. Mise à jour des compteurs de ventes
+        try {
+            console.log('📈 Mise à jour des compteurs...');
+            
+            // Vérifier si les tables existent
+            const tablesCheck = await sequelize.query(`
+                SELECT 
+                    (SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'order')) as order_exists,
+                    (SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'order_item')) as order_item_exists
+            `, { type: QueryTypes.SELECT });
+            
+            if (tablesCheck[0].order_exists && tablesCheck[0].order_item_exists) {
+                await sequelize.query(`
+                    UPDATE jewel 
+                    SET sales_count = COALESCE(sales_data.total_sold, 0)
+                    FROM (
+                        SELECT 
+                            oi.jewel_id,
+                            SUM(oi.quantity) as total_sold
+                        FROM order_item oi
+                        JOIN "order" o ON oi.order_id = o.id
+                        WHERE o.status IN ('completed', 'delivered', 'paid', 'livree', 'expediee')
+                        GROUP BY oi.jewel_id
+                    ) sales_data
+                    WHERE jewel.id = sales_data.jewel_id
+                `);
+                results.completed.push('Compteurs de ventes mis à jour');
+            } else {
+                results.completed.push('Tables de commandes non trouvées (normal si pas encore de commandes)');
+            }
+        } catch (error) {
+            results.errors.push(`Compteurs: ${error.message}`);
+        }
+        
+        // 3. Ajout des colonnes de suivi si manquantes
+        try {
+            console.log('🔧 Vérification des colonnes...');
+            
+            const columns = [
+                { name: 'views_count', type: 'INTEGER', default: '0' },
+                { name: 'sales_count', type: 'INTEGER', default: '0' },
+                { name: 'discount_percentage', type: 'DECIMAL(5,2)', default: '0' }
+            ];
+            
+            for (const column of columns) {
+                try {
+                    const columnExists = await sequelize.query(`
+                        SELECT column_name 
+                        FROM information_schema.columns 
+                        WHERE table_name = 'jewel' AND column_name = '${column.name}'
+                    `, { type: QueryTypes.SELECT });
+                    
+                    if (columnExists.length === 0) {
+                        await sequelize.query(`
+                            ALTER TABLE jewel ADD COLUMN ${column.name} ${column.type} DEFAULT ${column.default}
+                        `);
+                        console.log(`✅ Colonne ${column.name} ajoutée`);
+                    }
+                } catch (colError) {
+                    console.log(`⚠️ Colonne ${column.name}: ${colError.message}`);
+                }
+            }
+            
+            results.completed.push('Colonnes de suivi vérifiées');
+        } catch (error) {
+            results.errors.push(`Colonnes: ${error.message}`);
+        }
+        
+        // 4. Nettoyage des anciennes données
+        try {
+            console.log('🧹 Nettoyage...');
+            
+            const tableExists = await sequelize.query(`
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_name = 'jewel_view'
+                )
+            `, { type: QueryTypes.SELECT });
+            
+            if (tableExists[0].exists) {
+                const sixMonthsAgo = new Date();
+                sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+                
+                const deleted = await sequelize.query(`
+                    DELETE FROM jewel_view WHERE viewed_at < :cutoffDate
+                `, {
+                    type: QueryTypes.DELETE,
+                    replacements: { cutoffDate: sixMonthsAgo }
+                });
+                
+                results.completed.push(`${deleted[1] || 0} anciennes vues supprimées`);
+            } else {
+                results.completed.push('Table jewel_view non trouvée (normal)');
+            }
+        } catch (error) {
+            results.errors.push(`Nettoyage: ${error.message}`);
+        }
+        
+        // 5. Optimisation des statistiques
+        try {
+            console.log('📊 Optimisation...');
+            await sequelize.query('ANALYZE jewel');
+            results.completed.push('Statistiques optimisées');
+        } catch (error) {
+            results.errors.push(`Optimisation: ${error.message}`);
+        }
+        
+        const duration = Date.now() - startTime;
+        results.endTime = new Date();
+        
+        // Déterminer le succès global
+        success = results.errors.length < results.completed.length;
+        
+        console.log(`📊 Maintenance terminée en ${duration}ms`);
+        console.log(`✅ Tâches réussies: ${results.completed.length}`);
+        console.log(`❌ Erreurs: ${results.errors.length}`);
+        
         res.json({
             success,
-            message: success ? 'Maintenance effectuée avec succès' : 'Erreur lors de la maintenance'
+            message: success ? 
+                `Maintenance terminée avec succès (${results.completed.length} tâches)` : 
+                `Maintenance terminée avec ${results.errors.length} erreurs`,
+            results: {
+                completed: results.completed,
+                errors: results.errors,
+                duration: `${duration}ms`
+            },
+            timestamp: results.endTime
         });
+        
     } catch (error) {
-        console.error('Erreur maintenance:', error);
+        const duration = Date.now() - startTime;
+        console.error('❌ Erreur maintenance critique:', error);
+        
         res.status(500).json({
             success: false,
-            message: 'Erreur lors de la maintenance'
+            message: 'Erreur critique lors de la maintenance',
+            error: error.message,
+            duration: `${duration}ms`,
+            timestamp: new Date().toISOString()
         });
     }
 });
 
-// Santé du service
-router.get('/api/bijoux/sante', (req, res) => {
-    res.json({
-        success: true,
-        message: 'Service bijoux opérationnel',
-        timestamp: new Date().toISOString(),
-        version: '1.0.0'
-    });
+// Santé du service - AMÉLIORÉE
+router.get('/api/bijoux/sante', async (req, res) => {
+    try {
+        const health = {
+            service: 'bijoux',
+            status: 'operational',
+            timestamp: new Date().toISOString(),
+            version: '1.0.0',
+            uptime: Math.floor(process.uptime()),
+            memory: {
+                used: Math.round(process.memoryUsage().heapUsed / 1024 / 1024),
+                total: Math.round(process.memoryUsage().heapTotal / 1024 / 1024)
+            },
+            database: 'unknown',
+            queries: 'unknown'
+        };
+
+        // Test rapide de la base
+        try {
+            await sequelize.authenticate();
+            health.database = 'connected';
+        } catch (error) {
+            health.database = 'disconnected';
+            health.status = 'degraded';
+        }
+
+        // Test d'une requête simple
+        try {
+            await sequelize.query('SELECT COUNT(*) FROM jewel LIMIT 1');
+            health.queries = 'working';
+        } catch (error) {
+            health.queries = 'failing';
+            health.status = 'critical';
+        }
+
+        const statusCode = health.status === 'operational' ? 200 : 
+                          health.status === 'degraded' ? 207 : 503;
+
+        res.status(statusCode).json(health);
+
+    } catch (error) {
+        console.error('❌ Erreur santé service:', error);
+        res.status(503).json({
+            service: 'bijoux',
+            status: 'critical',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
 });
 
 // ==========================================
@@ -4767,6 +5026,7 @@ router.get('/api/ping', (req, res) => {
         timestamp: new Date().toISOString()
     });
 });
+
 
 
 

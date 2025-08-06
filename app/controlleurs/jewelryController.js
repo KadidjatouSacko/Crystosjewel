@@ -1230,89 +1230,237 @@ async getJewelryStats(req, res) {
      // ==========================================
     // INITIALISATION DES COLONNES NÉCESSAIRES
     // ==========================================
-    async initializeTrackingColumns() {
-        try {
-            console.log('🔧 Vérification des colonnes de suivi...');
-            
-            // Vérifier et ajouter les colonnes manquantes
-            await sequelize.query(`
-                ALTER TABLE jewel 
-                ADD COLUMN IF NOT EXISTS views_count INTEGER DEFAULT 0,
-                ADD COLUMN IF NOT EXISTS favorites_count INTEGER DEFAULT 0,
-                ADD COLUMN IF NOT EXISTS cart_additions INTEGER DEFAULT 0,
-                ADD COLUMN IF NOT EXISTS sales_count INTEGER DEFAULT 0,
-                ADD COLUMN IF NOT EXISTS discount_percentage DECIMAL(5,2) DEFAULT 0,
-                ADD COLUMN IF NOT EXISTS discount_start_date TIMESTAMP,
-                ADD COLUMN IF NOT EXISTS discount_end_date TIMESTAMP;
-            `);
-            
-            // Créer les index pour les performances
-            await sequelize.query(`
-                CREATE INDEX IF NOT EXISTS idx_jewel_views_count ON jewel(views_count);
-                CREATE INDEX IF NOT EXISTS idx_jewel_stock ON jewel(stock);
-                CREATE INDEX IF NOT EXISTS idx_jewel_discount ON jewel(discount_percentage);
-            `);
-            
-            console.log('✅ Colonnes de suivi initialisées');
-            return true;
-        } catch (error) {
-            console.error('❌ Erreur lors de l\'initialisation des colonnes:', error);
-            return false;
+  async initializeTrackingColumns() {
+    try {
+        console.log('🔧 Vérification des colonnes de suivi...');
+        
+        // Vérifier et ajouter les colonnes manquantes une par une
+        const columns = [
+            { name: 'views_count', type: 'INTEGER', default: '0' },
+            { name: 'favorites_count', type: 'INTEGER', default: '0' },
+            { name: 'cart_additions', type: 'INTEGER', default: '0' },
+            { name: 'sales_count', type: 'INTEGER', default: '0' },
+            { name: 'discount_percentage', type: 'DECIMAL(5,2)', default: '0' },
+            { name: 'discount_start_date', type: 'TIMESTAMP', default: null },
+            { name: 'discount_end_date', type: 'TIMESTAMP', default: null }
+        ];
+        
+        for (const column of columns) {
+            try {
+                // Vérifier si la colonne existe
+                const columnExists = await sequelize.query(`
+                    SELECT column_name 
+                    FROM information_schema.columns 
+                    WHERE table_name = 'jewel' AND column_name = '${column.name}'
+                `, { type: QueryTypes.SELECT });
+                
+                if (columnExists.length === 0) {
+                    // La colonne n'existe pas, l'ajouter
+                    const defaultValue = column.default !== null ? `DEFAULT ${column.default}` : '';
+                    await sequelize.query(`
+                        ALTER TABLE jewel ADD COLUMN ${column.name} ${column.type} ${defaultValue}
+                    `);
+                    console.log(`✅ Colonne ${column.name} ajoutée`);
+                } else {
+                    console.log(`ℹ️ Colonne ${column.name} existe déjà`);
+                }
+            } catch (error) {
+                console.error(`⚠️ Erreur colonne ${column.name}:`, error.message);
+            }
         }
-    },
+        
+        // Créer les index pour les performances (si ils n'existent pas)
+        try {
+            const indexes = [
+                'CREATE INDEX IF NOT EXISTS idx_jewel_views_count ON jewel(views_count)',
+                'CREATE INDEX IF NOT EXISTS idx_jewel_stock ON jewel(stock)',
+                'CREATE INDEX IF NOT EXISTS idx_jewel_discount ON jewel(discount_percentage)',
+                'CREATE INDEX IF NOT EXISTS idx_jewel_active ON jewel(is_active)',
+                'CREATE INDEX IF NOT EXISTS idx_jewel_category ON jewel(category_id)'
+            ];
+            
+            for (const indexQuery of indexes) {
+                await sequelize.query(indexQuery);
+            }
+            console.log('✅ Index créés/vérifiés');
+        } catch (error) {
+            console.error('⚠️ Erreur création index:', error.message);
+        }
+        
+        console.log('✅ Colonnes de suivi initialisées');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erreur lors de l\'initialisation des colonnes:', error);
+        return false;
+    }
+},
 
 
     // ==========================================
     // MISE À JOUR DES COMPTEURS DE VENTES
     // ==========================================
     async updateSalesCounters() {
-        try {
-            console.log('📈 Mise à jour des compteurs de ventes...');
-            
-            // Mettre à jour les compteurs basés sur les commandes
-            await sequelize.query(`
-                UPDATE jewel 
-                SET sales_count = COALESCE(sales_data.total_sold, 0)
-                FROM (
-                    SELECT 
-                        oi.jewel_id,
-                        SUM(oi.quantity) as total_sold
-                    FROM order_item oi
-                    JOIN "order" o ON oi.order_id = o.id
-                    WHERE o.status IN ('completed', 'delivered', 'paid')
-                    GROUP BY oi.jewel_id
-                ) sales_data
-                WHERE jewel.id = sales_data.jewel_id
-            `);
-            
-            console.log('✅ Compteurs de ventes mis à jour');
+    try {
+        console.log('📈 Mise à jour des compteurs de ventes...');
+        
+        // Vérifier si les tables existent
+        const tablesExist = await sequelize.query(`
+            SELECT 
+                (SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'order')) as order_exists,
+                (SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'order_item')) as order_item_exists
+        `, { type: QueryTypes.SELECT });
+        
+        if (!tablesExist[0].order_exists || !tablesExist[0].order_item_exists) {
+            console.log('ℹ️ Tables de commandes non trouvées, passage...');
             return true;
-        } catch (error) {
-            console.error('❌ Erreur mise à jour compteurs ventes:', error);
-            return false;
         }
-    },
+        
+        // Mettre à jour les compteurs basés sur les commandes
+        const updateResult = await sequelize.query(`
+            UPDATE jewel 
+            SET sales_count = COALESCE(sales_data.total_sold, 0)
+            FROM (
+                SELECT 
+                    oi.jewel_id,
+                    SUM(oi.quantity) as total_sold
+                FROM order_item oi
+                JOIN "order" o ON oi.order_id = o.id
+                WHERE o.status IN ('completed', 'delivered', 'paid', 'livree', 'expediee')
+                GROUP BY oi.jewel_id
+            ) sales_data
+            WHERE jewel.id = sales_data.jewel_id
+        `);
+        
+        console.log(`✅ Compteurs de ventes mis à jour (${updateResult[1]} bijoux affectés)`);
+        return true;
+        
+    } catch (error) {
+        console.error('❌ Erreur mise à jour compteurs ventes:', error);
+        return false;
+    }
+},
 
    // ==========================================
     // FONCTION DE MAINTENANCE
     // ==========================================
-    async performMaintenance() {
+   async performMaintenance() {
+    try {
+        console.log('🧹 === DÉBUT MAINTENANCE SYSTÈME ===');
+        
+        // 1. Vérifier la connexion à la base de données
+        console.log('🔍 Vérification connexion DB...');
+        await sequelize.authenticate();
+        console.log('✅ Connexion DB OK');
+        
+        // 2. Initialiser les colonnes de suivi si nécessaire
+        console.log('🔧 Initialisation colonnes...');
         try {
-            console.log('🧹 Maintenance du module bijoux...');
-            
-            // Nettoyer les anciennes données de suivi si nécessaire
-            // Recalculer les statistiques
-            // Optimiser les index
-            
-            await this.updateSalesCounters();
-            
-            console.log('✅ Maintenance terminée');
-            return true;
+            await this.initializeTrackingColumns();
+            console.log('✅ Colonnes initialisées');
         } catch (error) {
-            console.error('❌ Erreur lors de la maintenance:', error);
-            return false;
+            console.error('⚠️ Erreur colonnes (non critique):', error.message);
         }
-    },
+        
+        // 3. Mise à jour des compteurs de ventes
+        console.log('📈 Mise à jour compteurs...');
+        const salesSuccess = await this.updateSalesCounters();
+        if (salesSuccess) {
+            console.log('✅ Compteurs mis à jour');
+        } else {
+            console.log('⚠️ Erreur compteurs (continuons...)');
+        }
+        
+        // 4. Nettoyer les anciennes données de vues (plus de 6 mois)
+        console.log('🧹 Nettoyage anciennes données...');
+        try {
+            const sixMonthsAgo = new Date();
+            sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+            
+            // Vérifier si la table existe avant de nettoyer
+            const tableExists = await sequelize.query(`
+                SELECT EXISTS (
+                    SELECT FROM information_schema.tables 
+                    WHERE table_schema = 'public' 
+                    AND table_name = 'jewel_view'
+                )
+            `, { type: QueryTypes.SELECT });
+            
+            if (tableExists[0].exists) {
+                const deleted = await sequelize.query(`
+                    DELETE FROM jewel_view WHERE viewed_at < :cutoffDate
+                `, {
+                    type: QueryTypes.DELETE,
+                    replacements: { cutoffDate: sixMonthsAgo }
+                });
+                console.log(`✅ Supprimé ${deleted[1] || 0} anciennes vues`);
+            } else {
+                console.log('ℹ️ Table jewel_view n\'existe pas encore');
+            }
+        } catch (error) {
+            console.error('⚠️ Erreur nettoyage (non critique):', error.message);
+        }
+        
+        // 5. Vérifier l'intégrité des données de bijoux
+        console.log('🔍 Vérification intégrité...');
+        try {
+            const orphanJewels = await sequelize.query(`
+                SELECT COUNT(*) as count 
+                FROM jewel j 
+                LEFT JOIN category c ON j.category_id = c.id 
+                WHERE c.id IS NULL AND j.category_id IS NOT NULL
+            `, { type: QueryTypes.SELECT });
+            
+            if (orphanJewels[0].count > 0) {
+                console.log(`⚠️ ${orphanJewels[0].count} bijoux avec catégories invalides`);
+            } else {
+                console.log('✅ Intégrité des données OK');
+            }
+        } catch (error) {
+            console.error('⚠️ Erreur vérification intégrité:', error.message);
+        }
+        
+        // 6. Optimiser les statistiques PostgreSQL
+        console.log('📊 Optimisation statistiques...');
+        try {
+            await sequelize.query('ANALYZE jewel');
+            console.log('✅ Statistiques optimisées');
+        } catch (error) {
+            console.error('⚠️ Erreur optimisation:', error.message);
+        }
+        
+        // 7. Calculer quelques métriques de base
+        console.log('📈 Calcul métriques...');
+        try {
+            const metrics = await sequelize.query(`
+                SELECT 
+                    COUNT(*) as total_jewels,
+                    COUNT(CASE WHEN is_active = true THEN 1 END) as active_jewels,
+                    COUNT(CASE WHEN stock < 5 THEN 1 END) as low_stock_jewels,
+                    AVG(stock) as avg_stock
+                FROM jewel
+            `, { type: QueryTypes.SELECT });
+            
+            console.log('📊 Métriques:', {
+                total: metrics[0].total_jewels,
+                actifs: metrics[0].active_jewels,
+                stock_faible: metrics[0].low_stock_jewels,
+                stock_moyen: Math.round(metrics[0].avg_stock)
+            });
+        } catch (error) {
+            console.error('⚠️ Erreur métriques:', error.message);
+        }
+        
+        console.log('✅ === MAINTENANCE TERMINÉE AVEC SUCCÈS ===');
+        return true;
+        
+    } catch (error) {
+        console.error('❌ ERREUR CRITIQUE MAINTENANCE:', error);
+        console.error('Stack:', error.stack);
+        return false;
+    }
+},
+
 
 
 
