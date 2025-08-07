@@ -32,107 +32,31 @@ export async function sendTestMail(to, subject, text) {
   }
 }
 
-export const sendTestEmail = async (email, campaignData) => {
+export const sendTestEmail = async (toEmail = process.env.ADMIN_EMAIL) => {
     try {
-        const transporter = await createTransporter();
+        console.log('🧪 Test envoi email...');
         
-        const { subject, content, template, senderName } = campaignData;
+        const config = checkSMTPConfiguration();
+        if (!config.isConfigured) {
+            throw new Error(`Configuration SMTP incomplète: ${config.message}`);
+        }
         
-        // Remplacer les variables de test
-        const processedContent = content
-            .replace(/\{\{first_name\}\}/g, 'Test')
-            .replace(/\{\{last_name\}\}/g, 'User')
-            .replace(/\{\{email\}\}/g, email)
-            .replace(/\{\{company_name\}\}/g, 'Test Company')
-            .replace(/\{\{current_date\}\}/g, new Date().toLocaleDateString('fr-FR'))
-            .replace(/\{\{unsubscribe_url\}\}/g, '#');
-
-        const htmlContent = `
-        <!DOCTYPE html>
-        <html lang="fr">
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>${subject}</title>
-            <style>
-                body { 
-                    margin: 0; 
-                    padding: 20px; 
-                    font-family: 'Inter', Arial, sans-serif; 
-                    background: #f8fafc; 
-                    color: #1e293b;
-                }
-                .email-container {
-                    max-width: 600px;
-                    margin: 0 auto;
-                    background: white;
-                    border-radius: 12px;
-                    overflow: hidden;
-                    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
-                }
-                .test-banner {
-                    background: linear-gradient(135deg, #f59e0b, #d97706);
-                    color: white;
-                    padding: 10px 20px;
-                    text-align: center;
-                    font-weight: 600;
-                    font-size: 14px;
-                }
-                .email-header {
-                    background: linear-gradient(135deg, #d89ab3, #b794a8);
-                    color: white;
-                    padding: 30px 20px;
-                    text-align: center;
-                }
-                .email-content {
-                    padding: 30px 20px;
-                    line-height: 1.6;
-                }
-                .email-footer {
-                    background: #f1f5f9;
-                    padding: 20px;
-                    text-align: center;
-                    font-size: 12px;
-                    color: #64748b;
-                    border-top: 1px solid #e2e8f0;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="email-container">
-                <div class="test-banner">
-                    🧪 EMAIL DE TEST - Ne pas transférer
-                </div>
-                
-                <div class="email-header">
-                    <h1 style="margin: 0; font-size: 24px;">${senderName || 'CrystosJewel'}</h1>
-                </div>
-                
-                <div class="email-content">
-                    ${processedContent}
-                </div>
-                
-                <div class="email-footer">
-                    <p><strong>Email de test envoyé depuis l'éditeur CrystosJewel</strong></p>
-                    <p>Cet email a été envoyé à ${email} à des fins de test uniquement.</p>
-                </div>
-            </div>
-        </body>
-        </html>
-        `;
-
-        const info = await transporter.sendMail({
-            from: `"${senderName || 'CrystosJewel'} 🧪" <${process.env.MAIL_USER}>`,
-            to: email,
-            subject: `[TEST] ${subject}`,
-            html: htmlContent
-        });
-
-        console.log('🧪 Email de test envoyé:', info.messageId);
-        return { success: true, messageId: info.messageId };
-
+        const testResult = await sendOrderStatusUpdateEmail(
+            toEmail,
+            'Admin',
+            {
+                orderNumber: 'TEST-001',
+                oldStatus: 'Test Ancien',
+                newStatus: 'Test Nouveau', 
+                trackingNumber: 'TEST123456',
+                updatedBy: 'Test Automatique'
+            }
+        );
+        
+        return testResult;
+        
     } catch (error) {
-        console.error('❌ Erreur envoi email test:', error);
+        console.error('❌ Erreur test email:', error);
         return { success: false, error: error.message };
     }
 };
@@ -2513,293 +2437,240 @@ export const formatOrderDataForEmail = (orderData) => {
 // };
 
 export const sendOrderStatusUpdateEmail = async (userEmail, firstName, statusData) => {
-  try {
-    const { orderNumber, oldStatus, newStatus, trackingNumber, updatedBy } = statusData;
-    
-    // Messages personnalisés selon le statut
-    const statusMessages = {
-      'preparing': {
-        icon: '🔧',
-        title: 'Votre commande est en préparation',
-        message: 'Nos artisans préparent soigneusement vos bijoux dans nos ateliers.',
-        color: '#3b82f6'
-      },
-      'shipped': {
-        icon: '📦',
-        title: 'Votre commande a été expédiée',
-        message: 'Vos bijoux sont en route ! Vous recevrez bientôt votre colis.',
-        color: '#10b981'
-      },
-      'delivered': {
-        icon: '✅',
-        title: 'Votre commande a été livrée',
-        message: 'Félicitations ! Vos bijoux sont arrivés à destination.',
-        color: '#059669'
-      },
-      'cancelled': {
-        icon: '❌',
-        title: 'Votre commande a été annulée',
-        message: 'Votre commande a été annulée. Si vous avez des questions, contactez-nous.',
-        color: '#ef4444'
-      }
-    };
-
-    const statusInfo = statusMessages[newStatus] || {
-      icon: '📋',
-      title: 'Mise à jour de votre commande',
-      message: 'Le statut de votre commande a été mis à jour.',
-      color: '#6b7280'
-    };
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Mise à jour commande - CrystosJewel</title>
-        <style>
-          body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-          table { border-collapse: collapse; }
-          .container { max-width: 600px; margin: 0 auto; }
-        </style>
-      </head>
-      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f8fafc;">
+    try {
+        const { orderNumber, oldStatus, newStatus, trackingNumber, updatedBy } = statusData;
         
-        <div style="padding: 20px;">
-          <table cellpadding="0" cellspacing="0" border="0" class="container" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
-            
-            <!-- Header -->
-            <tr>
-              <td style="background: linear-gradient(135deg, #d89ab3 0%, #c084a1 100%); padding: 30px 20px; text-align: center; border-radius: 16px 16px 0 0;">
-                <h1 style="margin: 0 0 8px 0; color: #ffffff; font-size: 28px; font-weight: bold; font-family: Arial, sans-serif;">✨ CrystosJewel ✨</h1>
-                <p style="margin: 0; color: rgba(255,255,255,0.95); font-size: 14px; font-family: Arial, sans-serif;">Mise à jour de votre commande</p>
-              </td>
-            </tr>
+        console.log('📧 Envoi email générique changement statut');
+        
+        // Import du transporteur
+        const nodemailer = await import('nodemailer');
+        
+        const transporter = nodemailer.default.createTransporter({
+            host: process.env.SMTP_HOST,
+            port: process.env.SMTP_PORT || 587,
+            secure: process.env.SMTP_PORT == 465,
+            auth: {
+                user: process.env.SMTP_USER,
+                pass: process.env.SMTP_PASS
+            },
+            tls: {
+                rejectUnauthorized: false
+            }
+        });
 
-            <!-- Status Badge -->
-            <tr>
-              <td style="background-color: ${statusInfo.color}; padding: 20px; text-align: center;">
-                <div style="font-size: 48px; margin-bottom: 12px;">${statusInfo.icon}</div>
-                <h2 style="margin: 0; color: #ffffff; font-size: 20px; font-weight: bold; font-family: Arial, sans-serif;">${statusInfo.title}</h2>
-              </td>
-            </tr>
+        // ✅ CONTENU EMAIL PERSONNALISÉ SELON LE STATUT
+        let statusIcon = '📦';
+        let statusColor = '#3b82f6';
+        let statusMessage = '';
+        
+        switch (newStatus.toLowerCase()) {
+            case 'en préparation':
+                statusIcon = '🔧';
+                statusColor = '#f59e0b';
+                statusMessage = 'Votre commande est actuellement en cours de préparation dans nos ateliers. Nos artisans mettent tout leur savoir-faire pour créer vos bijoux avec le plus grand soin.';
+                break;
+            case 'expédiée':
+                statusIcon = '🚚';
+                statusColor = '#10b981';
+                statusMessage = 'Excellente nouvelle ! Votre commande a été expédiée et est en route vers vous.';
+                break;
+            case 'livrée':
+                statusIcon = '✅';
+                statusColor = '#059669';
+                statusMessage = 'Félicitations ! Votre commande a été livrée avec succès. Nous espérons que vous êtes ravi(e) de vos nouveaux bijoux !';
+                break;
+            case 'annulée':
+                statusIcon = '❌';
+                statusColor = '#ef4444';
+                statusMessage = 'Votre commande a été annulée. Si vous avez des questions, n\'hésitez pas à nous contacter.';
+                break;
+            default:
+                statusMessage = `Le statut de votre commande a été mis à jour de "${oldStatus}" vers "${newStatus}".`;
+        }
 
-            <!-- Content -->
-            <tr>
-              <td style="padding: 30px 25px;">
-                
-                <div style="text-align: center; margin-bottom: 25px;">
-                  <h3 style="margin: 0 0 12px 0; color: #374151; font-size: 18px; font-family: Arial, sans-serif;">Bonjour ${firstName} !</h3>
-                  <p style="margin: 0; color: #6b7280; font-size: 16px; line-height: 1.6; font-family: Arial, sans-serif;">${statusInfo.message}</p>
-                </div>
-
-                <!-- Order Info -->
-                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #f8fafc; border-radius: 12px; margin-bottom: 25px;">
-                  <tr>
-                    <td style="padding: 20px;">
-                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                        <tr>
-                          <td style="color: #6b7280; font-size: 14px; padding-bottom: 8px; font-family: Arial, sans-serif;">Numéro de commande</td>
-                          <td style="color: #374151; font-size: 14px; font-weight: 600; text-align: right; padding-bottom: 8px; font-family: Arial, sans-serif;">${orderNumber}</td>
-                        </tr>
-                        <tr>
-                          <td style="color: #6b7280; font-size: 14px; padding-bottom: 8px; font-family: Arial, sans-serif;">Ancien statut</td>
-                          <td style="color: #9ca3af; font-size: 14px; text-align: right; padding-bottom: 8px; font-family: Arial, sans-serif;">${oldStatus}</td>
-                        </tr>
-                        <tr>
-                          <td style="color: #6b7280; font-size: 14px; font-family: Arial, sans-serif;">Nouveau statut</td>
-                          <td style="color: ${statusInfo.color}; font-size: 14px; font-weight: 600; text-align: right; font-family: Arial, sans-serif;">${newStatus}</td>
-                        </tr>
-                        ${trackingNumber ? `
-                        <tr>
-                          <td colspan="2" style="padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                            <div style="background-color: #ffffff; padding: 12px; border-radius: 8px; text-align: center;">
-                              <div style="color: #6b7280; font-size: 12px; margin-bottom: 4px; font-family: Arial, sans-serif;">Numéro de suivi</div>
-                              <div style="color: #374151; font-size: 16px; font-weight: 600; font-family: monospace;">${trackingNumber}</div>
+        const htmlContent = `
+            <!DOCTYPE html>
+            <html lang="fr">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Mise à jour de votre commande</title>
+            </head>
+            <body style="margin: 0; padding: 0; font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #f8fafc;">
+                <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff;">
+                    
+                    <!-- Header -->
+                    <div style="background: linear-gradient(135deg, #E8B4B8 0%, #d89ab3 100%); color: white; padding: 30px 20px; text-align: center;">
+                        <div style="font-size: 2.5rem; margin-bottom: 10px;">${statusIcon}</div>
+                        <h1 style="margin: 0; font-size: 28px; font-weight: 600;">Mise à jour de commande</h1>
+                        <p style="margin: 8px 0 0 0; opacity: 0.9; font-size: 16px;">CrystosJewel</p>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div style="padding: 40px 30px;">
+                        <p style="font-size: 18px; color: #374151; margin: 0 0 25px 0;">
+                            Bonjour <strong>${firstName}</strong>,
+                        </p>
+                        
+                        <!-- Status Update Box -->
+                        <div style="background: ${statusColor}15; border-left: 4px solid ${statusColor}; padding: 25px; border-radius: 8px; margin: 30px 0;">
+                            <h2 style="margin: 0 0 15px 0; color: ${statusColor}; font-size: 20px; display: flex; align-items: center;">
+                                <span style="margin-right: 10px; font-size: 24px;">${statusIcon}</span>
+                                Statut : ${newStatus}
+                            </h2>
+                            <p style="margin: 0; color: #4b5563; font-size: 16px; line-height: 1.6;">
+                                ${statusMessage}
+                            </p>
+                        </div>
+                        
+                        <!-- Order Details -->
+                        <div style="background: #f9fafb; padding: 25px; border-radius: 12px; margin: 30px 0;">
+                            <h3 style="margin: 0 0 20px 0; color: #374151; font-size: 18px;">
+                                📋 Détails de votre commande
+                            </h3>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                <span style="color: #6b7280; font-weight: 500;">Numéro de commande :</span>
+                                <strong style="color: #1f2937; font-family: 'Courier New', monospace;">${orderNumber}</strong>
                             </div>
-                          </td>
-                        </tr>
-                        ` : ''}
-                      </table>
-                    </td>
-                  </tr>
-                </table>
-
-                <!-- Action Button -->
-                <div style="text-align: center; margin-bottom: 25px;">
-                  <a href="${process.env.BASE_URL}/mon-compte/commandes" style="display: inline-block; background-color: ${statusInfo.color}; color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; font-family: Arial, sans-serif;">
-                    📋 Suivre ma commande
-                  </a>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                <span style="color: #6b7280; font-weight: 500;">Ancien statut :</span>
+                                <span style="color: #6b7280;">${oldStatus}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                <span style="color: #6b7280; font-weight: 500;">Nouveau statut :</span>
+                                <strong style="color: ${statusColor};">${newStatus}</strong>
+                            </div>
+                            ${trackingNumber ? `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                <span style="color: #6b7280; font-weight: 500;">Numéro de suivi :</span>
+                                <strong style="color: #1f2937; font-family: 'Courier New', monospace;">${trackingNumber}</strong>
+                            </div>
+                            ` : ''}
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="color: #6b7280; font-weight: 500;">Mis à jour par :</span>
+                                <span style="color: #6b7280;">${updatedBy}</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Action Buttons -->
+                        <div style="text-align: center; margin: 35px 0;">
+                            <a href="${process.env.SITE_URL || 'https://crystosjewel.com'}/commande/suivi?order=${orderNumber}" 
+                               style="display: inline-block; background: linear-gradient(135deg, #E8B4B8 0%, #d89ab3 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: 600; font-size: 16px; margin: 8px; transition: transform 0.2s ease;">
+                                👁️ Suivre ma commande
+                            </a>
+                            
+                            ${newStatus.toLowerCase() === 'livrée' ? `
+                            <a href="${process.env.SITE_URL || 'https://crystosjewel.com'}/avis?order=${orderNumber}" 
+                               style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: 600; font-size: 16px; margin: 8px;">
+                                ⭐ Laisser un avis
+                            </a>
+                            ` : ''}
+                        </div>
+                        
+                        <!-- Contact Section -->
+                        <div style="background: #fffbeb; border: 1px solid #fbbf24; padding: 20px; border-radius: 12px; margin: 30px 0;">
+                            <h4 style="margin: 0 0 15px 0; color: #92400e; font-size: 16px;">
+                                💬 Une question ?
+                            </h4>
+                            <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.6;">
+                                Notre équipe est à votre disposition pour répondre à toutes vos questions concernant votre commande.
+                                <br><br>
+                                📞 <strong>Téléphone :</strong> ${process.env.CONTACT_PHONE || '01 23 45 67 89'}
+                                <br>
+                                📧 <strong>Email :</strong> <a href="mailto:${process.env.CONTACT_EMAIL || 'contact@crystosjewel.com'}" style="color: #92400e;">${process.env.CONTACT_EMAIL || 'contact@crystosjewel.com'}</a>
+                            </p>
+                        </div>
+                        
+                        <p style="font-size: 16px; color: #374151; margin: 30px 0 0 0;">
+                            Merci pour votre confiance ! 💎
+                            <br><br>
+                            <em>L'équipe CrystosJewel</em>
+                        </p>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div style="background: #f3f4f6; padding: 25px; text-align: center; border-top: 1px solid #e5e7eb;">
+                        <div style="margin-bottom: 15px;">
+                            <a href="${process.env.SITE_URL || 'https://crystosjewel.com'}" style="color: #6b7280; text-decoration: none; font-weight: 500;">
+                                🌐 crystosjewel.com
+                            </a>
+                        </div>
+                        <p style="margin: 0; font-size: 12px; color: #9ca3af; line-height: 1.5;">
+                            Ceci est un email automatique de notification de changement de statut.
+                            <br>
+                            Si vous ne souhaitez plus recevoir ces notifications, 
+                            <a href="#" style="color: #6b7280;">cliquez ici</a>.
+                        </p>
+                    </div>
                 </div>
+            </body>
+            </html>
+        `;
 
-                <!-- Help Info -->
-                <div style="background-color: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px; padding: 16px; text-align: center;">
-                  <p style="margin: 0; color: #92400e; font-size: 14px; font-family: Arial, sans-serif;">
-                    Une question ? Contactez-nous à 
-                    <a href="mailto:${process.env.MAIL_USER}" style="color: #92400e; text-decoration: none; font-weight: 600;">${process.env.MAIL_USER}</a>
-                  </p>
-                </div>
+        // ✅ ENVOI DE L'EMAIL
+        const mailOptions = {
+            from: `"CrystosJewel" <${process.env.SMTP_USER}>`,
+            to: userEmail,
+            subject: `${statusIcon} Commande ${orderNumber} - Statut : ${newStatus}`,
+            html: htmlContent,
+            text: `
+Bonjour ${firstName},
 
-              </td>
-            </tr>
+Le statut de votre commande ${orderNumber} a été mis à jour :
+- Ancien statut : ${oldStatus}
+- Nouveau statut : ${newStatus}
+${trackingNumber ? `- Numéro de suivi : ${trackingNumber}` : ''}
 
-            <!-- Footer -->
-            <tr>
-              <td style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; border-radius: 0 0 16px 16px;">
-                <p style="margin: 0; color: #6b7280; font-size: 12px; font-family: Arial, sans-serif;">
-                  Mise à jour effectuée par ${updatedBy} • 
-                  <a href="${process.env.BASE_URL}" style="color: #d89ab3; text-decoration: none;">CrystosJewel.com</a>
-                </p>
-              </td>
-            </tr>
+${statusMessage}
 
-          </table>
-        </div>
-      </body>
-      </html>
-    `;
+Vous pouvez suivre votre commande sur notre site : ${process.env.SITE_URL || 'https://crystosjewel.com'}/commande/suivi?order=${orderNumber}
 
-    const info = await transporter.sendMail({
-      from: `"CrystosJewel ✨" <${process.env.MAIL_USER}>`,
-      to: userEmail,
-      subject: `${statusInfo.icon} Commande ${orderNumber} - ${statusInfo.title}`,
-      html: htmlContent,
-    });
+Merci pour votre confiance !
+L'équipe CrystosJewel
+            `.trim()
+        };
 
-    console.log("📧 Email client envoyé (changement statut):", info.response);
-    return { success: true, messageId: info.messageId };
-    
-  } catch (error) {
-    console.error("❌ Erreur email client (changement statut):", error);
-    return { success: false, error: error.message };
-  }
+        const info = await transporter.sendMail(mailOptions);
+        
+        console.log('✅ Email statut envoyé:', {
+            messageId: info.messageId,
+            to: userEmail,
+            status: `${oldStatus} → ${newStatus}`
+        });
+
+        return { 
+            success: true, 
+            messageId: info.messageId,
+            message: `Email envoyé à ${userEmail} pour changement ${oldStatus} → ${newStatus}`
+        };
+
+    } catch (error) {
+        console.error('❌ Erreur envoi email statut:', error);
+        return { 
+            success: false, 
+            error: error.message 
+        };
+    }
 };
+
 
 // ✅ NOUVELLE FONCTION - Email notification expédition amélioré
 export const sendShippingNotificationEmail = async (userEmail, firstName, shippingData) => {
-  try {
-    const { orderNumber, trackingNumber, estimatedDelivery = 'Dans 2-3 jours ouvrés' } = shippingData;
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Commande expédiée - CrystosJewel</title>
-        <style>
-          body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-          table { border-collapse: collapse; }
-          .container { max-width: 600px; margin: 0 auto; }
-        </style>
-      </head>
-      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background-color: #f0f9ff;">
+    try {
+        const { orderNumber, trackingNumber, estimatedDelivery } = shippingData;
         
-        <div style="padding: 20px;">
-          <table cellpadding="0" cellspacing="0" border="0" class="container" style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
-            
-            <!-- Header -->
-            <tr>
-              <td style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px 20px; text-align: center; border-radius: 16px 16px 0 0;">
-                <div style="font-size: 64px; margin-bottom: 16px;">📦</div>
-                <h1 style="margin: 0 0 8px 0; color: #ffffff; font-size: 24px; font-weight: bold; font-family: Arial, sans-serif;">Votre commande est en route !</h1>
-                <p style="margin: 0; color: rgba(255,255,255,0.95); font-size: 14px; font-family: Arial, sans-serif;">CrystosJewel • Expédition confirmée</p>
-              </td>
-            </tr>
-
-            <!-- Content -->
-            <tr>
-              <td style="padding: 30px 25px;">
-                
-                <div style="text-align: center; margin-bottom: 30px;">
-                  <h2 style="margin: 0 0 12px 0; color: #374151; font-size: 20px; font-family: Arial, sans-serif;">Bonjour ${firstName} !</h2>
-                  <p style="margin: 0; color: #6b7280; font-size: 16px; line-height: 1.6; font-family: Arial, sans-serif;">
-                    Excellente nouvelle ! Votre commande <strong>${orderNumber}</strong> a été expédiée.<br>
-                    Vos bijoux sont maintenant en route vers vous ✨
-                  </p>
-                </div>
-
-                <!-- Tracking Info -->
-                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 2px solid #10b981; border-radius: 12px; margin-bottom: 25px;">
-                  <tr>
-                    <td style="padding: 25px;">
-                      <div style="text-align: center;">
-                        <h3 style="margin: 0 0 16px 0; color: #10b981; font-size: 18px; font-weight: bold; font-family: Arial, sans-serif;">
-                          🚚 Informations de suivi
-                        </h3>
-                        
-                        <div style="background-color: #ffffff; padding: 20px; border-radius: 10px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-                          <div style="color: #6b7280; font-size: 12px; margin-bottom: 6px; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px;">Numéro de suivi</div>
-                          <div style="color: #10b981; font-size: 20px; font-weight: bold; font-family: monospace; letter-spacing: 1px; margin-bottom: 8px;">${trackingNumber}</div>
-                          <div style="color: #6b7280; font-size: 13px; font-family: Arial, sans-serif;">Utilisez ce numéro pour suivre votre colis</div>
-                        </div>
-                        
-                        <div style="background-color: rgba(16, 185, 129, 0.1); padding: 16px; border-radius: 10px; border: 1px dashed #10b981;">
-                          <div style="color: #065f46; font-size: 14px; font-weight: 600; margin-bottom: 4px; font-family: Arial, sans-serif;">📅 Livraison estimée</div>
-                          <div style="color: #059669; font-size: 16px; font-weight: bold; font-family: Arial, sans-serif;">${estimatedDelivery}</div>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                </table>
-
-                <!-- Action Buttons -->
-                <div style="text-align: center; margin-bottom: 25px;">
-                  <a href="${process.env.BASE_URL}/mon-compte/commandes" style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 15px; margin: 0 8px 8px 0; font-family: Arial, sans-serif;">
-                    📋 Suivre ma commande
-                  </a>
-                  <a href="${process.env.BASE_URL}/contact" style="display: inline-block; background-color: #ffffff; color: #10b981; text-decoration: none; padding: 14px 28px; border: 2px solid #10b981; border-radius: 8px; font-weight: 600; font-size: 15px; margin: 0 8px 8px 0; font-family: Arial, sans-serif;">
-                    💬 Nous contacter
-                  </a>
-                </div>
-
-                <!-- Delivery Info -->
-                <div style="background-color: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px; padding: 20px; text-align: center;">
-                  <h4 style="margin: 0 0 12px 0; color: #92400e; font-size: 16px; font-family: Arial, sans-serif;">📍 Informations de livraison</h4>
-                  <p style="margin: 0; color: #78350f; font-size: 14px; line-height: 1.5; font-family: Arial, sans-serif;">
-                    • Livraison du lundi au vendredi (hors jours fériés)<br>
-                    • Signature requise à la réception<br>
-                    • En cas d'absence, le colis sera déposé en point relais
-                  </p>
-                </div>
-
-              </td>
-            </tr>
-
-            <!-- Footer -->
-            <tr>
-              <td style="background-color: #f8fafc; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; border-radius: 0 0 16px 16px;">
-                <p style="margin: 0 0 8px 0; color: #6b7280; font-size: 14px; font-family: Arial, sans-serif;">
-                  <strong>Merci de votre confiance !</strong>
-                </p>
-                <p style="margin: 0; color: #9ca3af; font-size: 12px; font-family: Arial, sans-serif;">
-                  Questions ? Contactez-nous à 
-                  <a href="mailto:${process.env.MAIL_USER}" style="color: #10b981; text-decoration: none;">${process.env.MAIL_USER}</a>
-                </p>
-              </td>
-            </tr>
-
-          </table>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const info = await transporter.sendMail({
-      from: `"CrystosJewel 📦" <${process.env.MAIL_USER}>`,
-      to: userEmail,
-      subject: `📦 Votre commande ${orderNumber} est en route !`,
-      html: htmlContent,
-    });
-
-    console.log("📧 Email expédition envoyé:", info.response);
-    return { success: true, messageId: info.messageId };
-    
-  } catch (error) {
-    console.error("❌ Erreur email expédition:", error);
-    return { success: false, error: error.message };
-  }
+        return await sendOrderStatusUpdateEmail(userEmail, firstName, {
+            orderNumber,
+            oldStatus: 'En préparation',
+            newStatus: 'Expédiée',
+            trackingNumber,
+            updatedBy: 'Service Expédition'
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur email expédition:', error);
+        return { success: false, error: error.message };
+    }
 };
 
 // ✅ FONCTION UTILITAIRE - Calcul date de livraison avec fuseau horaire français
@@ -2853,6 +2724,12 @@ export const sendStatusChangeEmail = async (orderData, statusChangeData, custome
         if (!userEmail || !firstName || !orderData.numero_commande) {
             console.error('❌ Données manquantes pour l\'email:', { userEmail, firstName, orderNumber: orderData.numero_commande });
             return { success: false, error: 'Données manquantes pour l\'envoi d\'email' };
+        }
+
+        // ✅ VÉRIFIER LA CONFIGURATION SMTP
+        if (!process.env.SMTP_HOST || !process.env.SMTP_USER) {
+            console.error('❌ Configuration SMTP manquante');
+            return { success: false, error: 'Configuration SMTP non configurée' };
         }
         
         // ✅ EMAILS SPÉCIAUX selon le nouveau statut
@@ -2913,86 +2790,21 @@ const translateStatus = (status) => {
 
 // ✅ EMAIL CONFIRMATION DE LIVRAISON
 // ✅ EMAIL LIVRAISON
-const sendDeliveryConfirmationEmail = async (userEmail, firstName, data) => {
-  try {
-    const { orderNumber } = data;
-    
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Commande livrée - CrystosJewel</title>
-      </head>
-      <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background: #f0fdf4;">
+export const sendDeliveryConfirmationEmail = async (userEmail, firstName, deliveryData) => {
+    try {
+        const { orderNumber, deliveryDate } = deliveryData;
         
-        <div style="padding: 20px;">
-          <div style="max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.1);">
-            
-            <!-- Header -->
-            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; padding: 25px; text-align: center;">
-              <div style="font-size: 48px; margin-bottom: 10px;">✅</div>
-              <h1 style="margin: 0; font-size: 24px; font-weight: bold;">Commande livrée !</h1>
-              <p style="margin: 8px 0 0 0; font-size: 14px; opacity: 0.9;">Commande ${orderNumber}</p>
-            </div>
-
-            <!-- Contenu -->
-            <div style="padding: 25px;">
-              <p style="margin: 0 0 20px 0; font-size: 16px; color: #1f2937;">
-                Bonjour ${firstName},
-              </p>
-              
-              <p style="margin: 0 0 20px 0; font-size: 16px; color: #1f2937; line-height: 1.6;">
-                🎉 Félicitations ! Votre commande <strong>${orderNumber}</strong> a été livrée avec succès.
-              </p>
-              
-              <p style="margin: 0 0 20px 0; font-size: 16px; color: #1f2937; line-height: 1.6;">
-                Nous espérons que vous êtes ravi(e) de vos nouveaux bijoux !
-              </p>
-              
-              <div style="background: #f0fdf4; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #10b981;">
-                <h3 style="margin: 0 0 10px 0; color: #065f46; font-size: 16px;">💎 Profitez de vos bijoux</h3>
-                <p style="margin: 0; color: #1f2937; font-size: 14px;">N'hésitez pas à nous envoyer des photos de vos bijoux portés sur nos réseaux sociaux !</p>
-              </div>
-              
-              <div style="text-align: center; margin: 30px 0;">
-                <a href="${process.env.BASE_URL}/avis?order=${orderNumber}" 
-                   style="display: inline-block; background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; margin: 5px;">
-                  ⭐ Laisser un avis
-                </a>
-                <a href="${process.env.BASE_URL}/bijoux" 
-                   style="display: inline-block; background: linear-gradient(135deg, #E8B4B8 0%, #d1a3a8 100%); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600; margin: 5px;">
-                  💎 Découvrir nos nouveautés
-                </a>
-              </div>
-              
-              <p style="margin: 0; font-size: 16px; color: #1f2937;">
-                Merci pour votre confiance et à bientôt !<br>
-                L'équipe CrystosJewel
-              </p>
-            </div>
-
-          </div>
-        </div>
-      </body>
-      </html>
-    `;
-
-    const info = await transporter.sendMail({
-      from: `"CrystosJewel ✅" <${process.env.MAIL_USER}>`,
-      to: userEmail,
-      subject: `✅ Votre commande ${orderNumber} a été livrée !`,
-      html: htmlContent,
-    });
-
-    console.log("📧 Email livraison envoyé :", info.response);
-    return { success: true, messageId: info.messageId };
-    
-  } catch (error) {
-    console.error("❌ Erreur email livraison :", error);
-    return { success: false, error: error.message };
-  }
+        return await sendOrderStatusUpdateEmail(userEmail, firstName, {
+            orderNumber,
+            oldStatus: 'Expédiée',
+            newStatus: 'Livrée',
+            updatedBy: 'Service Livraison'
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur email livraison:', error);
+        return { success: false, error: error.message };
+    }
 };
 
 // ✅ EMAIL CHANGEMENT DE STATUT GÉNÉRAL
@@ -3082,82 +2894,43 @@ const sendGeneralStatusUpdateEmail = async (userEmail, firstName, data) => {
 
 // ✅ EMAIL ANNULATION
 export const sendCancellationEmail = async (userEmail, firstName, cancellationData) => {
-  try {
-    const { orderNumber, reason } = cancellationData;
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Commande annulée - CrystosJewel</title>
-        <style>body { font-family: Arial, sans-serif; }</style>
-      </head>
-      <body style="margin: 0; padding: 20px; background-color: #fef2f2;">
+    try {
+        const { orderNumber, reason } = cancellationData;
         
-        <div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.1);">
-          
-          <!-- Header -->
-          <div style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); padding: 30px 20px; text-align: center;">
-            <div style="font-size: 64px; margin-bottom: 16px;">❌</div>
-            <h1 style="margin: 0; color: white; font-size: 24px; font-weight: bold;">Commande annulée</h1>
-            <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.95); font-size: 14px;">CrystosJewel • Annulation confirmée</p>
-          </div>
-
-          <!-- Content -->
-          <div style="padding: 30px 25px;">
-            <h2 style="margin: 0 0 15px 0; color: #374151; font-size: 20px;">Bonjour ${firstName},</h2>
-            <p style="margin: 0 0 25px 0; color: #6b7280; font-size: 16px; line-height: 1.6;">
-              Nous vous confirmons l'annulation de votre commande <strong>${orderNumber}</strong>.
-            </p>
-
-            <!-- Reason -->
-            <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-              <h4 style="margin: 0 0 8px 0; color: #dc2626; font-size: 16px;">Motif :</h4>
-              <p style="margin: 0; color: #991b1b; font-size: 14px;">${reason}</p>
-            </div>
-
-            <!-- Refund Info -->
-            <div style="background: #f0f9ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 20px; margin-bottom: 25px;">
-              <h4 style="margin: 0 0 8px 0; color: #1e40af; font-size: 16px;">💳 Remboursement</h4>
-              <p style="margin: 0; color: #1e3a8a; font-size: 14px; line-height: 1.5;">
-                Si un paiement a été effectué, le remboursement sera traité sous 3-5 jours ouvrés 
-                selon votre mode de paiement.
-              </p>
-            </div>
-
-            <!-- Contact -->
-            <div style="text-align: center;">
-              <p style="margin: 0 0 20px 0; color: #6b7280; font-size: 14px;">
-                Une question ? N'hésitez pas à nous contacter.
-              </p>
-              <a href="mailto:${process.env.MAIL_USER}" style="display: inline-block; background: #d89ab3; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-weight: 600;">
-                Nous contacter
-              </a>
-            </div>
-          </div>
-
-        </div>
-      </body>
-      </html>
-    `;
-
-    const info = await transporter.sendMail({
-      from: `"CrystosJewel" <${process.env.MAIL_USER}>`,
-      to: userEmail,
-      subject: `❌ Commande ${orderNumber} annulée`,
-      html: htmlContent,
-    });
-
-    console.log("📧 Email annulation envoyé:", info.response);
-    return { success: true, messageId: info.messageId };
-    
-  } catch (error) {
-    console.error("❌ Erreur email annulation:", error);
-    return { success: false, error: error.message };
-  }
+        return await sendOrderStatusUpdateEmail(userEmail, firstName, {
+            orderNumber,
+            oldStatus: 'En cours',
+            newStatus: 'Annulée',
+            updatedBy: 'Service Client'
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur email annulation:', error);
+        return { success: false, error: error.message };
+    }
 };
 
+export const checkSMTPConfiguration = () => {
+    const requiredEnvVars = ['SMTP_HOST', 'SMTP_USER', 'SMTP_PASS'];
+    const missing = requiredEnvVars.filter(varName => !process.env[varName]);
+    
+    if (missing.length > 0) {
+        console.warn('⚠️ Configuration SMTP incomplète:', missing);
+        return {
+            isConfigured: false,
+            missing: missing,
+            message: `Variables manquantes: ${missing.join(', ')}`
+        };
+    }
+    
+    console.log('✅ Configuration SMTP complète');
+    return {
+        isConfigured: true,
+        host: process.env.SMTP_HOST,
+        user: process.env.SMTP_USER,
+        port: process.env.SMTP_PORT || 587
+    };
+};
 
 /**
  * NOUVELLE FONCTION - Envoi simultané EMAIL + SMS lors de la confirmation de commande

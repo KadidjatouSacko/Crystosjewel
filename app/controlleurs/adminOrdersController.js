@@ -5,6 +5,7 @@ import { QueryTypes, Op } from 'sequelize';
 import { sequelize } from '../models/sequelize-client.js';
 import { sendStatusChangeEmail } from '../services/mailService.js';
 
+
 export const adminOrdersController = {
 
       formatDateTime(dateString) {
@@ -196,9 +197,95 @@ export const adminOrdersController = {
  */
 async getAllOrders(req, res) {
     try {
-        console.log('📋 Récupération commandes avec emails clients et dates corrigés');
-
-        // ✅ REQUÊTE CORRIGÉE AVEC TOUTES LES SOURCES D'EMAIL ET DATES
+        console.log('📋 Récupération commandes avec filtres');
+        
+        // ✅ RÉCUPÉRATION DES FILTRES DEPUIS L'URL
+        const filters = {
+            search: req.query.search || '',
+            status: req.query.status || '',
+            promo: req.query.promo || '',
+            date: req.query.date || '',
+            payment: req.query.payment || ''
+        };
+        
+        // Pagination
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = (page - 1) * limit;
+        
+        console.log('🔍 Filtres reçus:', filters);
+        
+        // ✅ CONSTRUCTION DYNAMIQUE DE LA REQUÊTE
+        let whereConditions = [];
+        let params = [];
+        let paramIndex = 1;
+        
+        // Filtre de recherche
+        if (filters.search && filters.search.trim()) {
+            const searchTerm = filters.search.trim();
+            whereConditions.push(`(
+                LOWER(o.numero_commande) LIKE LOWER($${paramIndex}) OR
+                LOWER(o.customer_name) LIKE LOWER($${paramIndex}) OR
+                LOWER(o.customer_email) LIKE LOWER($${paramIndex}) OR
+                LOWER(c.first_name) LIKE LOWER($${paramIndex}) OR
+                LOWER(c.last_name) LIKE LOWER($${paramIndex}) OR
+                LOWER(c.email) LIKE LOWER($${paramIndex})
+            )`);
+            params.push(`%${searchTerm}%`);
+            paramIndex++;
+        }
+        
+        // Filtre par statut
+        if (filters.status && filters.status !== '') {
+            whereConditions.push(`LOWER(COALESCE(o.status, o.status_suivi, 'waiting')) = LOWER($${paramIndex})`);
+            params.push(filters.status);
+            paramIndex++;
+        }
+        
+        // Filtre par code promo
+        if (filters.promo && filters.promo !== '') {
+            if (filters.promo === 'with-promo') {
+                whereConditions.push(`(o.promo_code IS NOT NULL AND o.promo_code != '')`);
+            } else if (filters.promo === 'without-promo') {
+                whereConditions.push(`(o.promo_code IS NULL OR o.promo_code = '')`);
+            }
+        }
+        
+        // Filtre par date
+        if (filters.date && filters.date !== '') {
+            const now = new Date();
+            let dateCondition = '';
+            
+            switch (filters.date) {
+                case 'today':
+                    dateCondition = `DATE(o.created_at) = CURRENT_DATE`;
+                    break;
+                case 'week':
+                    dateCondition = `o.created_at >= DATE_TRUNC('week', CURRENT_DATE)`;
+                    break;
+                case 'month':
+                    dateCondition = `o.created_at >= DATE_TRUNC('month', CURRENT_DATE)`;
+                    break;
+            }
+            
+            if (dateCondition) {
+                whereConditions.push(dateCondition);
+            }
+        }
+        
+        // Filtre par méthode de paiement
+        if (filters.payment && filters.payment !== '') {
+            whereConditions.push(`LOWER(COALESCE(o.payment_method, 'card')) = LOWER($${paramIndex})`);
+            params.push(filters.payment);
+            paramIndex++;
+        }
+        
+        // ✅ CONSTRUIRE LA CLAUSE WHERE FINALE
+        const whereClause = whereConditions.length > 0 
+            ? 'AND ' + whereConditions.join(' AND ')
+            : '';
+        
+        // ✅ REQUÊTE PRINCIPALE AVEC FILTRES
         const commandesQuery = `
             SELECT 
                 o.id,
@@ -223,7 +310,7 @@ async getAllOrders(req, res) {
                 COALESCE(o.customer_phone, c.phone, 'N/A') as customer_phone,
                 COALESCE(o.shipping_address, c.address, 'N/A') as customer_address,
                 
-                -- ✅ DATES CORRECTES (sans 00:00)
+                -- ✅ DATES CORRECTES
                 o.created_at,
                 o.updated_at,
                 DATE_FORMAT(o.created_at, '%d/%m/%Y %H:%i') as formatted_date,
@@ -250,41 +337,62 @@ async getAllOrders(req, res) {
                 
             FROM orders o
             LEFT JOIN customer c ON o.customer_id = c.id
+            WHERE 1=1 ${whereClause}
             ORDER BY o.created_at DESC
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
         `;
-
-        const [result] = await sequelize.query(commandesQuery);
-
+        
+        // ✅ REQUÊTE DE COMPTAGE POUR PAGINATION
+        const countQuery = `
+            SELECT COUNT(*) as total
+            FROM orders o
+            LEFT JOIN customer c ON o.customer_id = c.id
+            WHERE 1=1 ${whereClause}
+        `;
+        
+        params.push(limit, offset);
+        
+        console.log('🔍 Requête avec filtres:', { whereClause, params });
+        
+        // Exécution des requêtes
+        const [countResult] = await sequelize.query(countQuery, { 
+            bind: params.slice(0, -2) // Exclure limit et offset pour le count
+        });
+        const [result] = await sequelize.query(commandesQuery, { bind: params });
+        
+        const totalCommandes = parseInt(countResult[0].total);
+        
         // ✅ TRAITEMENT DES DONNÉES AVEC CALCULS CORRECTS
         const commandes = result.map(commande => {
-            
-            // ✅ CALCULS FINANCIERS CORRECTS
             const subtotal = parseFloat(commande.subtotal || 0);
             const discountAmount = parseFloat(commande.discount_amount || 0);
             const shippingPrice = parseFloat(commande.shipping_price || 0);
             const finalTotal = parseFloat(commande.total || 0);
-            
-            // Prix avant réduction = total final + réduction
             const originalTotal = discountAmount > 0 ? finalTotal + discountAmount : finalTotal;
             
             return {
                 id: commande.id,
                 numero_commande: commande.numero_commande || `CMD-${commande.id}`,
                 
-                // ✅ DATE CORRECTE (pas 00:00)
+                // ✅ DATE CORRECTE
                 created_at: commande.created_at,
                 formatted_date: commande.formatted_date,
                 date: commande.formatted_date,
+                dateTime: new Date(commande.created_at).toLocaleString('fr-FR'),
                 
                 // ✅ INFORMATIONS CLIENT COMPLÈTES
                 customer_name: commande.customer_name,
+                customerName: commande.customer_name,
                 customer_email: commande.customer_email,
+                customerEmail: commande.customer_email,
                 customer_phone: commande.customer_phone,
                 customer_address: commande.customer_address,
                 
                 // ✅ MONTANTS CORRECTS
                 subtotal: subtotal.toFixed(2),
                 original_total: originalTotal.toFixed(2),
+                originalAmount: originalTotal.toFixed(2),
+                amount: finalTotal.toFixed(2),
                 discount_amount: discountAmount.toFixed(2),
                 shipping_price: shippingPrice.toFixed(2),
                 total: finalTotal.toFixed(2),
@@ -301,38 +409,58 @@ async getAllOrders(req, res) {
                 
                 // ✅ SUIVI
                 tracking_number: commande.tracking_number,
-                delivery_notes: commande.delivery_notes
+                delivery_notes: commande.delivery_notes,
+                
+                // ✅ DONNÉES POUR LES TAILLES (si nécessaire)
+                sizesInfo: {
+                    totalItems: 0,
+                    itemsWithSizes: 0,
+                    sizesDisplay: 'Non spécifiées',
+                    hasSizeInfo: false,
+                    sizesCoverage: 0
+                }
             };
         });
 
-        // ✅ DEBUG INFO
-        console.log(`📊 ${commandes.length} commandes récupérées`);
-        const emailsManquants = commandes.filter(cmd => cmd.customer_email === 'N/A').length;
-        console.log(`📧 Emails manquants: ${emailsManquants}/${commandes.length}`);
+        console.log(`📊 ${commandes.length} commandes récupérées avec filtres (${totalCommandes} total)`);
+
+        // ✅ PAGINATION
+        const totalPages = Math.ceil(totalCommandes / limit);
+        const pagination = {
+            currentPage: page,
+            totalPages: totalPages,
+            total: totalCommandes,
+            hasNext: page < totalPages,
+            hasPrev: page > 1
+        };
 
         res.render('commandes', {
             title: 'Gestion des Commandes',
             commandes: commandes,
             stats: this.calculateStats(commandes),
             statusStats: this.calculateStatusStats(commandes),
+            pagination: pagination,
+            filters: filters, // ✅ PASSER LES FILTRES À LA VUE
             // ✅ HELPERS POUR LA VUE
             helpers: {
                 formatPrice: (price) => parseFloat(price || 0).toFixed(2),
                 formatDate: (date) => this.formatDateTime(date),
                 getTimeAgo: (date) => this.getTimeAgo(date),
                 translateStatus: (status) => this.translateStatus(status),
-                getPaymentMethodDisplay: (method) => this.getPaymentMethodDisplay(method)
+                getPaymentMethodDisplay: (method) => this.getPaymentMethodDisplay(method),
+                getStatusClass: (status) => this.getStatusClass(status)
             }
         });
 
     } catch (error) {
-        console.error('❌ Erreur récupération commandes:', error);
+        console.error('❌ Erreur récupération commandes avec filtres:', error);
         res.status(500).render('error', {
             message: 'Erreur lors de la récupération des commandes',
             error: error
         });
     }
 },
+
 
 
 // Calcul des statistiques par statut
@@ -1311,18 +1439,15 @@ async updateOrder(req, res) {
             internal_notes: internal_notes?.substring(0, 50) + '...'
         });
 
-        // ✅ RÉCUPÉRER L'ANCIEN STATUT ET NOTES
+        // ✅ RÉCUPÉRER L'ANCIEN STATUT ET TOUTES LES DONNÉES
         const [existingOrder] = await sequelize.query(`
             SELECT 
-                status, 
-                status_suivi, 
-                notes, 
-                internal_notes,
-                tracking_number,
-                customer_email,
-                customer_name
-            FROM orders 
-            WHERE id = $1
+                o.*,
+                COALESCE(o.customer_email, c.email, 'N/A') as customer_email,
+                COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client') as customer_name
+            FROM orders o
+            LEFT JOIN customer c ON o.customer_id = c.id
+            WHERE o.id = $1
         `, { bind: [orderId] });
 
         if (existingOrder.length === 0) {
@@ -1335,12 +1460,9 @@ async updateOrder(req, res) {
         const currentOrder = existingOrder[0];
         const oldStatus = currentOrder.status || currentOrder.status_suivi;
         const statusChanged = status !== oldStatus;
-        const notesChanged = notes !== currentOrder.notes;
-        const internalNotesChanged = internal_notes !== currentOrder.internal_notes;
-        const trackingChanged = tracking_number !== currentOrder.tracking_number;
 
         await sequelize.transaction(async (t) => {
-            // ✅ MISE À JOUR DE LA COMMANDE AVEC TOUTES LES NOTES
+            // ✅ MISE À JOUR DE LA COMMANDE
             await sequelize.query(`
                 UPDATE orders 
                 SET 
@@ -1349,29 +1471,23 @@ async updateOrder(req, res) {
                     tracking_number = $3,
                     notes = $4,
                     internal_notes = $5,
-                    updated_at = NOW() AT TIME ZONE 'Europe/Paris'
+                    updated_at = NOW()
                 WHERE id = $1
             `, {
                 bind: [orderId, status, tracking_number || null, notes || null, internal_notes || null],
                 transaction: t
             });
 
-            // ✅ ENREGISTRER DANS L'HISTORIQUE POUR CHAQUE MODIFICATION AVEC TIMEZONE
-                const adminName = req.session?.user?.first_name || 
-                  req.session?.user?.name || 
-                  req.session?.user?.email?.split('@')[0] || 
-                  (req.session?.customerId ? `User-${req.session.customerId}` : 'Admin');
+            // ✅ ENREGISTRER DANS L'HISTORIQUE
+            const adminName = req.session?.user?.first_name || 
+                              req.session?.user?.name || 
+                              req.session?.user?.email?.split('@')[0] || 
+                              'Administration';
 
-                console.log(`👤 Modification par: ${adminName}`, {
-                    session_user: req.session?.user,
-                    customerId: req.session?.customerId
-                });
-
-            // Changement de statut
             if (statusChanged) {
                 await sequelize.query(`
                     INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
-                    VALUES ($1, $2, $3, $4, $5, NOW() AT TIME ZONE 'Europe/Paris')
+                    VALUES ($1, $2, $3, $4, $5, NOW())
                 `, {
                     bind: [
                         orderId, 
@@ -1383,58 +1499,77 @@ async updateOrder(req, res) {
                     transaction: t
                 });
             }
-
-            // ✅ MODIFICATION DES NOTES CLIENTS
-            if (notesChanged) {
-    const noteText = notes ? `Notes client modifiées: "${notes}"` : 'Notes client supprimées';
-    await sequelize.query(`
-        INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
-        VALUES ($1, $2, $3, $4, $5, NOW() AT TIME ZONE 'Europe/Paris')
-    `, {
-        bind: [orderId, status, status, noteText, adminName],
-        transaction: t
-    });
-}
-
-// ✅ MODIFICATION DES NOTES INTERNES (VERSION CORRIGÉE)
-if (internalNotesChanged) {
-    const internalNoteText = internal_notes ? `Notes internes modifiées: "${internal_notes}"` : 'Notes internes supprimées';
-    await sequelize.query(`
-        INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
-        VALUES ($1, $2, $3, $4, $5, NOW() AT TIME ZONE 'Europe/Paris')
-    `, {
-        bind: [orderId, status, status, internalNoteText, adminName],
-        transaction: t
-    });
-}
-
-            // ✅ MODIFICATION DU TRACKING
-            if (trackingChanged && tracking_number) {
-                await sequelize.query(`
-                    INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
-                    VALUES ($1, $2, $3, $4, $5, NOW() AT TIME ZONE 'Europe/Paris')
-                `, {
-                    bind: [
-                        orderId, 
-                        status, 
-                        status, 
-                        `Numéro de suivi ajouté: ${tracking_number}`,
-                        adminName
-                    ],
-                    transaction: t
-                });
-            }
         });
 
+        // ✅ ENVOI EMAIL APRÈS LA MISE À JOUR RÉUSSIE
+        let emailResult = { success: false, message: 'Aucun email envoyé' };
+        
+        if (statusChanged && currentOrder.customer_email && currentOrder.customer_email !== 'N/A') {
+            try {
+                console.log('📧 Tentative envoi email changement statut...');
+                
+                // Préparer les données pour l'email
+                const orderData = {
+                    id: currentOrder.id,
+                    numero_commande: currentOrder.numero_commande || `CMD-${currentOrder.id}`,
+                    tracking_number: tracking_number || currentOrder.tracking_number,
+                    total: currentOrder.total,
+                    subtotal: currentOrder.subtotal,
+                    promo_code: currentOrder.promo_code,
+                    promo_discount_amount: currentOrder.promo_discount_amount
+                };
+
+                const customerData = {
+                    userEmail: currentOrder.customer_email,
+                    firstName: currentOrder.customer_name?.split(' ')[0] || 'Client',
+                    lastName: currentOrder.customer_name?.split(' ').slice(1).join(' ') || ''
+                };
+
+                const statusChangeData = {
+                    oldStatus,
+                    newStatus: status,
+                    updatedBy: adminName
+                };
+
+                console.log('📧 Données email:', {
+                    orderNumber: orderData.numero_commande,
+                    customerEmail: customerData.userEmail,
+                    statusChange: `${oldStatus} → ${status}`
+                });
+
+                // ✅ APPEL DIRECT DE LA FONCTION IMPORTÉE
+                emailResult = await sendStatusChangeEmail(orderData, statusChangeData, customerData);
+                
+                if (emailResult.success) {
+                    console.log('✅ Email envoyé avec succès');
+                } else {
+                    console.warn('⚠️ Échec envoi email:', emailResult.error);
+                }
+                
+            } catch (emailError) {
+                console.error('❌ Erreur lors de l\'envoi d\'email:', emailError);
+                emailResult = { success: false, error: emailError.message };
+            }
+        } else {
+            console.log('ℹ️ Email non envoyé:', {
+                statusChanged,
+                hasEmail: !!currentOrder.customer_email,
+                emailValue: currentOrder.customer_email
+            });
+        }
+
+        // ✅ RÉPONSE AVEC DÉTAILS EMAIL
         res.json({
             success: true,
             message: 'Commande mise à jour avec succès',
             changes: {
                 status: statusChanged,
-                notes: notesChanged,
-                internal_notes: internalNotesChanged,
-                tracking: trackingChanged
-            }
+                notes: notes !== currentOrder.notes,
+                internal_notes: internal_notes !== currentOrder.internal_notes,
+                tracking: tracking_number !== currentOrder.tracking_number
+            },
+            emailSent: emailResult.success,
+            emailDetails: emailResult
         });
 
     } catch (error) {

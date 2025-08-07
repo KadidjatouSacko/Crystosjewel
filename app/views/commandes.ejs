@@ -3146,29 +3146,51 @@ async function viewOrderDetails(orderId) {
     </div>
 </div>
                 
-                <!-- Articles commandés -->
-                <div class="section">
-                    <h4><i class="fas fa-shopping-bag"></i> Articles commandés</h4>
-                    <div class="items-list">
-                        ${items.map(item => `
-                            <div class="item-row">
-                                <img src="${item.image || '/images/placeholder.jpg'}" alt="${item.name}" class="item-image">
-                               
-                                <div class="item-info">
-                                    <div class="item-name">${item.name}</div>
-                                    <div class="item-details">
-                                        Taille: ${item.size || 'Standard'} | 
-                                        Quantité: ${item.quantity} | 
-                                        Prix unitaire: ${formatPrice(item.price)}€
-                                    </div>
-                                </div>
-                                <div class="item-total">
-                                    ${formatPrice(item.total || (item.price * item.quantity))}€
-                                </div>
-                            </div>
-                        `).join('')}
+               <!-- Articles commandés -->
+<div class="section">
+    <h4><i class="fas fa-shopping-bag"></i> Articles commandés</h4>
+    <div class="items-list">
+        ${items.map(item => {
+            // ✅ CORRECTION : Construire le bon chemin d'image
+            let imagePath = '/images/placeholder.jpg'; // Image par défaut
+            
+            // Vérifier différentes sources d'image possibles
+            if (item.image && !item.image.includes('/images/placeholder.jpg')) {
+                // Si l'image existe et n'est pas le placeholder
+                if (item.image.startsWith('/uploads/')) {
+                    imagePath = item.image; // Chemin déjà complet
+                } else {
+                    imagePath = `/uploads/jewels/${item.image}`; // Ajouter le chemin
+                }
+            } else if (item.jewel_main_image) {
+                imagePath = `/uploads/jewels/${item.jewel_main_image}`;
+            } else if (item.jewel_image) {
+                imagePath = item.jewel_image.startsWith('/uploads/') ? item.jewel_image : `/uploads/jewels/${item.jewel_image}`;
+            }
+            
+            return `
+                <div class="item-row">
+                    <img src="${imagePath}" 
+                         alt="${item.name || item.jewel_name}" 
+                         class="item-image"
+                         onerror="this.src='/images/placeholder.jpg'; this.style.opacity='0.5';">
+                    <div class="item-info">
+                        <div class="item-name">${item.name || item.jewel_name}</div>
+                        <div class="item-details">
+                            ${item.size && item.size !== 'Non spécifiée' ? `Taille: ${item.size} |` : ''}
+                            Quantité: ${item.quantity} |
+                            Prix unitaire: ${formatPrice(item.price)}€
+                            ${item.matiere ? `| Matière: ${item.matiere}` : ''}
+                        </div>
+                    </div>
+                    <div class="item-total">
+                        ${formatPrice(item.total || (item.price * item.quantity))}€
                     </div>
                 </div>
+            `;
+        }).join('')}
+    </div>
+</div>
                 
                 <!-- ✅ TOTAUX CORRIGÉS -->
                 <div class="section">
@@ -3768,30 +3790,18 @@ async function editOrder(orderId) {
                     throw new Error(data.message || `Erreur HTTP ${response.status}`);
                 }
 
-                if (data.success) {
-                    showToast('✅ Commande mise à jour avec succès !', 'success');
-                    
-                    // ✅ AFFICHER INFO EMAIL
-                    if (data.data?.emailSent) {
-                        setTimeout(() => {
-                            showToast('📧 Email de notification envoyé au client !', 'info');
-                        }, 1000);
-                    } else if (data.data?.statusChanged && !data.data?.emailSent) {
-                        setTimeout(() => {
-                            showToast('⚠️ Statut mis à jour mais email non envoyé', 'warning');
-                        }, 1500);
-                    }
-                    
-                    closeModal();
-                    
-                    // ✅ ACTUALISATION COMPLÈTE APRÈS DÉLAI
-                    setTimeout(() => {
-                        showToast('🔄 Actualisation des données...', 'info');
-                        window.location.reload();
-                    }, 2500);
-                } else {
-                    throw new Error(data.message || 'Erreur lors de la modification');
-                }
+                // Dans la fonction updateOrderStatus, après la réponse AJAX réussie :
+if (data.success) {
+    showToast('Statut mis à jour avec succès', 'success');
+    
+    // ✅ SYNCHRONISER LA MODALE
+    syncModalStatus(orderId, newStatus, newTrackingNumber);
+    
+    // Optionnel : recharger la page après 2 secondes
+    setTimeout(() => {
+        window.location.reload();
+    }, 2000);
+}
                 
             } catch (error) {
                 console.error('❌ Erreur modification:', error);
@@ -3869,16 +3879,125 @@ function updateOrderDisplayAfterEdit(orderId, newStatus, newTrackingNumber) {
 function handleSearch(e) { config.filters.search = e.target.value.toLowerCase(); applyFilters(); }
 
 function applyFilters() {
-    // Implementation simplifiée des filtres
-    console.log('Filtres appliqués');
+    console.log('🔍 Application des filtres...');
+    
+    // Récupérer les valeurs des filtres
+    const searchValue = document.getElementById('searchInput')?.value?.trim() || '';
+    const statusFilter = document.getElementById('statusFilter')?.value || '';
+    const promoFilter = document.getElementById('promoFilter')?.value || '';
+    const dateFilter = document.getElementById('dateFilter')?.value || '';
+    const paymentFilter = document.getElementById('paymentFilter')?.value || '';
+    
+    console.log('Filtres récupérés:', { 
+        search: searchValue, 
+        status: statusFilter, 
+        promo: promoFilter,
+        date: dateFilter,
+        payment: paymentFilter
+    });
+    
+    // Construire l'URL avec les paramètres
+    const url = new URL(window.location.href);
+    const params = new URLSearchParams();
+    
+    // Ajouter les paramètres non vides
+    if (searchValue) params.set('search', searchValue);
+    if (statusFilter && statusFilter !== '') params.set('status', statusFilter);
+    if (promoFilter && promoFilter !== '') params.set('promo', promoFilter);
+    if (dateFilter && dateFilter !== '') params.set('date', dateFilter);
+    if (paymentFilter && paymentFilter !== '') params.set('payment', paymentFilter);
+    
+    // Garder la page 1 lors de l'application des filtres
+    params.set('page', '1');
+    
+    // Construire la nouvelle URL
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    console.log('🔗 Redirection vers:', newUrl);
+    
+    // Afficher un indicateur de chargement
+    showLoading();
+    
+    // Rediriger
+    window.location.href = newUrl;
+}
+
+// Fonction pour synchroniser le statut dans la modale après mise à jour
+function syncModalStatus(orderId, newStatus, newTrackingNumber = '') {
+    try {
+        // Mettre à jour le statut affiché dans la modale
+        const statusDisplay = document.querySelector('#orderModal .status-badge');
+        const statusSelect = document.getElementById('orderStatus');
+        const trackingInput = document.getElementById('trackingNumber');
+        
+        if (statusDisplay) {
+            // Nettoyer les anciennes classes de statut
+            statusDisplay.className = statusDisplay.className.replace(/status-\w+/g, '');
+            
+            // Ajouter la nouvelle classe et le texte
+            statusDisplay.classList.add(`status-${newStatus}`);
+            statusDisplay.textContent = translateStatus(newStatus);
+        }
+        
+        if (statusSelect) {
+            statusSelect.value = newStatus;
+        }
+        
+        if (trackingInput && newTrackingNumber) {
+            trackingInput.value = newTrackingNumber;
+        }
+        
+        // Mettre à jour aussi dans le tableau
+        const tableRow = document.querySelector(`tr[data-order-id="${orderId}"]`);
+        if (tableRow) {
+            const tableStatus = tableRow.querySelector('.status');
+            if (tableStatus) {
+                tableStatus.className = tableStatus.className.replace(/status-\w+/g, '');
+                tableStatus.classList.add(`status-${newStatus}`);
+                tableStatus.textContent = translateStatus(newStatus);
+            }
+            
+            if (newTrackingNumber) {
+                const trackingCell = tableRow.querySelector('.tracking-number');
+                if (trackingCell) {
+                    trackingCell.textContent = newTrackingNumber;
+                }
+            }
+        }
+        
+        console.log('✅ Statut synchronisé:', { orderId, newStatus, newTrackingNumber });
+        
+    } catch (error) {
+        console.error('❌ Erreur synchronisation statut:', error);
+    }
+}
+
+// Fonction helper pour traduire les statuts
+function translateStatus(status) {
+    const statusMap = {
+        'waiting': 'En attente',
+        'preparing': 'En préparation',
+        'shipped': 'Expédiée', 
+        'delivered': 'Livrée',
+        'cancelled': 'Annulée'
+    };
+    return statusMap[status] || status;
 }
 
 function resetFilters() {
-    ['searchInput', 'statusFilter', 'promoFilter', 'dateFilter', 'paymentFilter'].forEach(id => {
-        const element = document.getElementById(id);
-        if (element) element.value = '';
+    console.log('🔄 Réinitialisation des filtres...');
+    
+    // Vider tous les champs
+    const fields = ['searchInput', 'statusFilter', 'promoFilter', 'dateFilter', 'paymentFilter'];
+    fields.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.value = '';
+        }
     });
-    showToast('Filtres réinitialisés', 'info');
+    
+    showLoading();
+    // Rediriger vers la page sans paramètres
+    window.location.href = window.location.pathname;
 }
 
 function exportData() {
