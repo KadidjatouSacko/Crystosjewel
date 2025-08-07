@@ -5543,8 +5543,73 @@ async function saveMaintenance(data) {
     }
 }
 
+router.get('/admin/maintenance', isAdmin, maintenanceController.renderMaintenancePage);
+router.post('/admin/maintenance/enable', isAdmin, maintenanceController.enableMaintenance);
+router.post('/admin/maintenance/disable', isAdmin, maintenanceController.disableMaintenance);
+router.get('/api/maintenance/status', isAdmin, maintenanceController.getStatus);
+router.get('/api/maintenance/status', async (req, res) => {
+    try {
+        console.log('📊 Statut maintenance demandé par:', {
+            isAdmin: req.session?.user?.role_id === 2,
+            userId: req.session?.user?.id
+        });
+        
+        // Utiliser la fonction corrigée
+        const status = await getMaintenanceStatus();
+        
+        res.json({
+            success: true,
+            ...status
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur API status maintenance:', error);
+        res.json({
+            success: false,
+            isActive: false,
+            endTime: null
+        });
+    }
+});
 
-
+// Fonction helper dans le même fichier
+async function getMaintenanceStatus() {
+    try {
+        const { SiteSetting } = await import('./models/SiteSetting.js');
+        
+        const settings = await SiteSetting.findAll({
+            where: {
+                setting_key: ['maintenance_mode', 'maintenance_end_time']
+            }
+        });
+        
+        const settingsObj = {};
+        settings.forEach(s => {
+            settingsObj[s.setting_key] = s.setting_value;
+        });
+        
+        const isActive = settingsObj.maintenance_mode === 'true';
+        const endTime = settingsObj.maintenance_end_time ? new Date(settingsObj.maintenance_end_time) : null;
+        
+        // Vérifier expiration
+        if (isActive && endTime && new Date() > endTime) {
+            await SiteSetting.update(
+                { setting_value: 'false' },
+                { where: { setting_key: 'maintenance_mode' } }
+            );
+            return { isActive: false, endTime: null };
+        }
+        
+        return { 
+            isActive, 
+            endTime: endTime?.toISOString() || null
+        };
+        
+    } catch (error) {
+        console.error('❌ Erreur getMaintenanceStatus:', error);
+        return { isActive: false, endTime: null };
+    }
+}
 // Export par défaut
 export default router;
 

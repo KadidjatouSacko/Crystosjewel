@@ -90,3 +90,130 @@ export const maintenanceCheck = (req, res, next) => {
         next();
     }
 };
+
+export const maintenanceMiddleware = async (req, res, next) => {
+    try {
+        // Routes toujours autorisées (même en maintenance)
+        const allowedPaths = [
+            '/css',           // Ressources CSS
+            '/js',            // Ressources JS
+            '/images',        // Images
+            '/uploads',       // Uploads
+            '/favicon',       // Favicon
+            '/connexion-inscription',  // Page de connexion
+            '/login',         // Alternative login
+            '/auth/login',    // API login
+            '/deconnexion',   // Déconnexion
+            '/admin/maintenance', // Gestion maintenance
+            '/api/maintenance'    // API maintenance
+        ];
+        
+        // Vérifier si la route est autorisée
+        const isAllowedPath = allowedPaths.some(path => req.path.startsWith(path));
+        
+        // Vérifier si c'est un admin connecté (role_id = 2)
+        const isAdmin = req.session?.user?.role_id === 2;
+        
+        // IMPORTANT: Initialiser les variables globales si elles n'existent pas
+        if (global.maintenanceMode === undefined) {
+            await initMaintenanceFromDatabase();
+        }
+        
+        // Vérifier si la maintenance a expiré
+        if (global.maintenanceMode && global.maintenanceData?.endTime) {
+            const now = new Date();
+            const endTime = new Date(global.maintenanceData.endTime);
+            
+            if (now > endTime) {
+                console.log('⏰ Maintenance expirée, désactivation automatique...');
+                global.maintenanceMode = false;
+                global.maintenanceData = null;
+                
+                // Mettre à jour en base
+                await SiteSetting.update(
+                    { setting_value: 'false' },
+                    { where: { setting_key: 'maintenance_mode' } }
+                );
+            }
+        }
+        
+        // Autoriser l'accès si :
+        // - Route autorisée OU
+        // - Admin connecté OU  
+        // - Maintenance désactivée
+        if (isAllowedPath || isAdmin || !global.maintenanceMode) {
+            return next();
+        }
+        
+        // Sinon, afficher la page de maintenance
+        const maintenanceData = global.maintenanceData || {
+            message: 'Site en maintenance',
+            startTime: new Date(),
+            endTime: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2h par défaut
+            duration: 2,
+            unit: 'hours'
+        };
+        
+        return res.render('maintenance', {
+            title: 'Maintenance en cours',
+            maintenanceData,
+            user: null,
+            isAuthenticated: false,
+            isAdmin: false
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur middleware maintenance:', error);
+        // En cas d'erreur, laisser passer pour éviter de casser le site
+        next();
+    }
+};
+
+// Fonction pour initialiser les paramètres de maintenance depuis la base
+async function initMaintenanceFromDatabase() {
+    try {
+        const maintenanceMode = await SiteSetting.findOne({
+            where: { setting_key: 'maintenance_mode' }
+        });
+        
+        if (maintenanceMode && maintenanceMode.setting_value === 'true') {
+            // Récupérer tous les paramètres de maintenance
+            const settings = await SiteSetting.findAll({
+                where: {
+                    setting_key: [
+                        'maintenance_end_time',
+                        'maintenance_start_time', 
+                        'maintenance_message',
+                        'maintenance_duration',
+                        'maintenance_unit'
+                    ]
+                }
+            });
+            
+            const settingsObj = {};
+            settings.forEach(s => {
+                settingsObj[s.setting_key] = s.setting_value;
+            });
+            
+            global.maintenanceMode = true;
+            global.maintenanceData = {
+                startTime: new Date(settingsObj.maintenance_start_time),
+                endTime: new Date(settingsObj.maintenance_end_time),
+                message: settingsObj.maintenance_message || 'Maintenance en cours...',
+                duration: parseInt(settingsObj.maintenance_duration) || 2,
+                unit: settingsObj.maintenance_unit || 'hours',
+                adminBypass: true
+            };
+            
+            console.log('🔧 Paramètres de maintenance restaurés depuis la base');
+        } else {
+            global.maintenanceMode = false;
+            global.maintenanceData = null;
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur initialisation maintenance:', error);
+        global.maintenanceMode = false;
+        global.maintenanceData = null;
+    }
+}

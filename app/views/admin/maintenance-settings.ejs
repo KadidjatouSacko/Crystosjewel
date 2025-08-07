@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion de la Maintenance</title>
+    <style>
+        .maintenance-control {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-right: 10px;
+            transition: all 0.3s;
+        }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn:hover { opacity: 0.9; transform: translateY(-2px); }
+        .status-active { color: #28a745; font-weight: bold; }
+        .status-inactive { color: #dc3545; font-weight: bold; }
+        .countdown { font-family: monospace; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="maintenance-control">
+        <h1>🔧 Gestion de la Maintenance</h1>
+        
+        <!-- Statut actuel -->
+        <div id="currentStatus" style="margin-bottom: 30px; padding: 20px; border-radius: 8px;">
+            <% if (isActive) { %>
+                <div class="status-active">
+                    ✅ Maintenance ACTIVE
+                    <% if (endTime) { %>
+                        <br>Fin prévue : <%= endTime.toLocaleString('fr-FR') %>
+                        <% if (timeRemaining) { %>
+                            <br>Temps restant : <span class="countdown"><%= timeRemaining.hours %>h <%= timeRemaining.minutes %>min</span>
+                        <% } %>
+                    <% } %>
+                </div>
+            <% } else { %>
+                <div class="status-inactive">❌ Maintenance INACTIVE</div>
+            <% } %>
+        </div>
+        
+        <!-- Formulaire d'activation -->
+        <form id="maintenanceForm" style="<%= isActive ? 'display:none;' : '' %>">
+            <div class="form-group">
+                <label for="duration">Durée :</label>
+                <input type="number" id="duration" class="form-control" min="1" value="2" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="unit">Unité :</label>
+                <select id="unit" class="form-control">
+                    <option value="minutes">Minutes</option>
+                    <option value="hours" selected>Heures</option>
+                    <option value="days">Jours</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="message">Message :</label>
+                <textarea id="message" class="form-control" rows="3" placeholder="Maintenance en cours..."></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">🔧 Activer la Maintenance</button>
+        </form>
+        
+        <!-- Boutons de contrôle -->
+        <div style="margin-top: 20px;">
+            <% if (isActive) { %>
+                <button id="disableMaintenance" class="btn btn-danger">❌ Désactiver Maintenance</button>
+                <button id="showForm" class="btn btn-secondary">⏱️ Modifier la Durée</button>
+            <% } %>
+            <a href="/admin/stats" class="btn btn-secondary">⬅️ Retour Admin</a>
+        </div>
+        
+        <div id="messages" style="margin-top: 20px;"></div>
+    </div>
+    
+    <script>
+        // Formulaire d'activation
+        document.getElementById('maintenanceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const duration = document.getElementById('duration').value;
+            const unit = document.getElementById('unit').value;
+            const message = document.getElementById('message').value;
+            
+            try {
+                const response = await fetch('/admin/maintenance/enable', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ duration, unit, message })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showMessage(result.message, 'success');
+                    setTimeout(() => location.reload(), 2000);
+                } else {
+                    showMessage(result.message, 'error');
+                }
+            } catch (error) {
+                showMessage('Erreur lors de l\'activation', 'error');
+            }
+        });
+        
+        // Désactivation
+        const disableBtn = document.getElementById('disableMaintenance');
+        if (disableBtn) {
+            disableBtn.addEventListener('click', async () => {
+                if (!confirm('Êtes-vous sûr de vouloir désactiver la maintenance ?')) return;
+                
+                try {
+                    const response = await fetch('/admin/maintenance/disable', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        showMessage(result.message, 'success');
+                        setTimeout(() => location.reload(), 2000);
+                    } else {
+                        showMessage(result.message, 'error');
+                    }
+                } catch (error) {
+                    showMessage('Erreur lors de la désactivation', 'error');
+                }
+            });
+        }
+        
+        // Afficher le formulaire
+        const showFormBtn = document.getElementById('showForm');
+        if (showFormBtn) {
+            showFormBtn.addEventListener('click', () => {
+                document.getElementById('maintenanceForm').style.display = 'block';
+                showFormBtn.style.display = 'none';
+            });
+        }
+        
+        // Fonction d'affichage des messages
+        function showMessage(message, type) {
+            const messagesDiv = document.getElementById('messages');
+            messagesDiv.innerHTML = `
+                <div style="padding: 15px; border-radius: 8px; margin-top: 10px; 
+                     background: ${type === 'success' ? '#d4edda' : '#f8d7da'}; 
+                     color: ${type === 'success' ? '#155724' : '#721c24'};
+                     border: 1px solid ${type === 'success' ? '#c3e6cb' : '#f5c6cb'};">
+                    ${message}
+                </div>
+            `;
+        }
+        
+        // Mise à jour du countdown en temps réel
+        <% if (isActive && timeRemaining) { %>
+            setInterval(() => {
+                const countdownEl = document.querySelector('.countdown');
+                if (countdownEl) {
+                    // Récupérer le statut mis à jour
+                    fetch('/api/maintenance/status')
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.timeRemaining) {
+                                countdownEl.textContent = `${data.timeRemaining.hours}h ${data.timeRemaining.minutes}min`;
+                            } else {
+                                location.reload(); // Maintenance expirée
+                            }
+                        })
+                        .catch(() => {}); // Ignorer les erreurs
+                }
+            }, 60000); // Mise à jour toutes les minutes
+        <% } %>
+    </script>
+</body>
+</html>

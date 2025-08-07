@@ -29,7 +29,8 @@ import { ensurePromoCodesExist } from './migrations/migratePromoCodes.js';
 
 // IMPORTANT: Charger les associations EN PREMIER
 import './app/models/associations.js';
-
+import { maintenanceMiddleware } from './app/middleware/maintenanceMiddleware.js';
+import Setting from "./app/models/SettingModel.js";
 const app = express();
 
 // ==========================================
@@ -271,7 +272,7 @@ app.use(async (req, res, next) => {
         } else if (req.session?.user) {
             // Vérification supplémentaire en base si nécessaire
             try {
-                const { Customer, Role } = require('./app/models'); // Ajustez le chemin
+               
                 const user = await Customer.findByPk(req.session.user.id, {
                     include: [{ model: Role, as: 'role' }]
                 });
@@ -328,42 +329,47 @@ app.use(async (req, res, next) => {
 });
 
 // ===== FONCTION POUR RÉCUPÉRER LE STATUT MAINTENANCE =====
+// Fonction corrigée pour récupérer le statut de maintenance
 async function getMaintenanceStatus() {
     try {
-        // OPTION 1: Si vous stockez dans un fichier JSON
-        const fs = require('fs');
-        const path = require('path');
-        const maintenanceFile = path.join(__dirname, 'maintenance.json');
+        // Ne pas utiliser require() - utiliser import statique en haut du fichier
+        const { SiteSetting } = await import('./app/models/SiteSetting.js');
         
-        if (fs.existsSync(maintenanceFile)) {
-            const data = fs.readFileSync(maintenanceFile, 'utf8');
-            return JSON.parse(data);
+        const maintenanceSetting = await SiteSetting.findOne({
+            where: { setting_key: 'maintenance_mode' }
+        });
+        
+        const endTimeSetting = await SiteSetting.findOne({
+            where: { setting_key: 'maintenance_end_time' }
+        });
+        
+        const isActive = maintenanceSetting?.setting_value === 'true';
+        const endTime = endTimeSetting?.setting_value ? new Date(endTimeSetting.setting_value) : null;
+        
+        // Vérifier si maintenance expirée
+        if (isActive && endTime && new Date() > endTime) {
+            // Désactiver automatiquement
+            await SiteSetting.update(
+                { setting_value: 'false' },
+                { where: { setting_key: 'maintenance_mode' } }
+            );
+            
+            global.maintenanceMode = false;
+            global.maintenanceData = null;
+            
+            console.log('⏰ Maintenance expirée et désactivée automatiquement');
+            return { isActive: false, endTime: null };
         }
-
-        // OPTION 2: Si vous stockez en base de données
-        /*
-        const { Setting } = require('./app/models');
-        const setting = await Setting.findOne({ where: { key: 'maintenance' } });
-        if (setting) {
-            return JSON.parse(setting.value);
-        }
-        */
-
-        // OPTION 3: Si vous stockez en mémoire/cache
-        /*
-        const redis = require('redis');
-        const client = redis.createClient();
-        const data = await client.get('maintenance_status');
-        if (data) {
-            return JSON.parse(data);
-        }
-        */
-
-        return { active: false };
-
+        
+        return { 
+            isActive, 
+            endTime: endTime?.toISOString() || null,
+            timeRemaining: endTime ? Math.max(0, endTime.getTime() - Date.now()) : 0
+        };
+        
     } catch (error) {
         console.error('❌ Erreur récupération statut maintenance:', error);
-        return { active: false };
+        return { isActive: false, endTime: null };
     }
 }
 
@@ -555,9 +561,9 @@ app.use((req, res, next) => {
 });
 
 // Middlewares externes
+app.use(maintenanceMiddleware);
 app.use(setUserForViews);
 app.use(injectSiteSettings);
-// app.use(maintenanceMiddleware);
 
 // Middleware maintenance temporaire désactivé
 app.use((req, res, next) => {

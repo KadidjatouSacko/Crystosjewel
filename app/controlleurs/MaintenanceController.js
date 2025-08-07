@@ -531,6 +531,240 @@ export const maintenanceController = {
             });
         }
     },
+  
     
+     // Page de gestion de la maintenance (admin)
+    async renderMaintenancePage(req, res) {
+        try {
+            // Récupérer les paramètres de maintenance actuels depuis la base
+            const maintenanceSettings = await SiteSetting.findAll({
+                where: { 
+                    setting_key: [
+                        'maintenance_mode', 
+                        'maintenance_duration', 
+                        'maintenance_message', 
+                        'maintenance_end_time',
+                        'maintenance_start_time'
+                    ] 
+                }
+            });
+            
+            const settings = {};
+            maintenanceSettings.forEach(setting => {
+                settings[setting.setting_key] = setting.setting_value;
+            });
+            
+            const isActive = settings.maintenance_mode === 'true';
+            const endTime = settings.maintenance_end_time ? new Date(settings.maintenance_end_time) : null;
+            const isExpired = endTime && new Date() > endTime;
+            
+            // Si maintenance expirée, la désactiver automatiquement
+            if (isActive && isExpired) {
+                await this.disableMaintenance();
+            }
+            
+            res.render('admin/maintenance-settings', {
+                title: 'Gestion de la Maintenance',
+                user: req.session.user,
+                isAuthenticated: true,
+                isAdmin: true,
+                settings,
+                isActive: isActive && !isExpired,
+                endTime,
+                timeRemaining: this.getTimeRemaining(endTime)
+            });
+            
+        } catch (error) {
+            console.error('Erreur page maintenance:', error);
+            res.status(500).render('error', { 
+                message: 'Erreur lors du chargement de la page de maintenance'
+            });
+        }
+    },
+    
+    // Activer le mode maintenance avec durée personnalisée
+    async enableMaintenance(req, res) {
+        try {
+            const { duration, unit, message } = req.body;
+            
+            // Validation des données
+            if (!duration || !unit || isNaN(duration) || duration <= 0) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Durée invalide. Veuillez entrer un nombre positif.'
+                });
+            }
+            
+            // Convertir en millisecondes
+            let durationMs;
+            switch(unit) {
+                case 'minutes':
+                    durationMs = parseInt(duration) * 60 * 1000;
+                    break;
+                case 'hours':
+                    durationMs = parseInt(duration) * 60 * 60 * 1000;
+                    break;
+                case 'days':
+                    durationMs = parseInt(duration) * 24 * 60 * 60 * 1000;
+                    break;
+                default:
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Unité non supportée. Utilisez minutes, hours ou days.'
+                    });
+            }
+            
+            const startTime = new Date();
+            const endTime = new Date(startTime.getTime() + durationMs);
+            
+            // Sauvegarder en base de données
+            const settingsToSave = [
+                { setting_key: 'maintenance_mode', setting_value: 'true' },
+                { setting_key: 'maintenance_duration', setting_value: duration.toString() },
+                { setting_key: 'maintenance_unit', setting_value: unit },
+                { setting_key: 'maintenance_message', setting_value: message || 'Maintenance en cours...' },
+                { setting_key: 'maintenance_start_time', setting_value: startTime.toISOString() },
+                { setting_key: 'maintenance_end_time', setting_value: endTime.toISOString() }
+            ];
+            
+            for (const setting of settingsToSave) {
+                await SiteSetting.upsert({
+                    setting_key: setting.setting_key,
+                    setting_value: setting.setting_value,
+                    setting_type: 'string',
+                    description: `Paramètre de maintenance: ${setting.setting_key}`
+                });
+            }
+            
+            // Activer globalement
+            global.maintenanceMode = true;
+            global.maintenanceData = {
+                startTime,
+                endTime,
+                duration: parseInt(duration),
+                unit,
+                message: message || 'Maintenance en cours...',
+                adminBypass: true
+            };
+            
+            console.log(`🔧 Maintenance activée pour ${duration} ${unit}, fin prévue: ${endTime.toLocaleString('fr-FR')}`);
+            
+            // Programmer la désactivation automatique
+            const timeoutId = setTimeout(async () => {
+                console.log('⏰ Timeout de maintenance atteint, désactivation automatique...');
+                await this.disableMaintenance();
+            }, durationMs);
+            
+            // Stocker l'ID du timeout pour pouvoir l'annuler si nécessaire
+            global.maintenanceTimeoutId = timeoutId;
+            
+            res.json({
+                success: true,
+                message: `Maintenance activée pour ${duration} ${unit}`,
+                data: {
+                    startTime: startTime.toISOString(),
+                    endTime: endTime.toISOString(),
+                    duration,
+                    unit,
+                    message: message || 'Maintenance en cours...'
+                }
+            });
+            
+        } catch (error) {
+            console.error('Erreur activation maintenance:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de l\'activation de la maintenance'
+            });
+        }
+    },
+    
+    // Désactiver le mode maintenance
+    async disableMaintenance(req = null, res = null) {
+        try {
+            // Mettre à jour en base
+            await SiteSetting.update(
+                { setting_value: 'false' },
+                { where: { setting_key: 'maintenance_mode' } }
+            );
+            
+            // Désactiver globalement
+            global.maintenanceMode = false;
+            global.maintenanceData = null;
+            
+            // Annuler le timeout si il existe
+            if (global.maintenanceTimeoutId) {
+                clearTimeout(global.maintenanceTimeoutId);
+                global.maintenanceTimeoutId = null;
+            }
+            
+            console.log('🔧 Maintenance désactivée');
+            
+            if (res) {
+                res.json({
+                    success: true,
+                    message: 'Maintenance désactivée avec succès'
+                });
+            }
+            
+        } catch (error) {
+            console.error('Erreur désactivation maintenance:', error);
+            if (res) {
+                res.status(500).json({
+                    success: false,
+                    message: 'Erreur lors de la désactivation'
+                });
+            }
+        }
+    },
+    
+    // Obtenir le statut de la maintenance
+    async getStatus(req, res) {
+        try {
+            // Vérifier si la maintenance est expirée
+            if (global.maintenanceData && global.maintenanceData.endTime) {
+                const now = new Date();
+                const endTime = new Date(global.maintenanceData.endTime);
+                
+                if (now > endTime) {
+                    await this.disableMaintenance();
+                }
+            }
+            
+            res.json({
+                success: true,
+                isActive: !!global.maintenanceMode,
+                data: global.maintenanceData || null,
+                timeRemaining: global.maintenanceData ? 
+                    this.getTimeRemaining(global.maintenanceData.endTime) : null
+            });
+        } catch (error) {
+            console.error('Erreur status maintenance:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Erreur lors de la récupération du statut'
+            });
+        }
+    },
+    
+    // Fonction utilitaire pour calculer le temps restant
+    getTimeRemaining(endTime) {
+        if (!endTime) return null;
+        
+        const now = new Date();
+        const end = new Date(endTime);
+        const remaining = end.getTime() - now.getTime();
+        
+        if (remaining <= 0) return null;
+        
+        const hours = Math.floor(remaining / (1000 * 60 * 60));
+        const minutes = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        
+        return {
+            hours,
+            minutes,
+            totalMinutes: Math.floor(remaining / (1000 * 60))
+        };
+    }
 };
 
