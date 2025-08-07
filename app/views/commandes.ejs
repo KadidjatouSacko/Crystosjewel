@@ -78,18 +78,7 @@
             padding: 0.5rem;
         }
 
-        /* Sidebar */
-        .sidebar {
-            width: 250px;
-            background: white;
-            border-right: 1px solid var(--border);
-            flex-shrink: 0;
-            position: sticky;
-            top: 0;
-            height: 100vh;
-            overflow-y: auto;
-            transition: var(--transition);
-        }
+        
 
         .sidebar-header {
             padding: 1.5rem;
@@ -1580,58 +1569,7 @@
 
     <div class="app-layout">
         <!-- Sidebar -->
-        <aside class="sidebar">
-            <div class="sidebar-header">
-                <h2 class="sidebar-title">
-                    <i class="fas fa-gem"></i>
-                    CrystosJewel Admin
-                </h2>
-            </div>
-            <nav class="sidebar-nav">
-                <div class="nav-item">
-                    <a href="/admin/dashboard" class="nav-link">
-                        <i class="fas fa-home"></i>
-                        Dashboard
-                    </a>
-                </div>
-                <div class="nav-item">
-                    <a href="/admin/commandes" class="nav-link active">
-                        <i class="fas fa-shopping-cart"></i>
-                        Commandes
-                    </a>
-                </div>
-                <div class="nav-item">
-                    <a href="/admin/clients" class="nav-link">
-<i class="fas fa-users"></i>
-Clients
-</a>
-</div>
-<div class="nav-item">
-<a href="/admin/bijoux" class="nav-link">
-<i class="fas fa-gem"></i>
-Bijoux
-</a>
-</div>
-<div class="nav-item">
-<a href="/admin/codes-promo" class="nav-link">
-<i class="fas fa-tags"></i>
-Codes Promo
-</a>
-</div>
-<div class="nav-item">
-<a href="/admin/statistiques" class="nav-link">
-<i class="fas fa-chart-line"></i>
-Statistiques
-</a>
-</div>
-<div class="nav-item">
-<a href="/admin/parametres" class="nav-link">
-<i class="fas fa-cog"></i>
-Paramètres
-</a>
-</div>
-</nav>
-</aside>
+        
     <!-- Main Content -->
     <main class="main-content">
         <!-- Page Header -->
@@ -3218,37 +3156,54 @@ async function viewOrderDetails(orderId) {
                 </div>
                 
                 <!-- ✅ PAIEMENT -->
-                <div class="section">
-                    <h4><i class="fas fa-credit-card"></i> Paiement</h4>
-                    <div class="payment-details">
-                        <div><strong>Méthode:</strong> ${order.payment_method_display || getPaymentMethodDisplay(order.payment_method || 'card')}</div>
-                        <div><strong>Statut:</strong> 
-                            <span class="payment-status ${order.payment_status === 'paid' ? 'paid' : 'pending'}">
-                                ${order.payment_status === 'paid' ? '✅ Payé' : '⏳ En attente'}
-                            </span>
-                        </div>
-                    </div>
+                <!-- ✅ PAIEMENT SYNCHRONISÉ -->
+<div class="section">
+    <h4><i class="fas fa-credit-card"></i> Paiement</h4>
+    <div class="payment-details">
+        <div><strong>Méthode:</strong> ${order.payment_method_display || getPaymentMethodDisplay(order.payment_method || 'card')}</div>
+        <div><strong>Statut:</strong> 
+            <span class="payment-status ${order.payment_status === 'paid' ? 'paid' : 'pending'}">
+                ${order.payment_status === 'paid' ? '✅ Payé' : 
+                  order.payment_status === 'pending' ? '⏳ En attente' : 
+                  order.payment_status === 'failed' ? '❌ Échec' : '⏳ En attente'}
+            </span>
+        </div>
+        ${order.payment_date ? `<div><strong>Date:</strong> ${new Date(order.payment_date).toLocaleDateString('fr-FR')}</div>` : ''}
+    </div>
+</div>
                 </div>
                 
                 <!-- ✅ HISTORIQUE DES MODIFICATIONS -->
                 <div class="section">
-                    <h4><i class="fas fa-history"></i> Historique des modifications</h4>
-                    <div class="history-list">
-                        ${history.length > 0 ? history.map(h => `
-                            <div class="history-item">
-                                <div class="history-header">
-                                    <span class="history-action">${h.old_status} → ${h.new_status}</span>
-                                    <span class="history-date">${formatDateTime(h.created_at)}</span>
-                                </div>
-                                <div class="history-details">
-                                    <div class="history-user">👤 Par: ${h.updated_by || 'Système'}</div>
-                                    ${h.notes ? `<div class="history-notes">📝 ${h.notes}</div>` : ''}
-                                </div>
-                            </div>
-                        `).join('') : '<div class="no-history">Aucune modification enregistrée</div>'}
+    <h4><i class="fas fa-history"></i> Historique des modifications</h4>
+    <div class="history-list">
+        ${history && history.length > 0 ? history
+            .filter(h => h.new_status && h.new_status !== 'N/A' && h.new_status.trim() !== '')
+            .slice(0, 5) // Limiter à 5 entrées max
+            .map(h => `
+                <div class="history-item">
+                    <div class="history-header">
+                        <span class="history-action">
+                            ${h.old_status && h.old_status !== h.new_status ? 
+                                `${translateStatus(h.old_status)} → ${translateStatus(h.new_status)}` : 
+                                `Statut: ${translateStatus(h.new_status)}`
+                            }
+                        </span>
+                        <span class="history-date">
+                            ${h.created_at ? new Date(h.created_at).toLocaleDateString('fr-FR') + ' ' + 
+                              new Date(h.created_at).toLocaleTimeString('fr-FR', {hour: '2-digit', minute: '2-digit'}) 
+                              : 'Date inconnue'}
+                        </span>
+                    </div>
+                    <div class="history-details">
+                        ${h.updated_by ? `<div class="history-user">👤 Par: ${h.updated_by}</div>` : ''}
+                        ${h.notes && h.notes !== 'N/A' ? `<div class="history-notes">📝 ${h.notes}</div>` : ''}
                     </div>
                 </div>
-                
+            `).join('') 
+            : '<div class="no-history">Aucune modification enregistrée</div>'}
+    </div>
+</div>           
                 <!-- Suivi livraison -->
                 ${tracking.length > 0 ? `
                     <div class="section">
@@ -3527,7 +3482,7 @@ async function editOrder(orderId) {
         console.log(`🚀 EditOrder démarré avec orderId: "${orderId}"`);
         
         if (!orderId || orderId === 'undefined' || orderId === 'null') {
-            console.error('❌ orderId complètement invalide');
+            console.error('❌ orderId invalide');
             showToast('Erreur: ID de commande invalide', 'error');
             return;
         }
@@ -3535,7 +3490,7 @@ async function editOrder(orderId) {
         const cleanOrderId = String(orderId).trim();
         console.log(`✅ orderId nettoyé: "${cleanOrderId}"`);
         
-        // ✅ RÉCUPÉRER LES DONNÉES ACTUELLES DE LA COMMANDE
+        // ✅ RÉCUPÉRER LES DONNÉES ACTUELLES
         showLoading();
         const response = await fetch(`/admin/commandes/${cleanOrderId}/details`);
         const data = await response.json();
@@ -3545,20 +3500,47 @@ async function editOrder(orderId) {
         }
         
         const currentOrder = data.order;
-        const currentStatus = currentOrder.status || 'waiting';
-        const currentTracking = currentOrder.tracking_number || ''; // ✅ RÉCUPÉRER LE TRACKING ACTUEL
+        
+        // ✅ NORMALISATION DU STATUT ACTUEL (PROBLÈME 5)
+        let currentStatus = 'waiting'; // Valeur par défaut
+        
+        if (currentOrder.status) {
+            const statusNormalization = {
+                'en_attente': 'waiting',
+                'en attente': 'waiting',
+                'waiting': 'waiting',
+                'preparation': 'preparing',
+                'en_preparation': 'preparing',
+                'en préparation': 'preparing',
+                'preparing': 'preparing',
+                'expediee': 'shipped',
+                'expédiée': 'shipped',
+                'shipped': 'shipped',
+                'livree': 'delivered',
+                'livrée': 'delivered',
+                'delivered': 'delivered',
+                'annulee': 'cancelled',
+                'annulée': 'cancelled',
+                'cancelled': 'cancelled'
+            };
+            
+            const normalizedStatus = currentOrder.status.toString().toLowerCase().trim();
+            currentStatus = statusNormalization[normalizedStatus] || 'waiting';
+        }
+        
+        const currentTracking = currentOrder.tracking_number || '';
         const currentNotes = currentOrder.internal_notes || currentOrder.notes || '';
         
-        console.log(`📊 Données actuelles:`, { 
-            currentStatus, 
-            currentTracking: `"${currentTracking}"`, 
-            currentNotes: `"${currentNotes}"`,
-            customerEmail: currentOrder.email
+        console.log(`📊 Données récupérées:`, { 
+            originalStatus: currentOrder.status,
+            normalizedStatus: currentStatus,
+            tracking: currentTracking,
+            email: currentOrder.customer_email
         });
         
         hideLoading();
 
-        // Status options avec icônes
+        // ✅ OPTIONS DE STATUT AVEC ICÔNES
         const statusOptions = [
             { value: 'waiting', label: '⏳ En attente', color: '#f59e0b' },
             { value: 'preparing', label: '🔧 En préparation', color: '#3b82f6' },
@@ -3567,11 +3549,12 @@ async function editOrder(orderId) {
             { value: 'cancelled', label: '❌ Annulée', color: '#ef4444' }
         ];
 
-        let optionsHtml = statusOptions.map(option => {
+        const optionsHtml = statusOptions.map(option => {
             const selected = option.value === currentStatus ? 'selected' : '';
             return `<option value="${option.value}" ${selected} data-color="${option.color}">${option.label}</option>`;
         }).join('');
 
+        // ✅ FORMULAIRE COMPLET AVEC TOUTES LES CORRECTIONS
         const formHtml = `
             <div style="padding: 25px; max-height: 80vh; overflow-y: auto;">
                 <h3 style="margin-bottom: 25px; color: var(--primary-dark); display: flex; align-items: center; gap: 10px;">
@@ -3580,15 +3563,17 @@ async function editOrder(orderId) {
                     <span style="font-family: monospace; background: #f3f4f6; padding: 4px 8px; border-radius: 4px; font-size: 14px;">#${cleanOrderId}</span>
                 </h3>
                 
-                <!-- Info client -->
+                <!-- Info client sécurisée (PROBLÈME 4) -->
                 <div style="background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%); border: 1px solid #0ea5e9; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
                     <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
                         <i class="fas fa-user" style="color: #0ea5e9; font-size: 16px;"></i>
                         <strong style="color: #0c4a6e;">Client: ${currentOrder.customer_name || 'N/A'}</strong>
                     </div>
                     <div style="color: #0c4a6e; font-size: 14px;">
-                        📧 Email: ${currentOrder.email || 'Non renseigné'}<br>
-                        💰 Total: ${safeToFixed(currentOrder.total)}€
+                        📧 Email: ${typeof currentOrder.customer_email === 'string' && 
+                                   !currentOrder.customer_email.includes('object') ? 
+                                   currentOrder.customer_email : 'Email non disponible'}<br>
+                        💰 Total: ${parseFloat(currentOrder.total || 0).toFixed(2)}€
                     </div>
                 </div>
                 
@@ -3600,7 +3585,7 @@ async function editOrder(orderId) {
                     </div>
                     <div style="color: #1e3a8a; font-size: 14px; line-height: 1.5;">
                         • Le client recevra un email automatique selon le nouveau statut<br>
-                        • L'historique des modifications sera enregistré<br>
+                        • L'historique des modifications sera enregistré avec date et heure<br>
                         • Le numéro de suivi sera inclus dans les notifications
                     </div>
                 </div>
@@ -3609,7 +3594,7 @@ async function editOrder(orderId) {
                     <!-- ✅ STOCKAGE SÉCURISÉ DE L'orderId -->
                     <input type="hidden" id="finalOrderId" value="${cleanOrderId}">
                     
-                    <!-- Statut -->
+                    <!-- ✅ STATUT AVEC SÉLECTION CORRIGÉE (PROBLÈME 5) -->
                     <div style="margin-bottom: 20px;">
                         <label style="display: block; font-weight: 600; margin-bottom: 8px; color: var(--dark);">
                             <i class="fas fa-tasks" style="color: var(--info); margin-right: 6px;"></i> 
@@ -3620,7 +3605,7 @@ async function editOrder(orderId) {
                         </select>
                         <small style="color: #6b7280; display: block; margin-top: 5px; font-style: italic;">
                             <i class="fas fa-envelope" style="margin-right: 4px;"></i>
-                            Un email personnalisé sera envoyé selon le statut choisi
+                            Statut actuel détecté: <strong>${currentStatus}</strong> (depuis "${currentOrder.status}")
                         </small>
                     </div>
                     
@@ -3685,12 +3670,49 @@ async function editOrder(orderId) {
             </div>
         `;
 
+        // ✅ AFFICHAGE DE LA MODAL
         document.getElementById('modalTitle').innerHTML = `<i class="fas fa-edit"></i> Modifier la commande ${currentOrder.numero_commande || '#' + cleanOrderId}`;
         document.getElementById('modalBody').innerHTML = formHtml;
         showModal();
 
-        // ✅ AJOUTER LES EVENT LISTENERS POUR L'APERÇU
-        const statusSelect = document.getElementById('orderStatus');
+        // ✅ VÉRIFICATION ET CORRECTION DE LA SÉLECTION DU STATUT
+        setTimeout(() => {
+            const statusSelect = document.getElementById('orderStatus');
+            if (statusSelect) {
+                console.log(`🔧 Vérification sélection statut...`);
+                console.log(`   - Valeur attendue: "${currentStatus}"`);
+                console.log(`   - Valeur actuelle: "${statusSelect.value}"`);
+                
+                // ✅ FORCER LA SÉLECTION CORRECTE
+                if (statusSelect.value !== currentStatus) {
+                    statusSelect.value = currentStatus;
+                    console.log(`✅ Statut forcé à: "${currentStatus}"`);
+                }
+                
+                // ✅ SI TOUJOURS PAS BON, ESSAYER OPTION PAR OPTION
+                if (statusSelect.value !== currentStatus) {
+                    const options = statusSelect.querySelectorAll('option');
+                    let found = false;
+                    
+                    options.forEach(option => {
+                        if (option.value === currentStatus) {
+                            option.selected = true;
+                            found = true;
+                            console.log(`✅ Option trouvée et sélectionnée: "${currentStatus}"`);
+                        } else {
+                            option.selected = false;
+                        }
+                    });
+                    
+                    if (!found) {
+                        console.warn(`⚠️ Aucune option trouvée pour: "${currentStatus}"`);
+                        statusSelect.value = 'waiting'; // Fallback
+                    }
+                }
+            }
+        }, 100);
+
+        // ✅ EVENT LISTENERS POUR L'APERÇU
         const trackingInput = document.getElementById('trackingNumber');
         const notesTextarea = document.getElementById('orderNotes');
         const previewDiv = document.getElementById('modificationPreview');
@@ -3698,13 +3720,14 @@ async function editOrder(orderId) {
 
         function updatePreview() {
             const changes = [];
+            const statusSelect = document.getElementById('orderStatus');
             
-            if (statusSelect.value !== currentStatus) {
+            if (statusSelect && statusSelect.value !== currentStatus) {
                 const newOption = statusSelect.options[statusSelect.selectedIndex];
                 changes.push(`<span style="color: #059669;"><i class="fas fa-arrow-right"></i> Statut: ${currentStatus} → ${newOption.text}</span>`);
             }
             
-            if (trackingInput.value.trim() !== currentTracking) {
+            if (trackingInput && trackingInput.value.trim() !== currentTracking) {
                 const newTracking = trackingInput.value.trim();
                 if (newTracking) {
                     changes.push(`<span style="color: #3b82f6;"><i class="fas fa-truck"></i> Tracking: ${newTracking}</span>`);
@@ -3713,7 +3736,7 @@ async function editOrder(orderId) {
                 }
             }
             
-            if (notesTextarea.value.trim() !== currentNotes) {
+            if (notesTextarea && notesTextarea.value.trim() !== currentNotes) {
                 changes.push(`<span style="color: #f59e0b;"><i class="fas fa-sticky-note"></i> Notes mises à jour</span>`);
             }
             
@@ -3725,12 +3748,13 @@ async function editOrder(orderId) {
             }
         }
 
-        // Écouter les changements
-        statusSelect.addEventListener('change', updatePreview);
-        trackingInput.addEventListener('input', updatePreview);
-        notesTextarea.addEventListener('input', updatePreview);
+        // ✅ ÉCOUTER LES CHANGEMENTS
+        const statusSelect = document.getElementById('orderStatus');
+        if (statusSelect) statusSelect.addEventListener('change', updatePreview);
+        if (trackingInput) trackingInput.addEventListener('input', updatePreview);
+        if (notesTextarea) notesTextarea.addEventListener('input', updatePreview);
 
-        // ✅ GESTIONNAIRE DE FORMULAIRE
+        // ✅ GESTIONNAIRE DE SOUMISSION DU FORMULAIRE
         document.getElementById('editOrderForm').addEventListener('submit', async function(e) {
             e.preventDefault();
             
@@ -3790,18 +3814,33 @@ async function editOrder(orderId) {
                     throw new Error(data.message || `Erreur HTTP ${response.status}`);
                 }
 
-                // Dans la fonction updateOrderStatus, après la réponse AJAX réussie :
-if (data.success) {
-    showToast('Statut mis à jour avec succès', 'success');
-    
-    // ✅ SYNCHRONISER LA MODALE
-    syncModalStatus(orderId, newStatus, newTrackingNumber);
-    
-    // Optionnel : recharger la page après 2 secondes
-    setTimeout(() => {
-        window.location.reload();
-    }, 2000);
-}
+                if (data.success) {
+                    showToast('✅ Commande mise à jour avec succès !', 'success');
+                    
+                    // ✅ AFFICHER INFO EMAIL
+                    if (data.data?.emailSent) {
+                        setTimeout(() => {
+                            showToast('📧 Email de notification envoyé au client !', 'info');
+                        }, 1000);
+                    } else if (data.data?.statusChanged && !data.data?.emailSent) {
+                        setTimeout(() => {
+                            showToast('⚠️ Statut mis à jour mais email non envoyé', 'warning');
+                        }, 1500);
+                    }
+                    
+                    // ✅ SYNCHRONISER LA MODALE
+                    syncModalStatus(formOrderId, newStatus, trackingNumber);
+                    
+                    closeModal();
+                    
+                    // ✅ ACTUALISATION COMPLÈTE APRÈS DÉLAI
+                    setTimeout(() => {
+                        showToast('🔄 Actualisation des données...', 'info');
+                        window.location.reload();
+                    }, 2500);
+                } else {
+                    throw new Error(data.message || 'Erreur lors de la modification');
+                }
                 
             } catch (error) {
                 console.error('❌ Erreur modification:', error);
@@ -3817,6 +3856,26 @@ if (data.success) {
         console.error('❌ Erreur dans editOrder:', error);
         showToast('Erreur lors de l\'ouverture du formulaire', 'error');
         hideLoading();
+    }
+}
+
+// ✅ AJOUTER CETTE FONCTION
+function safeFormatDate(dateString) {
+    if (!dateString) return 'Date inconnue';
+    
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Date invalide';
+        
+        return date.toLocaleString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit', 
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (error) {
+        return 'Erreur de date';
     }
 }
 
@@ -4075,6 +4134,25 @@ function debounce(func, wait) {
         clearTimeout(timeout);
         timeout = setTimeout(later, wait);
     };
+}
+
+function formatSafeDate(dateInput) {
+    if (!dateInput) return 'Date non disponible';
+    
+    try {
+        const date = new Date(dateInput);
+        if (isNaN(date.getTime())) return 'Date invalide';
+        
+        return date.toLocaleString('fr-FR', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    } catch (error) {
+        return 'Erreur de date';
+    }
 }
 
 // ✅ EXPORT GLOBAL DES FONCTIONS

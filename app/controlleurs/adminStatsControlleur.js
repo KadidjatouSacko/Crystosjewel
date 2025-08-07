@@ -1606,79 +1606,35 @@ async ShowPageOrdersAdmin(req, res) {
 async getOrderDetails(req, res) {
     try {
         const { id } = req.params;
-        console.log(`🔍 Récupération détails commande #${id} avec tailles et paiement`);
+        console.log(`🔍 Récupération détails commande #${id} - AdminStats version corrigée`);
 
-        // Détails de la commande AVEC payment_method
-       const orderQuery = `
-    SELECT 
-        o.*,
-        -- ✅ GÉRER LES COMMANDES D'INVITÉS
-        CASE 
-            WHEN o.is_guest_order = true THEN o.customer_name
-            ELSE COALESCE(
-                o.customer_name, 
-                CONCAT(TRIM(c.first_name), ' ', TRIM(c.last_name)),
-                'Client inconnu'
-            )
-        END as customer_name,
-        
-        -- ✅ EMAIL POUR INVITÉS
-        CASE 
-            WHEN o.is_guest_order = true THEN o.customer_email
-            ELSE COALESCE(o.customer_email, c.email, 'N/A')
-        END as customer_email,
-        
-        -- ✅ TÉLÉPHONE POUR INVITÉS  
-        CASE 
-            WHEN o.is_guest_order = true THEN o.customer_phone
-            ELSE COALESCE(o.shipping_phone, c.phone, 'N/A')
-        END as phone,
-        
-        -- ✅ ADRESSE POUR INVITÉS
-        CASE 
-            WHEN o.is_guest_order = true THEN COALESCE(o.shipping_address, o.delivery_address)
-            ELSE COALESCE(o.shipping_address, c.address, 'N/A')
-        END as shipping_address,
-        
-        COALESCE(o.status, 'waiting') as current_status,
-        COALESCE(o.payment_method, 'card') as payment_method,
-        COALESCE(o.payment_status, 'pending') as payment_status
-    FROM orders o
-    LEFT JOIN customer c ON o.customer_id = c.id AND o.is_guest_order = false
-    WHERE o.id = $1
-`;
-
-// 3. Corriger le problème du prix à 0€ dans les OrderItems :
-
-// Dans guestOrderController.validateOrder, vérifier que le prix est bien passé :
-for (const item of cartDetails.items) {
-  console.log('📦 Création OrderItem:', {
-    order_id: order.id,
-    jewel_id: item.jewel.id,
-    quantity: item.quantity,
-    price: item.jewel.price_ttc, // ✅ VÉRIFIER que ce n'est pas 0
-    jewel_name: item.jewel.name
-  });
-
-  // ✅ VÉRIFICATION DU PRIX AVANT CRÉATION
-  if (!item.jewel.price_ttc || item.jewel.price_ttc <= 0) {
-    console.warn(`⚠️ Prix invalide pour ${item.jewel.name}: ${item.jewel.price_ttc}`);
-    // Récupérer le prix depuis la BDD si nécessaire
-    const currentJewel = await Jewel.findByPk(item.jewel.id);
-    item.jewel.price_ttc = currentJewel.price_ttc;
-  }
-
-  await OrderItem.create({
-    order_id: order.id,
-    jewel_id: item.jewel.id,
-    quantity: item.quantity,
-    price: parseFloat(item.jewel.price_ttc), // ✅ S'assurer que c'est un nombre
-    jewel_name: item.jewel.name,
-    jewel_image: item.jewel.image,
-    size: item.size || null
-  }, { transaction });
-}
-
+        // ✅ MÊME STRUCTURE QUE adminOrdersController MAIS SANS CONFLIT
+        const orderQuery = `
+            SELECT 
+                o.*,
+                c.first_name as customer_first_name,
+                c.last_name as customer_last_name,
+                c.email as customer_table_email,
+                c.phone as customer_table_phone,
+                
+                COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu') as customer_name,
+                CASE 
+                    WHEN o.customer_email IS NOT NULL AND o.customer_email != '' AND o.customer_email NOT LIKE '%object%'
+                    THEN o.customer_email
+                    WHEN c.email IS NOT NULL AND c.email != '' AND c.email NOT LIKE '%object%'
+                    THEN c.email
+                    ELSE 'Email non disponible'
+                END as customer_email,
+                
+                COALESCE(o.status, o.status_suivi, 'waiting') as current_status,
+                COALESCE(o.payment_method, 'card') as payment_method,
+                COALESCE(o.payment_status, 'pending') as payment_status,
+                o.payment_date
+                
+            FROM orders o
+            LEFT JOIN customer c ON o.customer_id = c.id
+            WHERE o.id = $1
+        `;
 
         const [orderResult] = await sequelize.query(orderQuery, { bind: [id] });
         
@@ -1691,45 +1647,42 @@ for (const item of cartDetails.items) {
 
         const order = orderResult[0];
 
-        // ... reste de votre code pour items, history, tracking ...
-
-        // Réponse avec les informations de paiement
+        // ✅ UTILISER LES HELPERS EXISTANTS DU CONTRÔLEUR adminOrdersController
         const response = {
             success: true,
             order: {
                 ...order,
-                status: adminOrdersController.normalizeStatus(order.current_status),
+                status: order.current_status,
                 date: new Date(order.created_at).toLocaleDateString('fr-FR'),
                 dateTime: new Date(order.created_at).toLocaleString('fr-FR'),
-                hasDiscount: discountAmount > 0 || order.promo_code,
-                // ✅ AJOUT DES INFOS PAIEMENT
+                hasDiscount: parseFloat(order.promo_discount_amount || 0) > 0 || order.promo_code,
                 payment_method: order.payment_method,
                 payment_status: order.payment_status,
                 payment_method_display: this.getPaymentMethodDisplay(order.payment_method)
             },
-            items: processedItems,
-            tracking: tracking,
-            history: history,
+            items: [],
+            tracking: [],
+            history: [],
             summary: {
-                originalSubtotal: originalAmount,
-                discount: discountAmount,
-                subtotal: originalAmount - discountAmount,
-                shipping: shipping,
-                total: finalTotal
+                originalSubtotal: parseFloat(order.original_total || order.total || 0),
+                discount: parseFloat(order.promo_discount_amount || 0),
+                subtotal: parseFloat(order.total || 0),
+                shipping: parseFloat(order.shipping_price || 0),
+                total: parseFloat(order.total || 0)
             }
         };
 
-        console.log(`✅ Détails commande #${id} récupérés avec paiement: ${order.payment_method}`);
         res.json(response);
 
     } catch (error) {
-        console.error('❌ Erreur détails commande:', error);
+        console.error('❌ Erreur détails commande AdminStats:', error);
         res.status(500).json({
             success: false,
             message: 'Erreur lors de la récupération des détails: ' + error.message
         });
     }
 },
+
 
 // ✅ AJOUT DE LA FONCTION HELPER DANS LE CONTROLLER
 getPaymentMethodDisplay(paymentMethod) {

@@ -1161,10 +1161,13 @@ async getOrderDetails(req, res) {
                 COALESCE(o.status, o.status_suivi, 'waiting') as current_status,
                 COALESCE(o.payment_method, 'card') as payment_method,
                 COALESCE(o.payment_status, 'pending') as payment_status
-            FROM orders o
+                
+                FROM orders o
             LEFT JOIN customer c ON o.customer_id = c.id
             WHERE o.id = $1
         `;
+
+        
 
         const [orderResult] = await sequelize.query(orderQuery, { bind: [id] });
         
