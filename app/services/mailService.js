@@ -2844,113 +2844,498 @@ export const sendShippingNotificationEmail = async (userEmail, firstName, shippi
 // ✅ FONCTION PRINCIPALE - Envoi email selon changement de statut
 export const sendStatusChangeEmail = async (orderData, statusChangeData, customerData) => {
   try {
-    console.log('📧 [EMAIL-SYSTEM] === DÉBUT ENVOI EMAILS ===');
-    console.log('📧 [EMAIL-SYSTEM] Commande:', orderData.numero_commande);
-    console.log('📧 [EMAIL-SYSTEM] Client:', customerData.userEmail);
-    console.log('📧 [EMAIL-SYSTEM] Changement:', statusChangeData.oldStatus, '→', statusChangeData.newStatus);
+    console.log('🌹 [EMAIL-SYSTEM] === DÉBUT ENVOI EMAILS CRYSTOS DÉTAILLÉS ===');
+    console.log('🌹 [EMAIL-SYSTEM] Commande:', orderData.numero_commande);
+    console.log('🌹 [EMAIL-SYSTEM] Client:', customerData.userEmail);
+    console.log('🌹 [EMAIL-SYSTEM] Changement:', statusChangeData.oldStatus, '→', statusChangeData.newStatus);
 
-    // ✅ ENVOI EMAIL CLIENT
+    // 🎨 COULEURS CRYSTOSJEWEL
+    const colors = {
+      roseGold: '#b76e79',
+      roseGoldLight: '#e8c2c8', 
+      roseGoldDark: '#7d4b53',
+      cream: '#fff8f0',
+      darkText: '#3a3a3a'
+    };
+
+    // 📋 CONFIGURATION PAR STATUT
+    const statusConfig = {
+      'pending': {
+        icon: '⏳',
+        title: 'En préparation',
+        message: 'Votre commande est maintenant prise en charge par notre équipe',
+        color: colors.roseGold
+      },
+      'waiting': {
+        icon: '⏳', 
+        title: 'En attente',
+        message: 'Votre commande est en cours de traitement',
+        color: colors.roseGold
+      },
+      'preparing': {
+        icon: '🔧',
+        title: 'En cours de préparation', 
+        message: 'Nos artisans travaillent sur votre commande avec soin',
+        color: colors.roseGoldDark
+      },
+      'shipped': {
+        icon: '📦',
+        title: 'Expédiée',
+        message: 'Votre commande a été expédiée et est en route vers vous',
+        color: '#4CAF50'
+      },
+      'delivered': {
+        icon: '✅',
+        title: 'Livrée',
+        message: 'Votre commande a été livrée avec succès',
+        color: '#2E7D32'
+      },
+      'cancelled': {
+        icon: '❌',
+        title: 'Annulée',
+        message: 'Votre commande a été annulée',
+        color: '#f44336'
+      }
+    };
+
+    const config = statusConfig[statusChangeData.newStatus] || statusConfig['pending'];
+
+    // 💌 EMAIL CLIENT AVEC DÉTAILS COMPLETS
     let clientResult = { success: false, error: 'Non envoyé' };
     
     if (customerData.userEmail && customerData.userEmail.includes('@')) {
       try {
-        console.log('📧 [CLIENT-EMAIL] Envoi email client...');
-        
-        // Messages selon statut
-        const statusMessages = {
-          'pending': 'Votre commande est en cours de préparation',
-          'waiting': 'Votre commande est en cours de préparation',
-          'preparing': 'Votre commande est en cours de traitement', 
-          'shipped': 'Votre commande a été expédiée',
-          'delivered': 'Votre commande a été livrée',
-          'cancelled': 'Votre commande a été annulée'
-        };
+        console.log('🌹 [CLIENT-EMAIL] Création email client détaillé...');
 
-        const statusMessage = statusMessages[statusChangeData.newStatus] || `Statut mis à jour : ${statusChangeData.newStatus}`;
+        // 🛍️ RÉCUPÉRATION DES DÉTAILS DE COMMANDE DEPUIS LA BASE
+        let orderDetails = { items: [], shipping: {}, totals: {} };
         
-        // Email client simple
-        const clientHtml = `
-          <!DOCTYPE html>
-          <html>
-          <head><meta charset="utf-8"><title>Mise à jour commande</title></head>
-          <body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f5f5f5;">
-              <tr><td align="center" style="padding: 20px;">
-                <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: white; border-radius: 8px;">
+        try {
+          // Récupérer les articles de la commande avec images
+          const [orderItems] = await sequelize.query(`
+            SELECT 
+              oi.quantity,
+              oi.unit_price,
+              oi.size,
+              j.name,
+              j.description,
+              j.image,
+              j.price_ttc,
+              c.name as category_name
+            FROM order_items oi
+            LEFT JOIN jewels j ON oi.jewel_id = j.id
+            LEFT JOIN categories c ON j.category_id = c.id
+            WHERE oi.order_id = $1
+          `, { bind: [orderData.id] });
+
+          // Récupérer les informations de livraison
+          const [shippingInfo] = await sequelize.query(`
+            SELECT 
+              shipping_address,
+              shipping_city,
+              shipping_postal_code,
+              shipping_country,
+              phone,
+              subtotal,
+              shipping_price,
+              total,
+              promo_code,
+              promo_discount_amount
+            FROM orders 
+            WHERE id = $1
+          `, { bind: [orderData.id] });
+
+          if (orderItems && orderItems.length > 0) {
+            orderDetails.items = orderItems;
+          }
+          
+          if (shippingInfo && shippingInfo.length > 0) {
+            const shipping = shippingInfo[0];
+            orderDetails.shipping = {
+              address: shipping.shipping_address,
+              city: shipping.shipping_city,
+              postalCode: shipping.shipping_postal_code,
+              country: shipping.shipping_country || 'France',
+              phone: shipping.phone
+            };
+            orderDetails.totals = {
+              subtotal: shipping.subtotal,
+              shippingPrice: shipping.shipping_price,
+              total: shipping.total,
+              promoCode: shipping.promo_code,
+              promoDiscount: shipping.promo_discount_amount
+            };
+          }
+        } catch (dbError) {
+          console.log('🌹 [CLIENT-EMAIL] ⚠️ Erreur récupération détails DB:', dbError.message);
+          // Continuer avec les données de base si erreur DB
+        }
+
+        // 🎨 GÉNÉRATION DES ARTICLES HTML
+        const itemsHtml = orderDetails.items.map(item => {
+          const imageUrl = item.image ? 
+            (item.image.startsWith('http') ? item.image : `${process.env.BASE_URL}/uploads/jewels/${item.image}`) :
+            `${process.env.BASE_URL}/images/placeholder-jewel.jpg`;
+          
+          const itemTotal = (parseFloat(item.unit_price) * parseInt(item.quantity)).toFixed(2);
+
+          return `
+            <tr>
+              <td style="padding: 15px; border-bottom: 1px solid ${colors.roseGoldLight};">
+                <table cellpadding="0" cellspacing="0" border="0" width="100%">
                   <tr>
-                    <td style="background-color: #B8868A; padding: 30px; text-align: center;">
-                      <h1 style="color: white; margin: 0;">CrystosJewel</h1>
+                    <td style="width: 80px; vertical-align: top;">
+                      <img src="${imageUrl}" alt="${item.name}" style="width: 70px; height: 70px; object-fit: cover; border-radius: 8px; border: 2px solid ${colors.roseGoldLight};">
                     </td>
-                  </tr>
-                  <tr>
-                    <td style="padding: 30px;">
-                      <h2 style="color: #B8868A;">Bonjour ${customerData.firstName},</h2>
-                      <p>${statusMessage}.</p>
-                      <table width="100%" cellpadding="10" cellspacing="0" style="background-color: #f8f9fa; border-radius: 8px;">
-                        <tr><td><strong>Commande:</strong></td><td>${orderData.numero_commande}</td></tr>
-                        <tr><td><strong>Montant:</strong></td><td>${orderData.total}€</td></tr>
-                        <tr><td><strong>Statut:</strong></td><td>${statusChangeData.newStatus}</td></tr>
-                        ${orderData.tracking_number ? `<tr><td><strong>Suivi:</strong></td><td>${orderData.tracking_number}</td></tr>` : ''}
-                      </table>
-                      ${statusChangeData.newStatus === 'shipped' ? `
-                      <div style="background-color: #d4edda; padding: 15px; border-radius: 8px; margin: 20px 0;">
-                        <strong>Votre colis est en route!</strong><br>
-                        ${orderData.tracking_number ? 'Utilisez le numéro de suivi ci-dessus.' : 'Vous recevrez bientôt le numéro de suivi.'}
-                      </div>` : ''}
+                    <td style="padding-left: 15px; vertical-align: top;">
+                      <div style="color: ${colors.darkText}; font-weight: 600; font-size: 16px; margin-bottom: 5px;">
+                        ${item.name}
+                      </div>
+                      <div style="color: #666; font-size: 14px; margin-bottom: 5px;">
+                        ${item.category_name || 'Bijou'}
+                      </div>
+                      ${item.size && item.size !== 'Non spécifiée' ? `
+                      <div style="color: ${colors.roseGold}; font-size: 13px; font-weight: 500;">
+                        Taille: ${item.size}
+                      </div>
+                      ` : ''}
                     </td>
-                  </tr>
-                  <tr>
-                    <td style="background-color: #f8f9fa; padding: 20px; text-align: center;">
-                      <p style="margin: 0; color: #666;">Questions? ${process.env.MAIL_USER}</p>
+                    <td style="text-align: center; vertical-align: top; width: 80px;">
+                      <div style="color: ${colors.darkText}; font-weight: 600; font-size: 16px;">
+                        ${item.quantity}
+                      </div>
+                    </td>
+                    <td style="text-align: right; vertical-align: top; width: 100px;">
+                      <div style="color: ${colors.roseGold}; font-weight: 700; font-size: 16px;">
+                        ${itemTotal}€
+                      </div>
+                      <div style="color: #666; font-size: 12px;">
+                        ${parseFloat(item.unit_price).toFixed(2)}€ / unité
+                      </div>
                     </td>
                   </tr>
                 </table>
-              </td></tr>
-            </table>
-          </body>
-          </html>
+              </td>
+            </tr>
+          `;
+        }).join('');
+
+        const clientHtml = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mise à jour de votre commande - CrystosJewel</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; }
+      .padding { padding: 20px !important; }
+      .mobile-center { text-align: center !important; }
+      .mobile-stack { display: block !important; width: 100% !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background-color: ${colors.cream}; font-family: 'Inter', sans-serif;">
+  
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: ${colors.cream}; min-height: 100vh;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        
+        <!-- Conteneur principal -->
+        <table class="container" width="650" cellpadding="0" cellspacing="0" border="0" style="max-width: 650px; background: white; border-radius: 16px; box-shadow: 0 10px 30px rgba(183, 110, 121, 0.15); overflow: hidden;">
+          
+          <!-- Header CrystosJewel -->
+          <tr>
+            <td style="background: linear-gradient(135deg, ${colors.roseGold} 0%, ${colors.roseGoldLight} 100%); padding: 40px 30px; text-align: center;">
+              <h1 style="margin: 0; color: white; font-size: 32px; font-weight: 300; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                CrystosJewel
+              </h1>
+              <p style="margin: 8px 0 0 0; color: rgba(255,255,255,0.9); font-size: 16px; font-weight: 400;">
+                Bijoux d'Exception
+              </p>
+            </td>
+          </tr>
+          
+          <!-- Bandeau de statut -->
+          <tr>
+            <td style="background-color: ${config.color}; padding: 20px; text-align: center;">
+              <div style="color: white; font-size: 18px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                <span style="font-size: 24px;">${config.icon}</span>
+                <span>${config.title}</span>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Contenu principal -->
+          <tr>
+            <td class="padding" style="padding: 40px 35px;">
+              
+              <!-- Salutation -->
+              <h2 style="margin: 0 0 20px 0; color: ${colors.darkText}; font-size: 24px; font-weight: 500;">
+                Bonjour ${customerData.firstName},
+              </h2>
+              
+              <!-- Message principal -->
+              <div style="background: ${colors.cream}; border-left: 4px solid ${colors.roseGold}; padding: 20px; margin-bottom: 30px; border-radius: 0 8px 8px 0;">
+                <p style="margin: 0; color: ${colors.darkText}; font-size: 16px; line-height: 1.6;">
+                  ${config.message}.
+                </p>
+              </div>
+              
+              <!-- Informations de base -->
+              <div style="background: #fafafa; border: 1px solid ${colors.roseGoldLight}; border-radius: 12px; overflow: hidden; margin-bottom: 30px;">
+                
+                <div style="background: ${colors.roseGoldLight}; padding: 15px; text-align: center;">
+                  <h3 style="margin: 0; color: ${colors.darkText}; font-size: 18px; font-weight: 600;">
+                    📋 Informations de votre commande
+                  </h3>
+                </div>
+                
+                <div style="padding: 0;">
+                  <table width="100%" cellpadding="15" cellspacing="0" border="0">
+                    <tr>
+                      <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 500;">
+                        Numéro de commande
+                      </td>
+                      <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 700; text-align: right; font-family: monospace;">
+                        ${orderData.numero_commande}
+                      </td>
+                    </tr>
+                    <tr>
+                      <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 500;">
+                        Statut actuel
+                      </td>
+                      <td style="border-bottom: 1px solid ${colors.roseGoldLight}; text-align: right;">
+                        <span style="background: ${config.color}; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">
+                          ${config.icon} ${config.title}
+                        </span>
+                      </td>
+                    </tr>
+                    ${orderData.tracking_number ? `
+                    <tr>
+                      <td style="color: ${colors.darkText}; font-weight: 500;">
+                        Numéro de suivi
+                      </td>
+                      <td style="text-align: right;">
+                        <div style="background: #e8f5e8; color: #2e7d32; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-weight: 700; letter-spacing: 1px;">
+                          ${orderData.tracking_number}
+                        </div>
+                      </td>
+                    </tr>
+                    ` : ''}
+                  </table>
+                </div>
+              </div>
+
+              <!-- Détails des articles -->
+              ${orderDetails.items.length > 0 ? `
+              <div style="background: #fafafa; border: 1px solid ${colors.roseGoldLight}; border-radius: 12px; overflow: hidden; margin-bottom: 30px;">
+                
+                <div style="background: ${colors.roseGoldLight}; padding: 15px; text-align: center;">
+                  <h3 style="margin: 0; color: ${colors.darkText}; font-size: 18px; font-weight: 600;">
+                    🛍️ Détails de votre commande
+                  </h3>
+                </div>
+                
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <!-- Header tableau -->
+                  <tr style="background: ${colors.cream};">
+                    <td style="padding: 12px 15px; color: ${colors.darkText}; font-weight: 600; font-size: 14px; border-bottom: 2px solid ${colors.roseGoldLight};">
+                      Article
+                    </td>
+                    <td style="padding: 12px 15px; color: ${colors.darkText}; font-weight: 600; font-size: 14px; text-align: center; border-bottom: 2px solid ${colors.roseGoldLight};">
+                      Qté
+                    </td>
+                    <td style="padding: 12px 15px; color: ${colors.darkText}; font-weight: 600; font-size: 14px; text-align: right; border-bottom: 2px solid ${colors.roseGoldLight};">
+                      Prix
+                    </td>
+                  </tr>
+                  
+                  <!-- Articles -->
+                  ${itemsHtml}
+                </table>
+              </div>
+              ` : ''}
+
+              <!-- Récapitulatif des prix -->
+              ${orderDetails.totals.subtotal ? `
+              <div style="background: #fafafa; border: 1px solid ${colors.roseGoldLight}; border-radius: 12px; overflow: hidden; margin-bottom: 30px;">
+                
+                <div style="background: ${colors.roseGoldLight}; padding: 15px; text-align: center;">
+                  <h3 style="margin: 0; color: ${colors.darkText}; font-size: 18px; font-weight: 600;">
+                    💰 Récapitulatif des prix
+                  </h3>
+                </div>
+                
+                <div style="padding: 20px;">
+                  <table width="100%" cellpadding="8" cellspacing="0" border="0">
+                    <tr>
+                      <td style="color: ${colors.darkText}; font-weight: 500;">
+                        Sous-total
+                      </td>
+                      <td style="color: ${colors.darkText}; font-weight: 600; text-align: right;">
+                        ${parseFloat(orderDetails.totals.subtotal).toFixed(2)}€
+                      </td>
+                    </tr>
+                    ${orderDetails.totals.promoCode ? `
+                    <tr>
+                      <td style="color: ${colors.roseGold}; font-weight: 500;">
+                        Code promo (${orderDetails.totals.promoCode})
+                      </td>
+                      <td style="color: ${colors.roseGold}; font-weight: 600; text-align: right;">
+                        -${parseFloat(orderDetails.totals.promoDiscount || 0).toFixed(2)}€
+                      </td>
+                    </tr>
+                    ` : ''}
+                    <tr>
+                      <td style="color: ${colors.darkText}; font-weight: 500;">
+                        Frais de livraison
+                      </td>
+                      <td style="color: ${colors.darkText}; font-weight: 600; text-align: right;">
+                        ${parseFloat(orderDetails.totals.shippingPrice || 0) === 0 ? 'GRATUIT' : parseFloat(orderDetails.totals.shippingPrice || 0).toFixed(2) + '€'}
+                      </td>
+                    </tr>
+                    <tr style="border-top: 2px solid ${colors.roseGold};">
+                      <td style="color: ${colors.roseGold}; font-weight: 700; font-size: 18px; padding-top: 12px;">
+                        Total
+                      </td>
+                      <td style="color: ${colors.roseGold}; font-weight: 700; font-size: 18px; text-align: right; padding-top: 12px;">
+                        ${parseFloat(orderDetails.totals.total || orderData.total).toFixed(2)}€
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+              </div>
+              ` : ''}
+
+              <!-- Adresse de livraison -->
+              ${orderDetails.shipping.address ? `
+              <div style="background: #fafafa; border: 1px solid ${colors.roseGoldLight}; border-radius: 12px; overflow: hidden; margin-bottom: 30px;">
+                
+                <div style="background: ${colors.roseGoldLight}; padding: 15px; text-align: center;">
+                  <h3 style="margin: 0; color: ${colors.darkText}; font-size: 18px; font-weight: 600;">
+                    📍 Adresse de livraison
+                  </h3>
+                </div>
+                
+                <div style="padding: 20px;">
+                  <div style="color: ${colors.darkText}; font-weight: 600; font-size: 16px; margin-bottom: 8px;">
+                    ${customerData.firstName} ${customerData.lastName || ''}
+                  </div>
+                  <div style="color: ${colors.darkText}; line-height: 1.5;">
+                    ${orderDetails.shipping.address}<br>
+                    ${orderDetails.shipping.postalCode} ${orderDetails.shipping.city}<br>
+                    ${orderDetails.shipping.country}
+                  </div>
+                  ${orderDetails.shipping.phone ? `
+                  <div style="color: ${colors.roseGold}; font-weight: 500; margin-top: 10px;">
+                    📞 ${orderDetails.shipping.phone}
+                  </div>
+                  ` : ''}
+                </div>
+              </div>
+              ` : ''}
+              
+              ${statusChangeData.newStatus === 'shipped' ? `
+              <!-- Message spécial expédition -->
+              <div style="background: #e8f5e8; border: 2px solid #4caf50; border-radius: 12px; padding: 20px; margin-bottom: 30px; text-align: center;">
+                <h3 style="margin: 0 0 10px 0; color: #2e7d32; font-size: 20px;">📦 Votre commande est en route !</h3>
+                <p style="margin: 0; color: #388e3c; font-size: 16px;">
+                  ${orderData.tracking_number ? 
+                    'Vous pouvez suivre votre colis avec le numéro de suivi ci-dessus.' : 
+                    'Vous recevrez bientôt votre numéro de suivi par email.'
+                  }
+                </p>
+              </div>
+              ` : ''}
+              
+              ${statusChangeData.newStatus === 'delivered' ? `
+              <!-- Message spécial livraison -->
+              <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 12px; padding: 20px; margin-bottom: 30px; text-align: center;">
+                <h3 style="margin: 0 0 10px 0; color: #f57c00; font-size: 20px;">🎉 Félicitations !</h3>
+                <p style="margin: 0; color: #ef6c00; font-size: 16px;">
+                  Votre commande a été livrée. Nous espérons que vos bijoux vous plairont !
+                </p>
+              </div>
+              ` : ''}
+              
+              <!-- Boutons d'action -->
+              <div style="text-align: center; margin-bottom: 30px;">
+                <a href="${process.env.BASE_URL || 'http://localhost:3000'}" style="display: inline-block; background: ${colors.roseGold}; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600; margin-right: 10px;">
+                  Découvrir nos bijoux
+                </a>
+                <a href="mailto:${process.env.MAIL_USER}" style="display: inline-block; background: white; color: ${colors.roseGold}; text-decoration: none; padding: 12px 24px; border: 2px solid ${colors.roseGold}; border-radius: 6px; font-weight: 600;">
+                  Nous contacter
+                </a>
+              </div>
+              
+            </td>
+          </tr>
+          
+          <!-- Footer -->
+          <tr>
+            <td style="background: ${colors.cream}; padding: 30px; text-align: center; border-top: 1px solid ${colors.roseGoldLight};">
+              <p style="margin: 0 0 10px 0; color: ${colors.darkText}; font-size: 14px;">
+                Une question ? Contactez-nous à 
+                <a href="mailto:${process.env.MAIL_USER}" style="color: ${colors.roseGold}; text-decoration: none; font-weight: 500;">
+                  ${process.env.MAIL_USER}
+                </a>
+              </p>
+              <p style="margin: 0; color: #999; font-size: 12px;">
+                © 2024 CrystosJewel - Bijoux d'Exception
+              </p>
+            </td>
+          </tr>
+          
+        </table>
+        
+      </td>
+    </tr>
+  </table>
+  
+</body>
+</html>
         `;
 
         const clientInfo = await transporter.sendMail({
           from: `"CrystosJewel" <${process.env.MAIL_USER}>`,
           to: customerData.userEmail,
-          subject: `Commande ${orderData.numero_commande} mise à jour - CrystosJewel`,
+          subject: `${config.icon} Commande ${orderData.numero_commande} - ${config.title}`,
           html: clientHtml,
-          text: `Bonjour ${customerData.firstName}, ${statusMessage}. Commande: ${orderData.numero_commande}, Montant: ${orderData.total}€, Statut: ${statusChangeData.newStatus}${orderData.tracking_number ? `, Suivi: ${orderData.tracking_number}` : ''}.`
+          text: `Bonjour ${customerData.firstName}, ${config.message}. Commande: ${orderData.numero_commande}, Montant: ${orderData.total}€, Statut: ${config.title}${orderData.tracking_number ? `, Suivi: ${orderData.tracking_number}` : ''}.`
         });
 
-        console.log('📧 [CLIENT-EMAIL] ✅ Email client envoyé:', clientInfo.response);
+        console.log('🌹 [CLIENT-EMAIL] ✅ Email client détaillé envoyé:', clientInfo.response);
         clientResult = { success: true, messageId: clientInfo.messageId };
         
       } catch (clientError) {
-        console.log('📧 [CLIENT-EMAIL] ❌ Erreur:', clientError.message);
+        console.log('🌹 [CLIENT-EMAIL] ❌ Erreur:', clientError.message);
         clientResult = { success: false, error: clientError.message };
       }
     } else {
-      console.log('📧 [CLIENT-EMAIL] ❌ Email client invalide');
+      console.log('🌹 [CLIENT-EMAIL] ❌ Email client invalide');
     }
 
-    // ✅ ENVOI EMAIL ADMIN (SYSTÉMATIQUE)
+    // 👩‍💼 EMAIL ADMIN CRYSTOSJEWEL AVEC STATS DYNAMIQUES
     let adminResult = { success: false, error: 'Non envoyé' };
     
     try {
-      console.log('📧 [ADMIN-EMAIL] Envoi email admin...');
+      console.log('🌹 [ADMIN-EMAIL] Création email admin avec stats dynamiques...');
       adminResult = await sendAdminStatusNotification(orderData, statusChangeData, customerData);
     } catch (adminError) {
-      console.log('📧 [ADMIN-EMAIL] ❌ Erreur:', adminError.message);
+      console.log('🌹 [ADMIN-EMAIL] ❌ Erreur:', adminError.message);
       adminResult = { success: false, error: adminError.message };
     }
 
-    console.log('📧 [EMAIL-SYSTEM] === RÉSULTATS ===');
-    console.log('📧 [EMAIL-SYSTEM] Client:', clientResult.success ? '✅ Envoyé' : '❌ Échec');
-    console.log('📧 [EMAIL-SYSTEM] Admin:', adminResult.success ? '✅ Envoyé' : '❌ Échec');
-    console.log('📧 [EMAIL-SYSTEM] === FIN ENVOI EMAILS ===');
+    console.log('🌹 [EMAIL-SYSTEM] === RÉSULTATS ===');
+    console.log('🌹 [EMAIL-SYSTEM] Client:', clientResult.success ? '✅ Envoyé avec détails' : '❌ Échec');
+    console.log('🌹 [EMAIL-SYSTEM] Admin:', adminResult.success ? '✅ Envoyé avec stats' : '❌ Échec');
+    console.log('🌹 [EMAIL-SYSTEM] === FIN ENVOI EMAILS ===');
 
-    // Retourner le succès si au moins un email est envoyé
-    const overallSuccess = clientResult.success || adminResult.success;
-    
     return {
-      success: overallSuccess,
+      success: clientResult.success || adminResult.success,
       details: {
         client: clientResult,
         admin: adminResult
@@ -2958,7 +3343,441 @@ export const sendStatusChangeEmail = async (orderData, statusChangeData, custome
     };
     
   } catch (error) {
-    console.log('📧 [EMAIL-SYSTEM] ❌ ERREUR GÉNÉRALE:', error.message);
+    console.log('🌹 [EMAIL-SYSTEM] ❌ ERREUR GÉNÉRALE:', error.message);
+    return { success: false, error: error.message };
+  }
+};
+
+
+
+export const sendAdminStatusNotification = async (orderData, statusChangeData, customerData) => {
+  try {
+    console.log('👩‍💼 [ADMIN-EMAIL] Début création email admin avec stats dynamiques...');
+    
+    const { oldStatus, newStatus, updatedBy } = statusChangeData;
+    const adminEmail = process.env.ADMIN_EMAIL || process.env.MAIL_USER;
+    
+    if (!adminEmail) {
+      console.log('👩‍💼 [ADMIN-EMAIL] ❌ Aucun email admin configuré');
+      return { success: false, error: 'Email admin non configuré' };
+    }
+
+    // 🎨 COULEURS CRYSTOSJEWEL
+    const colors = {
+      roseGold: '#b76e79',
+      roseGoldLight: '#e8c2c8', 
+      roseGoldDark: '#7d4b53',
+      cream: '#fff8f0',
+      darkText: '#3a3a3a'
+    };
+
+    const statusConfig = {
+      'pending': { icon: '⏳', color: colors.roseGold },
+      'waiting': { icon: '⏳', color: colors.roseGold },
+      'preparing': { icon: '🔧', color: colors.roseGoldDark },
+      'shipped': { icon: '📦', color: '#4CAF50' },
+      'delivered': { icon: '✅', color: '#2E7D32' },
+      'cancelled': { icon: '❌', color: '#f44336' }
+    };
+
+    const config = statusConfig[newStatus] || statusConfig['pending'];
+
+    // 📊 RÉCUPÉRATION DES STATS DYNAMIQUES
+    let stats = {
+      today: { orders: 0, revenue: 0, pending: 0 },
+      month: { orders: 0, revenue: 0 },
+      total: { orders: 0, revenue: 0 }
+    };
+
+    try {
+      // Stats du jour
+      const [todayStats] = await sequelize.query(`
+        SELECT 
+          COUNT(*) as orders_count,
+          COALESCE(SUM(total), 0) as total_revenue,
+          COUNT(CASE WHEN status IN ('pending', 'waiting') THEN 1 END) as pending_count
+        FROM orders 
+        WHERE DATE(created_at) = CURRENT_DATE
+      `);
+
+      // Stats du mois
+      const [monthStats] = await sequelize.query(`
+        SELECT 
+          COUNT(*) as orders_count,
+          COALESCE(SUM(total), 0) as total_revenue
+        FROM orders 
+        WHERE EXTRACT(MONTH FROM created_at) = EXTRACT(MONTH FROM CURRENT_DATE)
+        AND EXTRACT(YEAR FROM created_at) = EXTRACT(YEAR FROM CURRENT_DATE)
+      `);
+
+      // Stats totales
+      const [totalStats] = await sequelize.query(`
+        SELECT 
+          COUNT(*) as orders_count,
+          COALESCE(SUM(total), 0) as total_revenue
+        FROM orders 
+        WHERE status NOT IN ('cancelled')
+      `);
+
+      if (todayStats && todayStats.length > 0) {
+        stats.today = {
+          orders: parseInt(todayStats[0].orders_count) || 0,
+          revenue: parseFloat(todayStats[0].total_revenue) || 0,
+          pending: parseInt(todayStats[0].pending_count) || 0
+        };
+      }
+
+      if (monthStats && monthStats.length > 0) {
+        stats.month = {
+          orders: parseInt(monthStats[0].orders_count) || 0,
+          revenue: parseFloat(monthStats[0].total_revenue) || 0
+        };
+      }
+
+      if (totalStats && totalStats.length > 0) {
+        stats.total = {
+          orders: parseInt(totalStats[0].orders_count) || 0,
+          revenue: parseFloat(totalStats[0].total_revenue) || 0
+        };
+      }
+
+    } catch (statsError) {
+      console.log('👩‍💼 [ADMIN-EMAIL] ⚠️ Erreur récupération stats:', statsError.message);
+      // Utiliser des stats par défaut en cas d'erreur
+    }
+
+    const adminHtml = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notification Admin - CrystosJewel</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    @media only screen and (max-width: 650px) {
+      .stats-container { display: block !important; }
+      .stat-item { margin-bottom: 15px !important; }
+    }
+  </style>
+</head>
+<body style="margin: 0; padding: 0; background: linear-gradient(135deg, ${colors.cream} 0%, ${colors.roseGoldLight} 100%); font-family: 'Inter', sans-serif; min-height: 100vh;">
+  
+  <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background: linear-gradient(135deg, ${colors.cream} 0%, ${colors.roseGoldLight} 100%); min-height: 100vh;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        
+        <!-- Conteneur principal admin -->
+        <table width="680" cellpadding="0" cellspacing="0" border="0" style="max-width: 680px; background: white; border-radius: 12px; box-shadow: 0 10px 30px rgba(183, 110, 121, 0.2); overflow: hidden;">
+          
+          <!-- Header admin CrystosJewel -->
+          <tr>
+            <td style="background: linear-gradient(135deg, ${colors.roseGoldDark} 0%, ${colors.roseGold} 100%); padding: 30px; text-align: center;">
+              <div style="display: inline-flex; align-items: center; gap: 15px; background: rgba(255,255,255,0.1); padding: 15px 25px; border-radius: 50px; backdrop-filter: blur(10px);">
+                <span style="font-size: 28px;">👩‍💼</span>
+                <div style="text-align: left;">
+                  <h1 style="margin: 0; color: white; font-size: 22px; font-weight: 700; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+                    CrystosJewel
+                  </h1>
+                  <p style="margin: 3px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px; font-weight: 500;">
+                    Administration
+                  </p>
+                </div>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Bandeau de statut -->
+          <tr>
+            <td style="background-color: ${config.color}; padding: 20px; text-align: center;">
+              <div style="color: white; display: flex; align-items: center; justify-content: center; gap: 15px;">
+                <span style="font-size: 32px;">${config.icon}</span>
+                <div style="text-align: left;">
+                  <h2 style="margin: 0; font-size: 20px; font-weight: 700;">
+                    Commande ${orderData.numero_commande}
+                  </h2>
+                  <p style="margin: 2px 0 0 0; font-size: 14px; opacity: 0.9;">
+                    ${oldStatus} → ${newStatus}
+                  </p>
+                </div>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Stats dynamiques en haut -->
+          <tr>
+            <td style="background: ${colors.cream}; padding: 25px;">
+              <h3 style="margin: 0 0 20px 0; color: ${colors.darkText}; font-size: 18px; font-weight: 600; text-align: center;">
+                📊 Tableau de bord en temps réel
+              </h3>
+              
+              <div class="stats-container" style="display: flex; justify-content: space-between; gap: 15px;">
+                <!-- Stat Aujourd'hui -->
+                <div class="stat-item" style="flex: 1; text-align: center; background: white; padding: 18px 15px; border-radius: 12px; border: 2px solid ${colors.roseGoldLight}; box-shadow: 0 4px 12px rgba(183, 110, 121, 0.1);">
+                  <div style="color: ${colors.roseGold}; font-weight: 800; font-size: 24px; font-family: 'Inter', sans-serif; margin-bottom: 5px;">
+                    ${stats.today.orders}
+                  </div>
+                  <div style="color: ${colors.darkText}; font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 3px;">
+                    Commandes Aujourd'hui
+                  </div>
+                  <div style="color: ${colors.roseGold}; font-size: 14px; font-weight: 600;">
+                    ${stats.today.revenue.toFixed(0)}€
+                  </div>
+                </div>
+                
+                <!-- Stat Mois -->
+                <div class="stat-item" style="flex: 1; text-align: center; background: white; padding: 18px 15px; border-radius: 12px; border: 2px solid #4CAF5033; box-shadow: 0 4px 12px rgba(76, 175, 80, 0.1);">
+                  <div style="color: #4CAF50; font-weight: 800; font-size: 24px; font-family: 'Inter', sans-serif; margin-bottom: 5px;">
+                    ${stats.month.orders}
+                  </div>
+                  <div style="color: ${colors.darkText}; font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 3px;">
+                    Commandes ce Mois
+                  </div>
+                  <div style="color: #4CAF50; font-size: 14px; font-weight: 600;">
+                    ${stats.month.revenue.toFixed(0)}€
+                  </div>
+                </div>
+                
+                <!-- Stat En Attente -->
+                <div class="stat-item" style="flex: 1; text-align: center; background: white; padding: 18px 15px; border-radius: 12px; border: 2px solid ${colors.roseGoldDark}33; box-shadow: 0 4px 12px rgba(125, 75, 83, 0.1);">
+                  <div style="color: ${colors.roseGoldDark}; font-weight: 800; font-size: 24px; font-family: 'Inter', sans-serif; margin-bottom: 5px;">
+                    ${stats.today.pending}
+                  </div>
+                  <div style="color: ${colors.darkText}; font-size: 11px; text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 3px;">
+                    En Attente
+                  </div>
+                  <div style="color: ${colors.roseGoldDark}; font-size: 14px; font-weight: 600;">
+                    À traiter
+                  </div>
+                </div>
+              </div>
+            </td>
+          </tr>
+          
+          <!-- Contenu principal admin -->
+          <tr>
+            <td style="padding: 35px;">
+              
+              <!-- Résumé du changement -->
+              <div style="background: ${colors.cream}; border-left: 4px solid ${config.color}; padding: 20px; margin-bottom: 25px; border-radius: 0 8px 8px 0;">
+                <h3 style="margin: 0 0 10px 0; color: ${colors.darkText}; font-size: 18px; font-weight: 600;">
+                  ⚡ Changement de statut détecté
+                </h3>
+                <p style="margin: 0; color: ${colors.darkText}; font-size: 15px; line-height: 1.5;">
+                  La commande <strong>${orderData.numero_commande}</strong> vient de passer 
+                  du statut <span style="background: #ffebee; color: #c62828; padding: 3px 8px; border-radius: 4px; font-weight: 600;">${oldStatus}</span> 
+                  au statut <span style="background: #e8f5e8; color: #2e7d32; padding: 3px 8px; border-radius: 4px; font-weight: 600;">${newStatus}</span>.
+                </p>
+              </div>
+              
+              <!-- Informations détaillées -->
+              <div style="background: #fafafa; border: 1px solid ${colors.roseGoldLight}; border-radius: 8px; overflow: hidden; margin-bottom: 25px;">
+                
+                <div style="background: ${colors.roseGoldLight}; padding: 15px; text-align: center;">
+                  <h3 style="margin: 0; color: ${colors.darkText}; font-size: 16px; font-weight: 600;">
+                    📊 Informations détaillées de la commande
+                  </h3>
+                </div>
+                
+                <table width="100%" cellpadding="12" cellspacing="0" border="0">
+                  <tr>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 500; width: 30%;">
+                      Numéro de commande
+                    </td>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 700; font-family: monospace;">
+                      ${orderData.numero_commande}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 500;">
+                      Cliente
+                    </td>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 600;">
+                      ${customerData.firstName} ${customerData.lastName || ''}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 500;">
+                      Email
+                    </td>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-family: monospace; font-size: 14px;">
+                      <a href="mailto:${customerData.userEmail}" style="color: ${colors.roseGold}; text-decoration: none;">${customerData.userEmail}</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 500;">
+                      Montant total
+                    </td>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: #2e7d32; font-weight: 800; font-size: 20px;">
+                      ${orderData.total}€
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 500;">
+                      Nouveau statut
+                    </td>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight};">
+                      <span style="background: ${config.color}; color: white; padding: 6px 12px; border-radius: 4px; font-weight: 600; font-size: 12px;">
+                        ${config.icon} ${newStatus}
+                      </span>
+                    </td>
+                  </tr>
+                  ${orderData.tracking_number ? `
+                  <tr>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 500;">
+                      Numéro de suivi
+                    </td>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight};">
+                      <div style="background: #e8f5e8; color: #2e7d32; padding: 6px 10px; border-radius: 4px; font-family: monospace; font-weight: 600; letter-spacing: 1px;">
+                        ${orderData.tracking_number}
+                      </div>
+                    </td>
+                  </tr>
+                  ` : ''}
+                  <tr>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 500;">
+                      Modifié par
+                    </td>
+                    <td style="border-bottom: 1px solid ${colors.roseGoldLight}; color: ${colors.darkText}; font-weight: 600;">
+                      ${updatedBy}
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="color: ${colors.darkText}; font-weight: 500;">
+                      Date/Heure
+                    </td>
+                    <td style="color: ${colors.darkText}; font-weight: 600;">
+                      ${new Date().toLocaleString('fr-FR', { 
+                        timeZone: 'Europe/Paris',
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </td>
+                  </tr>
+                </table>
+              </div>
+              
+              <!-- Actions rapides -->
+              <div style="text-align: center; margin-bottom: 25px;">
+                <h3 style="margin: 0 0 15px 0; color: ${colors.darkText}; font-size: 16px; font-weight: 600;">Actions rapides</h3>
+                
+                <a href="${process.env.BASE_URL}/admin/commandes" style="display: inline-block; background: ${colors.roseGold}; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; margin: 0 5px; font-size: 14px;">
+                  📋 Toutes les commandes
+                </a>
+                <a href="${process.env.BASE_URL}/admin/stats" style="display: inline-block; background: ${colors.roseGoldDark}; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; margin: 0 5px; font-size: 14px;">
+                  📊 Dashboard
+                </a>
+                <a href="${process.env.BASE_URL}/admin/commandes/${orderData.id || ''}" style="display: inline-block; background: #4CAF50; color: white; text-decoration: none; padding: 10px 20px; border-radius: 6px; font-weight: 600; margin: 0 5px; font-size: 14px;">
+                  👁️ Voir détails
+                </a>
+              </div>
+              
+              ${newStatus === 'shipped' ? `
+              <!-- Alerte expédition -->
+              <div style="background: #e8f5e8; border: 2px solid #4caf50; border-radius: 8px; padding: 15px; text-align: center;">
+                <h4 style="margin: 0 0 8px 0; color: #2e7d32; font-size: 16px;">📦 Commande expédiée avec succès</h4>
+                <p style="margin: 0; color: #388e3c; font-size: 14px;">
+                  La cliente a reçu un email de confirmation détaillé avec ${orderData.tracking_number ? 'le numéro de suivi' : 'les informations d\'expédition'} et tous les détails de sa commande.
+                </p>
+              </div>
+              ` : ''}
+              
+              ${newStatus === 'delivered' ? `
+              <!-- Alerte livraison -->
+              <div style="background: #fff3e0; border: 2px solid #ff9800; border-radius: 8px; padding: 15px; text-align: center;">
+                <h4 style="margin: 0 0 8px 0; color: #f57c00; font-size: 16px;">🎯 Commande livrée avec succès</h4>
+                <p style="margin: 0; color: #ef6c00; font-size: 14px;">
+                  La cliente a reçu une notification de livraison. Pensez à effectuer un suivi de satisfaction client pour maintenir la qualité de service CrystosJewel.
+                </p>
+              </div>
+              ` : ''}
+              
+            </td>
+          </tr>
+          
+          <!-- Footer admin avec stats étendues -->
+          <tr>
+            <td style="background: ${colors.cream}; padding: 25px; text-align: center; border-top: 1px solid ${colors.roseGoldLight};">
+              
+              <!-- Récapitulatif global -->
+              <div style="margin-bottom: 20px; padding: 20px; background: white; border-radius: 8px; border: 1px solid ${colors.roseGoldLight};">
+                <h4 style="margin: 0 0 15px 0; color: ${colors.darkText}; font-size: 16px; font-weight: 600;">
+                  📈 Récapitulatif Performance CrystosJewel
+                </h4>
+                
+                <div style="display: flex; justify-content: space-between; text-align: center;">
+                  <div style="flex: 1;">
+                    <div style="color: ${colors.roseGold}; font-weight: 700; font-size: 18px;">
+                      ${stats.total.orders}
+                    </div>
+                    <div style="color: ${colors.darkText}; font-size: 12px; font-weight: 500;">
+                      Commandes Totales
+                    </div>
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="color: #4CAF50; font-weight: 700; font-size: 18px;">
+                      ${stats.total.revenue.toFixed(0)}€
+                    </div>
+                    <div style="color: ${colors.darkText}; font-size: 12px; font-weight: 500;">
+                      Chiffre d'Affaires Total
+                    </div>
+                  </div>
+                  <div style="flex: 1;">
+                    <div style="color: ${colors.roseGoldDark}; font-weight: 700; font-size: 18px;">
+                      ${stats.total.orders > 0 ? (stats.total.revenue / stats.total.orders).toFixed(0) : 0}€
+                    </div>
+                    <div style="color: ${colors.darkText}; font-size: 12px; font-weight: 500;">
+                      Panier Moyen
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Footer légal -->
+              <p style="margin: 0; color: #999; font-size: 12px;">
+                📧 Notification automatique CrystosJewel Admin • Stats en temps réel<br>
+                <a href="${process.env.BASE_URL}/admin" style="color: ${colors.roseGold}; text-decoration: none; font-weight: 500;">
+                  Accéder au tableau de bord complet
+                </a>
+              </p>
+              
+            </td>
+          </tr>
+          
+        </table>
+        
+      </td>
+    </tr>
+  </table>
+  
+</body>
+</html>
+    `;
+
+    const subject = `${config.icon} Commande ${orderData.numero_commande} - ${newStatus} - CrystosJewel Admin`;
+
+    console.log('👩‍💼 [ADMIN-EMAIL] Envoi vers:', adminEmail);
+
+    const info = await transporter.sendMail({
+      from: `"CrystosJewel Admin" <${process.env.MAIL_USER}>`,
+      to: adminEmail,
+      subject: subject,
+      html: adminHtml,
+      headers: {
+        'X-Priority': '1',
+        'Importance': 'high'
+      }
+    });
+
+    console.log('👩‍💼 [ADMIN-EMAIL] ✅ Email admin avec stats dynamiques envoyé:', info.response);
+    return { success: true, messageId: info.messageId };
+    
+  } catch (error) {
+    console.log('👩‍💼 [ADMIN-EMAIL] ❌ Erreur:', error.message);
     return { success: false, error: error.message };
   }
 };
@@ -3703,202 +4522,9 @@ export const sendEnhancedOrderConfirmationEmail = async (userEmail, firstName, o
 /**
  * FONCTION AMÉLIORÉE - Envoi email + SMS selon changement de statut
  */
-export const sendAdminStatusNotification = async (orderData, statusChangeData, customerData) => {
-  try {
-    console.log('📧 [ADMIN-EMAIL] Envoi notification admin...');
-    
-    const { oldStatus, newStatus, updatedBy } = statusChangeData;
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.MAIL_USER;
-    
-    if (!adminEmail) {
-      console.log('📧 [ADMIN-EMAIL] ❌ Aucun email admin configuré');
-      return { success: false, error: 'Email admin non configuré' };
-    }
 
-    const statusIcons = {
-      'pending': '⏳',
-      'waiting': '⏳',
-      'preparing': '🔄',
-      'shipped': '📦',
-      'delivered': '✅',
-      'cancelled': '❌'
-    };
 
-    const statusColors = {
-      'pending': '#f59e0b',
-      'waiting': '#f59e0b',
-      'preparing': '#3b82f6',
-      'shipped': '#10b981',
-      'delivered': '#059669',
-      'cancelled': '#ef4444'
-    };
 
-    const statusIcon = statusIcons[newStatus] || '📋';
-    const statusColor = statusColors[newStatus] || '#6b7280';
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <meta charset="utf-8">
-        <title>Changement de statut - Admin</title>
-      </head>
-      <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f3f4f6;">
-        
-        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #f3f4f6;">
-          <tr>
-            <td align="center" style="padding: 20px;">
-              
-              <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                
-                <!-- Header Admin -->
-                <tr>
-                  <td style="background: linear-gradient(135deg, #1f2937, #374151); padding: 25px; text-align: center; border-radius: 12px 12px 0 0;">
-                    <h1 style="color: white; margin: 0; font-size: 20px;">🔔 CrystosJewel Admin</h1>
-                    <p style="color: rgba(255,255,255,0.8); margin: 8px 0 0 0; font-size: 14px;">
-                      Notification de changement de statut
-                    </p>
-                  </td>
-                </tr>
-                
-                <!-- Status Change Alert -->
-                <tr>
-                  <td style="padding: 0;">
-                    <div style="background-color: ${statusColor}; color: white; padding: 15px; text-align: center;">
-                      <h2 style="margin: 0; font-size: 18px;">
-                        ${statusIcon} Commande ${orderData.numero_commande}
-                      </h2>
-                      <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.9;">
-                        ${oldStatus} → ${newStatus}
-                      </p>
-                    </div>
-                  </td>
-                </tr>
-                
-                <!-- Content -->
-                <tr>
-                  <td style="padding: 30px;">
-                    
-                    <!-- Résumé du changement -->
-                    <div style="background-color: #f9fafb; border-left: 4px solid ${statusColor}; padding: 20px; margin-bottom: 25px;">
-                      <h3 style="margin: 0 0 10px 0; color: #1f2937; font-size: 16px;">
-                        Changement de statut détecté
-                      </h3>
-                      <p style="margin: 0; color: #4b5563; font-size: 14px; line-height: 1.5;">
-                        La commande <strong>${orderData.numero_commande}</strong> vient de passer du statut 
-                        "<strong>${oldStatus}</strong>" au statut "<strong>${newStatus}</strong>".
-                      </p>
-                    </div>
-                    
-                    <!-- Détails commande -->
-                    <table width="100%" cellpadding="10" cellspacing="0" border="0" style="background-color: #f8fafc; border-radius: 8px; margin-bottom: 25px;">
-                      <tr style="background-color: #e5e7eb;">
-                        <td colspan="2" style="padding: 15px; text-align: center;">
-                          <strong style="color: #1f2937; font-size: 16px;">Informations de la commande</strong>
-                        </td>
-                      </tr>
-                      <tr>
-                        <td style="color: #4b5563; font-weight: bold; width: 30%;">Numéro :</td>
-                        <td style="color: #1f2937;">${orderData.numero_commande}</td>
-                      </tr>
-                      <tr>
-                        <td style="color: #4b5563; font-weight: bold;">Client :</td>
-                        <td style="color: #1f2937;">${customerData.firstName} ${customerData.lastName || ''}</td>
-                      </tr>
-                      <tr>
-                        <td style="color: #4b5563; font-weight: bold;">Email :</td>
-                        <td style="color: #1f2937;">${customerData.userEmail}</td>
-                      </tr>
-                      <tr>
-                        <td style="color: #4b5563; font-weight: bold;">Montant :</td>
-                        <td style="color: #1f2937; font-weight: bold;">${orderData.total}€</td>
-                      </tr>
-                      ${orderData.tracking_number ? `
-                      <tr>
-                        <td style="color: #4b5563; font-weight: bold;">Suivi :</td>
-                        <td style="color: #1f2937; font-family: monospace;">${orderData.tracking_number}</td>
-                      </tr>
-                      ` : ''}
-                      <tr>
-                        <td style="color: #4b5563; font-weight: bold;">Modifié par :</td>
-                        <td style="color: #1f2937;">${updatedBy}</td>
-                      </tr>
-                      <tr>
-                        <td style="color: #4b5563; font-weight: bold;">Date/Heure :</td>
-                        <td style="color: #1f2937;">${new Date().toLocaleString('fr-FR')}</td>
-                      </tr>
-                    </table>
-                    
-                    <!-- Actions -->
-                    <div style="text-align: center; margin-bottom: 20px;">
-                      <a href="${process.env.BASE_URL}/admin/commandes" 
-                         style="display: inline-block; background-color: #3b82f6; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-right: 10px;">
-                        📋 Voir toutes les commandes
-                      </a>
-                      <a href="${process.env.BASE_URL}/admin/commandes" 
-                         style="display: inline-block; background-color: #10b981; color: white; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold;">
-                        👁️ Détails de cette commande
-                      </a>
-                    </div>
-                    
-                    ${newStatus === 'shipped' ? `
-                    <!-- Alerte expédition -->
-                    <div style="background-color: #d1fae5; border: 1px solid #10b981; border-radius: 8px; padding: 15px; text-align: center;">
-                      <strong style="color: #047857;">📦 Commande expédiée !</strong><br>
-                      <span style="color: #065f46; font-size: 14px;">
-                        Le client a reçu un email de confirmation avec le numéro de suivi.
-                      </span>
-                    </div>
-                    ` : ''}
-                    
-                  </td>
-                </tr>
-                
-                <!-- Footer -->
-                <tr>
-                  <td style="background-color: #f9fafb; padding: 20px; text-align: center; border-top: 1px solid #e5e7eb; border-radius: 0 0 12px 12px;">
-                    <p style="margin: 0; color: #6b7280; font-size: 12px;">
-                      Notification automatique CrystosJewel Admin • 
-                      <a href="${process.env.BASE_URL}/admin" style="color: #3b82f6; text-decoration: none;">
-                        Accéder à l'administration
-                      </a>
-                    </p>
-                  </td>
-                </tr>
-                
-              </table>
-              
-            </td>
-          </tr>
-        </table>
-        
-      </body>
-      </html>
-    `;
-
-    const subject = `${statusIcon} Commande ${orderData.numero_commande} - ${newStatus} (${oldStatus} → ${newStatus})`;
-
-    console.log('📧 [ADMIN-EMAIL] Envoi vers:', adminEmail);
-
-    const info = await transporter.sendMail({
-      from: `"CrystosJewel Admin" <${process.env.MAIL_USER}>`,
-      to: adminEmail,
-      subject: subject,
-      html: htmlContent,
-      headers: {
-        'X-Priority': '1',
-        'Importance': 'high'
-      }
-    });
-
-    console.log('📧 [ADMIN-EMAIL] ✅ Email admin envoyé:', info.response);
-    return { success: true, messageId: info.messageId };
-    
-  } catch (error) {
-    console.log('📧 [ADMIN-EMAIL] ❌ Erreur:', error.message);
-    return { success: false, error: error.message };
-  }
-};
 
 /**
  * ✅ EMAIL ADMIN - NOTIFICATION CHANGEMENT DE STATUT
