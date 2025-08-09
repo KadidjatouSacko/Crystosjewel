@@ -592,12 +592,11 @@ function calculateDeliveryDate(daysToAdd = 3) {
 export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData) => {
   try {
     const { 
-      orderNumber, 
+      numero_commande, 
       items, 
       total, 
       subtotal, 
       shipping_price,
-      shippingAddress, 
       promo_code,
       promo_discount_amount 
     } = orderData;
@@ -616,20 +615,26 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
     const shippingFee = shipping_price || (subtotal >= 50 ? 0 : 5.99);
     const hasPromo = promo_code && promo_discount_amount > 0;
     
+    // ✅ CORRECTION: Calculer totalArticles correctement
+    const totalArticles = items ? items.length : 0;
+    
     // Générer HTML des articles avec images
-    const itemsHtml = items.map(item => {
+    const itemsHtml = items && items.length > 0 ? items.map(item => {
       const imageUrl = item.jewel?.image 
         ? (item.jewel.image.startsWith('http') 
             ? item.jewel.image 
             : `${process.env.BASE_URL || 'http://localhost:3000'}/uploads/${item.jewel.image}`)
         : `${process.env.BASE_URL || 'http://localhost:3000'}/images/default-jewel.jpg`;
         
+      // ✅ CORRECTION: Calculer le total de l'item avec vérification
+      const itemTotal = item.total || (parseFloat(item.price || 0) * parseInt(item.quantity || 1));
+        
       return `
         <tr style="border-bottom: 1px solid #f0f0f0;">
           <td style="padding: 20px 0; vertical-align: top;">
             <div style="display: flex; align-items: center; gap: 15px;">
               <img src="${imageUrl}" 
-                   alt="${item.jewel?.name || 'Bijou'}" 
+                   alt="${item.jewel?.name || item.name || 'Bijou'}" 
                    style="
                      width: 80px; 
                      height: 80px; 
@@ -643,7 +648,7 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
                   color: #b76e79; 
                   font-size: 18px; 
                   font-weight: 600;
-                ">${item.jewel?.name || 'Bijou'}</h3>
+                ">${item.jewel?.name || item.name || 'Bijou'}</h3>
                 <p style="margin: 0; color: #7d4b53; font-size: 14px;">
                   ${item.size && item.size !== 'Non spécifiée' ? `Taille: ${item.size}` : ''}
                 </p>
@@ -658,11 +663,11 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
               font-size: 18px; 
               font-weight: 600; 
               color: #b76e79;
-            ">${item.total.toFixed(2)}€</span>
+            ">${parseFloat(itemTotal).toFixed(2)}€</span>
           </td>
         </tr>
       `;
-    }).join('');
+    }).join('') : '<tr><td style="padding: 20px; text-align: center; color: #999;">Aucun article</td></tr>';
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -754,7 +759,7 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
                       color: #7d4b53; 
                       font-size: 16px;
                       font-weight: 600;
-                    ">Commande #${orderNumber}</h3>
+                    ">Commande #${numero_commande}</h3>
                     <p style="
                       margin: 5px 0 0 0; 
                       color: #6b7280; 
@@ -777,13 +782,6 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
                   <strong style="color: #7d4b53;">Livraison estimée:</strong><br>
                   <span style="color: #28A745; font-weight: 600;">${deliveryDate}</span>
                 </div>
-                
-                <div>
-                  <strong style="color: #7d4b53;">Adresse de livraison:</strong><br>
-                  <span style="color: #6b7280;">
-                    ${shippingAddress.address}, ${shippingAddress.city} ${shippingAddress.postal_code}
-                  </span>
-                </div>
               </div>
 
               <!-- Articles commandés -->
@@ -793,7 +791,7 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
                   color: #7d4b53; 
                   font-size: 20px;
                   font-weight: 600;
-                ">Vos bijoux sélectionnés</h3>
+                ">Vos bijoux sélectionnés (${totalArticles} article${totalArticles > 1 ? 's' : ''})</h3>
                 
                 <table style="width: 100%; border-collapse: collapse;">
                   ${itemsHtml}
@@ -820,7 +818,7 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
                   margin-bottom: 12px;
                 ">
                   <span style="color: #6b7280;">Sous-total:</span>
-                  <span style="color: #3a3a3a; font-weight: 500;">${subtotal.toFixed(2)}€</span>
+                  <span style="color: #3a3a3a; font-weight: 500;">${parseFloat(subtotal || 0).toFixed(2)}€</span>
                 </div>
                 
                 ${hasPromo ? `
@@ -831,7 +829,7 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
                   color: #dc2626;
                 ">
                   <span>Réduction (${promo_code}):</span>
-                  <span style="font-weight: 600;">-${promo_discount_amount.toFixed(2)}€</span>
+                  <span style="font-weight: 600;">-${parseFloat(promo_discount_amount).toFixed(2)}€</span>
                 </div>
                 ` : ''}
                 
@@ -842,7 +840,7 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
                 ">
                   <span style="color: #6b7280;">Frais de livraison:</span>
                   <span style="color: #3a3a3a; font-weight: 500;">
-                    ${shippingFee === 0 ? 'Gratuit' : `${shippingFee.toFixed(2)}€`}
+                    ${shippingFee === 0 ? 'Gratuit' : `${parseFloat(shippingFee).toFixed(2)}€`}
                   </span>
                 </div>
                 
@@ -856,7 +854,7 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
                   color: #b76e79;
                 ">
                   <span>Total:</span>
-                  <span>${total.toFixed(2)}€</span>
+                  <span>${parseFloat(total || 0).toFixed(2)}€</span>
                 </div>
               </div>
 
@@ -872,7 +870,6 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
                   font-weight: 600;
                   font-size: 16px;
                   box-shadow: 0 8px 24px rgba(183, 110, 121, 0.3);
-                  transition: transform 0.3s ease;
                 ">✨ Suivre ma commande</a>
               </div>
 
@@ -923,29 +920,27 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
       </html>
     `;
 
-    const adminEmail = process.env.ADMIN_EMAIL || process.env.MAIL_USER;
-    
     const info = await transporter.sendMail({
-      from: `"CrystosJewel Admin 🔔" <${process.env.MAIL_USER}>`,
-      to: adminEmail,
-      subject: `Nouvelle commande ${total.toFixed(2)}€ + ${totalArticles} article${totalArticles > 1 ? 's' : ''}`,
+      from: `"CrystosJewel ✨" <${process.env.MAIL_USER}>`,
+      to: userEmail,
+      subject: `✨ Commande ${numero_commande} confirmée - CrystosJewel`,
       html: htmlContent,
-      priority: 'high',
     });
 
-    console.log("📧 Email admin envoyé :", info.response);
+    console.log("📧 Email client envoyé :", info.response);
     return { success: true, messageId: info.messageId };
     
   } catch (error) {
-    console.error("❌ Erreur email admin :", error);
+    console.error("❌ Erreur email client :", error);
     return { success: false, error: error.message };
   }
 };
 
 
+
 export const sendAdminOrderNotification = async (orderData, customerData) => {
   try {
-    const { orderNumber, items, total, orderId, promoCode, promoDiscount } = orderData;
+    const { numero_commande, items, total, promo_code, promo_discount_amount } = orderData;
     const { firstName, lastName, email, phone, address } = customerData;
     
     const now = new Date();
@@ -959,7 +954,14 @@ export const sendAdminOrderNotification = async (orderData, customerData) => {
       minute: '2-digit'
     });
 
-    const promoAmount = promoDiscount || 0;
+    const promoAmount = promo_discount_amount || 0;
+    
+    // ✅ CORRECTION: S'assurer que les items ont la propriété total
+    const processedItems = items && items.length > 0 ? items.map(item => ({
+      ...item,
+      name: item.jewel?.name || item.name || 'Article',
+      total: item.total || (parseFloat(item.price || 0) * parseInt(item.quantity || 1))
+    })) : [];
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -968,234 +970,134 @@ export const sendAdminOrderNotification = async (orderData, customerData) => {
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Nouvelle commande - CrystosJewel Admin</title>
-        <style>
-          body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-          table { border-collapse: collapse; }
-          .container { max-width: 680px; margin: 0 auto; }
-        </style>
       </head>
       <body style="margin: 0; padding: 0; font-family: Arial, sans-serif; background: linear-gradient(135deg, #1e1b4b 0%, #4c1d95 100%);">
         
         <div style="padding: 25px 15px;">
-          <table cellpadding="0" cellspacing="0" border="0" class="container" style="max-width: 680px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; box-shadow: 0 20px 60px rgba(220, 38, 38, 0.2); border: 2px solid #ffd700;">
+          <table cellpadding="0" cellspacing="0" border="0" style="max-width: 680px; margin: 0 auto; background-color: #ffffff; border-radius: 20px; box-shadow: 0 20px 60px rgba(220, 38, 38, 0.2); border: 2px solid #ffd700; overflow: hidden;">
             
-            <!-- Header admin rouge/gold -->
+            <!-- Header admin -->
             <tr>
-              <td style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); padding: 30px 25px; color: #ffffff; border-radius: 20px 20px 0 0; position: relative;">
-                
-                <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                  <tr>
-                    <td width="55" style="vertical-align: top; padding-right: 16px;">
-                      <div style="width: 55px; height: 55px; background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%); border-radius: 15px; text-align: center; line-height: 55px; font-size: 22px; box-shadow: 0 8px 25px rgba(255, 215, 0, 0.4);">🔔</div>
-                    </td>
-                    <td style="vertical-align: top;">
-                      <h1 style="margin: 0; font-size: 24px; font-weight: bold; letter-spacing: -0.5px; font-family: Arial, sans-serif; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Nouvelle Commande Reçue</h1>
-                      <p style="margin: 6px 0 0 0; opacity: 0.95; font-size: 15px; font-family: Arial, sans-serif;">CrystosJewel Administration</p>
-                    </td>
-                  </tr>
-                </table>
-                
+              <td style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); padding: 30px 25px; color: #ffffff; text-align: center;">
+                <h1 style="margin: 0; font-size: 24px; font-weight: bold;">🔔 NOUVELLE COMMANDE</h1>
+                <p style="margin: 6px 0 0 0; opacity: 0.95; font-size: 15px;">CrystosJewel Administration</p>
                 <div style="margin-top: 18px;">
-                  <span style="background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%); color: #92400e; padding: 10px 20px; border-radius: 25px; font-size: 14px; font-weight: bold; font-family: Arial, sans-serif; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);">⚡ ACTION REQUISE</span>
+                  <span style="background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%); color: #92400e; padding: 10px 20px; border-radius: 25px; font-size: 14px; font-weight: bold;">⚡ ACTION REQUISE</span>
                 </div>
               </td>
             </tr>
 
-            <!-- Statistiques avec nouvelle palette -->
+            <!-- Contenu -->
             <tr>
-              <td style="background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); padding: 30px;">
-                <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                  <tr>
-                    <!-- Total - Gold -->
-                    <td width="32%" style="padding-right: 10px;">
-                      <div style="background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%); color: #ffffff; padding: 25px 20px; border-radius: 15px; text-align: center; box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3); position: relative; overflow: hidden;">
-                        <div style="position: relative; z-index: 2;">
-                          <div style="font-size: 28px; font-weight: bold; margin-bottom: 8px; font-family: Arial, sans-serif; text-shadow: 0 2px 4px rgba(0,0,0,0.2);">${total.toFixed(2)} €</div>
-                          <div style="font-size: 12px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; font-family: Arial, sans-serif;">Montant Total</div>
-                        </div>
-                      </div>
-                    </td>
-                    
-                    <!-- Articles - Violet clair -->
-                    <td width="32%" style="padding: 0 5px;">
-                      <div style="background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); color: #ffffff; padding: 25px 20px; border-radius: 15px; text-align: center; box-shadow: 0 8px 25px rgba(168, 85, 247, 0.3);">
-                        <div style="font-size: 28px; font-weight: bold; margin-bottom: 8px; font-family: Arial, sans-serif;">${items.length}</div>
-                        <div style="font-size: 12px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; font-family: Arial, sans-serif;">Article${items.length > 1 ? 's' : ''}</div>
-                      </div>
-                    </td>
-                    
-                    <!-- Status - Rouge -->
-                    <td width="32%" style="padding-left: 10px;">
-                      <div style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; padding: 25px 20px; border-radius: 15px; text-align: center; box-shadow: 0 8px 25px rgba(220, 38, 38, 0.3);">
-                        <div style="font-size: 16px; font-weight: bold; margin-bottom: 8px; font-family: Arial, sans-serif;">NOUVEAU</div>
-                        <div style="font-size: 12px; opacity: 0.9; text-transform: uppercase; letter-spacing: 1px; font-weight: 600; font-family: Arial, sans-serif;">Statut</div>
-                      </div>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-
-            <!-- Détails de la commande -->
-            <tr>
-              <td style="padding: 30px;">
+              <td style="padding: 35px;">
                 
-                <!-- En-tête commande avec style gold -->
-                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2px solid #ffd700; border-radius: 15px; margin-bottom: 25px;">
-                  <tr>
-                    <td style="padding: 25px;">
-                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                        <tr>
-                          <td width="45" style="vertical-align: top; padding-right: 15px;">
-                            <div style="width: 45px; height: 45px; background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%); border-radius: 12px; text-align: center; line-height: 45px; font-size: 20px; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);">📋</div>
-                          </td>
-                          <td style="vertical-align: top;">
-                            <h2 style="margin: 0; color: #92400e; font-size: 20px; font-weight: bold; font-family: Arial, sans-serif;">Commande ${orderNumber}</h2>
-                            <p style="margin: 4px 0 0 0; color: #a16207; font-size: 14px; font-family: Arial, sans-serif;">Reçue le ${dateCommande}</p>
-                          </td>
-                        </tr>
-                      </table>
+                <!-- En-tête commande -->
+                <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2px solid #ffd700; border-radius: 15px; padding: 25px; margin-bottom: 25px;">
+                  <h2 style="margin: 0; color: #92400e; font-size: 20px; font-weight: bold;">Commande ${numero_commande}</h2>
+                  <p style="margin: 4px 0 0 0; color: #a16207; font-size: 14px;">Reçue le ${dateCommande}</p>
+                </div>
+
+                <!-- Articles commandés -->
+                <div style="margin-bottom: 25px;">
+                  <h3 style="color: #1f2937; font-size: 19px; font-weight: bold; margin: 0 0 18px 0;">🛍️ Articles commandés</h3>
+                  
+                  <table style="width: 100%; background-color: #ffffff; border: 2px solid #a855f7; border-radius: 15px; border-collapse: collapse; overflow: hidden;">
+                    ${processedItems.map((item, index) => `
+                      <tr>
+                        <td style="padding: 18px 22px; ${index < processedItems.length - 1 ? 'border-bottom: 1px solid #f3f4f6;' : ''}">
+                          <div style="color: #1f2937; font-size: 16px; font-weight: 600; margin-bottom: 6px;">${item.name}</div>
+                          <div style="color: #6b7280; font-size: 14px;">
+                            ${item.quantity} × ${parseFloat(item.price || 0).toFixed(2)} €
+                            ${item.size && item.size !== 'Non spécifiée' ? ` • <span style="color: #a855f7; font-weight: 600;">Taille: ${item.size}</span>` : ''}
+                          </div>
+                        </td>
+                        <td style="color: #dc2626; font-size: 18px; font-weight: bold; text-align: right; vertical-align: top; width: 120px; padding: 18px 22px;">
+                          ${parseFloat(item.total).toFixed(2)} €
+                        </td>
+                      </tr>
+                    `).join('')}
+                    
+                    ${promo_code ? `
+                    <tr>
+                      <td style="padding: 15px 22px; border-bottom: 1px solid #f3f4f6; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);">
+                        <div style="color: #059669; font-size: 15px; font-weight: 600;">
+                          🎉 Code promo appliqué: <strong style="color: #047857;">${promo_code}</strong>
+                        </div>
+                      </td>
+                      <td style="color: #059669; font-size: 16px; font-weight: bold; text-align: right; padding: 15px 22px;">
+                        -${parseFloat(promoAmount).toFixed(2)} €
+                      </td>
+                    </tr>
+                    ` : ''}
+                    
+                    <!-- Total -->
+                    <tr>
+                      <td style="background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%); color: #ffffff; padding: 20px 22px;">
+                        <div style="font-size: 20px; font-weight: bold;">
+                          Total TTC: ${parseFloat(total || 0).toFixed(2)} €
+                        </div>
+                      </td>
+                      <td style="background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%); color: #ffffff; padding: 20px 22px; text-align: right;">
+                        <div style="font-size: 13px; opacity: 0.9;">Livraison incluse</div>
+                      </td>
+                    </tr>
+                  </table>
+                </div>
+
+                <!-- Informations client -->
+                <div style="background-color: #ffffff; border: 2px solid #a855f7; border-radius: 15px; padding: 25px; margin-bottom: 25px;">
+                  <h3 style="color: #1f2937; font-size: 19px; font-weight: bold; margin: 0 0 20px 0;">👤 Informations client</h3>
+                  
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;">
+                    <div>
+                      <div style="font-size: 12px; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px;">Nom complet</div>
+                      <div style="font-size: 17px; color: #1f2937; font-weight: 600;">${firstName} ${lastName || ''}</div>
                       
                       <div style="margin-top: 18px;">
-                        <span style="background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); color: #ffffff; padding: 10px 18px; border-radius: 20px; font-size: 13px; font-weight: 600; font-family: Arial, sans-serif; box-shadow: 0 4px 12px rgba(168, 85, 247, 0.3);">⏳ En attente de traitement</span>
+                        <div style="font-size: 12px; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px;">Email</div>
+                        <a href="mailto:${email}" style="font-size: 15px; color: #dc2626; text-decoration: none; font-weight: 500;">📧 ${email}</a>
                       </div>
-                    </td>
-                  </tr>
-                </table>
-
-                <!-- Articles commandés avec tailles -->
-                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-bottom: 25px;">
-                  <tr>
-                    <td>
-                      <h3 style="color: #1f2937; font-size: 19px; font-weight: bold; margin: 0 0 18px 0; font-family: Arial, sans-serif;">🛍️ Articles commandés</h3>
                       
-                      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #ffffff; border: 2px solid #a855f7; border-radius: 15px; box-shadow: 0 8px 25px rgba(168, 85, 247, 0.15);">
-                        ${items.map((item, index) => `
-                          <tr>
-                            <td style="padding: 18px 22px; ${index < items.length - 1 ? 'border-bottom: 1px solid #f3f4f6;' : ''}">
-                              <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                                <tr>
-                                  <td style="vertical-align: top;">
-                                    <div style="color: #1f2937; font-size: 16px; font-weight: 600; margin-bottom: 6px; font-family: Arial, sans-serif;">${item.name}</div>
-                                    <div style="color: #6b7280; font-size: 14px; font-family: Arial, sans-serif;">
-                                      ${item.quantity} × ${item.price.toFixed(2)} €
-                                      ${item.size && item.size !== 'Non spécifiée' ? ` • <span style="color: #a855f7; font-weight: 600;">Taille: ${item.size}</span>` : ''}
-                                    </div>
-                                  </td>
-                                  <td width="120" style="color: #dc2626; font-size: 18px; font-weight: bold; text-align: right; vertical-align: top; font-family: Arial, sans-serif;">${item.total.toFixed(2)} €</td>
-                                </tr>
-                              </table>
-                            </td>
-                          </tr>
-                        `).join('')}
-                        
-                        ${promoCode ? `
-                        <tr>
-                          <td style="padding: 15px 22px; border-bottom: 1px solid #f3f4f6; background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%);">
-                            <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                              <tr>
-                                <td style="color: #059669; font-size: 15px; font-weight: 600; font-family: Arial, sans-serif;">
-                                  🎉 Code promo appliqué: <strong style="color: #047857;">${promoCode}</strong>
-                                </td>
-                                <td style="color: #059669; font-size: 16px; font-weight: bold; text-align: right; font-family: Arial, sans-serif;">-${promoAmount.toFixed(2)} €</td>
-                              </tr>
-                            </table>
-                          </td>
-                        </tr>
-                        ` : ''}
-                        
-                        <!-- Total avec style gold -->
-                        <tr>
-                          <td style="background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%); color: #ffffff; padding: 20px 22px;">
-                            <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                              <tr>
-                                <td style="font-size: 20px; font-weight: bold; letter-spacing: -0.5px; font-family: Arial, sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,0.2);">
-                                  Total TTC: ${total.toFixed(2)} €
-                                </td>
-                                <td style="font-size: 13px; opacity: 0.9; text-align: right; vertical-align: top; font-family: Arial, sans-serif;">Livraison incluse</td>
-                              </tr>
-                            </table>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                </table>
+                      ${phone ? `
+                      <div style="margin-top: 18px;">
+                        <div style="font-size: 12px; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px;">Téléphone</div>
+                        <a href="tel:${phone}" style="font-size: 15px; color: #dc2626; text-decoration: none; font-weight: 500;">📱 ${phone}</a>
+                      </div>
+                      ` : ''}
+                    </div>
+                    
+                    ${address ? `
+                    <div>
+                      <div style="font-size: 12px; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px;">Adresse de livraison</div>
+                      <div style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); padding: 16px 18px; border-radius: 12px; color: #374151; line-height: 1.6; font-size: 14px; border: 1px solid #d8b4fe;">
+                        📍 ${address}
+                      </div>
+                    </div>
+                    ` : ''}
+                  </div>
+                </div>
 
-                <!-- Informations client avec style violet -->
-                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color: #ffffff; border: 2px solid #a855f7; border-radius: 15px; margin-bottom: 25px; box-shadow: 0 8px 25px rgba(168, 85, 247, 0.15);">
-                  <tr>
-                    <td style="padding: 25px;">
-                      <h3 style="color: #1f2937; font-size: 19px; font-weight: bold; margin: 0 0 20px 0; font-family: Arial, sans-serif;">👤 Informations client</h3>
-                      
-                      <table cellpadding="0" cellspacing="0" border="0" width="100%">
-                        <tr>
-                          <td width="48%" style="vertical-align: top; padding-right: 25px;">
-                            
-                            <div style="margin-bottom: 18px;">
-                              <div style="font-size: 12px; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px; font-family: Arial, sans-serif;">Nom complet</div>
-                              <div style="font-size: 17px; color: #1f2937; font-weight: 600; font-family: Arial, sans-serif;">${firstName} ${lastName}</div>
-                            </div>
-                            
-                            <div style="margin-bottom: 18px;">
-                              <div style="font-size: 12px; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px; font-family: Arial, sans-serif;">Email</div>
-                              <a href="mailto:${email}" style="font-size: 15px; color: #dc2626; text-decoration: none; font-weight: 500; font-family: Arial, sans-serif;">📧 ${email}</a>
-                            </div>
-                            
-                            ${phone ? `
-                            <div>
-                              <div style="font-size: 12px; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px; font-family: Arial, sans-serif;">Téléphone</div>
-                              <a href="tel:${phone}" style="font-size: 15px; color: #dc2626; text-decoration: none; font-weight: 500; font-family: Arial, sans-serif;">📱 ${phone}</a>
-                            </div>
-                            ` : ''}
-                            
-                          </td>
-                          
-                          <td width="48%" style="vertical-align: top; padding-left: 25px;">
-                            <div style="font-size: 12px; color: #a855f7; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; margin-bottom: 6px; font-family: Arial, sans-serif;">Adresse de livraison</div>
-                            <div style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); padding: 16px 18px; border-radius: 12px; color: #374151; line-height: 1.6; font-size: 14px; border: 1px solid #d8b4fe; font-family: Arial, sans-serif;">
-                              📍 ${address}
-                            </div>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                </table>
-
-                <!-- Actions CTA avec nouvelles couleurs -->
-                <table cellpadding="0" cellspacing="0" border="0" width="100%" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2px solid #ffd700; border-radius: 15px;">
-                  <tr>
-                    <td style="padding: 25px; text-align: center;">
-                      <h3 style="color: #92400e; font-size: 19px; font-weight: bold; margin: 0 0 20px 0; font-family: Arial, sans-serif;">⚡ Actions rapides</h3>
-                      
-                      <table cellpadding="0" cellspacing="0" border="0" style="margin: 0 auto;">
-                        <tr>
-                          <td style="padding-right: 8px;">
-                            <a href="${process.env.BASE_URL}/admin/commandes/${orderId}" style="display: inline-block; background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); color: #ffffff; text-decoration: none; padding: 14px 22px; border-radius: 12px; font-weight: 600; font-size: 14px; font-family: Arial, sans-serif; box-shadow: 0 6px 20px rgba(168, 85, 247, 0.3);">👁️ Voir commande</a>
-                          </td>
-                          <td style="padding: 0 8px;">
-                            <a href="${process.env.BASE_URL}/admin/commandes/${orderId}/expedier" style="display: inline-block; background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%); color: #92400e; text-decoration: none; padding: 14px 22px; border-radius: 12px; font-weight: 600; font-size: 14px; font-family: Arial, sans-serif; box-shadow: 0 6px 20px rgba(255, 215, 0, 0.3);">📦 Expédier</a>
-                          </td>
-                          <td style="padding-left: 8px;">
-                            <a href="${process.env.BASE_URL}/admin/commandes" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 14px 22px; border-radius: 12px; font-weight: 600; font-size: 14px; font-family: Arial, sans-serif; box-shadow: 0 6px 20px rgba(220, 38, 38, 0.3);">📊 Dashboard</a>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                </table>
+                <!-- Actions CTA -->
+                <div style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 2px solid #ffd700; border-radius: 15px; padding: 25px; text-align: center;">
+                  <h3 style="color: #92400e; font-size: 19px; font-weight: bold; margin: 0 0 20px 0;">⚡ Actions rapides</h3>
+                  
+                  <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                    <a href="${process.env.BASE_URL}/admin/commandes" style="display: inline-block; background: linear-gradient(135deg, #a855f7 0%, #9333ea 100%); color: #ffffff; text-decoration: none; padding: 14px 22px; border-radius: 12px; font-weight: 600; font-size: 14px; margin: 4px;">👁️ Voir commande</a>
+                    <a href="${process.env.BASE_URL}/admin/commandes" style="display: inline-block; background: linear-gradient(135deg, #ffd700 0%, #f59e0b 100%); color: #92400e; text-decoration: none; padding: 14px 22px; border-radius: 12px; font-weight: 600; font-size: 14px; margin: 4px;">📦 Expédier</a>
+                    <a href="${process.env.BASE_URL}/admin/commandes" style="display: inline-block; background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; text-decoration: none; padding: 14px 22px; border-radius: 12px; font-weight: 600; font-size: 14px; margin: 4px;">📊 Dashboard</a>
+                  </div>
+                </div>
 
               </td>
             </tr>
 
-            <!-- Footer admin avec style rouge/gold -->
+            <!-- Footer admin -->
             <tr>
-              <td style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; padding: 25px 30px; text-align: center; border-radius: 0 0 20px 20px;">
+              <td style="background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%); color: #ffffff; padding: 25px 30px; text-align: center;">
                 <div style="margin-bottom: 10px;">
-                  <span style="font-size: 16px; font-weight: 600; letter-spacing: 0.5px; font-family: Arial, sans-serif; text-shadow: 0 1px 3px rgba(0,0,0,0.2);">✨ CrystosJewel Administration</span>
+                  <span style="font-size: 16px; font-weight: 600; letter-spacing: 0.5px;">✨ CrystosJewel Administration</span>
                 </div>
-                <p style="margin: 0; opacity: 0.9; font-size: 13px; line-height: 1.5; font-family: Arial, sans-serif;">
+                <p style="margin: 0; opacity: 0.9; font-size: 13px; line-height: 1.5;">
                   Notification automatique • Cette commande nécessite votre attention immédiate
                 </p>
               </td>
@@ -1210,9 +1112,9 @@ export const sendAdminOrderNotification = async (orderData, customerData) => {
     const adminEmail = process.env.ADMIN_EMAIL || process.env.MAIL_USER;
     
     const info = await transporter.sendMail({
-      from: `"CrystosJewel Admin 🔥" <${process.env.MAIL_USER}>`,
+      from: `"CrystosJewel Admin 🔔" <${process.env.MAIL_USER}>`,
       to: adminEmail,
-      subject: `🔔 NOUVELLE COMMANDE ${orderNumber} • ${total.toFixed(2)}€ • ${firstName} ${lastName}`,
+      subject: `🔔 NOUVELLE COMMANDE ${numero_commande} • ${parseFloat(total || 0).toFixed(2)}€ • ${firstName} ${lastName || ''}`,
       html: htmlContent,
       priority: 'high',
     });
@@ -1230,8 +1132,7 @@ export const sendAdminOrderNotification = async (orderData, customerData) => {
 export const sendOrderConfirmationEmails = async (userEmail, firstName, orderData, customerData) => {
   try {
     console.log('📧 Envoi simultané des emails de confirmation...');
-    
-    // Debug des données reçues
+
     console.log('🔍 Données de commande:', {
       subtotal: orderData.subtotal,
       total: orderData.total,
@@ -1241,32 +1142,63 @@ export const sendOrderConfirmationEmails = async (userEmail, firstName, orderDat
       deliveryFee: orderData.shipping_price || orderData.deliveryFee,
       itemsCount: orderData.items ? orderData.items.length : 0
     });
-    
-    const [customerResult, adminResult] = await Promise.allSettled([
-      sendOrderConfirmationEmail(userEmail, firstName, orderData),
-      sendAdminOrderNotification(orderData, customerData)
-    ]);
 
-    const results = {
-      customer: customerResult.status === 'fulfilled' ? customerResult.value : { success: false, error: customerResult.reason },
-      admin: adminResult.status === 'fulfilled' ? adminResult.value : { success: false, error: adminResult.reason }
-    };
-
-    console.log('📧 Résultats envoi emails:', {
-      customer: results.customer.success ? '✅ Envoyé' : '❌ Échec',
-      admin: results.admin.success ? '✅ Envoyé' : '❌ Échec'
+    console.log('📧 Point 2: Données préparées');
+    console.log('Email client:', userEmail);
+    console.log('Nom client:', firstName);
+    console.log('Données commande:', {
+      orderNumber: orderData.numero_commande,
+      total: orderData.total,
+      items: orderData.items?.length || 0
+    });
+    console.log('Données client:', {
+      email: customerData.userEmail || customerData.email,
+      phone: customerData.phone || 'Non renseigné',
+      address: customerData.address || 'Adresse inconnue',
+      name: `${customerData.firstName || ''} ${customerData.lastName || ''}`.trim()
     });
 
-    return results;
-    
-  } catch (error) {
-    console.error('❌ Erreur lors de l\'envoi des emails:', error);
+    // ✉️ Envoi de l’email client
+    const clientEmailResponse = await sendOrderConfirmationEmail(
+      userEmail,
+      firstName,
+      orderData
+    );
+
+    if (!clientEmailResponse.success) {
+      console.warn("⚠️ L'envoi de l'email client a échoué.");
+    }
+
+    // ✉️ Envoi de l’email admin
+    const adminEmailResponse = await sendAdminOrderNotification(
+      orderData,
+      customerData
+    );
+
+    if (!adminEmailResponse.success) {
+      console.warn("⚠️ L'envoi de l'email admin a échoué.");
+    }
+
+    // ✅ Résumé
+    console.log('📨 Résumé des envois :', {
+      client: clientEmailResponse.messageId || clientEmailResponse.error,
+      admin: adminEmailResponse.messageId || adminEmailResponse.error,
+    });
+
     return {
-      customer: { success: false, error: error.message },
-      admin: { success: false, error: error.message }
+      success: clientEmailResponse.success && adminEmailResponse.success,
+      client: clientEmailResponse,
+      admin: adminEmailResponse
+    };
+  } catch (error) {
+    console.error('❌ Erreur lors de l’envoi des emails de confirmation:', error);
+    return {
+      success: false,
+      error: error.message
     };
   }
 };
+
 
 // ✅ FONCTION UTILITAIRE - Calcul date de livraison (exclut les dimanches)
 // function calculateDeliveryDate(daysToAdd = 3) {

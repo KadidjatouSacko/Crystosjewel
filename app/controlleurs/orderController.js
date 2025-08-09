@@ -660,7 +660,6 @@ async updateOrderStatus (req, res)  {
  * Valide et sauvegarde une commande avec envoi d'emails automatique
  */
 async validateOrderAndSave(req, res) {
-    // ✅ TRANSACTION SEQUELIZE pour garantir la cohérence
     const transaction = await sequelize.transaction();
     
     const isAjaxRequest = req.headers['content-type'] === 'application/json' || 
@@ -668,425 +667,401 @@ async validateOrderAndSave(req, res) {
                          req.headers['x-requested-with'] === 'XMLHttpRequest';
     
     console.log('🔍 === DÉBUT VALIDATION COMMANDE ===');
-    console.log('📱 Type de requête:', isAjaxRequest ? 'AJAX' : 'FORM');
+    console.log('📱 Type de requête:', isAjaxRequest ? 'AJAX' : 'Standard');
     
     try {
         // ========================================
-        // 🎯 ÉTAPE 1: VALIDATION UTILISATEUR ET SESSION
+        // 🔐 ÉTAPE 1: VÉRIFICATION UTILISATEUR
         // ========================================
-        
-        const userId = req.session?.user?.id;
-        const customerInfo = req.session?.customerInfo;
-        
-        if (!userId && !customerInfo) {
-            console.error('❌ Utilisateur non connecté et aucune info client');
-            const error = { message: 'Session expirée. Veuillez vous reconnecter.' };
+        if (!req.session?.user?.id) {
+            console.log('❌ Utilisateur non connecté');
             if (isAjaxRequest) {
                 return res.status(401).json({
                     success: false,
-                    message: error.message,
-                    redirectUrl: '/connexion-inscription'
+                    message: 'Vous devez être connecté pour passer commande'
                 });
-            } else {
-                req.flash('error', error.message);
-                return res.redirect('/connexion-inscription');
             }
+            return res.redirect('/connexion-inscription');
         }
 
-        console.log('✅ Session validée:', {
-            userId,
-            hasCustomerInfo: !!customerInfo,
-            customerEmail: customerInfo?.email || req.session?.user?.email
+        const userId = req.session.user.id;
+        console.log(`👤 Utilisateur connecté: ID ${userId}`);
+
+        // ========================================
+        // 🛒 ÉTAPE 2: RÉCUPÉRATION DU PANIER
+        // ========================================
+        console.log('🛒 Récupération du panier...');
+        
+        const cartItems = await Cart.findAll({
+            where: { customer_id: userId },
+            include: [{
+                model: Jewel,
+                as: 'jewel',
+                required: true,
+                attributes: ['id', 'name', 'price_ttc', 'stock', 'image']
+            }],
+            transaction
         });
 
-        // ========================================
-        // 🛒 ÉTAPE 2: RÉCUPÉRATION ET VALIDATION DU PANIER
-        // ========================================
-        
-        let cartItems = [];
-        
-        if (userId) {
-            // Utilisateur connecté
-            cartItems = await Cart.findAll({
-                where: { customer_id: userId },
-                include: [{
-                    model: Jewel,
-                    as: 'jewel',
-                    required: true,
-                    attributes: ['id', 'name', 'price_ttc', 'image', 'stock']
-                }],
-                transaction
-            });
-        } else if (req.session.cart && req.session.cart.length > 0) {
-            // Invité avec panier en session
-            const jewelIds = req.session.cart.map(item => item.jewelId);
-            const jewels = await Jewel.findAll({
-                where: { id: jewelIds },
-                attributes: ['id', 'name', 'price_ttc', 'image', 'stock'],
-                transaction
-            });
-            
-            cartItems = req.session.cart.map(sessionItem => {
-                const jewel = jewels.find(j => j.id === sessionItem.jewelId);
-                return jewel ? {
-                    jewel_id: jewel.id,
-                    quantity: sessionItem.quantity,
-                    size: sessionItem.size || 'Non spécifiée',
-                    jewel: jewel
-                } : null;
-            }).filter(Boolean);
-        }
-
-        if (!cartItems || cartItems.length === 0) {
-            console.error('❌ Panier vide');
-            const error = { message: 'Votre panier est vide' };
+        if (cartItems.length === 0) {
+            console.log('❌ Panier vide');
             if (isAjaxRequest) {
                 return res.status(400).json({
                     success: false,
-                    message: error.message,
-                    redirectUrl: '/panier'
+                    message: 'Votre panier est vide'
                 });
-            } else {
-                req.flash('error', error.message);
+            }
+            req.flash('error', 'Votre panier est vide');
+            return res.redirect('/panier');
+        }
+
+        console.log(`✅ Panier récupéré: ${cartItems.length} articles`);
+
+        // ========================================
+        // 📦 ÉTAPE 3: VÉRIFICATION DU STOCK
+        // ========================================
+        console.log('📦 Vérification du stock...');
+        
+        for (const item of cartItems) {
+            if (item.jewel.stock < item.quantity) {
+                console.log(`❌ Stock insuffisant pour ${item.jewel.name}`);
+                await transaction.rollback();
+                if (isAjaxRequest) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Stock insuffisant pour ${item.jewel.name}`
+                    });
+                }
+                req.flash('error', `Stock insuffisant pour ${item.jewel.name}`);
                 return res.redirect('/panier');
             }
         }
 
-        console.log(`✅ Panier validé: ${cartItems.length} articles`);
-
         // ========================================
-        // 💰 ÉTAPE 3: CALCUL DES MONTANTS ET PROMO
+        // 👤 ÉTAPE 4: RÉCUPÉRATION DES INFOS CLIENT
         // ========================================
+        console.log('👤 Récupération des informations client...');
         
-        let originalSubtotal = 0;
-        let promoCodeInfo = null;
-        let calculatedDiscount = 0;
-
-        // Calcul du sous-total
-        cartItems.forEach(item => {
-            const price = parseFloat(item.jewel.price_ttc) || 0;
-            const quantity = parseInt(item.quantity) || 1;
-            originalSubtotal += price * quantity;
-        });
-
-        console.log(`💰 Sous-total original: ${originalSubtotal.toFixed(2)}€`);
-
-        // Gestion du code promo
-        if (req.session.appliedPromo) {
-            const promoCode = req.session.appliedPromo.code;
-            console.log(`🎫 Vérification code promo: ${promoCode}`);
-            
-            promoCodeInfo = await PromoCode.findValidByCode(promoCode, transaction);
-            
-            if (promoCodeInfo) {
-                if (promoCodeInfo.discount_type === 'percentage') {
-                    calculatedDiscount = (originalSubtotal * promoCodeInfo.discount_value) / 100;
-                } else if (promoCodeInfo.discount_type === 'fixed') {
-                    calculatedDiscount = Math.min(promoCodeInfo.discount_value, originalSubtotal);
-                }
-                
-                calculatedDiscount = Math.round(calculatedDiscount * 100) / 100;
-                console.log(`✅ Code promo appliqué: -${calculatedDiscount.toFixed(2)}€`);
-            } else {
-                console.warn('⚠️ Code promo expiré ou invalide, ignoré');
-                req.session.appliedPromo = null;
+        const customer = await Customer.findByPk(userId, { transaction });
+        if (!customer) {
+            console.log('❌ Client non trouvé');
+            await transaction.rollback();
+            if (isAjaxRequest) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Informations client non trouvées'
+                });
             }
+            return res.redirect('/connexion-inscription');
         }
 
-        // Calcul final
-        const subtotalAfterDiscount = Math.max(0, originalSubtotal - calculatedDiscount);
-        const deliveryFee = subtotalAfterDiscount >= 50 ? 0 : 5.99;
-        const finalTotal = Math.round((subtotalAfterDiscount + deliveryFee) * 100) / 100;
+        console.log(`✅ Client récupéré: ${customer.first_name} ${customer.last_name}`);
 
-        console.log(`💰 Récapitulatif:`, {
-            originalSubtotal: originalSubtotal.toFixed(2),
-            discount: calculatedDiscount.toFixed(2),
-            subtotalAfterDiscount: subtotalAfterDiscount.toFixed(2),
-            deliveryFee: deliveryFee.toFixed(2),
-            finalTotal: finalTotal.toFixed(2)
+        // ========================================
+        // 💰 ÉTAPE 5: CALCULS FINANCIERS
+        // ========================================
+        console.log('💰 Calculs financiers...');
+        
+        // Utiliser votre fonction existante calculateOrderTotals
+        const totals = calculateOrderTotals(cartItems, req.session.appliedPromo);
+        
+        const { subtotal, discountedSubtotal, discount, deliveryFee, total } = totals;
+        const promoCodeInfo = req.session.appliedPromo;
+
+        console.log(`💰 === RÉCAPITULATIF FINANCIER ===`);
+        console.log(`   📊 Sous-total: ${subtotal.toFixed(2)}€`);
+        if (discount > 0) {
+            console.log(`   🎫 Réduction: -${discount.toFixed(2)}€`);
+            console.log(`   📉 Sous-total après réduction: ${discountedSubtotal.toFixed(2)}€`);
+        }
+        console.log(`   🚚 Frais de livraison: ${deliveryFee.toFixed(2)}€`);
+        console.log(`   💎 Total final: ${total.toFixed(2)}€`);
+        console.log(`=====================================`);
+
+        // ========================================
+        // 🏗️ ÉTAPE 6: CRÉATION DE LA COMMANDE
+        // ========================================
+        console.log('🏗️ Création de la commande...');
+        
+        // Génération du numéro de commande unique
+        const orderNumber = generateOrderNumber();
+        console.log(`📋 Numéro de commande généré: ${orderNumber}`);
+
+        // Insertion de la commande avec vos colonnes existantes
+        const orderQuery = `
+            INSERT INTO orders (
+                numero_commande, customer_id, subtotal, shipping_price, total,
+                promo_code, promo_discount_amount, status, created_at, updated_at,
+                shipping_address, shipping_city, shipping_postal_code
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', NOW(), NOW(), ?, ?, ?)
+            RETURNING id
+        `;
+
+        const orderValues = [
+            orderNumber,
+            userId,
+            parseFloat(discountedSubtotal.toFixed(2)),
+            parseFloat(deliveryFee.toFixed(2)),
+            parseFloat(total.toFixed(2)),
+            promoCodeInfo?.code || null,
+            discount > 0 ? parseFloat(discount.toFixed(2)) : null,
+            customer.address || '',
+            customer.city || '',
+            customer.postal_code || ''
+        ];
+
+        const [orderResult] = await sequelize.query(orderQuery, {
+            replacements: orderValues,
+            transaction
         });
 
-        // ========================================
-        // 👤 ÉTAPE 4: GESTION CLIENT (CONNECTÉ OU INVITÉ)
-        // ========================================
-        
-        let customer;
-        let customerId;
-
-        if (userId) {
-            // Utilisateur connecté
-            customer = await Customer.findByPk(userId, { transaction });
-            if (!customer) {
-                throw new Error('Utilisateur introuvable');
-            }
-            customerId = customer.id;
-            
-            // Mettre à jour les infos si fournies
-            if (customerInfo) {
-                await customer.update({
-                    first_name: customerInfo.firstName || customer.first_name,
-                    last_name: customerInfo.lastName || customer.last_name,
-                    phone: customerInfo.phone || customer.phone,
-                    address: customerInfo.address || customer.address
-                }, { transaction });
-                
-                await customer.reload({ transaction });
-            }
-            
-            console.log(`✅ Client connecté: ${customer.first_name} ${customer.last_name}`);
-            
-        } else {
-            // Client invité
-            const existingCustomer = await Customer.findOne({
-                where: { email: customerInfo.email },
-                transaction
-            });
-
-            if (existingCustomer) {
-                customer = existingCustomer;
-                customerId = customer.id;
-                console.log(`✅ Client existant trouvé: ${customer.email}`);
-            } else {
-                customer = await Customer.create({
-                    first_name: customerInfo.firstName,
-                    last_name: customerInfo.lastName,
-                    email: customerInfo.email,
-                    phone: customerInfo.phone,
-                    address: customerInfo.address,
-                    is_guest: true,
-                    created_at: new Date()
-                }, { transaction });
-                
-                customerId = customer.id;
-                console.log(`✅ Nouveau client invité créé: ${customer.email}`);
-            }
+        const orderId = orderResult[0]?.id;
+        if (!orderId) {
+            throw new Error('Impossible de récupérer l\'ID de la commande créée');
         }
-
-        // ========================================
-        // 📋 ÉTAPE 5: CRÉATION DE LA COMMANDE
-        // ========================================
-        
-        // Générer numéro de commande unique
-        const timestamp = Date.now();
-        const randomNum = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-        const createdOrderNumber = `CMD-${timestamp}-${randomNum}`;
-
-        console.log(`📋 Création commande: ${createdOrderNumber}`);
-
-        const orderData = {
-            numero_commande: createdOrderNumber,
-            customer_id: customerId,
-            customer_email: customer.email,
-            customer_name: `${customer.first_name} ${customer.last_name}`,
-            customer_phone: customer.phone,
-            customer_address: customer.address,
-            
-            subtotal: originalSubtotal,
-            discount: calculatedDiscount,
-            total: finalTotal,
-            shipping_price: deliveryFee,
-            
-            status: 'pending',
-            payment_method: 'card',
-            payment_status: 'completed',
-            
-            // Informations code promo
-            promo_code: promoCodeInfo?.code || null,
-            promo_discount_amount: calculatedDiscount || 0,
-            promo_discount_percent: promoCodeInfo?.discount_value || 0,
-            
-            notes: customerInfo?.notes || '',
-            created_at: new Date(),
-            updated_at: new Date()
-        };
-
-        const order = await Order.create(orderData, { transaction });
-        const orderId = order.id;
 
         console.log(`✅ Commande créée avec ID: ${orderId}`);
 
         // ========================================
-        // 🛍️ ÉTAPE 6: CRÉATION DES ARTICLES DE COMMANDE
+        // 📝 ÉTAPE 7: AJOUT DES ARTICLES
         // ========================================
+        console.log('📝 Ajout des articles de commande...');
         
         const orderItems = [];
         
-        for (const cartItem of cartItems) {
-            const jewel = cartItem.jewel;
-            const quantity = parseInt(cartItem.quantity) || 1;
-            const unitPrice = parseFloat(jewel.price_ttc) || 0;
-
-            const orderItem = await OrderItem.create({
-                order_id: orderId,
-                jewel_id: jewel.id,
-                jewel_name: jewel.name,
-                jewel_image: jewel.image,
-                quantity: quantity,
-                price_ttc: unitPrice,
-                size: cartItem.size || 'Non spécifiée',
-                created_at: new Date()
-            }, { transaction });
-
-            orderItems.push({
-                name: jewel.name,
-                quantity: quantity,
-                price: unitPrice,
-                size: cartItem.size || 'Non spécifiée'
-            });
-
-            console.log(`✅ Article ajouté: ${jewel.name} x${quantity}`);
-        }
-
-        // ========================================
-        // 🎫 ÉTAPE 7: MISE À JOUR DU CODE PROMO
-        // ========================================
-        
-        if (promoCodeInfo) {
-            await promoCodeInfo.increment('used_count', { transaction });
-            console.log(`🎫 Code promo ${promoCodeInfo.code} utilisé (${promoCodeInfo.used_count + 1} fois)`);
-        }
-
-        
-
-        // ========================================
-        // 🧹 ÉTAPE 8: NETTOYAGE DU PANIER
-        // ========================================
-        
-        if (userId) {
-            await Cart.destroy({
-                where: { customer_id: userId },
+        for (const item of cartItems) {
+            const itemTotal = item.jewel.price_ttc * item.quantity;
+            
+            // Insertion de l'article avec vos colonnes existantes
+            const itemQuery = `
+                INSERT INTO order_items (order_id, jewel_id, quantity, price, size)
+                VALUES (?, ?, ?, ?, ?)
+            `;
+            
+            await sequelize.query(itemQuery, {
+                replacements: [
+                    orderId,
+                    item.jewel.id,
+                    item.quantity,
+                    parseFloat(item.jewel.price_ttc.toFixed(2)),
+                    item.size || 'Standard'
+                ],
                 transaction
             });
-            console.log('🧹 Panier base de données vidé');
-        } else {
-            req.session.cart = [];
-            console.log('🧹 Panier session vidé');
+
+            // Décrémenter le stock
+            await Jewel.decrement('stock', {
+                by: item.quantity,
+                where: { id: item.jewel.id },
+                transaction
+            });
+
+            // Préparer les données pour l'email
+            orderItems.push({
+                jewel: {
+                    id: item.jewel.id,
+                    name: item.jewel.name,
+                    image: item.jewel.image
+                },
+                quantity: item.quantity,
+                size: item.size || 'Standard',
+                total: itemTotal
+            });
+
+            console.log(`  📦 ${item.jewel.name} x${item.quantity} - ${itemTotal.toFixed(2)}€`);
         }
 
-        // Nettoyer le code promo de la session
-        req.session.appliedPromo = null;
-        req.session.customerInfo = null;
+        console.log(`✅ ${orderItems.length} articles ajoutés à la commande`);
 
         // ========================================
-        // ✅ ÉTAPE 9: COMMIT DE LA TRANSACTION
+        // 🎫 ÉTAPE 8: MISE À JOUR DU CODE PROMO
         // ========================================
+        if (promoCodeInfo && discount > 0) {
+            console.log('🎫 Mise à jour du code promo...');
+            
+            await sequelize.query(`
+                UPDATE promo_codes 
+                SET used_count = used_count + 1 
+                WHERE code = ?
+            `, {
+                replacements: [promoCodeInfo.code],
+                transaction
+            });
+
+            console.log(`✅ Code promo ${promoCodeInfo.code} mis à jour`);
+        }
+
+        // ========================================
+        // 🧹 ÉTAPE 9: NETTOYAGE
+        // ========================================
+        console.log('🧹 Nettoyage du panier et session...');
         
-        await transaction.commit();
-        console.log('✅ Transaction committée avec succès');
+        // Vider le panier
+        await Cart.destroy({
+            where: { customer_id: userId },
+            transaction
+        });
+
+        // Supprimer le code promo de la session
+        if (req.session.appliedPromo) {
+            delete req.session.appliedPromo;
+        }
+
+        console.log('✅ Panier vidé et session nettoyée');
 
         // ========================================
-        // 📧📱 ÉTAPE 10: ENVOI DES NOTIFICATIONS (EMAIL + SMS)
+        // ✅ ÉTAPE 10: VALIDATION DE LA TRANSACTION
         // ========================================
+        await transaction.commit();
+        console.log('✅ Transaction validée en base de données');
+console.log('🔍 === DÉBOGAGE EMAILS DE COMMANDE ===');
+console.log('📧 Point 1: Vérification de l\'import');
+console.log('Type de sendOrderConfirmationEmails:', typeof sendOrderConfirmationEmails);
+console.log('Fonction disponible:', !!sendOrderConfirmationEmails);
+
+// Juste avant l'appel de sendOrderConfirmationEmails :
+console.log('📧 Point 2: Données préparées');
+console.log('Email client:', customer.email);
+console.log('Nom client:', customer.firstName);
+console.log('Données commande:', {
+    orderNumber: emailOrderData.orderNumber,
+    total: emailOrderData.total,
+    items: emailOrderData.items?.length || 0
+});
+console.log('Données client:', {
+    email: emailCustomerData.email,
+    firstName: emailCustomerData.firstName
+});
+        // ========================================
+        // 📧 ÉTAPE 11: ENVOI DES EMAILS (CRITIQUE!)
+        // ========================================
+        console.log('📧 === DÉBUT ENVOI DES EMAILS ===');
         
         try {
-            console.log('📧📱 Envoi des notifications...');
-            
+            // Préparer les données pour les emails
+            const emailOrderData = {
+                orderNumber,
+                orderId,
+                items: orderItems,
+                total: total,
+                subtotal: discountedSubtotal,
+                shipping_price: deliveryFee,
+                shippingAddress: {
+                    address: customer.address || '',
+                    city: customer.city || '',
+                    postal_code: customer.postal_code || ''
+                },
+                promo_code: promoCodeInfo?.code || null,
+                promo_discount_amount: discount || 0
+            };
+
             const emailCustomerData = {
                 firstName: customer.first_name,
                 lastName: customer.last_name,
                 email: customer.email,
-                phone: customer.phone, // ✅ IMPORTANT pour les SMS
-                address: customer.address
+                phone: customer.phone,
+                address: {
+                    address: customer.address || '',
+                    city: customer.city || '',
+                    postal_code: customer.postal_code || ''
+                }
             };
 
-            const emailOrderData = {
-                id: orderId,
-                numero_commande: createdOrderNumber,
-                total: finalTotal,
-                subtotal: originalSubtotal,
-                discount: calculatedDiscount,
-                deliveryFee: deliveryFee,
-                items: orderItems,
-                promo_code: promoCodeInfo?.code || null,
-                promo_discount_amount: calculatedDiscount,
-                promo_discount_percent: promoCodeInfo?.discount_value || 0
-            };
+            console.log('📧 Données préparées pour les emails:', {
+                orderNumber,
+                customerEmail: customer.email,
+                total: total,
+                itemsCount: orderItems.length
+            });
 
-            const notificationResults = await sendOrderConfirmationWithSMS(
+            // 🚀 ENVOI DES EMAILS (FONCTION IMPORTÉE)
+            const emailResults = await sendOrderConfirmationEmails(
                 customer.email,
                 customer.first_name,
                 emailOrderData,
                 emailCustomerData
             );
-
-            console.log('📊 Résultats notifications:', {
-                email: notificationResults.notifications?.emailSent ? '✅' : '❌',
-                sms: notificationResults.notifications?.smsSent ? '✅' : '❌',
-                admin: notificationResults.notifications?.adminNotified ? '✅' : '❌'
-            });
-
+            
+            console.log('📧 Résultats envoi emails:', emailResults);
+            
+            if (emailResults.customer.success) {
+                console.log('✅ Email client envoyé avec succès');
+            } else {
+                console.error('❌ Échec envoi email client:', emailResults.customer.error);
+            }
+            
+            if (emailResults.admin.success) {
+                console.log('✅ Email admin envoyé avec succès');
+            } else {
+                console.error('❌ Échec envoi email admin:', emailResults.admin.error);
+            }
+            
         } catch (emailError) {
-            console.error('❌ Erreur notifications (non bloquante):', emailError);
-            // On continue même si les notifications échouent
+            console.error('❌ ERREUR CRITIQUE lors de l\'envoi des emails:', emailError);
+            console.error('Stack trace:', emailError.stack);
+            // On continue - la commande est créée même si l'email échoue
         }
 
-        // ========================================
-        // 🎉 ÉTAPE 11: RÉPONSE FINALE
-        // ========================================
-        
-        let successMessage = `Commande ${createdOrderNumber} créée avec succès !`;
-        
-        if (promoCodeInfo) {
-            successMessage += ` Code promo ${promoCodeInfo.code} appliqué (-${calculatedDiscount.toFixed(2)}€).`;
-        }
-        
-        successMessage += ` Confirmations envoyées par email`;
-        if (customer.phone) {
-            successMessage += ` et SMS`;
-        }
-        successMessage += `.`;
+        console.log('📧 === FIN ENVOI DES EMAILS ===');
 
+        // ========================================
+        // 🎉 ÉTAPE 12: RÉPONSE FINALE
+        // ========================================
         console.log('🎉 === COMMANDE CRÉÉE AVEC SUCCÈS ===');
-        console.log(`   📋 Numéro: ${createdOrderNumber}`);
-        console.log(`   💰 Montant: ${finalTotal.toFixed(2)}€`);
+        console.log(`   📋 Numéro: ${orderNumber}`);
+        console.log(`   💰 Montant: ${total.toFixed(2)}€`);
+        if (promoCodeInfo) {
+            console.log(`   🎫 Code promo: ${promoCodeInfo.code} (-${discount.toFixed(2)}€)`);
+        }
         console.log(`   👤 Client: ${customer.first_name} ${customer.last_name}`);
         console.log(`   📧 Email: ${customer.email}`);
-        console.log(`   📱 Téléphone: ${customer.phone || 'Non fourni'}`);
-        if (promoCodeInfo) {
-            console.log(`   🎫 Code promo: ${promoCodeInfo.code} (-${calculatedDiscount.toFixed(2)}€)`);
-        }
         console.log('=====================================');
+
+        const successMessage = promoCodeInfo 
+            ? `Commande ${orderNumber} créée avec succès ! Code promo ${promoCodeInfo.code} appliqué (-${discount.toFixed(2)}€). Un email de confirmation vous a été envoyé.`
+            : `Commande ${orderNumber} créée avec succès ! Un email de confirmation vous a été envoyé.`;
 
         if (isAjaxRequest) {
             return res.status(200).json({
                 success: true,
                 message: successMessage,
                 order: {
+                    numero: orderNumber,
                     id: orderId,
-                    numero: createdOrderNumber,
-                    total: finalTotal,
-                    subtotal: originalSubtotal,
-                    discount: calculatedDiscount,
-                    deliveryFee: deliveryFee,
-                    itemsCount: orderItems.length,
-                    customer_email: customer.email,
-                    customer_phone: customer.phone,
-                    promoCode: promoCodeInfo?.code || null
+                    total: total,
+                    customer_email: customer.email
                 },
-                redirectUrl: `/commande/confirmation?orderId=${orderId}&orderNumber=${encodeURIComponent(createdOrderNumber)}`
+                redirectUrl: `/commande/confirmation?orderNumber=${encodeURIComponent(orderNumber)}`
             });
         } else {
             req.flash('success', successMessage);
-            return res.redirect(`/commande/confirmation?orderId=${orderId}&orderNumber=${encodeURIComponent(createdOrderNumber)}`);
+            return res.redirect(`/commande/confirmation?orderNumber=${encodeURIComponent(orderNumber)}`);
         }
 
     } catch (error) {
         // ========================================
         // ❌ GESTION DES ERREURS
         // ========================================
+        console.error('💥 === ERREUR LORS DE LA CRÉATION DE COMMANDE ===');
+        console.error('Message:', error.message);
+        console.error('Stack:', error.stack);
+        console.error('===============================================');
         
-        await transaction.rollback();
-        console.error('❌ ERREUR lors de la validation de commande:', error);
-        console.error('Stack trace:', error.stack);
-
-        const errorMessage = error.message || 'Erreur lors de la création de la commande';
-
+        // Rollback de la transaction si elle n'est pas encore committée
+        try {
+            await transaction.rollback();
+            console.log('🔄 Transaction annulée (ROLLBACK effectué)');
+        } catch (rollbackError) {
+            console.error('❌ Erreur lors du ROLLBACK:', rollbackError.message);
+        }
+        
+        const errorMessage = error.message || 'Une erreur inattendue est survenue lors de la création de votre commande';
+        
         if (isAjaxRequest) {
             return res.status(500).json({
                 success: false,
                 message: errorMessage,
-                error: process.env.NODE_ENV === 'development' ? error.stack : undefined,
-                redirectUrl: '/panier'
+                error: process.env.NODE_ENV === 'development' ? error.stack : undefined
             });
         } else {
             req.flash('error', `Erreur lors de la création de la commande: ${errorMessage}`);
@@ -1097,6 +1072,7 @@ async validateOrderAndSave(req, res) {
         console.log('🏁 === FIN DE validateOrderAndSave ===');
     }
 },
+
 
      // Calculer les taxes (TVA)
    calculateTax(subtotal, taxRate = 20) { return (subtotal * taxRate) / 100; },

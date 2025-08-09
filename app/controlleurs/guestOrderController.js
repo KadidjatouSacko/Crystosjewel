@@ -8,6 +8,8 @@ import { Cart } from '../models/cartModel.js';
 import { sequelize } from '../models/sequelize-client.js';
 import { cartController } from '../controlleurs/cartControlleur.js';
 import crypto from 'crypto';
+import { sendOrderConfirmationEmails } from '../services/mailService.js';
+
 
 export const guestOrderController = {
 
@@ -438,50 +440,78 @@ if (isGuest) {
         // ========================================
         // 📧 ENVOI DES EMAILS (ASYNCHRONE)
         // ========================================
-        try {
-            console.log('📧 Préparation des emails avec vraies données de livraison...');
-            
-            const emailOrderData = {
-                id: orderId,
-                numero_commande: orderNumber,
-                total: finalTotal,
-                subtotal: cartDetails.totalPrice,
-                promo_discount_amount: discount,
-                shipping_price: deliveryFee,
-                promo_code: appliedPromo?.code || null,
-                
-                // ✅ VRAIES DONNÉES DE LIVRAISON POUR L'EMAIL
-                customer_name: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
-                customer_email: finalCustomerInfo.email,
-                shipping_address: finalCustomerInfo.address,
-                shipping_city: finalCustomerInfo.city,
-                shipping_postal_code: finalCustomerInfo.postalCode,
-                shipping_phone: finalCustomerInfo.phone,
-                
-                items: cartDetails.items.map(item => ({
-                    name: item.jewel.name,
-                    quantity: item.quantity,
-                    price: item.jewel.price_ttc,
-                    size: item.size || 'Standard'
-                }))
-            };
+       try {
+  // Préparer les données pour les emails
+  const emailOrderData = {
+    orderNumber: orderNumber,
+    orderId: order.id,
+    items: cartDetails.items.map(item => ({
+      jewel: {
+        id: item.jewel.id,
+        name: item.jewel.name,
+        image: item.jewel.image
+      },
+      quantity: item.quantity,
+      size: item.size || 'Standard',
+      total: item.jewel.price_ttc * item.quantity
+    })),
+    total: finalTotal,
+    subtotal: discountedSubtotal,
+    shipping_price: deliveryFee,
+    shippingAddress: {
+      address: finalCustomerInfo.address || '',
+      city: finalCustomerInfo.city || '',
+      postal_code: finalCustomerInfo.postal_code || ''
+    },
+    promo_code: appliedPromo?.code || null,
+    promo_discount_amount: discount || 0
+  };
 
-            const emailCustomerData = {
-                firstName: finalCustomerInfo.firstName,
-                lastName: finalCustomerInfo.lastName,
-                email: finalCustomerInfo.email,
-                phone: finalCustomerInfo.phone,
-                address: finalCustomerInfo.address,
-                city: finalCustomerInfo.city,
-                postalCode: finalCustomerInfo.postalCode
-            };
+  const emailCustomerData = {
+    firstName: finalCustomerInfo.firstName,
+    lastName: finalCustomerInfo.lastName,
+    email: finalCustomerInfo.email,
+    phone: finalCustomerInfo.phone,
+    address: {
+      address: finalCustomerInfo.address || '',
+      city: finalCustomerInfo.city || '',
+      postal_code: finalCustomerInfo.postal_code || ''
+    }
+  };
 
-            // Envoi des emails (ne pas attendre pour ne pas bloquer la réponse)
-            sendOrderEmailsAsync(emailOrderData, emailCustomerData);
+  console.log('📧 Données email préparées:', {
+    orderNumber,
+    customerEmail: finalCustomerInfo.email,
+    total: finalTotal,
+    itemsCount: cartDetails.items.length
+  });
 
-        } catch (emailError) {
-            console.error('❌ Erreur emails (non bloquante):', emailError);
-        }
+  // 🚀 ENVOI DES EMAILS
+  const emailResults = await sendOrderConfirmationEmails(
+    finalCustomerInfo.email,
+    finalCustomerInfo.firstName,
+    emailOrderData,
+    emailCustomerData
+  );
+  
+  console.log('📧 Résultats envoi emails:', emailResults);
+  
+  if (emailResults.customer.success) {
+    console.log('✅ Email client envoyé avec succès');
+  } else {
+    console.error('❌ Échec envoi email client:', emailResults.customer.error);
+  }
+  
+  if (emailResults.admin.success) {
+    console.log('✅ Email admin envoyé avec succès');
+  } else {
+    console.error('❌ Échec envoi email admin:', emailResults.admin.error);
+  }
+
+} catch (emailError) {
+  console.error('❌ Erreur emails (non bloquante):', emailError);
+  // On continue même si l'email échoue - la commande est créée
+}
 
         // ========================================
         // ✅ RÉPONSE DE SUCCÈS
