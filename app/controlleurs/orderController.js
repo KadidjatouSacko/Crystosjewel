@@ -21,6 +21,7 @@ const pool = new Pool({
   ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
 });
 
+
 function calculateOrderTotals(cartItems, appliedPromo = null) {
     let subtotal = 0;
     
@@ -552,123 +553,107 @@ async updateOrder(req, res) {
 /**
  * 🆕 MÉTHODE ALTERNATIVE - Mise à jour du statut avec notifications améliorées
  */
-async updateOrderStatus(req, res) {
+async updateOrderStatus (req, res)  {
     try {
         const { orderId } = req.params;
-        const { status: newStatus, trackingNumber, carrier, notes } = req.body;
-        const updatedBy = req.session?.user?.email || 'Admin';
-
-        console.log(`🔄 Mise à jour statut commande ${orderId}:`, {
-            newStatus,
-            trackingNumber,
-            updatedBy
-        });
-
-        // Utiliser Sequelize ORM pour plus de sécurité
-        const order = await Order.findByPk(orderId, {
-            include: [
-                {
-                    model: Customer,
-                    as: 'customer',
-                    attributes: ['first_name', 'last_name', 'email', 'phone']
-                }
-            ]
-        });
-
-        if (!order) {
-            return res.status(404).json({
-                success: false,
-                message: 'Commande non trouvée'
-            });
+        const { status, trackingNumber } = req.body;
+        
+        console.log(`📦 Mise à jour statut commande ${orderId} vers: ${status}`);
+        
+        // Récupérer la commande complète avec les détails
+        const order = await db.query(`
+            SELECT o.*, c.firstName, c.lastName, c.email, c.address, c.city, c.postal_code
+            FROM orders o
+            JOIN customers c ON o.customer_id = c.id
+            WHERE o.id = ?
+        `, [orderId]);
+        
+        if (order.length === 0) {
+            return res.status(404).json({ success: false, message: 'Commande non trouvée' });
         }
-
-        const oldStatus = order.status;
-
-        // Mettre à jour la commande
-        await order.update({
-            status: newStatus,
-            tracking_number: trackingNumber || order.tracking_number,
-            carrier: carrier || order.carrier,
-            notes: notes || order.notes,
-            updated_at: new Date()
-        });
-
-        console.log(`✅ Statut commande ${orderId} mis à jour: ${oldStatus} → ${newStatus}`);
-
-        // Préparer les données pour les notifications
-        const orderData = {
-            id: order.id,
-            numero_commande: order.numero_commande || `CMD-${order.id}`,
-            tracking_number: order.tracking_number,
-            total: order.total,
-            customer_name: order.customer ? 
-                `${order.customer.first_name} ${order.customer.last_name}` : 
-                order.customer_name || 'Client'
-        };
-
-        const customerData = {
-            userEmail: order.customer?.email || order.customer_email,
-            firstName: order.customer?.first_name || order.customer_name?.split(' ')[0] || 'Client',
-            lastName: order.customer?.last_name || order.customer_name?.split(' ').slice(1).join(' ') || '',
-            phone: order.customer?.phone || order.customer_phone
-        };
-
-        const statusChangeData = {
-            oldStatus,
-            newStatus,
-            updatedBy
-        };
-
-        // Envoi des notifications
-        let notificationResults = {
-            email: { success: false },
-            sms: { success: false },
-            success: false
-        };
-
+        
+        const orderData = order[0];
+        
+        // Mettre à jour le statut dans la base de données
+        await db.query(`
+            UPDATE orders 
+            SET status = ?, tracking_number = ?, updated_at = NOW()
+            WHERE id = ?
+        `, [status, trackingNumber || null, orderId]);
+        
+        // Envoyer l'email correspondant au nouveau statut
         try {
-            const { sendStatusChangeNotifications } = await import('../services/mailService.js');
-            notificationResults = await sendStatusChangeNotifications(
-                orderData,
-                statusChangeData,
-                customerData
-            );
-        } catch (notificationError) {
-            console.error('❌ Erreur notifications:', notificationError);
-        }
-
-        // Réponse avec détails des notifications
-        res.json({
-            success: true,
-            message: 'Statut de commande mis à jour',
-            data: {
-                order: {
-                    id: order.id,
-                    numero_commande: order.numero_commande,
-                    status: order.status,
-                    tracking_number: order.tracking_number,
-                    oldStatus,
-                    newStatus
-                },
-                statusChanged: oldStatus !== newStatus,
-                notifications: {
-                    emailSent: notificationResults.email.success,
-                    smsSent: notificationResults.sms.success,
-                    anyNotificationSent: notificationResults.success
-                }
+            let emailResult = null;
+            
+            switch (status) {
+                case 'shipped':
+                case 'expediee':
+                    // Import de la fonction d'email d'expédition
+                    const { sendShippingEmail } = await import('../services/mailService.js');
+                    
+                    const estimatedDelivery = calculateDeliveryDate(3);
+                    emailResult = await sendShippingEmail(orderData.email, orderData.firstName, {
+                        orderNumber: orderData.orderNumber,
+                        trackingNumber: trackingNumber || 'En cours d\'attribution',
+                        estimatedDelivery
+                    });
+                    break;
+                    
+                case 'delivered':
+                case 'livree':
+                    // Import de la fonction d'email de livraison
+                    const { sendDeliveryEmail } = await import('../services/mailService.js');
+                    
+                    emailResult = await sendDeliveryEmail(orderData.email, orderData.firstName, {
+                        orderNumber: orderData.orderNumber
+                    });
+                    break;
             }
+            
+            if (emailResult && emailResult.success) {
+                console.log(`✅ Email de ${status} envoyé avec succès`);
+            } else if (emailResult) {
+                console.error(`❌ Échec envoi email de ${status}:`, emailResult.error);
+            }
+            
+        } catch (emailError) {
+            console.error('❌ Erreur lors de l\'envoi de l\'email de statut:', emailError);
+            // On continue même si l'email échoue
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `Statut mis à jour vers: ${status}${trackingNumber ? ` (Suivi: ${trackingNumber})` : ''}` 
         });
-
+        
     } catch (error) {
-        console.error('❌ Erreur mise à jour statut commande:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Erreur lors de la mise à jour du statut',
-            error: error.message
-        });
+        console.error('❌ Erreur mise à jour statut:', error);
+        res.status(500).json({ success: false, message: 'Erreur lors de la mise à jour du statut' });
     }
 },
 
+// ✅ FONCTION UTILITAIRE POUR CALCULER LA DATE DE LIVRAISON
+ calculateDeliveryDate(daysToAdd = 3) {
+    let deliveryDate = new Date();
+    let addedDays = 0;
+    
+    while (addedDays < daysToAdd) {
+        deliveryDate.setDate(deliveryDate.getDate() + 1);
+        
+        // Si ce n'est pas un dimanche (0 = dimanche)
+        if (deliveryDate.getDay() !== 0) {
+            addedDays++;
+        }
+    }
+    
+    return deliveryDate.toLocaleDateString('fr-FR', {
+        timeZone: 'Europe/Paris',
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+},
 
 /**
  * ✅ FONCTION COMPLÈTE: validateOrderAndSave
@@ -1920,6 +1905,441 @@ async renderCustomerForm(req, res) {
     }
 },
 
+
+/**
+ * ✅ FONCTION PRINCIPALE - Création et validation de commande avec emails
+ */
+async createOrder(req, res) {
+    const transaction = await sequelize.transaction();
+    
+    const isAjaxRequest = req.headers['content-type'] === 'application/json' || 
+                         req.headers.accept?.includes('application/json') ||
+                         req.headers['x-requested-with'] === 'XMLHttpRequest';
+    
+    console.log('🛒 === DÉBUT CRÉATION COMMANDE ===');
+    console.log('📱 Type de requête:', isAjaxRequest ? 'AJAX' : 'Standard');
+    
+    try {
+        // ========================================
+        // 🔐 ÉTAPE 1: VÉRIFICATION UTILISATEUR
+        // ========================================
+        if (!req.session?.user?.id) {
+            console.log('❌ Utilisateur non connecté');
+            if (isAjaxRequest) {
+                return res.status(401).json({
+                    success: false,
+                    message: 'Vous devez être connecté pour passer commande'
+                });
+            }
+            return res.redirect('/connexion-inscription');
+        }
+
+        const userId = req.session.user.id;
+        console.log(`👤 Utilisateur connecté: ID ${userId}`);
+
+        // ========================================
+        // 🛒 ÉTAPE 2: RÉCUPÉRATION DU PANIER
+        // ========================================
+        console.log('🛒 Récupération du panier...');
+        
+        const cartItems = await Cart.findAll({
+            where: { customer_id: userId },
+            include: [{
+                model: Jewel,
+                as: 'jewel',
+                required: true,
+                attributes: ['id', 'name', 'price_ttc', 'stock', 'image']
+            }],
+            transaction
+        });
+
+        if (cartItems.length === 0) {
+            console.log('❌ Panier vide');
+            if (isAjaxRequest) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Votre panier est vide'
+                });
+            }
+            req.flash('error', 'Votre panier est vide');
+            return res.redirect('/panier');
+        }
+
+        console.log(`✅ Panier récupéré: ${cartItems.length} articles`);
+
+        // ========================================
+        // 📦 ÉTAPE 3: VÉRIFICATION DU STOCK
+        // ========================================
+        console.log('📦 Vérification du stock...');
+        
+        for (const item of cartItems) {
+            if (item.jewel.stock < item.quantity) {
+                console.log(`❌ Stock insuffisant pour ${item.jewel.name}: demandé ${item.quantity}, disponible ${item.jewel.stock}`);
+                if (isAjaxRequest) {
+                    return res.status(400).json({
+                        success: false,
+                        message: `Stock insuffisant pour ${item.jewel.name}. Quantité disponible: ${item.jewel.stock}`
+                    });
+                }
+                req.flash('error', `Stock insuffisant pour ${item.jewel.name}`);
+                return res.redirect('/panier');
+            }
+        }
+
+        console.log('✅ Stock vérifié pour tous les articles');
+
+        // ========================================
+        // 👤 ÉTAPE 4: RÉCUPÉRATION DES INFOS CLIENT
+        // ========================================
+        console.log('👤 Récupération des informations client...');
+        
+        const customer = await Customer.findByPk(userId, { transaction });
+        if (!customer) {
+            console.log('❌ Client non trouvé');
+            if (isAjaxRequest) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Informations client non trouvées'
+                });
+            }
+            return res.redirect('/connexion-inscription');
+        }
+
+        // Vérifier que les informations requises sont présentes
+        if (!customer.first_name || !customer.last_name || !customer.email || !customer.address) {
+            console.log('❌ Informations client incomplètes');
+            if (isAjaxRequest) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Veuillez compléter vos informations de livraison'
+                });
+            }
+            req.flash('error', 'Veuillez compléter vos informations de livraison');
+            return res.redirect('/commande/informations');
+        }
+
+        console.log(`✅ Client récupéré: ${customer.first_name} ${customer.last_name}`);
+
+        // ========================================
+        // 💰 ÉTAPE 5: CALCULS FINANCIERS
+        // ========================================
+        console.log('💰 Calculs financiers...');
+        
+        // Calcul du sous-total
+        const subtotal = cartItems.reduce((sum, item) => {
+            return sum + (item.jewel.price_ttc * item.quantity);
+        }, 0);
+        
+        console.log(`💰 Sous-total calculé: ${subtotal.toFixed(2)}€`);
+
+        // Gestion des codes promo
+        let promoCodeData = null;
+        let discount = 0;
+        let finalSubtotal = subtotal;
+
+        if (req.session.appliedPromo) {
+            console.log('🎫 Application du code promo...');
+            
+            const promoCode = await PromoCode.findValidByCode(req.session.appliedPromo.code);
+            if (promoCode && promoCode.isUsable()) {
+                promoCodeData = {
+                    code: promoCode.code,
+                    discount_type: promoCode.discount_type,
+                    discount_value: promoCode.discount_value
+                };
+
+                // Calcul de la réduction
+                if (promoCode.discount_type === 'percentage') {
+                    discount = (subtotal * promoCode.discount_value) / 100;
+                } else {
+                    discount = Math.min(promoCode.discount_value, subtotal);
+                }
+                
+                finalSubtotal = subtotal - discount;
+                console.log(`🎫 Code promo appliqué: ${promoCode.code} (-${discount.toFixed(2)}€)`);
+            } else {
+                console.log('❌ Code promo invalide ou expiré');
+                delete req.session.appliedPromo;
+            }
+        }
+
+        // Frais de livraison
+        const shippingFee = finalSubtotal >= 50 ? 0 : 5.99;
+        const finalTotal = finalSubtotal + shippingFee;
+
+        console.log(`💰 === RÉCAPITULATIF FINANCIER ===`);
+        console.log(`   📊 Sous-total: ${subtotal.toFixed(2)}€`);
+        if (discount > 0) {
+            console.log(`   🎫 Réduction: -${discount.toFixed(2)}€`);
+            console.log(`   📉 Sous-total après réduction: ${finalSubtotal.toFixed(2)}€`);
+        }
+        console.log(`   🚚 Frais de livraison: ${shippingFee.toFixed(2)}€`);
+        console.log(`   💎 Total final: ${finalTotal.toFixed(2)}€`);
+        console.log(`=====================================`);
+
+        // ========================================
+        // 🏗️ ÉTAPE 6: CRÉATION DE LA COMMANDE
+        // ========================================
+        console.log('🏗️ Création de la commande...');
+        
+        // Génération du numéro de commande unique
+        const orderNumber = generateOrderNumber();
+        console.log(`📋 Numéro de commande généré: ${orderNumber}`);
+
+        // Insertion de la commande
+        const orderQuery = `
+            INSERT INTO orders (
+                numero_commande, customer_id, subtotal, shipping_price, total,
+                promo_code, promo_discount_amount, status, created_at, updated_at,
+                shipping_address, shipping_city, shipping_postal_code
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, 'en_attente', NOW(), NOW(), ?, ?, ?)
+        `;
+
+        const orderValues = [
+            orderNumber,
+            userId,
+            parseFloat(finalSubtotal.toFixed(2)),
+            parseFloat(shippingFee.toFixed(2)),
+            parseFloat(finalTotal.toFixed(2)),
+            promoCodeData?.code || null,
+            discount > 0 ? parseFloat(discount.toFixed(2)) : null,
+            customer.address,
+            customer.city,
+            customer.postal_code
+        ];
+
+        const [orderResult] = await sequelize.query(orderQuery, {
+            replacements: orderValues,
+            transaction
+        });
+
+        const orderId = orderResult.insertId || orderResult[0]?.id;
+        if (!orderId) {
+            throw new Error('Impossible de récupérer l\'ID de la commande créée');
+        }
+
+        console.log(`✅ Commande créée avec ID: ${orderId}`);
+
+        // ========================================
+        // 📝 ÉTAPE 7: AJOUT DES ARTICLES
+        // ========================================
+        console.log('📝 Ajout des articles de commande...');
+        
+        const orderItems = [];
+        
+        for (const item of cartItems) {
+            const itemTotal = item.jewel.price_ttc * item.quantity;
+            
+            // Insertion de l'article
+            const itemQuery = `
+                INSERT INTO order_items (order_id, jewel_id, quantity, price, size)
+                VALUES (?, ?, ?, ?, ?)
+            `;
+            
+            await sequelize.query(itemQuery, {
+                replacements: [
+                    orderId,
+                    item.jewel.id,
+                    item.quantity,
+                    parseFloat(item.jewel.price_ttc.toFixed(2)),
+                    item.size || 'Standard'
+                ],
+                transaction
+            });
+
+            // Décrémenter le stock
+            await Jewel.decrement('stock', {
+                by: item.quantity,
+                where: { id: item.jewel.id },
+                transaction
+            });
+
+            // Préparer les données pour l'email
+            orderItems.push({
+                jewel: {
+                    id: item.jewel.id,
+                    name: item.jewel.name,
+                    image: item.jewel.image
+                },
+                quantity: item.quantity,
+                size: item.size || 'Standard',
+                total: itemTotal
+            });
+
+            console.log(`  📦 ${item.jewel.name} x${item.quantity} - ${itemTotal.toFixed(2)}€`);
+        }
+
+        console.log(`✅ ${orderItems.length} articles ajoutés à la commande`);
+
+        // ========================================
+        // 🎫 ÉTAPE 8: MISE À JOUR DU CODE PROMO
+        // ========================================
+        if (promoCodeData && discount > 0) {
+            console.log('🎫 Mise à jour du code promo...');
+            
+            await sequelize.query(`
+                UPDATE promo_codes 
+                SET used_count = used_count + 1 
+                WHERE code = ?
+            `, {
+                replacements: [promoCodeData.code],
+                transaction
+            });
+
+            console.log(`✅ Code promo ${promoCodeData.code} mis à jour`);
+        }
+
+        // ========================================
+        // 🧹 ÉTAPE 9: NETTOYAGE
+        // ========================================
+        console.log('🧹 Nettoyage du panier et session...');
+        
+        // Vider le panier
+        await Cart.destroy({
+            where: { customer_id: userId },
+            transaction
+        });
+
+        // Supprimer le code promo de la session
+        if (req.session.appliedPromo) {
+            delete req.session.appliedPromo;
+        }
+
+        console.log('✅ Panier vidé et session nettoyée');
+
+        // ========================================
+        // 📧 ÉTAPE 10: ENVOI DES EMAILS
+        // ========================================
+        console.log('📧 Préparation et envoi des emails...');
+        
+        // Préparer les données pour les emails
+        const emailOrderData = {
+            orderNumber,
+            orderId,
+            items: orderItems,
+            total: finalTotal,
+            subtotal: finalSubtotal,
+            shipping_price: shippingFee,
+            shippingAddress: {
+                address: customer.address,
+                city: customer.city,
+                postal_code: customer.postal_code
+            },
+            promo_code: promoCodeData?.code || null,
+            promo_discount_amount: discount || 0
+        };
+
+        const emailCustomerData = {
+            firstName: customer.first_name,
+            lastName: customer.last_name,
+            email: customer.email,
+            phone: customer.phone,
+            address: {
+                address: customer.address,
+                city: customer.city,
+                postal_code: customer.postal_code
+            }
+        };
+
+        // Valider la transaction AVANT l'envoi des emails
+        await transaction.commit();
+        console.log('✅ Transaction validée en base de données');
+
+        // Envoi des emails (après commit pour éviter les rollbacks liés aux emails)
+        try {
+            const emailResults = await sendOrderConfirmationEmails(
+                customer.email,
+                customer.first_name,
+                emailOrderData,
+                emailCustomerData
+            );
+            
+            if (emailResults.customer.success) {
+                console.log('✅ Email client envoyé avec succès');
+            } else {
+                console.error('❌ Échec envoi email client:', emailResults.customer.error);
+            }
+            
+            if (emailResults.admin.success) {
+                console.log('✅ Email admin envoyé avec succès');
+            } else {
+                console.error('❌ Échec envoi email admin:', emailResults.admin.error);
+            }
+            
+        } catch (emailError) {
+            console.error('❌ Erreur lors de l\'envoi des emails:', emailError);
+            // On continue - la commande est créée même si l'email échoue
+        }
+
+        // ========================================
+        // 🎉 ÉTAPE 11: RÉPONSE FINALE
+        // ========================================
+        console.log('🎉 === COMMANDE CRÉÉE AVEC SUCCÈS ===');
+        console.log(`   📋 Numéro: ${orderNumber}`);
+        console.log(`   💰 Montant: ${finalTotal.toFixed(2)}€`);
+        if (promoCodeData) {
+            console.log(`   🎫 Code promo: ${promoCodeData.code} (-${discount.toFixed(2)}€)`);
+        }
+        console.log(`   👤 Client: ${customer.first_name} ${customer.last_name}`);
+        console.log(`   📧 Email: ${customer.email}`);
+        console.log('=====================================');
+
+        const successMessage = promoCodeData 
+            ? `Commande ${orderNumber} créée avec succès ! Code promo ${promoCodeData.code} appliqué (-${discount.toFixed(2)}€). Un email de confirmation vous a été envoyé.`
+            : `Commande ${orderNumber} créée avec succès ! Un email de confirmation vous a été envoyé.`;
+
+        if (isAjaxRequest) {
+            return res.status(200).json({
+                success: true,
+                message: successMessage,
+                orderNumber: orderNumber,
+                total: finalTotal,
+                discount: discount,
+                redirectUrl: `/commande/confirmation?orderNumber=${encodeURIComponent(orderNumber)}`
+            });
+        } else {
+            req.flash('success', successMessage);
+            return res.redirect(`/commande/confirmation?orderNumber=${encodeURIComponent(orderNumber)}`);
+        }
+
+    } catch (error) {
+        // ========================================
+        // ❌ GESTION DES ERREURS
+        // ========================================
+        console.error('💥 === ERREUR LORS DE LA CRÉATION DE COMMANDE ===');
+        console.error('Message:', error.message);
+        console.error('Stack:', error.stack);
+        console.error('===============================================');
+        
+        // Rollback de la transaction
+        try {
+            await transaction.rollback();
+            console.log('🔄 Transaction annulée (ROLLBACK effectué)');
+        } catch (rollbackError) {
+            console.error('❌ Erreur lors du ROLLBACK:', rollbackError.message);
+        }
+        
+        const errorMessage = error.message || 'Une erreur inattendue est survenue lors de la création de votre commande';
+        
+        if (isAjaxRequest) {
+            return res.status(500).json({
+                success: false,
+                message: errorMessage,
+                error: process.env.NODE_ENV === 'development' ? error.stack : undefined
+            });
+        } else {
+            req.flash('error', `Erreur lors de la création de la commande: ${errorMessage}`);
+            return res.redirect('/panier');
+        }
+        
+    } finally {
+        console.log('🏁 === FIN DE createOrder ===');
+    }
+}
+
+// ========================================
+// 🔧 FONCTIONS UTILITAIRES
+// ========================================
 
 
  
