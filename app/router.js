@@ -5626,6 +5626,7 @@ router.put('/admin/commandes/:id', adminOrdersController.updateOrder);
 router.get('/admin/commandes/export', adminOrdersController.exportOrders);
 
 // ✅ MÉTHODE EXPORT À AJOUTER DANS VOTRE CONTROLLER
+router.put('/admin/commandes/:orderId/status', isAdmin, adminOrdersController.updateOrderStatus);
 
 // Export par défaut
 export default router;

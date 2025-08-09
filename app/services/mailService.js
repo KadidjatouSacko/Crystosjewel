@@ -17,6 +17,16 @@ const transporter = nodemailer.createTransport({
 
 console.log('MAIL_USER:', process.env.MAIL_USER);
 console.log('MAIL_PASS:', process.env.MAIL_PASS);
+console.log('📧 Configuration email:', {
+    MAIL_USER: process.env.MAIL_USER ? '✅ Défini' : '❌ Manquant',
+    MAIL_PASS: process.env.MAIL_PASS ? '✅ Défini' : '❌ Manquant',
+    ADMIN_EMAIL: process.env.ADMIN_EMAIL ? '✅ Défini' : '❌ Manquant'
+});
+
+// Test de la connexion
+transporter.verify()
+  .then(() => console.log('✅ Connexion email OK'))
+  .catch(err => console.error('❌ Erreur connexion email:', err.message));
 
 export async function sendTestMail(to, subject, text) {
   try {
@@ -2833,67 +2843,119 @@ export const sendShippingNotificationEmail = async (userEmail, firstName, shippi
 
 // ✅ FONCTION PRINCIPALE - Envoi email selon changement de statut
 export const sendStatusChangeEmail = async (orderData, statusChangeData, customerData) => {
-    try {
-        const { oldStatus, newStatus, updatedBy } = statusChangeData;
-        const { userEmail, firstName } = customerData;
-        
-        console.log(`📧 Fonction sendStatusChangeEmail appelée:`, {
-            orderNumber: orderData.numero_commande,
-            email: userEmail,
-            statusChange: `${oldStatus} → ${newStatus}`
-        });
-        
-        // ✅ NE RIEN ENVOYER pour les statuts identiques
-        if (oldStatus === newStatus) {
-            console.log('⏭️ Statut identique, aucun email envoyé');
-            return { success: true, message: 'Statut identique, aucun email nécessaire' };
-        }
+  try {
+    console.log('📧 [AUTO-EMAIL] Envoi email pour commande:', orderData.numero_commande);
+    console.log('📧 [AUTO-EMAIL] Client:', customerData.userEmail);
+    console.log('📧 [AUTO-EMAIL] Changement:', statusChangeData.oldStatus, '→', statusChangeData.newStatus);
 
-        // ✅ VALIDATION DES DONNÉES REQUISES
-        if (!userEmail || !firstName || !orderData.numero_commande) {
-            console.error('❌ Données manquantes pour l\'email:', { userEmail, firstName, orderNumber: orderData.numero_commande });
-            return { success: false, error: 'Données manquantes pour l\'envoi d\'email' };
-        }
-        
-        // ✅ EMAILS SPÉCIAUX selon le nouveau statut
-        switch (newStatus) {
-            case 'shipped':
-                console.log('📦 Envoi email expédition...');
-                return await sendShippingNotificationEmail(userEmail, firstName, {
-                    orderNumber: orderData.numero_commande,
-                    trackingNumber: orderData.tracking_number || 'En cours d\'attribution',
-                    estimatedDelivery: calculateDeliveryDate(3)
-                });
-                
-            case 'delivered':
-                console.log('✅ Envoi email livraison...');
-                return await sendDeliveryConfirmationEmail(userEmail, firstName, {
-                    orderNumber: orderData.numero_commande,
-                    deliveryDate: new Date().toLocaleDateString('fr-FR')
-                });
-                
-            case 'cancelled':
-                console.log('❌ Envoi email annulation...');
-                return await sendCancellationEmail(userEmail, firstName, {
-                    orderNumber: orderData.numero_commande,
-                    reason: orderData.cancellation_reason || 'Annulation demandée'
-                });
-                
-            default:
-                console.log('📋 Envoi email générique changement statut...');
-                return await sendOrderStatusUpdateEmail(userEmail, firstName, {
-                    orderNumber: orderData.numero_commande,
-                    oldStatus: translateStatus(oldStatus),
-                    newStatus: translateStatus(newStatus),
-                    trackingNumber: orderData.tracking_number,
-                    updatedBy: updatedBy || 'Équipe CrystosJewel'
-                });
-        }
-        
-    } catch (error) {
-        console.error('❌ Erreur dans sendStatusChangeEmail:', error);
-        return { success: false, error: error.message };
+    // Vérification email
+    if (!customerData.userEmail || !customerData.userEmail.includes('@')) {
+      console.log('📧 [AUTO-EMAIL] ❌ Email invalide');
+      return { success: false, error: 'Email invalide' };
     }
+
+    // Messages selon statut
+    const statusMessages = {
+      'pending': '⏳ Votre commande est en cours de préparation',
+      'processing': '🔄 Votre commande est en cours de traitement', 
+      'shipped': '📦 Bonne nouvelle ! Votre commande a été expédiée',
+      'delivered': '✅ Votre commande a été livrée avec succès',
+      'cancelled': '❌ Votre commande a été annulée'
+    };
+
+    const statusMessage = statusMessages[statusChangeData.newStatus] || `📋 Statut mis à jour : ${statusChangeData.newStatus}`;
+    
+    // Email HTML
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="utf-8">
+        <title>Mise à jour de votre commande</title>
+      </head>
+      <body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f5f5f5;">
+        <div style="max-width: 600px; margin: 0 auto; background-color: white;">
+          
+          <!-- Header -->
+          <div style="background: linear-gradient(135deg, #B8868A, #E8B4B8); padding: 30px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">CrystosJewel</h1>
+            <p style="color: white; margin: 10px 0 0 0; opacity: 0.9;">Mise à jour de votre commande</p>
+          </div>
+          
+          <!-- Content -->
+          <div style="padding: 40px 30px;">
+            <h2 style="color: #B8868A; margin-top: 0;">Bonjour ${customerData.firstName} !</h2>
+            
+            <div style="background: #f8f9fa; padding: 25px; border-radius: 10px; margin: 25px 0;">
+              <p style="font-size: 18px; margin: 0; color: #333; font-weight: 500;">
+                ${statusMessage}
+              </p>
+            </div>
+            
+            <div style="border: 1px solid #e9ecef; border-radius: 10px; padding: 25px; margin: 25px 0;">
+              <h3 style="margin-top: 0; color: #333;">📋 Détails de votre commande</h3>
+              <p><strong>Numéro :</strong> ${orderData.numero_commande}</p>
+              <p><strong>Montant :</strong> ${orderData.total}€</p>
+              <p><strong>Statut :</strong> ${statusChangeData.newStatus}</p>
+              ${orderData.tracking_number ? `<p><strong>Suivi :</strong> ${orderData.tracking_number}</p>` : ''}
+            </div>
+            
+            ${statusChangeData.newStatus === 'shipped' ? `
+            <div style="background: #d4edda; border-radius: 10px; padding: 20px; margin: 25px 0;">
+              <h4 style="margin-top: 0; color: #155724;">📦 Votre colis est en route !</h4>
+              <p style="margin: 0; color: #155724;">
+                ${orderData.tracking_number ? 
+                  `Suivez votre colis : <strong>${orderData.tracking_number}</strong>` :
+                  'Vous recevrez bientôt le numéro de suivi.'
+                }
+              </p>
+            </div>
+            ` : ''}
+          </div>
+          
+          <!-- Footer -->
+          <div style="background: #f8f9fa; padding: 25px; text-align: center;">
+            <p style="margin: 0; color: #666;">
+              Des questions ? Contactez-nous à 
+              <a href="mailto:${process.env.MAIL_USER}" style="color: #B8868A;">
+                ${process.env.MAIL_USER}
+              </a>
+            </p>
+          </div>
+          
+        </div>
+      </body>
+      </html>
+    `;
+
+    // Sujets selon statut
+    const subjects = {
+      'pending': `⏳ Commande ${orderData.numero_commande} en préparation`,
+      'processing': `🔄 Commande ${orderData.numero_commande} en traitement`,
+      'shipped': `📦 Votre commande ${orderData.numero_commande} est expédiée !`,
+      'delivered': `✅ Commande ${orderData.numero_commande} livrée`,
+      'cancelled': `❌ Commande ${orderData.numero_commande} annulée`
+    };
+
+    const subject = subjects[statusChangeData.newStatus] || `📋 Mise à jour commande ${orderData.numero_commande}`;
+
+    console.log('📧 [AUTO-EMAIL] Envoi en cours...');
+
+    // Envoi de l'email
+    const info = await transporter.sendMail({
+      from: `"CrystosJewel 💎" <${process.env.MAIL_USER}>`,
+      to: customerData.userEmail,
+      subject: subject,
+      html: htmlContent,
+    });
+
+    console.log('📧 [AUTO-EMAIL] ✅ SUCCESS! Email envoyé:', info.response);
+    return { success: true, messageId: info.messageId };
+    
+  } catch (error) {
+    console.log('📧 [AUTO-EMAIL] ❌ ERREUR:', error.message);
+    return { success: false, error: error.message };
+  }
 };
 
 
