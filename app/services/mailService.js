@@ -2857,7 +2857,8 @@ export const sendStatusChangeEmail = async (orderData, statusChangeData, custome
     // Messages selon statut
     const statusMessages = {
       'pending': '⏳ Votre commande est en cours de préparation',
-      'processing': '🔄 Votre commande est en cours de traitement', 
+      'waiting': '⏳ Votre commande est en cours de préparation',
+      'preparing': '🔄 Votre commande est en cours de traitement', 
       'shipped': '📦 Bonne nouvelle ! Votre commande a été expédiée',
       'delivered': '✅ Votre commande a été livrée avec succès',
       'cancelled': '❌ Votre commande a été annulée'
@@ -2865,7 +2866,7 @@ export const sendStatusChangeEmail = async (orderData, statusChangeData, custome
 
     const statusMessage = statusMessages[statusChangeData.newStatus] || `📋 Statut mis à jour : ${statusChangeData.newStatus}`;
     
-    // Email HTML
+    // Email HTML simple
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -2931,7 +2932,8 @@ export const sendStatusChangeEmail = async (orderData, statusChangeData, custome
     // Sujets selon statut
     const subjects = {
       'pending': `⏳ Commande ${orderData.numero_commande} en préparation`,
-      'processing': `🔄 Commande ${orderData.numero_commande} en traitement`,
+      'waiting': `⏳ Commande ${orderData.numero_commande} en préparation`,
+      'preparing': `🔄 Commande ${orderData.numero_commande} en traitement`,
       'shipped': `📦 Votre commande ${orderData.numero_commande} est expédiée !`,
       'delivered': `✅ Commande ${orderData.numero_commande} livrée`,
       'cancelled': `❌ Commande ${orderData.numero_commande} annulée`
@@ -2957,6 +2959,16 @@ export const sendStatusChangeEmail = async (orderData, statusChangeData, custome
     return { success: false, error: error.message };
   }
 };
+
+// ✅ VÉRIFICATION Configuration Email
+// Ajoutez ces lignes au début de votre mailService.js pour vérifier la config :
+
+console.log('📧 Configuration email:', {
+    MAIL_USER: process.env.MAIL_USER ? '✅ Défini' : '❌ Manquant',
+    MAIL_PASS: process.env.MAIL_PASS ? '✅ Défini' : '❌ Manquant',
+    SERVICE: 'gmail ✅'
+});
+
 
 
 // ✅ FONCTION UTILITAIRE - Traduction des statuts

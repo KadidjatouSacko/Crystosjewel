@@ -1953,155 +1953,139 @@ async getOrderDetails(req, res) {
     // ========================================
 
 async updateOrder(req, res) {
-    const orderId = req.params.id;
-    const { status, tracking_number, notes, internal_notes } = req.body;
-    
     try {
-        console.log(`🔄 Mise à jour commande ${orderId}:`, {
-            status,
-            tracking_number,
-            notes: notes?.substring(0, 50) + '...',
-            internal_notes: internal_notes?.substring(0, 50) + '...'
-        });
+        console.log('🔥 [UPDATE] Début updateOrder avec emails auto');
+        console.log('🔥 [UPDATE] Body reçu:', req.body);
+        
+        const orderId = req.params.id;
+        const { status, tracking_number, notes } = req.body;
 
-        // ✅ RÉCUPÉRER L'ANCIEN STATUT ET TOUTES LES DONNÉES
-        const [existingOrder] = await sequelize.query(`
-            SELECT 
-                o.*,
-                COALESCE(o.customer_email, c.email, 'N/A') as customer_email,
-                COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client') as customer_name
-            FROM orders o
-            LEFT JOIN customer c ON o.customer_id = c.id
-            WHERE o.id = $1
-        `, { bind: [orderId] });
+        // Récupération de la commande existante
+        const [existingOrderRows] = await sequelize.query(
+            'SELECT * FROM orders WHERE id = $1',
+            { bind: [orderId] }
+        );
 
-        if (existingOrder.length === 0) {
+        if (!existingOrderRows.length) {
+            console.log('🔥 [UPDATE] ❌ Commande non trouvée');
             return res.status(404).json({
                 success: false,
                 message: 'Commande non trouvée'
             });
         }
 
-        const currentOrder = existingOrder[0];
-        const oldStatus = currentOrder.status || currentOrder.status_suivi;
-        const statusChanged = status !== oldStatus;
+        const existingOrder = existingOrderRows[0];
+        const oldStatus = existingOrder.status;
+        const customerEmail = existingOrder.customer_email || existingOrder.client_email;
 
+        console.log('🔥 [UPDATE] Commande trouvée:', {
+            numero: existingOrder.numero_commande,
+            oldStatus,
+            newStatus: status,
+            customerEmail
+        });
+
+        // Mise à jour en base
         await sequelize.transaction(async (t) => {
-            // ✅ MISE À JOUR DE LA COMMANDE
             await sequelize.query(`
                 UPDATE orders 
                 SET 
                     status = $2,
-                    status_suivi = $2,
                     tracking_number = $3,
                     notes = $4,
-                    internal_notes = $5,
-                    updated_at = NOW()
+                    updated_at = CURRENT_TIMESTAMP
                 WHERE id = $1
             `, {
-                bind: [orderId, status, tracking_number || null, notes || null, internal_notes || null],
+                bind: [orderId, status, tracking_number || null, notes || null],
                 transaction: t
             });
 
-            // ✅ ENREGISTRER DANS L'HISTORIQUE
-            const adminName = req.session?.user?.first_name || 
-                              req.session?.user?.name || 
-                              req.session?.user?.email?.split('@')[0] || 
-                              'Administration';
-
-            if (statusChanged) {
+            // Historique si statut changé
+            if (status !== oldStatus) {
+                const adminName = req.session?.user?.name || 'Admin';
                 await sequelize.query(`
                     INSERT INTO order_status_history (order_id, old_status, new_status, notes, updated_by, created_at)
-                    VALUES ($1, $2, $3, $4, $5, NOW())
+                    VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP)
                 `, {
-                    bind: [
-                        orderId, 
-                        oldStatus, 
-                        status, 
-                        `Statut modifié: ${oldStatus} → ${status}`,
-                        adminName
-                    ],
+                    bind: [orderId, oldStatus, status, `Statut modifié: ${oldStatus} → ${status}`, adminName],
                     transaction: t
                 });
             }
         });
 
-        // ✅ ENVOI EMAIL APRÈS LA MISE À JOUR RÉUSSIE
-        let emailResult = { success: false, message: 'Aucun email envoyé' };
-        
-        if (statusChanged && currentOrder.customer_email && currentOrder.customer_email !== 'N/A') {
-            try {
-                console.log('📧 Tentative envoi email changement statut...');
-                
-                // Préparer les données pour l'email
-                const orderData = {
-                    id: currentOrder.id,
-                    numero_commande: currentOrder.numero_commande || `CMD-${currentOrder.id}`,
-                    tracking_number: tracking_number || currentOrder.tracking_number,
-                    total: currentOrder.total,
-                    subtotal: currentOrder.subtotal,
-                    promo_code: currentOrder.promo_code,
-                    promo_discount_amount: currentOrder.promo_discount_amount
-                };
+        console.log('🔥 [UPDATE] ✅ Commande mise à jour en base');
 
-                const customerData = {
-                    userEmail: currentOrder.customer_email,
-                    firstName: currentOrder.customer_name?.split(' ')[0] || 'Client',
-                    lastName: currentOrder.customer_name?.split(' ').slice(1).join(' ') || ''
+        // ✅ ENVOI EMAIL AUTOMATIQUE SI STATUT CHANGÉ
+        let emailResult = { success: false, message: 'Pas de changement' };
+        
+        if (status !== oldStatus && customerEmail && customerEmail.includes('@')) {
+            try {
+                console.log('🔥 [UPDATE] Import du service email...');
+                
+                // Import du service email
+                const mailService = await import('../services/mailService.js');
+                const { sendStatusChangeEmail } = mailService;
+                
+                // Données pour l'email
+                const orderData = {
+                    id: existingOrder.id,
+                    numero_commande: existingOrder.numero_commande || `CMD-${existingOrder.id}`,
+                    tracking_number: tracking_number || existingOrder.tracking_number,
+                    total: existingOrder.total
                 };
 
                 const statusChangeData = {
                     oldStatus,
                     newStatus: status,
-                    updatedBy: adminName
+                    updatedBy: req.session?.user?.name || 'Admin'
                 };
 
-                console.log('📧 Données email:', {
-                    orderNumber: orderData.numero_commande,
-                    customerEmail: customerData.userEmail,
-                    statusChange: `${oldStatus} → ${status}`
-                });
+                const customerData = {
+                    userEmail: customerEmail,
+                    firstName: existingOrder.first_name || existingOrder.customer_name?.split(' ')[0] || 'Client'
+                };
 
-                // ✅ APPEL DIRECT DE LA FONCTION IMPORTÉE
+                console.log('🔥 [UPDATE] Envoi email automatique...');
                 emailResult = await sendStatusChangeEmail(orderData, statusChangeData, customerData);
                 
-                if (emailResult.success) {
-                    console.log('✅ Email envoyé avec succès');
-                } else {
-                    console.warn('⚠️ Échec envoi email:', emailResult.error);
-                }
+                console.log('🔥 [UPDATE] Résultat email:', emailResult);
                 
             } catch (emailError) {
-                console.error('❌ Erreur lors de l\'envoi d\'email:', emailError);
+                console.log('🔥 [UPDATE] ⚠️ Erreur email (non bloquante):', emailError.message);
                 emailResult = { success: false, error: emailError.message };
             }
         } else {
-            console.log('ℹ️ Email non envoyé:', {
-                statusChanged,
-                hasEmail: !!currentOrder.customer_email,
-                emailValue: currentOrder.customer_email
+            console.log('🔥 [UPDATE] Email non envoyé car:', {
+                statusChanged: status !== oldStatus,
+                hasEmail: !!customerEmail,
+                isValidEmail: customerEmail && customerEmail.includes('@')
             });
         }
 
-        // ✅ RÉPONSE AVEC DÉTAILS EMAIL
+        console.log('🔥 [UPDATE] ✅ Succès! Réponse finale');
+
+        // Réponse succès
         res.json({
             success: true,
             message: 'Commande mise à jour avec succès',
-            changes: {
-                status: statusChanged,
-                notes: notes !== currentOrder.notes,
-                internal_notes: internal_notes !== currentOrder.internal_notes,
-                tracking: tracking_number !== currentOrder.tracking_number
-            },
-            emailSent: emailResult.success,
-            emailDetails: emailResult
+            data: {
+                order: {
+                    id: existingOrder.id,
+                    numero_commande: existingOrder.numero_commande,
+                    status: status,
+                    tracking_number: tracking_number || existingOrder.tracking_number
+                },
+                statusChanged: status !== oldStatus,
+                emailSent: emailResult?.success || false,
+                emailError: emailResult?.error || null
+            }
         });
 
     } catch (error) {
-        console.error('❌ Erreur mise à jour commande:', error);
+        console.log('🔥 [UPDATE] ❌ ERREUR GENERALE:', error.message);
         res.status(500).json({
             success: false,
-            message: 'Erreur lors de la mise à jour: ' + error.message
+            message: 'Erreur: ' + error.message
         });
     }
 },
