@@ -195,223 +195,268 @@ export const adminOrdersController = {
 /**
  * ✅ MÉTHODE COMPLÈTE getAllOrders SANS o.email
  */
+// ✅ GETALLORDERS FINAL - Compatible avec votre template et filtres
+// ✅ GETALLORDERS COMPLET ET CORRIGÉ - Version finale
 async getAllOrders(req, res) {
     try {
-        console.log('📋 Récupération commandes avec filtres');
-        
-        // ✅ RÉCUPÉRATION DES FILTRES DEPUIS L'URL
+        console.log('🚀 === DÉBUT getAllOrders ===');
+        console.log('📋 URL actuelle:', req.originalUrl);
+        console.log('📋 Paramètres reçus:', req.query);
+
+        // ✅ 1. RÉCUPÉRATION ET VALIDATION DES FILTRES
         const filters = {
-            search: req.query.search || '',
+            search: (req.query.search || '').trim(),
             status: req.query.status || '',
             promo: req.query.promo || '',
             date: req.query.date || '',
             payment: req.query.payment || ''
         };
-        
-        // Pagination
-        const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 20;
+
+        // ✅ 2. PAGINATION
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(10, parseInt(req.query.limit) || 20));
         const offset = (page - 1) * limit;
-        
-        console.log('🔍 Filtres reçus:', filters);
-        
-        // ✅ CONSTRUCTION DYNAMIQUE DE LA REQUÊTE
+
+        console.log('🔍 Filtres traités:', filters);
+        console.log('📄 Pagination:', { page, limit, offset });
+
+        // ✅ 3. CONSTRUCTION DYNAMIQUE DE LA REQUÊTE
         let whereConditions = [];
-        let params = [];
-        let paramIndex = 1;
-        
-        // Filtre de recherche
-        if (filters.search && filters.search.trim()) {
-            const searchTerm = filters.search.trim();
+        let bindings = [];
+        let bindIndex = 1;
+
+        // 🔍 FILTRE DE RECHERCHE MULTI-CHAMPS
+        if (filters.search) {
             whereConditions.push(`(
-                LOWER(o.numero_commande) LIKE LOWER($${paramIndex}) OR
-                LOWER(o.customer_name) LIKE LOWER($${paramIndex}) OR
-                LOWER(o.customer_email) LIKE LOWER($${paramIndex}) OR
-                LOWER(c.first_name) LIKE LOWER($${paramIndex}) OR
-                LOWER(c.last_name) LIKE LOWER($${paramIndex}) OR
-                LOWER(c.email) LIKE LOWER($${paramIndex})
+                LOWER(o.numero_commande) LIKE LOWER($${bindIndex}) OR
+                LOWER(COALESCE(o.customer_name, '')) LIKE LOWER($${bindIndex + 1}) OR
+                LOWER(COALESCE(o.customer_email, '')) LIKE LOWER($${bindIndex + 2}) OR
+                LOWER(COALESCE(c.first_name, '')) LIKE LOWER($${bindIndex + 3}) OR
+                LOWER(COALESCE(c.last_name, '')) LIKE LOWER($${bindIndex + 4}) OR
+                LOWER(COALESCE(c.email, '')) LIKE LOWER($${bindIndex + 5}) OR
+                LOWER(COALESCE(o.promo_code, '')) LIKE LOWER($${bindIndex + 6})
             )`);
-            params.push(`%${searchTerm}%`);
-            paramIndex++;
+            const searchTerm = `%${filters.search}%`;
+            bindings.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+            bindIndex += 7;
         }
-        
-        // Filtre par statut
-        if (filters.status && filters.status !== '') {
-            whereConditions.push(`LOWER(COALESCE(o.status, o.status_suivi, 'waiting')) = LOWER($${paramIndex})`);
-            params.push(filters.status);
-            paramIndex++;
-        }
-        
-        // Filtre par code promo
-        if (filters.promo && filters.promo !== '') {
-            if (filters.promo === 'with-promo') {
-                whereConditions.push(`(o.promo_code IS NOT NULL AND o.promo_code != '')`);
-            } else if (filters.promo === 'without-promo') {
-                whereConditions.push(`(o.promo_code IS NULL OR o.promo_code = '')`);
-            }
-        }
-        
-        // Filtre par date
-        if (filters.date && filters.date !== '') {
-            const now = new Date();
-            let dateCondition = '';
+
+        // 📊 FILTRE PAR STATUT AVEC MAPPING
+        if (filters.status) {
+            const statusMappings = {
+                'waiting': ['waiting', 'en_attente', 'en attente'],
+                'preparing': ['preparing', 'preparation', 'en_preparation', 'en préparation'],
+                'shipped': ['shipped', 'expediee', 'expédiée'],
+                'delivered': ['delivered', 'livree', 'livrée'],
+                'cancelled': ['cancelled', 'annulee', 'annulée']
+            };
             
+            const statusVariants = statusMappings[filters.status] || [filters.status];
+            const placeholders = statusVariants.map(() => `$${bindIndex++}`).join(',');
+            whereConditions.push(`LOWER(COALESCE(o.status, 'waiting')) IN (${placeholders})`);
+            bindings.push(...statusVariants.map(s => s.toLowerCase()));
+        }
+
+        // 🎫 FILTRE PAR CODE PROMO
+        if (filters.promo === 'with-promo') {
+            whereConditions.push(`(o.promo_code IS NOT NULL AND TRIM(o.promo_code) != '')`);
+        } else if (filters.promo === 'without-promo') {
+            whereConditions.push(`(o.promo_code IS NULL OR TRIM(o.promo_code) = '')`);
+        }
+
+        // 📅 FILTRE PAR DATE
+        if (filters.date) {
             switch (filters.date) {
                 case 'today':
-                    dateCondition = `DATE(o.created_at) = CURRENT_DATE`;
+                    whereConditions.push(`DATE(o.created_at) = CURRENT_DATE`);
                     break;
                 case 'week':
-                    dateCondition = `o.created_at >= DATE_TRUNC('week', CURRENT_DATE)`;
+                    whereConditions.push(`o.created_at >= CURRENT_DATE - INTERVAL '7 days'`);
                     break;
                 case 'month':
-                    dateCondition = `o.created_at >= DATE_TRUNC('month', CURRENT_DATE)`;
+                    whereConditions.push(`o.created_at >= DATE_TRUNC('month', CURRENT_DATE)`);
                     break;
             }
-            
-            if (dateCondition) {
-                whereConditions.push(dateCondition);
-            }
         }
-        
-        // Filtre par méthode de paiement
-        if (filters.payment && filters.payment !== '') {
-            whereConditions.push(`LOWER(COALESCE(o.payment_method, 'card')) = LOWER($${paramIndex})`);
-            params.push(filters.payment);
-            paramIndex++;
+
+        // 💳 FILTRE PAR MÉTHODE DE PAIEMENT
+        if (filters.payment) {
+            whereConditions.push(`LOWER(COALESCE(o.payment_method, 'card')) = LOWER($${bindIndex})`);
+            bindings.push(filters.payment);
+            bindIndex++;
         }
-        
-        // ✅ CONSTRUIRE LA CLAUSE WHERE FINALE
+
+        // ✅ 4. CONSTRUCTION DES REQUÊTES SQL
         const whereClause = whereConditions.length > 0 
-            ? 'AND ' + whereConditions.join(' AND ')
+            ? 'WHERE ' + whereConditions.join(' AND ')
             : '';
-        
-        // ✅ REQUÊTE PRINCIPALE AVEC FILTRES
+
+        console.log('🔗 Clause WHERE construite:', whereClause);
+
+        // ✅ 5. REQUÊTE PRINCIPALE OPTIMISÉE
         const commandesQuery = `
             SELECT 
                 o.id,
                 o.numero_commande,
                 o.customer_id,
                 
-                -- ✅ RÉCUPÉRATION COMPLÈTE DES EMAILS
+                -- ✅ INFORMATIONS CLIENT NORMALISÉES
                 COALESCE(
-                    o.customer_email,
-                    c.email,
-                    'N/A'
-                ) as customer_email,
-                
-                -- ✅ RÉCUPÉRATION COMPLÈTE DES NOMS CLIENTS
-                COALESCE(
-                    o.customer_name,
-                    CONCAT(TRIM(COALESCE(c.first_name, '')), ' ', TRIM(COALESCE(c.last_name, ''))),
+                    NULLIF(TRIM(o.customer_name), ''),
+                    NULLIF(TRIM(CONCAT(COALESCE(c.first_name, ''), ' ', COALESCE(c.last_name, ''))), ''),
                     'Client inconnu'
                 ) as customer_name,
                 
-                -- ✅ RÉCUPÉRATION TÉLÉPHONE ET ADRESSE
-                COALESCE(o.customer_phone, c.phone, 'N/A') as customer_phone,
-                COALESCE(o.shipping_address, c.address, 'N/A') as customer_address,
+                COALESCE(
+                    NULLIF(TRIM(o.customer_email), ''),
+                    NULLIF(TRIM(c.email), ''),
+                    'email@inconnu.com'
+                ) as customer_email,
                 
-                -- ✅ DATES CORRECTES
+                COALESCE(o.customer_phone, c.phone, '') as customer_phone,
+                
+                -- ✅ ADRESSES COMPLÈTES
+                COALESCE(o.shipping_address, c.address, '') as shipping_address,
+                COALESCE(o.shipping_city, c.city, '') as shipping_city,
+                COALESCE(o.shipping_postal_code, c.postal_code, '') as shipping_postal_code,
+                COALESCE(o.shipping_country, c.country, 'France') as shipping_country,
+                COALESCE(o.shipping_phone, o.customer_phone, c.phone, '') as shipping_phone,
+                
+                -- ✅ DATES
                 o.created_at,
                 o.updated_at,
-                DATE_FORMAT(o.created_at, '%d/%m/%Y %H:%i') as formatted_date,
                 
-                -- ✅ MONTANTS AVEC CALCULS CORRECTS
-                COALESCE(o.subtotal, o.original_total, o.total, 0) as subtotal,
-                COALESCE(o.total, 0) as total,
-                COALESCE(o.original_total, o.subtotal, o.total, 0) as original_total,
+                -- ✅ MONTANTS FINANCIERS PRÉCIS
+                CAST(COALESCE(o.total, 0) AS DECIMAL(10,2)) as total,
+                CAST(COALESCE(o.subtotal, o.total, 0) AS DECIMAL(10,2)) as subtotal,
+                CAST(COALESCE(o.shipping_price, o.shipping_cost, 0) AS DECIMAL(10,2)) as shipping_price,
+                CAST(COALESCE(o.promo_discount_amount, o.discount_amount, 0) AS DECIMAL(10,2)) as discount_amount,
                 
-                -- ✅ INFORMATIONS PROMO COMPLÈTES
+                -- ✅ INFORMATIONS PROMO
                 o.promo_code,
-                COALESCE(o.promo_discount_amount, o.discount_amount, 0) as discount_amount,
-                COALESCE(o.promo_discount_percent, o.discount_percent, 0) as discount_percent,
-                COALESCE(o.shipping_price, o.delivery_fee, 0) as shipping_price,
+                COALESCE(o.promo_discount_percent, 0) as discount_percent,
                 
                 -- ✅ STATUT ET PAIEMENT
-                COALESCE(o.status, o.status_suivi, 'waiting') as status,
-                COALESCE(o.payment_method, 'card') as payment_method,
-                COALESCE(o.payment_status, 'pending') as payment_status,
+                LOWER(COALESCE(o.status, 'waiting')) as status,
+                LOWER(COALESCE(o.payment_method, 'card')) as payment_method,
+                COALESCE(o.payment_status, 'paid') as payment_status,
+                o.payment_date,
                 
-                -- ✅ SUIVI LIVRAISON
+                -- ✅ SUIVI ET NOTES
                 o.tracking_number,
-                o.delivery_notes
+                o.internal_notes,
+                o.notes,
+                
+                -- ✅ INDICATEURS
+                CASE 
+                    WHEN o.customer_id IS NULL OR o.customer_id = 0 
+                    THEN true 
+                    ELSE false 
+                END as is_guest_order
                 
             FROM orders o
             LEFT JOIN customer c ON o.customer_id = c.id
-            WHERE 1=1 ${whereClause}
+            ${whereClause}
             ORDER BY o.created_at DESC
-            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+            LIMIT $${bindIndex} OFFSET $${bindIndex + 1}
         `;
-        
-        // ✅ REQUÊTE DE COMPTAGE POUR PAGINATION
+
+        // ✅ 6. REQUÊTE DE COMPTAGE
         const countQuery = `
             SELECT COUNT(*) as total
             FROM orders o
             LEFT JOIN customer c ON o.customer_id = c.id
-            WHERE 1=1 ${whereClause}
+            ${whereClause}
         `;
-        
-        params.push(limit, offset);
-        
-        console.log('🔍 Requête avec filtres:', { whereClause, params });
-        
-        // Exécution des requêtes
-        const [countResult] = await sequelize.query(countQuery, { 
-            bind: params.slice(0, -2) // Exclure limit et offset pour le count
-        });
-        const [result] = await sequelize.query(commandesQuery, { bind: params });
-        
-        const totalCommandes = parseInt(countResult[0].total);
-        
-        // ✅ TRAITEMENT DES DONNÉES AVEC CALCULS CORRECTS
-        const commandes = result.map(commande => {
-            const subtotal = parseFloat(commande.subtotal || 0);
-            const discountAmount = parseFloat(commande.discount_amount || 0);
-            const shippingPrice = parseFloat(commande.shipping_price || 0);
-            const finalTotal = parseFloat(commande.total || 0);
-            const originalTotal = discountAmount > 0 ? finalTotal + discountAmount : finalTotal;
-            
+
+        // Ajouter pagination aux bindings
+        const queryBindings = [...bindings, limit, offset];
+        const countBindings = [...bindings];
+
+        console.log('🔄 Exécution des requêtes SQL...');
+
+        // ✅ 7. EXÉCUTION PARALLÈLE DES REQUÊTES
+        const [commandesResult, countResult] = await Promise.all([
+            sequelize.query(commandesQuery, {
+                bind: queryBindings,
+                type: QueryTypes.SELECT
+            }),
+            sequelize.query(countQuery, {
+                bind: countBindings,
+                type: QueryTypes.SELECT
+            })
+        ]);
+
+        const totalCommandes = parseInt(countResult[0].total || 0);
+        console.log(`📊 ${commandesResult.length} commandes récupérées sur ${totalCommandes} total`);
+
+        // ✅ 8. TRAITEMENT ET NORMALISATION DES DONNÉES
+        const commandes = commandesResult.map(cmd => {
+            // Calculs financiers sécurisés
+            const totalAmount = parseFloat(cmd.total || 0);
+            const discountAmount = parseFloat(cmd.discount_amount || 0);
+            const shippingAmount = parseFloat(cmd.shipping_price || 0);
+            const subtotalAmount = parseFloat(cmd.subtotal || 0);
+            const originalAmount = discountAmount > 0 ? totalAmount + discountAmount : totalAmount;
+
+            // Formatage des dates
+            const createdDate = new Date(cmd.created_at);
+            const isValidDate = !isNaN(createdDate.getTime());
+
             return {
-                id: commande.id,
-                numero_commande: commande.numero_commande || `CMD-${commande.id}`,
+                // ✅ IDENTIFIANTS
+                id: cmd.id,
+                numero_commande: cmd.numero_commande || `CMD-${cmd.id}`,
                 
-                // ✅ DATE CORRECTE
-                created_at: commande.created_at,
-                formatted_date: commande.formatted_date,
-                date: commande.formatted_date,
-                dateTime: new Date(commande.created_at).toLocaleString('fr-FR'),
+                // ✅ DATES FORMATÉES
+                created_at: cmd.created_at,
+                date: isValidDate ? createdDate.toLocaleDateString('fr-FR') : 'Date invalide',
+                dateTime: isValidDate ? createdDate.toLocaleString('fr-FR') : 'Date invalide',
                 
-                // ✅ INFORMATIONS CLIENT COMPLÈTES
-                customer_name: commande.customer_name,
-                customerName: commande.customer_name,
-                customer_email: commande.customer_email,
-                customerEmail: commande.customer_email,
-                customer_phone: commande.customer_phone,
-                customer_address: commande.customer_address,
+                // ✅ INFORMATIONS CLIENT
+                customer_name: cmd.customer_name,
+                customerName: cmd.customer_name, // Alias pour compatibilité template
+                customer_email: cmd.customer_email,
+                customerEmail: cmd.customer_email, // Alias pour compatibilité template
+                customer_phone: cmd.customer_phone,
                 
-                // ✅ MONTANTS CORRECTS
-                subtotal: subtotal.toFixed(2),
-                original_total: originalTotal.toFixed(2),
-                originalAmount: originalTotal.toFixed(2),
-                amount: finalTotal.toFixed(2),
-                discount_amount: discountAmount.toFixed(2),
-                shipping_price: shippingPrice.toFixed(2),
-                total: finalTotal.toFixed(2),
+                // ✅ ADRESSES
+                shipping_address: cmd.shipping_address,
+                shipping_city: cmd.shipping_city,
+                shipping_postal_code: cmd.shipping_postal_code,
+                shipping_country: cmd.shipping_country,
+                shipping_phone: cmd.shipping_phone,
                 
-                // ✅ PROMO INFOS
-                promo_code: commande.promo_code,
-                discount_percent: parseFloat(commande.discount_percent || 0),
-                hasDiscount: discountAmount > 0 || commande.promo_code,
+                // ✅ MONTANTS
+                total: totalAmount,
+                amount: totalAmount, // Alias pour template
+                subtotal: subtotalAmount,
+                originalAmount: originalAmount,
+                discount_amount: discountAmount,
+                shipping_price: shippingAmount,
                 
-                // ✅ STATUT ET PAIEMENT
-                status: this.normalizeStatus(commande.status),
-                payment_method: commande.payment_method,
-                payment_status: commande.payment_status,
+                // ✅ PROMO
+                promo_code: cmd.promo_code || null,
+                discount_percent: parseFloat(cmd.discount_percent || 0),
+                hasDiscount: discountAmount > 0 || (cmd.promo_code && cmd.promo_code.trim() !== ''),
+                
+                // ✅ STATUT NORMALISÉ
+                status: this.normalizeStatus(cmd.status),
+                
+                // ✅ PAIEMENT
+                payment_method: cmd.payment_method || 'card',
+                payment_status: cmd.payment_status || 'paid',
+                payment_date: cmd.payment_date,
                 
                 // ✅ SUIVI
-                tracking_number: commande.tracking_number,
-                delivery_notes: commande.delivery_notes,
+                tracking_number: cmd.tracking_number || '',
+                internal_notes: cmd.internal_notes || '',
+                notes: cmd.notes || '',
                 
-                // ✅ DONNÉES POUR LES TAILLES (si nécessaire)
+                // ✅ INDICATEURS
+                isGuestOrder: cmd.is_guest_order || false,
+                
+                // ✅ TAILLES (structure pour extension future)
                 sizesInfo: {
                     totalItems: 0,
                     itemsWithSizes: 0,
@@ -422,45 +467,522 @@ async getAllOrders(req, res) {
             };
         });
 
-        console.log(`📊 ${commandes.length} commandes récupérées avec filtres (${totalCommandes} total)`);
+        // ✅ 9. CALCUL DES STATISTIQUES
+        const stats = this.calculateStats(commandes);
+        const statusStats = this.calculateStatusStats(commandes);
 
-        // ✅ PAGINATION
+        // ✅ 10. PAGINATION COMPLÈTE
         const totalPages = Math.ceil(totalCommandes / limit);
         const pagination = {
             currentPage: page,
             totalPages: totalPages,
             total: totalCommandes,
             hasNext: page < totalPages,
-            hasPrev: page > 1
+            hasPrev: page > 1,
+            startItem: totalCommandes > 0 ? offset + 1 : 0,
+            endItem: Math.min(offset + limit, totalCommandes),
+            limit: limit
         };
 
+        // ✅ 11. HELPERS POUR LE TEMPLATE
+        const helpers = {
+            formatPrice: (price) => {
+                try {
+                    const num = parseFloat(price || 0);
+                    return num.toLocaleString('fr-FR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                } catch (error) {
+                    return '0,00';
+                }
+            },
+
+            formatDateTime: (dateString) => {
+                if (!dateString) return 'N/A';
+                try {
+                    return new Date(dateString).toLocaleString('fr-FR');
+                } catch (error) {
+                    return 'Date invalide';
+                }
+            },
+
+            getTimeAgo: (dateString) => {
+                if (this.calculateTimeAgo) {
+                    return this.calculateTimeAgo(dateString);
+                }
+                return 'N/A';
+            },
+
+            translateStatus: (status) => {
+                const statusMap = {
+                    'waiting': 'En attente',
+                    'preparing': 'En préparation',
+                    'shipped': 'Expédiée',
+                    'delivered': 'Livrée',
+                    'cancelled': 'Annulée'
+                };
+                return statusMap[status] || 'En attente';
+            },
+
+            getStatusClass: (status) => {
+                const classMap = {
+                    'waiting': 'en-attente',
+                    'preparing': 'preparation',
+                    'shipped': 'expediee',
+                    'delivered': 'livree',
+                    'cancelled': 'annulee'
+                };
+                return classMap[status] || 'en-attente';
+            },
+
+            getPaymentMethodDisplay: (method) => {
+                const methodMap = {
+                    'card': 'Carte bancaire',
+                    'credit_card': 'Carte bancaire',
+                    'paypal': 'PayPal',
+                    'bank_transfer': 'Virement bancaire',
+                    'apple_pay': 'Apple Pay',
+                    'google_pay': 'Google Pay',
+                    'cash': 'Espèces'
+                };
+                return methodMap[method] || 'Carte bancaire';
+            }
+        };
+
+        // ✅ 12. DÉTERMINER LA ROUTE CORRECTE
+        const currentRoute = req.originalUrl.includes('/admin/suivi-commandes') 
+            ? '/admin/suivi-commandes' 
+            : '/admin/commandes';
+
+        console.log(`✅ Rendu avec ${commandes.length} commandes, route: ${currentRoute}`);
+
+        // ✅ 13. RENDU SÉCURISÉ DU TEMPLATE
         res.render('commandes', {
             title: 'Gestion des Commandes',
             commandes: commandes,
-            stats: this.calculateStats(commandes),
-            statusStats: this.calculateStatusStats(commandes),
+            stats: stats,
+            statusStats: statusStats,
             pagination: pagination,
-            filters: filters, // ✅ PASSER LES FILTRES À LA VUE
-            // ✅ HELPERS POUR LA VUE
-            helpers: {
-                formatPrice: (price) => parseFloat(price || 0).toFixed(2),
-                formatDate: (date) => this.formatDateTime(date),
-                getTimeAgo: (date) => this.getTimeAgo(date),
-                translateStatus: (status) => this.translateStatus(status),
-                getPaymentMethodDisplay: (method) => this.getPaymentMethodDisplay(method),
-                getStatusClass: (status) => this.getStatusClass(status)
+            filters: filters,
+            helpers: helpers,
+            user: req.session.user || null,
+            
+            // ✅ ROUTE ACTUELLE POUR LE FORMULAIRE
+            currentRoute: currentRoute,
+            
+            // ✅ FONCTION GLOBALE POUR LE TEMPLATE
+            getPaymentMethodDisplay: helpers.getPaymentMethodDisplay,
+            
+            // ✅ DEBUG INFO
+            debug: {
+                hasFilters: Object.values(filters).some(v => v && v.trim() !== ''),
+                totalFiltered: commandes.length,
+                route: currentRoute,
+                timestamp: new Date().toISOString()
             }
         });
 
     } catch (error) {
-        console.error('❌ Erreur récupération commandes avec filtres:', error);
-        res.status(500).render('error', {
-            message: 'Erreur lors de la récupération des commandes',
-            error: error
+        console.error('❌ Erreur getAllOrders:', error);
+        console.error('Stack trace:', error.stack);
+        
+        // ✅ GESTION D'ERREUR ROBUSTE
+        const errorRoute = req.originalUrl.includes('/admin/suivi-commandes') 
+            ? '/admin/suivi-commandes' 
+            : '/admin/commandes';
+            
+        res.status(500).render('commandes', {
+            title: 'Erreur - Gestion des Commandes',
+            commandes: [],
+            stats: {
+                totalCommandes: { value: 0, trend: 0, direction: 'up', compared: '' },
+                chiffreAffaires: { value: 0, trend: 0, direction: 'up', compared: '' },
+                codesPromoUtilises: { value: 0, trend: 0, direction: 'up', compared: '' },
+                economiesClients: { value: 0, trend: 0, direction: 'down', compared: '' }
+            },
+            statusStats: {
+                waiting: 0, preparing: 0, shipped: 0, delivered: 0, cancelled: 0
+            },
+            pagination: {
+                currentPage: 1, totalPages: 1, total: 0, hasNext: false, hasPrev: false
+            },
+            filters: {
+                search: '', status: '', promo: '', date: '', payment: ''
+            },
+            helpers: {
+                formatPrice: (price) => parseFloat(price || 0).toFixed(2),
+                translateStatus: (status) => status || 'En attente',
+                getStatusClass: (status) => 'en-attente',
+                getPaymentMethodDisplay: (method) => method || 'Carte bancaire'
+            },
+            user: req.session.user || null,
+            currentRoute: errorRoute,
+            getPaymentMethodDisplay: (method) => method || 'Carte bancaire',
+            error: process.env.NODE_ENV === 'development' ? error.message : 'Une erreur est survenue'
         });
     }
 },
 
+// ✅ MÉTHODES HELPER NÉCESSAIRES
+normalizeStatus(status) {
+    if (!status) return 'waiting';
+    
+    const statusNormalization = {
+        'en_attente': 'waiting',
+        'en attente': 'waiting',
+        'waiting': 'waiting',
+        'preparation': 'preparing',
+        'en_preparation': 'preparing',
+        'en préparation': 'preparing',
+        'preparing': 'preparing',
+        'expediee': 'shipped',
+        'expédiée': 'shipped',
+        'shipped': 'shipped',
+        'livree': 'delivered',
+        'livrée': 'delivered',
+        'delivered': 'delivered',
+        'annulee': 'cancelled',
+        'annulée': 'cancelled',
+        'cancelled': 'cancelled'
+    };
+    
+    return statusNormalization[status.toLowerCase().trim()] || 'waiting';
+},
+
+calculateStats(commandes) {
+    const total = commandes.length;
+    const totalRevenue = commandes.reduce((sum, cmd) => sum + parseFloat(cmd.amount || 0), 0);
+    const withPromo = commandes.filter(cmd => cmd.promo_code && cmd.promo_code.trim() !== '').length;
+    const totalSavings = commandes.reduce((sum, cmd) => sum + parseFloat(cmd.discount_amount || 0), 0);
+
+    return {
+        totalCommandes: {
+            value: total,
+            trend: 0,
+            direction: 'up',
+            compared: 'vs période précédente'
+        },
+        chiffreAffaires: {
+            value: totalRevenue,
+            trend: 0,
+            direction: 'up',
+            compared: 'vs période précédente'
+        },
+        codesPromoUtilises: {
+            value: withPromo,
+            trend: 0,
+            direction: 'up',
+            compared: 'vs période précédente'
+        },
+        economiesClients: {
+            value: totalSavings,
+            trend: 0,
+            direction: 'down',
+            compared: 'réductions totales'
+        }
+    };
+},
+
+calculateStatusStats(commandes) {
+    return {
+        waiting: commandes.filter(cmd => cmd.status === 'waiting').length,
+        preparing: commandes.filter(cmd => cmd.status === 'preparing').length,
+        shipped: commandes.filter(cmd => cmd.status === 'shipped').length,
+        delivered: commandes.filter(cmd => cmd.status === 'delivered').length,
+        cancelled: commandes.filter(cmd => cmd.status === 'cancelled').length
+    };
+},
+
+calculateTimeAgo(dateString) {
+    if (!dateString) return 'Date inconnue';
+
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Date invalide';
+
+        const now = new Date();
+        const diffMs = Math.abs(now - date);
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
+
+        if (diffDays > 0) {
+            return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+        } else if (diffHours > 0) {
+            return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+        } else if (diffMinutes > 0) {
+            return `Il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+        } else {
+            return 'À l\'instant';
+        }
+    } catch (error) {
+        console.error('❌ Erreur calcul temps:', error);
+        return 'Erreur de date';
+    }
+},
+
+// ✅ MÉTHODES HELPER NÉCESSAIRES
+normalizeStatus(status) {
+    if (!status) return 'waiting';
+    
+    const statusNormalization = {
+        'en_attente': 'waiting',
+        'en attente': 'waiting',
+        'waiting': 'waiting',
+        'preparation': 'preparing', 
+        'en_preparation': 'preparing',
+        'en préparation': 'preparing',
+        'preparing': 'preparing',
+        'expediee': 'shipped',
+        'expédiée': 'shipped', 
+        'shipped': 'shipped',
+        'livree': 'delivered',
+        'livrée': 'delivered',
+        'delivered': 'delivered',
+        'annulee': 'cancelled',
+        'annulée': 'cancelled',
+        'cancelled': 'cancelled'
+    };
+    
+    return statusNormalization[status.toLowerCase().trim()] || 'waiting';
+},
+
+calculateStats(commandes) {
+    const total = commandes.length;
+    const totalRevenue = commandes.reduce((sum, cmd) => sum + parseFloat(cmd.amount || 0), 0);
+    const withPromo = commandes.filter(cmd => cmd.promo_code && cmd.promo_code.trim() !== '').length;
+    const totalSavings = commandes.reduce((sum, cmd) => sum + parseFloat(cmd.discount_amount || 0), 0);
+
+    return {
+        totalCommandes: { 
+            value: total, 
+            trend: 0, 
+            direction: 'up', 
+            compared: 'vs période précédente' 
+        },
+        chiffreAffaires: { 
+            value: totalRevenue, 
+            trend: 0, 
+            direction: 'up', 
+            compared: 'vs période précédente' 
+        },
+        codesPromoUtilises: { 
+            value: withPromo, 
+            trend: 0, 
+            direction: 'up', 
+            compared: 'vs période précédente' 
+        },
+        economiesClients: { 
+            value: totalSavings, 
+            trend: 0, 
+            direction: 'down', 
+            compared: 'réductions totales' 
+        }
+    };
+},
+
+calculateStatusStats(commandes) {
+    return {
+        waiting: commandes.filter(cmd => cmd.status === 'waiting').length,
+        preparing: commandes.filter(cmd => cmd.status === 'preparing').length,
+        shipped: commandes.filter(cmd => cmd.status === 'shipped').length,
+        delivered: commandes.filter(cmd => cmd.status === 'delivered').length,
+        cancelled: commandes.filter(cmd => cmd.status === 'cancelled').length
+    };
+},
+
+calculateTimeAgo(dateString) {
+    if (!dateString) return 'Date inconnue';
+    
+    try {
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'Date invalide';
+        
+        const now = new Date();
+        const diffMs = Math.abs(now - date);
+        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+        const diffHours = Math.floor(diffMinutes / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffDays > 0) {
+            return `Il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}`;
+        } else if (diffHours > 0) {
+            return `Il y a ${diffHours} heure${diffHours > 1 ? 's' : ''}`;
+        } else if (diffMinutes > 0) {
+            return `Il y a ${diffMinutes} minute${diffMinutes > 1 ? 's' : ''}`;
+        } else {
+            return 'À l\'instant';
+        }
+    } catch (error) {
+        console.error('❌ Erreur calcul temps:', error);
+        return 'Erreur de date';
+    }
+},
+
+async exportOrders(req, res) {
+    try {
+        console.log('📊 Export des commandes avec filtres');
+        
+        // Récupérer les mêmes filtres que getAllOrders
+        const filters = {
+            search: req.query.search?.trim() || '',
+            status: req.query.status || '',
+            promo: req.query.promo || '',
+            date: req.query.date || '',
+            payment: req.query.payment || ''
+        };
+        
+        console.log('🔍 Filtres pour export:', filters);
+        
+        // Utiliser la même logique de requête que getAllOrders
+        // mais sans pagination (récupérer toutes les commandes)
+        let whereConditions = ['1=1'];
+        let params = [];
+        let paramIndex = 1;
+        
+        // Appliquer les mêmes filtres
+        if (filters.search) {
+            whereConditions.push(`(
+                LOWER(o.numero_commande) LIKE LOWER($${paramIndex}) OR
+                LOWER(COALESCE(o.customer_name, '')) LIKE LOWER($${paramIndex}) OR
+                LOWER(COALESCE(o.customer_email, '')) LIKE LOWER($${paramIndex}) OR
+                LOWER(COALESCE(c.first_name, '')) LIKE LOWER($${paramIndex}) OR
+                LOWER(COALESCE(c.last_name, '')) LIKE LOWER($${paramIndex}) OR
+                LOWER(COALESCE(c.email, '')) LIKE LOWER($${paramIndex})
+            )`);
+            params.push(`%${filters.search}%`);
+            paramIndex++;
+        }
+        
+        if (filters.status) {
+            const statusMappings = {
+                'waiting': ['waiting', 'en_attente', 'en attente'],
+                'preparing': ['preparing', 'preparation', 'en_preparation'],
+                'shipped': ['shipped', 'expediee', 'expédiée'],
+                'delivered': ['delivered', 'livree', 'livrée'],
+                'cancelled': ['cancelled', 'annulee', 'annulée']
+            };
+            
+            const statusVariants = statusMappings[filters.status] || [filters.status];
+            const placeholders = statusVariants.map(() => `$${paramIndex++}`).join(',');
+            whereConditions.push(`LOWER(COALESCE(o.status, 'waiting')) IN (${placeholders})`);
+            params.push(...statusVariants.map(s => s.toLowerCase()));
+        }
+        
+        if (filters.promo) {
+            if (filters.promo === 'with-promo') {
+                whereConditions.push(`(o.promo_code IS NOT NULL AND TRIM(o.promo_code) != '')`);
+            } else if (filters.promo === 'without-promo') {
+                whereConditions.push(`(o.promo_code IS NULL OR TRIM(o.promo_code) = '')`);
+            }
+        }
+        
+        if (filters.date) {
+            let dateCondition = '';
+            switch (filters.date) {
+                case 'today':
+                    dateCondition = `DATE(o.created_at) = CURRENT_DATE`;
+                    break;
+                case 'week':
+                    dateCondition = `o.created_at >= CURRENT_DATE - INTERVAL '7 days'`;
+                    break;
+                case 'month':
+                    dateCondition = `o.created_at >= DATE_TRUNC('month', CURRENT_DATE)`;
+                    break;
+            }
+            if (dateCondition) {
+                whereConditions.push(dateCondition);
+            }
+        }
+        
+        if (filters.payment) {
+            whereConditions.push(`LOWER(COALESCE(o.payment_method, 'card')) = LOWER($${paramIndex})`);
+            params.push(filters.payment);
+            paramIndex++;
+        }
+        
+        const whereClause = whereConditions.join(' AND ');
+        
+        // Requête pour export (tous les résultats)
+        const exportQuery = `
+            SELECT 
+                o.numero_commande,
+                COALESCE(o.customer_name, CONCAT(c.first_name, ' ', c.last_name), 'Client inconnu') as client,
+                COALESCE(o.customer_email, c.email, 'N/A') as email,
+                o.created_at,
+                CAST(COALESCE(o.total, 0) AS DECIMAL(10,2)) as total,
+                COALESCE(o.promo_code, '') as code_promo,
+                CAST(COALESCE(o.promo_discount_amount, 0) AS DECIMAL(10,2)) as reduction,
+                COALESCE(o.status, 'waiting') as statut,
+                COALESCE(o.payment_method, 'card') as paiement,
+                COALESCE(o.shipping_address, c.address, '') as adresse_livraison
+            FROM orders o
+            LEFT JOIN customer c ON o.customer_id = c.id
+            WHERE ${whereClause}
+            ORDER BY o.created_at DESC
+        `;
+        
+        const result = await sequelize.query(exportQuery, { 
+            bind: params,
+            type: QueryTypes.SELECT 
+        });
+        
+        // Générer le CSV
+        let csvContent = 'Numéro commande,Client,Email,Date,Total,Code promo,Réduction,Statut,Paiement,Adresse livraison\n';
+        
+        result.forEach(row => {
+            const date = new Date(row.created_at).toLocaleDateString('fr-FR');
+            const statut = this.translateStatus(row.statut);
+            const paiement = this.getPaymentMethodDisplay(row.paiement);
+            
+            csvContent += `"${row.numero_commande}","${row.client}","${row.email}","${date}","${row.total}€","${row.code_promo}","${row.reduction}€","${statut}","${paiement}","${row.adresse_livraison}"\n`;
+        });
+        
+        // Définir les en-têtes pour le téléchargement
+        const filename = `commandes-${new Date().toISOString().split('T')[0]}.csv`;
+        
+        res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        
+        // BOM UTF-8 pour Excel
+        res.send('\ufeff' + csvContent);
+        
+        console.log(`✅ Export réussi: ${result.length} commandes exportées`);
+        
+    } catch (error) {
+        console.error('❌ Erreur export commandes:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'export des commandes'
+        });
+    }
+},
+
+// ✅ MÉTHODES HELPER NÉCESSAIRES (si pas déjà présentes)
+translateStatus(status) {
+    const statusMap = {
+        'waiting': 'En attente',
+        'preparing': 'En préparation',
+        'shipped': 'Expédiée',
+        'delivered': 'Livrée',
+        'cancelled': 'Annulée'
+    };
+    return statusMap[status] || 'En attente';
+},
+
+getPaymentMethodDisplay(method) {
+    const methodMap = {
+        'card': 'Carte bancaire',
+        'credit_card': 'Carte bancaire',
+        'paypal': 'PayPal',
+        'bank_transfer': 'Virement bancaire',
+        'apple_pay': 'Apple Pay',
+        'google_pay': 'Google Pay',
+        'cash': 'Espèces'
+    };
+    return methodMap[method] || 'Carte bancaire';
+},
 
 
 // Calcul des statistiques par statut

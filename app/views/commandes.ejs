@@ -1672,63 +1672,300 @@
         </div>
 
         <!-- Controls -->
-        <div class="controls slide-in">
-            <div class="controls-grid">
-                <div class="search-section">
-                    <div class="search-box">
-                        <i class="fas fa-search"></i>
-                        <input type="text" 
-                               class="search-input" 
-                               id="searchInput"
-                               placeholder="Rechercher par numéro, client, email, code promo...">
-                    </div>
-                    <div class="filter-group">
-                        <select class="filter-select" id="statusFilter">
-                            <option value="">Tous les statuts</option>
-                            <option value="waiting">En attente</option>
-                            <option value="preparing">En préparation</option>
-                            <option value="shipped">Expédiée</option>
-                            <option value="delivered">Livrée</option>
-                            <option value="cancelled">Annulée</option>
-                        </select>
-                        <select class="filter-select" id="promoFilter">
-                            <option value="">Tous les types</option>
-                            <option value="with-promo">Avec code promo</option>
-                            <option value="without-promo">Sans code promo</option>
-                        </select>
-                        <select class="filter-select" id="paymentFilter">
-                            <option value="">Tous les paiements</option>
-                            <option value="card">Carte bancaire</option>
-                            <option value="paypal">PayPal</option>
-                            <option value="bank_transfer">Virement</option>
-                            <option value="check">Chèque</option>
-                            <option value="cash">Espèces</option>
-                        </select>
-                        <select class="filter-select" id="dateFilter">
-                            <option value="">Toutes les dates</option>
-                            <option value="today">Aujourd'hui</option>
-                            <option value="week">Cette semaine</option>
-                            <option value="month">Ce mois</option>
-                        </select>
-                    </div>
+    <!-- ✅ SECTION CONTROLS CORRIGÉE AVEC SÉCURITÉ - Remplacer dans votre template -->
+
+<!-- Controls avec formulaire fonctionnel -->
+<div class="controls slide-in">
+    <!-- ✅ SÉCURITÉ : Définir filters s'il n'existe pas -->
+    <%
+    // Initialiser filters s'il n'est pas défini
+    if (typeof filters === 'undefined') {
+        filters = {
+            search: '',
+            status: '',
+            promo: '',
+            date: '',
+            payment: ''
+        };
+    }
+    
+    // Sécuriser helpers
+    if (typeof helpers === 'undefined') {
+        helpers = {
+            translateStatus: function(status) {
+                const statusMap = {
+                    'waiting': 'En attente',
+                    'preparing': 'En préparation',
+                    'shipped': 'Expédiée',
+                    'delivered': 'Livrée',
+                    'cancelled': 'Annulée'
+                };
+                return statusMap[status] || 'En attente';
+            },
+            getPaymentMethodDisplay: function(method) {
+                const methodMap = {
+                    'card': 'Carte bancaire',
+                    'paypal': 'PayPal',
+                    'bank_transfer': 'Virement bancaire'
+                };
+                return methodMap[method] || 'Carte bancaire';
+            }
+        };
+    }
+    %>
+    
+    <!-- Info sur les filtres actifs -->
+    <% 
+    const activeFilters = [];
+    if (filters.search && filters.search.trim()) {
+        activeFilters.push(`Recherche: "${filters.search}"`);
+    }
+    if (filters.status) {
+        try {
+            activeFilters.push(`Statut: ${helpers.translateStatus(filters.status)}`);
+        } catch (e) {
+            activeFilters.push(`Statut: ${filters.status}`);
+        }
+    }
+    if (filters.promo === 'with-promo') {
+        activeFilters.push('Avec code promo');
+    } else if (filters.promo === 'without-promo') {
+        activeFilters.push('Sans code promo');
+    }
+    if (filters.payment) {
+        try {
+            activeFilters.push(`Paiement: ${helpers.getPaymentMethodDisplay(filters.payment)}`);
+        } catch (e) {
+            activeFilters.push(`Paiement: ${filters.payment}`);
+        }
+    }
+    if (filters.date) {
+        const dateLabels = {
+            'today': 'Aujourd\'hui',
+            'week': 'Cette semaine', 
+            'month': 'Ce mois'
+        };
+        activeFilters.push(`Date: ${dateLabels[filters.date] || filters.date}`);
+    }
+    %>
+    
+    <!-- Affichage des filtres actifs -->
+    <% if (activeFilters.length > 0) { %>
+    <div style="background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #22c55e; border-radius: 8px; padding: 12px; margin-bottom: 15px;">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <i class="fas fa-filter" style="color: #16a34a;"></i>
+            <strong style="color: #15803d;">Filtres actifs :</strong>
+            <% activeFilters.forEach((filter, index) => { %>
+                <span style="background: #dcfce7; color: #166534; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
+                    <%= filter %><% if (index < activeFilters.length - 1) { %>,<% } %>
+                </span>
+            <% }) %>
+            <a href="/admin/suivi-commandes" style="background: #ef4444; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; text-decoration: none; margin-left: 8px;">
+                <i class="fas fa-times"></i> Effacer tout
+            </a>
+        </div>
+    </div>
+    <% } %>
+
+    <!-- Formulaire de filtres -->
+    <form method="GET" action="/admin/suivi-commandes" id="filtersForm">
+        <div class="controls-grid">
+            <div class="search-section">
+                <!-- Champ de recherche -->
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" 
+                           class="search-input" 
+                           name="search"
+                           value="<%= filters.search || '' %>"
+                           placeholder="Rechercher par numéro, client, email, code promo...">
                 </div>
-                <div class="actions-group">
-                    <button class="btn btn-secondary" onclick="resetFilters()">
-                        <i class="fas fa-undo"></i>
-                        Reset
-                    </button>
-                    <button class="btn btn-secondary" onclick="exportData()">
-                        <i class="fas fa-download"></i>
-                        Export
-                    </button>
-                    <button class="btn btn-primary" onclick="refreshData()">
-                        <i class="fas fa-sync-alt"></i>
-                        Actualiser
-                    </button>
+                
+                <!-- Filtres -->
+                <div class="filter-group">
+                    <!-- Filtre statut -->
+                    <select class="filter-select" name="status">
+                        <option value="">Tous les statuts</option>
+                        <option value="waiting" <%= (filters.status === 'waiting') ? 'selected' : '' %>>⏳ En attente</option>
+                        <option value="preparing" <%= (filters.status === 'preparing') ? 'selected' : '' %>>🔧 En préparation</option>
+                        <option value="shipped" <%= (filters.status === 'shipped') ? 'selected' : '' %>>📦 Expédiée</option>
+                        <option value="delivered" <%= (filters.status === 'delivered') ? 'selected' : '' %>>✅ Livrée</option>
+                        <option value="cancelled" <%= (filters.status === 'cancelled') ? 'selected' : '' %>>❌ Annulée</option>
+                    </select>
+                    
+                    <!-- Filtre promo -->
+                    <select class="filter-select" name="promo">
+                        <option value="">Tous les types</option>
+                        <option value="with-promo" <%= (filters.promo === 'with-promo') ? 'selected' : '' %>>🎫 Avec code promo</option>
+                        <option value="without-promo" <%= (filters.promo === 'without-promo') ? 'selected' : '' %>>🚫 Sans code promo</option>
+                    </select>
+                    
+                    <!-- Filtre paiement -->
+                    <select class="filter-select" name="payment">
+                        <option value="">Tous les paiements</option>
+                        <option value="card" <%= (filters.payment === 'card') ? 'selected' : '' %>>💳 Carte bancaire</option>
+                        <option value="paypal" <%= (filters.payment === 'paypal') ? 'selected' : '' %>>🏦 PayPal</option>
+                        <option value="bank_transfer" <%= (filters.payment === 'bank_transfer') ? 'selected' : '' %>>🏪 Virement</option>
+                        <option value="apple_pay" <%= (filters.payment === 'apple_pay') ? 'selected' : '' %>>🍎 Apple Pay</option>
+                        <option value="google_pay" <%= (filters.payment === 'google_pay') ? 'selected' : '' %>>🔍 Google Pay</option>
+                    </select>
+                    
+                    <!-- Filtre date -->
+                    <select class="filter-select" name="date">
+                        <option value="">Toutes les dates</option>
+                        <option value="today" <%= (filters.date === 'today') ? 'selected' : '' %>>📅 Aujourd'hui</option>
+                        <option value="week" <%= (filters.date === 'week') ? 'selected' : '' %>>📆 Cette semaine</option>
+                        <option value="month" <%= (filters.date === 'month') ? 'selected' : '' %>>🗓️ Ce mois</option>
+                    </select>
                 </div>
             </div>
+            
+            <!-- Boutons d'action -->
+            <div class="actions-group">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Filtrer
+                </button>
+                <a href="/admin/suivi-commandes" class="btn btn-secondary">
+                    <i class="fas fa-undo"></i>
+                    Reset
+                </a>
+                <button type="button" class="btn btn-secondary" onclick="exportData()">
+                    <i class="fas fa-download"></i>
+                    Export
+                </button>
+                <button type="button" class="btn btn-primary" onclick="refreshData()">
+                    <i class="fas fa-sync-alt"></i>
+                    Actualiser
+                </button>
+            </div>
         </div>
+        
+        <!-- Préservation des paramètres de pagination -->
+        <% if (typeof pagination !== 'undefined' && pagination && pagination.currentPage > 1) { %>
+            <input type="hidden" name="page" value="<%= pagination.currentPage %>">
+        <% } %>
+    </form>
+</div>
 
+<!-- ✅ Section de résultats avec pagination (avec sécurité) -->
+<% if (typeof pagination !== 'undefined' && pagination && pagination.total > 0) { %>
+<div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <div style="color: #6b7280; font-size: 14px;">
+            <i class="fas fa-list"></i>
+            Affichage de <strong><%= pagination.startItem || 1 %></strong> à 
+            <strong><%= pagination.endItem || pagination.total %></strong> 
+            sur <strong><%= pagination.total %></strong> commandes
+            <% if (activeFilters.length > 0) { %>
+                <span style="background: #fef3c7; color: #92400e; padding: 2px 6px; border-radius: 4px; font-size: 11px; margin-left: 8px;">
+                    Filtré
+                </span>
+            <% } %>
+        </div>
+        
+        <% if (pagination.totalPages > 1) { %>
+        <div style="display: flex; gap: 5px; align-items: center;">
+            <!-- Première page -->
+            <% if (pagination.hasPrev) { %>
+                <a href="<%= buildPaginationUrl(1) %>" 
+                   style="padding: 6px 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; text-decoration: none; color: #374151;">
+                    <i class="fas fa-angle-double-left"></i>
+                </a>
+                <a href="<%= buildPaginationUrl(pagination.currentPage - 1) %>" 
+                   style="padding: 6px 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; text-decoration: none; color: #374151;">
+                    <i class="fas fa-angle-left"></i>
+                </a>
+            <% } %>
+            
+            <!-- Pages numérotées -->
+            <% 
+            const startPage = Math.max(1, pagination.currentPage - 2);
+            const endPage = Math.min(pagination.totalPages, pagination.currentPage + 2);
+            
+            for (let i = startPage; i <= endPage; i++) { %>
+                <% if (i === pagination.currentPage) { %>
+                    <span style="padding: 6px 10px; background: var(--primary); color: white; border-radius: 4px; font-weight: bold;">
+                        <%= i %>
+                    </span>
+                <% } else { %>
+                    <a href="<%= buildPaginationUrl(i) %>" 
+                       style="padding: 6px 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; text-decoration: none; color: #374151;">
+                        <%= i %>
+                    </a>
+                <% } %>
+            <% } %>
+            
+            <!-- Dernière page -->
+            <% if (pagination.hasNext) { %>
+                <a href="<%= buildPaginationUrl(pagination.currentPage + 1) %>" 
+                   style="padding: 6px 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; text-decoration: none; color: #374151;">
+                    <i class="fas fa-angle-right"></i>
+                </a>
+                <a href="<%= buildPaginationUrl(pagination.totalPages) %>" 
+                   style="padding: 6px 10px; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 4px; text-decoration: none; color: #374151;">
+                    <i class="fas fa-angle-double-right"></i>
+                </a>
+            <% } %>
+        </div>
+        <% } %>
+    </div>
+</div>
+<% } %>
+
+<!-- ✅ FONCTION HELPER EJS SÉCURISÉE POUR CONSTRUIRE LES URLS DE PAGINATION -->
+<%
+function buildPaginationUrl(page) {
+    try {
+        const params = new URLSearchParams();
+        
+        // Préserver tous les filtres actuels (avec sécurité)
+        if (typeof filters !== 'undefined' && filters) {
+            Object.keys(filters).forEach(key => {
+                if (filters[key] && filters[key] !== '' && filters[key] !== 'all') {
+                    params.set(key, filters[key]);
+                }
+            });
+        }
+        
+        // Ajouter la page
+        if (page && page > 1) {
+            params.set('page', page);
+        }
+        
+        const queryString = params.toString();
+        return '/admin/commandes' + (queryString ? '?' + queryString : '');
+    } catch (error) {
+        console.error('Erreur buildPaginationUrl:', error);
+        return '/admin/commandes';
+    }
+}
+%>
+
+
+<!-- ✅ FONCTION HELPER EJS POUR CONSTRUIRE LES URLS DE PAGINATION -->
+<%
+function buildPaginationUrl(page) {
+    const params = new URLSearchParams();
+    
+    // Préserver tous les filtres actuels
+    if (filters) {
+        Object.keys(filters).forEach(key => {
+            if (filters[key] && filters[key] !== '' && filters[key] !== 'all') {
+                params.set(key, filters[key]);
+            }
+        });
+    }
+    
+    // Ajouter la page
+    if (page && page > 1) {
+        params.set('page', page);
+    }
+    
+    const queryString = params.toString();
+    return '/admin/commandes' + (queryString ? '?' + queryString : '');
+}
+%>
         <!-- Desktop Table -->
         <div class="table-container slide-in">
             <table class="table" id="commandesTable">
@@ -3015,13 +3252,8 @@ function initializeData() {
 }
 
 function setupEventListeners() {
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) searchInput.addEventListener('input', debounce(handleSearch, 300));
-
-    ['statusFilter', 'promoFilter', 'dateFilter', 'paymentFilter'].forEach(id => {
-        const element = document.getElementById(id);
-        if (element) element.addEventListener('change', applyFilters);
-    });
+    // Supprimer tous les anciens event listeners automatiques
+    console.log('⚠️ Anciens event listeners désactivés pour éviter les conflits');
 
     document.addEventListener('click', function(e) {
         if (e.target.classList.contains('modal')) closeModal();
@@ -3859,6 +4091,21 @@ async function editOrder(orderId) {
     }
 }
 
+function highlightFilterButton() {
+    const submitBtn = document.querySelector('#filtersForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+        submitBtn.style.transform = 'scale(1.02)';
+        submitBtn.innerHTML = '<i class="fas fa-filter"></i> Appliquer les changements';
+        
+        setTimeout(() => {
+            submitBtn.style.background = '';
+            submitBtn.style.transform = '';
+            submitBtn.innerHTML = '<i class="fas fa-search"></i> Filtrer';
+        }, 3000);
+    }
+}
+
 // ✅ AJOUTER CETTE FONCTION
 function safeFormatDate(dateString) {
     if (!dateString) return 'Date inconnue';
@@ -3938,46 +4185,9 @@ function updateOrderDisplayAfterEdit(orderId, newStatus, newTrackingNumber) {
 function handleSearch(e) { config.filters.search = e.target.value.toLowerCase(); applyFilters(); }
 
 function applyFilters() {
-    console.log('🔍 Application des filtres...');
-    
-    // Récupérer les valeurs des filtres
-    const searchValue = document.getElementById('searchInput')?.value?.trim() || '';
-    const statusFilter = document.getElementById('statusFilter')?.value || '';
-    const promoFilter = document.getElementById('promoFilter')?.value || '';
-    const dateFilter = document.getElementById('dateFilter')?.value || '';
-    const paymentFilter = document.getElementById('paymentFilter')?.value || '';
-    
-    console.log('Filtres récupérés:', { 
-        search: searchValue, 
-        status: statusFilter, 
-        promo: promoFilter,
-        date: dateFilter,
-        payment: paymentFilter
-    });
-    
-    // Construire l'URL avec les paramètres
-    const url = new URL(window.location.href);
-    const params = new URLSearchParams();
-    
-    // Ajouter les paramètres non vides
-    if (searchValue) params.set('search', searchValue);
-    if (statusFilter && statusFilter !== '') params.set('status', statusFilter);
-    if (promoFilter && promoFilter !== '') params.set('promo', promoFilter);
-    if (dateFilter && dateFilter !== '') params.set('date', dateFilter);
-    if (paymentFilter && paymentFilter !== '') params.set('payment', paymentFilter);
-    
-    // Garder la page 1 lors de l'application des filtres
-    params.set('page', '1');
-    
-    // Construire la nouvelle URL
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
-    console.log('🔗 Redirection vers:', newUrl);
-    
-    // Afficher un indicateur de chargement
-    showLoading();
-    
-    // Rediriger
-    window.location.href = newUrl;
+    console.log('🔍 Application des filtres - VERSION CORRIGÉE');
+    // NE PAS UTILISER event.preventDefault() ici
+    // Cette fonction ne doit plus être appelée par les événements
 }
 
 // Fonction pour synchroniser le statut dans la modale après mise à jour
@@ -4172,5 +4382,272 @@ window.closeSidebar = closeSidebar;
 
 console.log('✅ Script Admin Commandes chargé - Solution directe orderId');
 </script>
+
+<script>
+    // ✅ JAVASCRIPT CORRIGÉ POUR LES FILTRES - Remplacer dans votre template
+
+// ✅ 1. GESTION DES FILTRES SANS AUTO-SUBMIT
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Initialisation des filtres corrigés');
+    
+    const form = document.getElementById('filtersForm');
+    if (!form) {
+        console.warn('⚠️ Formulaire de filtres non trouvé');
+        return;
+    }
+
+    // ✅ GESTION DU SUBMIT - UNE SEULE FOIS
+    form.addEventListener('submit', function(e) {
+        console.log('📝 Soumission du formulaire - OK');
+        showLoading();
+        // Laisser le formulaire se soumettre normalement
+    });
+
+    // ✅ PAS D'AUTO-SUBMIT POUR LES SELECTS
+    const selects = form.querySelectorAll('select');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            console.log(`📊 Filtre "${this.name}" changé: ${this.value}`);
+            highlightFilterButton();
+        });
+    });
+});
+
+    // ✅ RECHERCHE AVEC DÉLAI (sans auto-submit systématique)
+    const searchInput = form.querySelector('input[name="search"]');
+    if (searchInput) {
+        let searchTimeout;
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const value = this.value.trim();
+            
+            // Auto-submit seulement si :
+            // 1. Recherche complètement effacée
+            // 2. Recherche longue (4+ caractères) après délai
+            if (value.length === 0) {
+                searchTimeout = setTimeout(() => {
+                    console.log('🔍 Auto-submit: recherche effacée');
+                    form.submit();
+                }, 1000);
+            } else if (value.length >= 4) {
+                searchTimeout = setTimeout(() => {
+                    console.log('🔍 Auto-submit: recherche longue');
+                    form.submit();
+                }, 2000);
+            }
+        });
+        
+        // Submit manuel avec Entrée
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                console.log('🔍 Submit manuel avec Entrée');
+                form.submit();
+            }
+        });
+    }
+  
+    // ✅ PAS D'AUTO-SUBMIT POUR LES SELECTS
+    const selects = form.querySelectorAll('select');
+    selects.forEach(select => {
+        select.addEventListener('change', function() {
+            console.log(`📊 Filtre "${this.name}" changé: ${this.value}`);
+            // Pas d'auto-submit, attendre le clic sur "Filtrer"
+            highlightFilterButton();
+        });
+    });
+
+    // ✅ SUBMIT MANUEL AVEC BOUTON
+
+// ✅ 2. FONCTION POUR METTRE EN ÉVIDENCE LE BOUTON FILTRER
+function highlightFilterButton() {
+    const submitBtn = document.querySelector('#filtersForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+        submitBtn.style.transform = 'scale(1.02)';
+        submitBtn.innerHTML = '<i class="fas fa-filter"></i> Appliquer les changements';
+        
+        setTimeout(() => {
+            submitBtn.style.background = '';
+            submitBtn.style.transform = '';
+            submitBtn.innerHTML = '<i class="fas fa-search"></i> Filtrer';
+        }, 3000);
+    }
+}
+
+// ✅ 3. FONCTIONS UTILITAIRES
+function showLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.style.display = 'flex';
+    }
+}
+
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+    
+    if (!toast || !toastMessage) return;
+    
+    toastMessage.textContent = message;
+    toast.className = `toast ${type}`;
+    toast.style.display = 'flex';
+    
+    setTimeout(() => {
+        toast.style.display = 'none';
+    }, 3000);
+}
+
+// ✅ 4. FONCTION EXPORT DATA
+function exportData() {
+    // Construire URL d'export avec les filtres actuels
+    const form = document.getElementById('filtersForm');
+    if (form) {
+        const formData = new FormData(form);
+        const params = new URLSearchParams();
+        
+        for (const [key, value] of formData) {
+            if (value && value.trim() !== '') {
+                params.set(key, value.trim());
+            }
+        }
+        
+        const exportUrl = '/admin/commandes/export?' + params.toString();
+        console.log('📊 Export avec filtres:', exportUrl);
+        window.open(exportUrl, '_blank');
+    } else {
+        window.open('/admin/commandes/export', '_blank');
+    }
+}
+
+// ✅ 5. FONCTION REFRESH DATA
+function refreshData() {
+    showLoading();
+    showToast('🔄 Actualisation en cours...', 'info');
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+}
+
+// ✅ 6. GESTION DES URLS AVEC FILTRES
+function updateUrlWithFilters() {
+    const form = document.getElementById('filtersForm');
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    const params = new URLSearchParams();
+    
+    for (const [key, value] of formData) {
+        if (value && value.trim() !== '' && value !== 'all') {
+            params.set(key, value.trim());
+        }
+    }
+    
+    const newUrl = window.location.pathname + (params.toString() ? '?' + params.toString() : '');
+    return newUrl;
+}
+
+// ✅ 7. INDICATEUR DE FILTRES ACTIFS
+function updateActiveFiltersIndicator() {
+    const form = document.getElementById('filtersForm');
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    let activeCount = 0;
+    
+    for (const [key, value] of formData) {
+        if (value && value.trim() !== '' && value !== 'all') {
+            activeCount++;
+        }
+    }
+    
+    // Mettre à jour l'indicateur visuel
+    const indicator = document.querySelector('.active-filters-count');
+    if (indicator) {
+        if (activeCount > 0) {
+            indicator.textContent = activeCount;
+            indicator.style.display = 'inline-block';
+        } else {
+            indicator.style.display = 'none';
+        }
+    }
+}
+
+// ✅ 8. GESTION DE L'HISTORIQUE DU NAVIGATEUR
+window.addEventListener('popstate', function(e) {
+    console.log('🔙 Navigation historique détectée');
+    window.location.reload();
+});
+
+// ✅ 9. SAUVEGARDE DES FILTRES DANS LE LOCAL STORAGE (optionnel)
+function saveFiltersToStorage() {
+    const form = document.getElementById('filtersForm');
+    if (!form) return;
+    
+    const formData = new FormData(form);
+    const filters = {};
+    
+    for (const [key, value] of formData) {
+        if (value && value.trim() !== '') {
+            filters[key] = value.trim();
+        }
+    }
+    
+    try {
+        localStorage.setItem('commandes_filters', JSON.stringify(filters));
+        console.log('💾 Filtres sauvegardés:', filters);
+    } catch (error) {
+        console.warn('⚠️ Impossible de sauvegarder les filtres:', error);
+    }
+}
+
+function loadFiltersFromStorage() {
+    try {
+        const saved = localStorage.getItem('commandes_filters');
+        if (saved) {
+            const filters = JSON.parse(saved);
+            console.log('📂 Filtres chargés:', filters);
+            return filters;
+        }
+    } catch (error) {
+        console.warn('⚠️ Impossible de charger les filtres:', error);
+    }
+    return {};
+}
+
+// ✅ 10. INITIALISATION COMPLÈTE
+document.addEventListener('DOMContentLoaded', function() {
+    // Mettre à jour l'indicateur de filtres actifs
+    updateActiveFiltersIndicator();
+    
+    // Sauvegarder les filtres quand le formulaire change
+    const form = document.getElementById('filtersForm');
+    if (form) {
+        form.addEventListener('change', function() {
+            updateActiveFiltersIndicator();
+            saveFiltersToStorage();
+        });
+    }
+    
+    console.log('✅ Filtres initialisés avec succès');
+});
+
+// ✅ EXPORT DES FONCTIONS GLOBALES
+window.exportData = exportData;
+window.refreshData = refreshData;
+window.showLoading = showLoading;
+window.hideLoading = hideLoading;
+window.showToast = showToast;
+
+console.log('✅ JavaScript des filtres chargé sans auto-submit');
+    </script>
 </body>
 </html>

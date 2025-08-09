@@ -5610,6 +5610,23 @@ async function getMaintenanceStatus() {
         return { isActive: false, endTime: null };
     }
 }
+
+// ✅ ROUTES POUR LES COMMANDES - À ajouter dans votre router.js
+
+// Route principale pour afficher les commandes avec filtres
+router.get('/admin/commandes', adminOrdersController.getAllOrders);
+
+// Route pour les détails d'une commande (AJAX)
+router.get('/admin/commandes/:id/details', adminOrdersController.getOrderDetails);
+
+// Route pour mettre à jour une commande
+router.put('/admin/commandes/:id', adminOrdersController.updateOrder);
+
+// Route pour exporter les commandes (avec filtres)
+router.get('/admin/commandes/export', adminOrdersController.exportOrders);
+
+// ✅ MÉTHODE EXPORT À AJOUTER DANS VOTRE CONTROLLER
+
 // Export par défaut
 export default router;
 
