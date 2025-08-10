@@ -143,455 +143,430 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
    * 🛒 Valider et créer la commande (connecté ou invité)
    */
 /**
-   * 🛒 Valider et créer la commande (connecté ou invité) - VERSION COMPLÈTEMENT CORRIGÉE
-   */
-/**
-   * 🛒 Valider et créer la commande - VERSION FINALE AVEC SYNCHRONISATION STOCKS
-   */
-  async validateOrder(req, res) {
+ * 🛒 Valider et créer la commande (connecté ou invité) - VERSION COMPLÈTE
+ */
+async validateOrder(req, res) {
     const transaction = await sequelize.transaction();
     
     try {
-      console.log('🛒 Validation commande avec support invités ET utilisateurs connectés');
-      
-      const { paymentMethod, customerInfo } = req.body;
-      const userId = req.session?.user?.id || req.session?.customerId;
-      const isGuest = !userId;
-      
-      console.log(`👤 Type utilisateur: ${isGuest ? 'Invité' : 'Connecté'}`);
-      console.log('📝 Données formulaire reçues:', {
-        paymentMethod,
-        hasCustomerInfo: !!customerInfo,
-        customerInfoFields: customerInfo ? Object.keys(customerInfo) : []
-      });
+        console.log('🛒 Validation commande avec support invités ET utilisateurs connectés');
+        
+        const { paymentMethod, customerInfo } = req.body;
+        const userId = req.session?.user?.id || req.session?.customerId;
+        const isGuest = !userId;
 
-      // ========================================
-      // 📋 RÉCUPÉRATION DES INFORMATIONS CLIENT
-      // ========================================
-      let finalCustomerInfo;
-      if (isGuest) {
-        finalCustomerInfo = customerInfo || req.session.customerInfo;
-        
-        if (!finalCustomerInfo) {
-          throw new Error('Informations client manquantes');
-        }
-        
-        console.log('✅ Invité - Données du formulaire utilisées:', {
-          nom: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
-          email: finalCustomerInfo.email,
-          adresse: finalCustomerInfo.address
+        console.log('👤 Type utilisateur:', isGuest ? 'Invité' : 'Connecté');
+        console.log('📝 Données formulaire reçues:', {
+            paymentMethod,
+            hasCustomerInfo: !!customerInfo,
+            customerInfoFields: customerInfo ? Object.keys(customerInfo) : []
         });
-      } else {
-        const customer = await Customer.findByPk(userId);
-        if (!customer) {
-          throw new Error('Client non trouvé');
-        }
-        
-        finalCustomerInfo = {
-          firstName: customerInfo?.firstName || customer.first_name,
-          lastName: customerInfo?.lastName || customer.last_name,
-          email: customerInfo?.email || customer.email,
-          phone: customerInfo?.phone || customer.phone,
-          address: customerInfo?.address || customer.address
-        };
-        
-        console.log('✅ Utilisateur connecté - Nouvelles données utilisées:', {
-          nom: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
-          email: finalCustomerInfo.email,
-          adresse: finalCustomerInfo.address,
-          phone: finalCustomerInfo.phone
-        });
-      }
 
-      // ========================================
-      // 🛒 RÉCUPÉRATION DU PANIER
-      // ========================================
-      console.log(`🛒 Récupération panier ${isGuest ? 'session (invité)' : 'BDD (connecté)'}`);
-      const cartDetails = await cartController.getCartDetails(req);
-      
-      if (!cartDetails.items || cartDetails.items.length === 0) {
-        throw new Error('Panier vide');
-      }
-
-      console.log(`🛒 Panier récupéré: ${cartDetails.items.length} articles, Total: ${cartDetails.totalPrice.toFixed(2)}€`);
-
-      // ========================================
-      // 📦 VÉRIFICATION ET PRÉPARATION AVEC STOCK PAR TAILLE
-      // ========================================
-      console.log('📦 === VÉRIFICATION DU STOCK ET PRÉPARATION DES ARTICLES AVEC TAILLES ===');
-      const validatedItems = [];
-      const stockErrors = [];
-      
-      for (const item of cartDetails.items) {
-        console.log(`🔍 Traitement de ${item.jewel.name}:`);
-        console.log(`   Prix dans le panier: ${item.jewel.price_ttc}`);
-        console.log(`   Quantité: ${item.quantity}`);
-        console.log(`   Taille sélectionnée: ${item.size || 'Aucune'}`);
+        // ========================================
+        // 👤 RÉCUPÉRATION DES INFORMATIONS CLIENT
+        // ========================================
+        let finalCustomerInfo;
         
-        // Récupérer le bijou complet depuis la DB avec les tailles
-        const currentJewel = await Jewel.findByPk(item.jewel.id, { 
-          transaction,
-          attributes: ['id', 'name', 'price_ttc', 'stock', 'image', 'tailles']
-        });
-        
-        if (!currentJewel) {
-          stockErrors.push({
-            name: item.jewel.name,
-            error: 'Produit non trouvé'
-          });
-          continue;
-        }
-        
-        console.log(`   Prix en DB: ${currentJewel.price_ttc}`);
-        console.log(`   Stock global en DB: ${currentJewel.stock}`);
-        console.log(`   Tailles en DB:`, currentJewel.tailles);
-        
-        // ✅ VÉRIFIER LE STOCK DE LA TAILLE SPÉCIFIQUE
-        let availableStock = currentJewel.stock;
-        let selectedSizeInfo = null;
-        
-        if (item.size && currentJewel.tailles && Array.isArray(currentJewel.tailles)) {
-          selectedSizeInfo = currentJewel.tailles.find(t => t.taille === item.size);
-          
-          if (selectedSizeInfo) {
-            availableStock = parseInt(selectedSizeInfo.stock) || 0;
-            console.log(`   ✅ Stock taille ${item.size}: ${availableStock}`);
-          } else {
-            console.log(`   ❌ Taille ${item.size} non trouvée dans les tailles disponibles`);
-            stockErrors.push({
-              name: currentJewel.name,
-              error: `Taille ${item.size} non disponible`
+        if (isGuest) {
+            // ✅ INVITÉ - utiliser les données du formulaire ou de la session
+            finalCustomerInfo = customerInfo || req.session.customerInfo;
+            
+            if (!finalCustomerInfo) {
+                throw new Error('Informations client manquantes pour invité');
+            }
+            
+            console.log('✅ Invité - Données utilisées:', {
+                source: customerInfo ? 'Formulaire' : 'Session',
+                nom: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
+                email: finalCustomerInfo.email,
+                adresse: finalCustomerInfo.address
             });
-            continue;
-          }
+            
         } else {
-          console.log(`   ℹ️  Utilisation du stock global: ${availableStock}`);
+            // ✅ UTILISATEUR CONNECTÉ - PRIORITÉ AUX DONNÉES DU FORMULAIRE
+            const customer = await Customer.findByPk(userId);
+            if (!customer) {
+                throw new Error('Client connecté non trouvé');
+            }
+            
+            // ✅ PRIORITÉ 1: Données du formulaire (si fournies)
+            // ✅ PRIORITÉ 2: Données de session 
+            // ✅ PRIORITÉ 3: Données du compte (fallback)
+            
+            if (customerInfo && (customerInfo.firstName || customerInfo.address || customerInfo.email)) {
+                // Utiliser les nouvelles données du formulaire
+                finalCustomerInfo = {
+                    firstName: customerInfo.firstName?.trim() || customer.first_name,
+                    lastName: customerInfo.lastName?.trim() || customer.last_name,
+                    email: customerInfo.email?.trim() || customer.email,
+                    phone: customerInfo.phone?.trim() || customer.phone,
+                    address: customerInfo.address?.trim() || customer.address,
+                    city: customerInfo.city?.trim() || customer.city,
+                    postalCode: customerInfo.postalCode?.trim() || customer.postal_code,
+                    deliveryMode: customerInfo.deliveryMode || 'standard',
+                    notes: customerInfo.notes?.trim() || ''
+                };
+                
+                console.log('✅ Utilisateur connecté - Nouvelles données du formulaire utilisées:', {
+                    nom: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
+                    email: finalCustomerInfo.email,
+                    adresse: finalCustomerInfo.address,
+                    ville: finalCustomerInfo.city,
+                    phone: finalCustomerInfo.phone
+                });
+                
+                // ✅ Sauvegarder ces nouvelles données en session
+                req.session.customerInfo = finalCustomerInfo;
+                
+            } else if (req.session.customerInfo) {
+                // Utiliser les données de session
+                finalCustomerInfo = req.session.customerInfo;
+                console.log('✅ Utilisateur connecté - Données de session utilisées');
+                
+            } else {
+                // Fallback sur les données du compte
+                finalCustomerInfo = {
+                    firstName: customer.first_name,
+                    lastName: customer.last_name,
+                    email: customer.email,
+                    phone: customer.phone,
+                    address: customer.address,
+                    city: customer.city || '',
+                    postalCode: customer.postal_code || '',
+                    deliveryMode: 'standard',
+                    notes: ''
+                };
+                
+                console.log('✅ Utilisateur connecté - Données du compte utilisées (fallback)');
+            }
         }
+
+        // ========================================
+        // 🛒 RÉCUPÉRATION DU PANIER
+        // ========================================
+        const cartDetails = await cartController.getCartDetails(req);
         
-        // Vérifier si le stock est suffisant
-        if (item.quantity > availableStock) {
-          const sizeInfo = item.size ? ` (taille ${item.size})` : '';
-          stockErrors.push({
-            name: currentJewel.name,
-            requested: item.quantity,
-            available: availableStock,
-            size: item.size,
-            message: `${currentJewel.name}${sizeInfo}: ${item.quantity} demandé(s) mais seulement ${availableStock} disponible(s)`
-          });
-          continue;
+        if (!cartDetails.items || cartDetails.items.length === 0) {
+            throw new Error('Panier vide');
         }
-        
-        // Calculer le prix unitaire et le total
-        const unitPrice = parseFloat(currentJewel.price_ttc);
-        const itemTotal = unitPrice * item.quantity;
-        
-        validatedItems.push({
-          jewel_id: currentJewel.id,
-          jewel_name: currentJewel.name,
-          jewel_image: currentJewel.image,
-          quantity: parseInt(item.quantity),
-          unit_price: unitPrice,
-          total_price: itemTotal,
-          size: item.size || 'Standard',
-          current_stock: availableStock,
-          global_stock: currentJewel.stock,
-          jewel_tailles: currentJewel.tailles || [],
-          selected_size_info: selectedSizeInfo
+
+        console.log(`🛒 Panier: ${cartDetails.items.length} articles, Total: ${cartDetails.totalPrice.toFixed(2)}€`);
+
+        // ========================================
+        // 🎫 CALCUL DES TOTAUX AVEC CODES PROMO
+        // ========================================
+        const appliedPromo = req.session.appliedPromo;
+        let discount = 0;
+        let discountedSubtotal = cartDetails.totalPrice;
+        let discountPercent = 0;
+
+        if (appliedPromo && appliedPromo.discountPercent) {
+            discountPercent = parseFloat(appliedPromo.discountPercent);
+            discount = (cartDetails.totalPrice * discountPercent) / 100;
+            discountedSubtotal = cartDetails.totalPrice - discount;
+            
+            console.log(`🎫 Code promo appliqué: ${appliedPromo.code} (-${discount.toFixed(2)}€)`);
+        }
+
+        // Calculer frais de livraison
+        const shippingThreshold = 50;
+        const baseDeliveryFee = 5.90;
+        const deliveryFee = discountedSubtotal >= shippingThreshold ? 0 : baseDeliveryFee;
+        const finalTotal = discountedSubtotal + deliveryFee;
+
+        console.log(`💰 Totaux finaux:`, {
+            sousTotal: cartDetails.totalPrice.toFixed(2),
+            reduction: discount.toFixed(2),
+            sousotalApresReduction: discountedSubtotal.toFixed(2),
+            fraisLivraison: deliveryFee.toFixed(2),
+            totalFinal: finalTotal.toFixed(2)
         });
+
+        // ========================================
+        // 🆔 GESTION DU CLIENT (INVITÉ OU CONNECTÉ)
+        // ========================================
+        let customerId = userId;
+
+        if (isGuest) {
+            // Créer ou récupérer le client invité
+            let existingCustomer = await Customer.findOne({
+                where: { email: finalCustomerInfo.email },
+                transaction
+            });
+
+            if (existingCustomer) {
+                // ✅ MISE À JOUR CLIENT EXISTANT
+                const updateData = {
+                    first_name: finalCustomerInfo.firstName,
+                    last_name: finalCustomerInfo.lastName,
+                    phone: finalCustomerInfo.phone,
+                    address: finalCustomerInfo.address,
+                    city: finalCustomerInfo.city || '',
+                    postal_code: finalCustomerInfo.postalCode || '',
+                    updated_at: new Date()
+                };
+
+                // ✅ Si le client existant n'est pas un invité et n'a pas de mot de passe, le marquer comme invité
+                if (!existingCustomer.password && !existingCustomer.is_guest) {
+                    updateData.is_guest = true;
+                }
+
+                await existingCustomer.update(updateData, { transaction });
+                
+                customerId = existingCustomer.id;
+                console.log('👤 Client existant mis à jour:', customerId);
+                
+            } else {
+                // ✅ CRÉER UN NOUVEAU CLIENT INVITÉ AVEC LES BONS CHAMPS
+                const newCustomer = await Customer.create({
+                    first_name: finalCustomerInfo.firstName,
+                    last_name: finalCustomerInfo.lastName,
+                    email: finalCustomerInfo.email,
+                    phone: finalCustomerInfo.phone || '',
+                    address: finalCustomerInfo.address,
+                    city: finalCustomerInfo.city || '',
+                    postal_code: finalCustomerInfo.postalCode || '',
+                    
+                    // ✅ CHAMPS INVITÉ CRITIQUES
+                    password: null, // Explicitement null
+                    is_guest: true, // Marquer comme invité
+                    is_email_verified: false,
+                    email_verified: false, // Support ancien champ
+                    role_id: 1, // Rôle client par défaut
+                    
+                    // ✅ CHAMPS OPTIONNELS
+                    marketing_opt_in: false,
+                    email_notifications: true,
+                    preferred_delivery_mode: finalCustomerInfo.deliveryMode || 'standard',
+                    
+                    // ✅ TIMESTAMPS
+                    created_at: new Date(),
+                    updated_at: new Date()
+                    
+                }, { transaction });
+                
+                customerId = newCustomer.id;
+                console.log('👥 Nouveau client invité créé:', customerId);
+            }
+        }
+
+        // ========================================
+        // 📋 CRÉATION DE LA COMMANDE AVEC VRAIES DONNÉES
+        // ========================================
         
-        const sizeInfo = item.size ? ` (taille ${item.size})` : '';
-        console.log(`✅ ${currentJewel.name}${sizeInfo}: Prix=${unitPrice}€, Qté=${item.quantity}, Total=${itemTotal.toFixed(2)}€, Stock OK (${availableStock} >= ${item.quantity})`);
-      }
-      
-      if (stockErrors.length > 0) {
-        const errorMessage = stockErrors.map(error => 
-          error.message || error.error || `${error.name}: erreur inconnue`
-        ).join(', ');
-        
-        throw new Error(`Stock insuffisant: ${errorMessage}`);
-      }
+        // Générer numéro de commande unique
+        const orderNumber = 'CMD-' + Date.now() + '-' + crypto.randomBytes(3).toString('hex').toUpperCase();
 
-      // ========================================
-      // 💰 CALCUL DES TOTAUX
-      // ========================================
-      const subtotalCalculated = validatedItems.reduce((sum, item) => sum + item.total_price, 0);
-      console.log(`💰 Sous-total recalculé: ${subtotalCalculated.toFixed(2)}€`);
+        console.log(`📋 Création commande: ${orderNumber} pour client ${customerId}`);
 
-      // Codes promo
-      const appliedPromo = req.session.appliedPromo;
-      let discount = 0;
-      let discountedSubtotal = subtotalCalculated;
-      let discountPercent = 0;
-
-      if (appliedPromo && appliedPromo.discountPercent) {
-        discountPercent = parseFloat(appliedPromo.discountPercent);
-        discount = (subtotalCalculated * discountPercent) / 100;
-        discountedSubtotal = subtotalCalculated - discount;
-        console.log(`🎫 Code promo appliqué: ${appliedPromo.code} (-${discount.toFixed(2)}€)`);
-      }
-
-      // Frais de livraison
-      const shippingThreshold = 50;
-      const baseDeliveryFee = 5.90;
-      const deliveryFee = discountedSubtotal >= shippingThreshold ? 0 : baseDeliveryFee;
-      const finalTotal = discountedSubtotal + deliveryFee;
-
-      console.log('💰 Totaux finaux:', {
-        sousTotal: subtotalCalculated.toFixed(2),
-        reduction: discount.toFixed(2),
-        sousTotalApresReduction: discountedSubtotal.toFixed(2),
-        fraisLivraison: deliveryFee.toFixed(2),
-        totalFinal: finalTotal.toFixed(2)
-      });
-
-      // ========================================
-      // 📝 CRÉATION DE LA COMMANDE
-      // ========================================
-      const orderNumber = `CMD-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-      console.log('📋 Création commande:', orderNumber, 'pour client', userId || 'invité');
-
-      const order = await Order.create({
-        customer_id: userId || null,
-        numero_commande: orderNumber,
-        total: finalTotal,
-        created_at: new Date(),
-        shipping_method: 'standard',
-        shipping_address: finalCustomerInfo.address,
-        shipping_city: finalCustomerInfo.city || '',
-        shipping_postal_code: finalCustomerInfo.postal_code || '',
-        shipping_country: 'France',
-        shipping_phone: finalCustomerInfo.phone,
-        shipping_price: deliveryFee,
-        tax_amount: 0,
-        subtotal: subtotalCalculated,
-        promo_code: appliedPromo?.code || null,
-        promo_discount_percent: discountPercent,
-        promo_discount_amount: discount,
-        customer_name: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
-        customer_email: finalCustomerInfo.email,
-        status: 'waiting',
-        shipping_notes: finalCustomerInfo.notes || '',
-        is_guest_order: isGuest,
-        guest_session_id: isGuest ? req.sessionID : null,
-        email_confirmation_sent: false,
-        email_shipping_sent: false,
-        discount_amount: discount,
-        discount_percent: discountPercent,
-        promo_discount: discount,
-        delivery_mode: finalCustomerInfo.deliveryMode || 'standard',
-        delivery_fee: deliveryFee,
-        payment_method: paymentMethod || 'card',
-        customer_phone: finalCustomerInfo.phone,
-        updated_at: new Date()
-      }, { transaction });
-
-      console.log(`✅ Commande créée avec ID: ${order.id}`);
-
-      // ========================================
-      // 📦 CRÉATION DES ARTICLES + GESTION STOCK SYNCHRONISÉE
-      // ========================================
-      console.log('📦 === CRÉATION DES ARTICLES ET GESTION STOCK SYNCHRONISÉE ===');
-
-      for (const item of validatedItems) {
-        console.log(`📦 Traitement article: ${item.jewel_name}`);
-        console.log(`   Prix unitaire: ${item.unit_price}€`);
-        console.log(`   Quantité: ${item.quantity}`);
-        console.log(`   Total: ${item.total_price.toFixed(2)}€`);
-        console.log(`   Taille: ${item.size}`);
-
-        // 1. Créer l'article de commande
-        await OrderItem.create({
-          order_id: order.id,
-          jewel_id: item.jewel_id,
-          jewel_name: item.jewel_name,
-          jewel_image: item.jewel_image,
-          price: item.unit_price,
-          quantity: item.quantity,
-          subtotal: item.total_price,
-          size: item.size
+        // ✅ CRÉER LA COMMANDE AVEC LES VRAIES DONNÉES DE LIVRAISON
+        const order = await Order.create({
+            numero_commande: orderNumber,
+            customer_id: customerId,
+            
+            // ✅ INFORMATIONS DE CONTACT
+            customer_email: finalCustomerInfo.email,
+            customer_name: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
+            customer_phone: finalCustomerInfo.phone,
+            
+            // ✅ VRAIES DONNÉES DE LIVRAISON (du formulaire)
+            shipping_address: finalCustomerInfo.address,
+            shipping_city: finalCustomerInfo.city || '',
+            shipping_postal_code: finalCustomerInfo.postalCode || '',
+            shipping_phone: finalCustomerInfo.phone,
+            shipping_country: 'France',
+            
+            // ✅ DONNÉES FINANCIÈRES
+            subtotal: cartDetails.totalPrice,
+            promo_discount_amount: discount,
+            promo_discount_percent: discountPercent,
+            promo_code: appliedPromo?.code || null,
+            shipping_price: deliveryFee,
+            total: finalTotal,
+            
+            // ✅ STATUT ET MÉTHODE
+            status: 'confirmed',
+            payment_method: paymentMethod || 'card',
+            payment_status: 'pending',
+            shipping_method: finalCustomerInfo.deliveryMode || 'standard',
+            shipping_notes: finalCustomerInfo.notes,
+            
+            // ✅ MARQUEURS
+            is_guest_order: isGuest,
+            guest_session_id: isGuest ? req.sessionID : null,
+            
+            created_at: new Date()
         }, { transaction });
 
-        console.log(`✅ Article créé: ${item.jewel_name} x${item.quantity} (taille: ${item.size})`);
+        const orderId = order.id;
+        console.log(`✅ Commande créée avec ID: ${orderId}`);
 
-        // 2. ✅ GESTION STOCK INTELLIGENTE SELON LE TYPE DE PRODUIT
-        console.log(`📦 === GESTION STOCK POUR ${item.jewel_name} ===`);
+        // ========================================
+        // 📦 CRÉATION DES ORDER_ITEMS
+        // ========================================
+        console.log('📦 Création des order_items...');
 
-        if (item.size !== 'Standard' && item.jewel_tailles && Array.isArray(item.jewel_tailles) && item.jewel_tailles.length > 0) {
-          // ✅ PRODUIT AVEC TAILLES : Mettre à jour la taille ET recalculer le stock global
-          console.log(`📏 Produit avec tailles - Mise à jour taille ${item.size}`);
-          console.log(`   Tailles actuelles:`, item.jewel_tailles);
-          
-          const updatedTailles = item.jewel_tailles.map(taille => {
-            if (taille.taille === item.size) {
-              const oldStock = parseInt(taille.stock) || 0;
-              const newStock = Math.max(0, oldStock - item.quantity);
-              
-              console.log(`   📏 Taille ${taille.taille}: ${oldStock} → ${newStock}`);
-              
-              return {
-                ...taille,
-                stock: newStock
-              };
-            }
-            return taille;
-          });
-          
-          // ✅ CALCULER LE NOUVEAU STOCK GLOBAL À PARTIR DES TAILLES
-          const newGlobalStock = updatedTailles.reduce((total, taille) => {
-            return total + (parseInt(taille.stock) || 0);
-          }, 0);
-          
-          console.log(`   📊 Nouveau stock global calculé: ${newGlobalStock}`);
-          
-          // ✅ METTRE À JOUR TAILLES ET STOCK GLOBAL ENSEMBLE
-          await Jewel.update(
-            { 
-              tailles: updatedTailles,
-              stock: newGlobalStock
-            },
-            { 
-              where: { id: item.jewel_id },
-              transaction: transaction
-            }
-          );
-          
-          console.log(`   ✅ Stocks synchronisés - Global: ${newGlobalStock}, Tailles:`, updatedTailles);
-          
+        for (const item of cartDetails.items) {
+            await OrderItem.create({
+                order_id: orderId,
+                jewel_id: item.jewel.id,
+                jewel_name: item.jewel.name,
+                jewel_image: item.jewel.image,
+                quantity: item.quantity,
+                price: item.jewel.price_ttc,
+                size: item.size || 'Non spécifiée'
+            }, { transaction });
+        }
+
+        console.log(`📦 ${cartDetails.items.length} order_items créés`);
+
+        // ========================================
+        // 🧹 NETTOYAGE DU PANIER
+        // ========================================
+        if (userId) {
+            await Cart.destroy({
+                where: { customer_id: userId },
+                transaction
+            });
+            console.log('🧹 Panier BDD vidé');
         } else {
-          // ✅ PRODUIT SANS TAILLES : Juste décrémenter le stock global
-          console.log(`📦 Produit sans tailles - Décrément stock global`);
-          console.log(`   Stock avant: ${item.global_stock}`);
-          
-          await Jewel.decrement('stock', {
-            by: item.quantity,
-            where: { id: item.jewel_id },
-            transaction: transaction
-          });
-          
-          const updatedJewel = await Jewel.findByPk(item.jewel_id, { 
-            transaction,
-            attributes: ['stock']
-          });
-          
-          console.log(`   Stock après: ${updatedJewel.stock}`);
+            req.session.cart = [];
+            console.log('🧹 Panier session vidé');
         }
 
-        // 3. ✅ VÉRIFICATION FINALE ET ALERTES
-        const jewelFinalCheck = await Jewel.findByPk(item.jewel_id, { 
-          transaction,
-          attributes: ['stock', 'tailles']
-        });
-        
-        console.log(`   📊 Vérification finale - Stock global: ${jewelFinalCheck.stock}`);
-        
-        // Alertes stock global
-        if (jewelFinalCheck.stock === 0) {
-          console.log(`   🚨 RUPTURE DE STOCK GLOBALE: ${item.jewel_name}`);
-        } else if (jewelFinalCheck.stock <= 5) {
-          console.log(`   ⚠️  STOCK GLOBAL FAIBLE: ${item.jewel_name} (${jewelFinalCheck.stock} restants)`);
-        }
-        
-        // Alertes par taille
-        if (jewelFinalCheck.tailles && Array.isArray(jewelFinalCheck.tailles)) {
-          jewelFinalCheck.tailles.forEach(taille => {
-            const tailleStock = parseInt(taille.stock) || 0;
-            if (tailleStock === 0) {
-              console.log(`   🚨 RUPTURE TAILLE ${taille.taille}: ${item.jewel_name}`);
-            } else if (tailleStock <= 2) {
-              console.log(`   ⚠️  STOCK TAILLE FAIBLE ${taille.taille}: ${item.jewel_name} (${tailleStock} restants)`);
+        req.session.appliedPromo = null;
+        // ✅ NE PAS supprimer customerInfo pour pouvoir l'afficher dans les emails
+
+        await transaction.commit();
+        console.log('✅ Transaction committée avec succès');
+
+        // ========================================
+        // 📧 ENVOI DES EMAILS (ASYNCHRONE)
+        // ========================================
+        try {
+            console.log('📧 Préparation des données pour les emails...');
+            
+            // Préparer les données pour l'email de confirmation
+            const emailOrderData = {
+                numero_commande: orderNumber,
+                orderId: order.id,
+                items: cartDetails.items.map(item => ({
+                    jewel: {
+                        id: item.jewel.id,
+                        name: item.jewel.name,
+                        image: item.jewel.image
+                    },
+                    name: item.jewel.name,
+                    quantity: item.quantity,
+                    size: item.size || 'Standard',
+                    price: item.jewel.price_ttc,
+                    total: item.jewel.price_ttc * item.quantity
+                })),
+                total: finalTotal,
+                subtotal: discountedSubtotal,
+                shipping_price: deliveryFee,
+                shippingAddress: {
+                    address: finalCustomerInfo.address || '',
+                    city: finalCustomerInfo.city || '',
+                    postal_code: finalCustomerInfo.postalCode || ''
+                },
+                promo_code: appliedPromo?.code || null,
+                promo_discount_amount: discount || 0
+            };
+
+            const emailCustomerData = {
+                firstName: finalCustomerInfo.firstName,
+                lastName: finalCustomerInfo.lastName,
+                email: finalCustomerInfo.email,
+                phone: finalCustomerInfo.phone,
+                address: {
+                    address: finalCustomerInfo.address || '',
+                    city: finalCustomerInfo.city || '',
+                    postal_code: finalCustomerInfo.postalCode || ''
+                }
+            };
+
+            console.log('📧 Données email préparées:', {
+                orderNumber,
+                customerEmail: finalCustomerInfo.email,
+                total: finalTotal,
+                itemsCount: cartDetails.items.length
+            });
+
+            // 🚀 ENVOI DES EMAILS
+            const { sendOrderConfirmationEmails } = await import('../services/mailService.js');
+            
+            const emailResults = await sendOrderConfirmationEmails(
+                finalCustomerInfo.email,
+                finalCustomerInfo.firstName,
+                emailOrderData,
+                emailCustomerData
+            );
+            
+            console.log('📧 Résultats envoi emails:', emailResults);
+            
+            if (emailResults.customer.success) {
+                console.log('✅ Email client envoyé avec succès');
+            } else {
+                console.error('❌ Échec envoi email client:', emailResults.customer.error);
             }
-          });
+            
+            if (emailResults.admin.success) {
+                console.log('✅ Email admin envoyé avec succès');
+            } else {
+                console.error('❌ Échec envoi email admin:', emailResults.admin.error);
+            }
+
+        } catch (emailError) {
+            console.error('❌ Erreur emails (non bloquante):', emailError);
+            // On continue même si l'email échoue - la commande est créée
         }
-        
-        console.log(`   ✅ Traitement stock terminé pour ${item.jewel_name}`);
-      }
 
-      console.log(`📦 ${validatedItems.length} order_items créés avec succès`);
+        // ========================================
+        // ✅ RÉPONSE DE SUCCÈS
+        // ========================================
+        const successMessage = `Commande ${orderNumber} créée avec succès ! ` +
+            (appliedPromo ? `Code promo ${appliedPromo.code} appliqué (-${discount.toFixed(2)}€). ` : '') +
+            `Confirmation envoyée à ${finalCustomerInfo.email}.`;
 
-      // ========================================
-      // 🧹 NETTOYAGE DU PANIER
-      // ========================================
-      if (isGuest) {
-        req.session.cart = { items: [] };
-        console.log('🧹 Panier session vidé');
-      } else {
-        await Cart.destroy({
-          where: { customer_id: userId },
-          transaction
+        console.log('🎉 === COMMANDE CRÉÉE AVEC SUCCÈS ===');
+        console.log(`   📋 Numéro: ${orderNumber}`);
+        console.log(`   💰 Montant: ${finalTotal.toFixed(2)}€`);
+        console.log(`   👤 Client: ${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`);
+        console.log(`   📧 Email: ${finalCustomerInfo.email}`);
+        console.log(`   📍 Adresse: ${finalCustomerInfo.address}`);
+        console.log(`   🏙️ Ville: ${finalCustomerInfo.city}`);
+        console.log(`   📱 Téléphone: ${finalCustomerInfo.phone}`);
+        if (appliedPromo) {
+            console.log(`   🎫 Code promo: ${appliedPromo.code} (-${discount.toFixed(2)}€)`);
+        }
+        console.log('=====================================');
+
+        return res.json({
+            success: true,
+            message: successMessage,
+            order: {
+                id: orderId,
+                numero: orderNumber,
+                total: finalTotal,
+                customer_email: finalCustomerInfo.email,
+                customer_name: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
+                shipping_address: finalCustomerInfo.address,
+                shipping_city: finalCustomerInfo.city
+            },
+            redirectUrl: `/commande/confirmation?orderId=${orderId}&orderNumber=${encodeURIComponent(orderNumber)}`
         });
-        console.log('🧹 Panier BDD vidé');
-      }
-
-      if (req.session.appliedPromo) {
-        delete req.session.appliedPromo;
-      }
-
-      // ========================================
-      // ✅ VALIDATION FINALE
-      // ========================================
-      await transaction.commit();
-      console.log('✅ Transaction committée avec succès');
-
-      // ========================================
-      // 🔍 VÉRIFICATION FINALE COMPLÈTE
-      // ========================================
-      console.log('🔍 === VÉRIFICATION FINALE DU STOCK ET TAILLES ===');
-      for (const item of validatedItems) {
-        const finalJewel = await Jewel.findByPk(item.jewel_id, {
-          attributes: ['id', 'name', 'stock', 'tailles']
-        });
-        
-        console.log(`🔍 ${finalJewel.name}:`);
-        console.log(`   Stock global final: ${finalJewel.stock}`);
-        
-        if (finalJewel.tailles && Array.isArray(finalJewel.tailles)) {
-          const totalTaillesStock = finalJewel.tailles.reduce((total, taille) => {
-            const tailleStock = parseInt(taille.stock) || 0;
-            console.log(`   Taille ${taille.taille}: ${tailleStock} restants`);
-            return total + tailleStock;
-          }, 0);
-          
-          // ✅ VÉRIFICATION DE COHÉRENCE
-          if (finalJewel.stock === totalTaillesStock) {
-            console.log(`   ✅ Cohérence OK: Stock global (${finalJewel.stock}) = Total tailles (${totalTaillesStock})`);
-          } else {
-            console.log(`   ❌ INCOHÉRENCE: Stock global (${finalJewel.stock}) ≠ Total tailles (${totalTaillesStock})`);
-          }
-        }
-      }
-
-      console.log(`🎉 Commande ${orderNumber} validée avec succès`);
-
-      // ========================================
-      // 🎉 RÉPONSE DE SUCCÈS
-      // ========================================
-      res.json({
-        success: true,
-        message: 'Commande créée avec succès !',
-        order: {
-          id: order.id,
-          numero: orderNumber,
-          customer_email: finalCustomerInfo.email,
-          total: finalTotal,
-          isGuest: isGuest
-        }
-      });
 
     } catch (error) {
-      // ========================================
-      // ❌ GESTION DES ERREURS
-      // ========================================
-      await transaction.rollback();
-      console.log('🔄 Transaction annulée (ROLLBACK effectué)');
-      
-      console.error('❌ Erreur validation commande:', error);
-      
-      res.status(500).json({
-        success: false,
-        message: error.message || 'Erreur lors de la création de la commande'
-      });
+        await transaction.rollback();
+        console.error('❌ Erreur validation commande:', error);
+        
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Erreur lors de la création de la commande'
+        });
     }
-  },
+},
 
 // ✅ FONCTION HELPER POUR ENVOI D'EMAILS ASYNCHRONE
 async  sendOrderEmailsAsync(emailOrderData, emailCustomerData) {

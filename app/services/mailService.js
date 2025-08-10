@@ -608,6 +608,15 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
       items: orderData.items?.length || 0
     });
 
+    // ✅ COULEURS CRYSTOSJEWEL (comme dans votre ancien code)
+    const colors = {
+      roseGold: '#b76e79',
+      roseGoldLight: '#e8c2c8', 
+      roseGoldDark: '#7d4b53',
+      cream: '#fff8f0',
+      darkText: '#3a3a3a'
+    };
+
     // ✅ EXTRACTION DES DONNÉES AVEC FALLBACKS
     const numeroCommande = orderData.numero_commande || orderData.orderNumber || 'N/A';
     const total = parseFloat(orderData.total || 0);
@@ -616,7 +625,6 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
     const promoCode = orderData.promo_code || null;
     const promoDiscount = parseFloat(orderData.promo_discount_amount || 0);
     const items = orderData.items || [];
-    const shippingAddress = orderData.shipping_address || null;
 
     console.log('📧 Données traitées:', {
       numeroCommande,
@@ -684,18 +692,7 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
       `;
     }).join('') : '<tr><td style="padding: 20px; text-align: center; color: #999;">Aucun article</td></tr>';
 
-    // ✅ ADRESSE DE LIVRAISON
-    let addressHtml = '';
-    if (shippingAddress) {
-      addressHtml = `
-        <div style="margin-bottom: 15px;">
-          <strong style="color: ${colors.roseGoldDark};">Adresse de livraison:</strong><br>
-          <span style="color: #6b7280; line-height: 1.4;">${shippingAddress}</span>
-        </div>
-      `;
-    }
-
-    // ✅ HTML COMPLET DE L'EMAIL CLIENT
+    // ✅ HTML COMPLET DE L'EMAIL CLIENT (votre style CrystosJewel)
     const htmlContent = `
       <!DOCTYPE html>
       <html>
@@ -743,8 +740,6 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
                   <strong style="color: ${colors.roseGoldDark};">Livraison estimée:</strong><br>
                   <span style="color: #28A745; font-weight: 600;">${deliveryDate}</span>
                 </div>
-                
-                ${addressHtml}
               </div>
 
               <!-- Articles commandés -->
@@ -818,7 +813,7 @@ export const sendOrderConfirmationEmail = async (userEmail, firstName, orderData
     const info = await transporter.sendMail({
       from: `"CrystosJewel ✨" <${process.env.MAIL_USER}>`,
       to: userEmail,
-      subject: `✨ Commande ${numeroCommande} confirmée - CrystosJewel`,
+      subject: `✅ Commande ${numeroCommande} confirmée - CrystosJewel`,
       html: htmlContent,
     });
 
@@ -1354,186 +1349,6 @@ export const formatOrderDataForEmail = (orderData) => {
   };
 };
 
-// Email de notification d'expédition
-// export const sendShippingNotificationEmail = async (userEmail, firstName, shippingData) => {
-//   try {
-//     const { orderNumber, trackingNumber, carrier, estimatedDelivery } = shippingData;
-
-//     const htmlContent = `
-//       <div style="
-//         font-family: 'Inter', Arial, sans-serif;
-//         color: #3a3a3a;
-//         background: linear-gradient(135deg, #fff8f0 0%, #f5e6d3 100%);
-//         margin: 0;
-//         padding: 20px;
-//       ">
-//         <div style="
-//           max-width: 650px;
-//           margin: auto;
-//           background: white;
-//           border-radius: 20px;
-//           box-shadow: 0 16px 48px rgba(232, 180, 184, 0.16);
-//           overflow: hidden;
-//         ">
-          
-//           <!-- Header -->
-//           <header style="
-//             background: linear-gradient(135deg, #E8B4B8 0%, #B8868A 100%);
-//             padding: 40px 20px;
-//             text-align: center;
-//             color: white;
-//           ">
-//             <h1 style="
-//               margin: 0 0 10px 0;
-//               font-size: 2.5rem;
-//               font-weight: 700;
-//               letter-spacing: 2px;
-//               font-family: 'Playfair Display', serif;
-//             ">✨ CrystosJewel ✨</h1>
-//           </header>
-
-//           <!-- Contenu principal -->
-//           <main style="padding: 40px 30px; text-align: center;">
-            
-//             <div style="font-size: 4rem; margin-bottom: 20px;">📦</div>
-            
-//             <h2 style="
-//               color: #B8868A;
-//               font-size: 2rem;
-//               margin: 0 0 15px 0;
-//               font-family: 'Playfair Display', serif;
-//             ">Bonne nouvelle ${firstName} !</h2>
-            
-//             <p style="
-//               color: #666;
-//               font-size: 16px;
-//               line-height: 1.6;
-//               margin-bottom: 30px;
-//             ">Votre commande <strong>${orderNumber}</strong> a été expédiée !<br>
-//             Vos bijoux sont en route vers vous ✨</p>
-
-//             <!-- Informations de suivi -->
-//             <div style="
-//               background: linear-gradient(135deg, #F8F4F0 0%, #F5E6D3 100%);
-//               border-radius: 16px;
-//               padding: 25px;
-//               margin-bottom: 30px;
-//               text-align: left;
-//             ">
-//               <h3 style="
-//                 color: #B8868A;
-//                 margin: 0 0 20px 0;
-//                 text-align: center;
-//               ">📋 Informations de suivi</h3>
-              
-//               <div style="
-//                 display: grid;
-//                 gap: 15px;
-//               ">
-//                 <div>
-//                   <strong style="color: #7d4b53;">Transporteur:</strong><br>
-//                   <span style="color: #666;">${carrier}</span>
-//                 </div>
-//                 <div>
-//                   <strong style="color: #7d4b53;">Numéro de suivi:</strong><br>
-//                   <span style="
-//                     background: white;
-//                     padding: 8px 12px;
-//                     border-radius: 8px;
-//                     font-family: 'Courier New', monospace;
-//                     color: #B8868A;
-//                     font-weight: 600;
-//                     display: inline-block;
-//                     margin-top: 5px;
-//                   ">${trackingNumber}</span>
-//                 </div>
-//                 <div>
-//                   <strong style="color: #7d4b53;">Livraison estimée:</strong><br>
-//                   <span style="color: #28A745; font-weight: 600;">${estimatedDelivery}</span>
-//                 </div>
-//               </div>
-//             </div>
-
-//             <!-- CTA -->
-//             <a href="${process.env.BASE_URL}/mon-compte/commandes" style="
-//               display: inline-block;
-//               background: linear-gradient(135deg, #E8B4B8 0%, #B8868A 100%);
-//               color: white;
-//               text-decoration: none;
-//               padding: 15px 30px;
-//               border-radius: 50px;
-//               font-weight: 600;
-//               font-size: 16px;
-//               box-shadow: 0 4px 16px rgba(232, 180, 184, 0.3);
-//             ">📍 Suivre mon colis</a>
-
-//           </main>
-
-//           <!-- Footer simple -->
-//           <footer style="
-//             background: #F8F4F0;
-//             padding: 20px;
-//             text-align: center;
-//             font-size: 12px;
-//             color: #999;
-//           ">
-//             <p style="margin: 0;">
-//               Des questions ? Contactez-nous à 
-//               <a href="mailto:${process.env.MAIL_USER}" style="color: #B8868A;">${process.env.MAIL_USER}</a>
-//             </p>
-//           </footer>
-
-//         </div>
-//       </div>
-//     `;
-
-//     const info = await transporter.sendMail({
-//       from: `"CrystosJewel 📦" <${process.env.MAIL_USER}>`,
-//       to: userEmail,
-//       subject: `📦 Votre commande ${orderNumber} est en route !`,
-//       html: htmlContent,
-//     });
-
-//     console.log("📧 Email d'expédition envoyé :", info.response);
-//     return { success: true, messageId: info.messageId };
-    
-//   } catch (error) {
-//     console.error("❌ Erreur lors de l'envoi de l'email d'expédition :", error);
-//     return { success: false, error: error.message };
-//   }
-// };
-
-// ✅ FONCTION PRINCIPALE - ENVOI SIMULTANÉ CLIENT + ADMIN
-
-// export const sendOrderConfirmationEmails = async (userEmail, firstName, orderData, customerData) => {
-//   try {
-//     console.log('📧 Envoi simultané des emails de confirmation...');
-    
-//     const [customerResult, adminResult] = await Promise.allSettled([
-//       sendOrderConfirmationEmail(userEmail, firstName, orderData),
-//       sendAdminOrderNotification(orderData, customerData)
-//     ]);
-
-//     const results = {
-//       customer: customerResult.status === 'fulfilled' ? customerResult.value : { success: false, error: customerResult.reason },
-//       admin: adminResult.status === 'fulfilled' ? adminResult.value : { success: false, error: adminResult.reason }
-//     };
-
-//     console.log('📧 Résultats envoi emails:', {
-//       customer: results.customer.success ? '✅ Envoyé' : '❌ Échec',
-//       admin: results.admin.success ? '✅ Envoyé' : '❌ Échec'
-//     });
-
-//     return results;
-    
-//   } catch (error) {
-//     console.error("❌ Erreur lors de l'envoi simultané des emails :", error);
-//     return {
-//       customer: { success: false, error: error.message },
-//       admin: { success: false, error: error.message }
-//     };
-//   }
-// };
 
 export const sendOrderStatusUpdateEmail = async (userEmail, firstName, statusData) => {
   try {
