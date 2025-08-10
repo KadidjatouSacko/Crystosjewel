@@ -146,7 +146,7 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
    * 🛒 Valider et créer la commande (connecté ou invité) - VERSION COMPLÈTEMENT CORRIGÉE
    */
 /**
-   * 🛒 Valider et créer la commande (connecté ou invité) - VERSION COMPLÈTE AVEC STOCK PAR TAILLE
+   * 🛒 Valider et créer la commande - VERSION FINALE AVEC SYNCHRONISATION STOCKS
    */
   async validateOrder(req, res) {
     const transaction = await sequelize.transaction();
@@ -170,7 +170,6 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
       // ========================================
       let finalCustomerInfo;
       if (isGuest) {
-        // Invité - utiliser les données du formulaire ou de la session
         finalCustomerInfo = customerInfo || req.session.customerInfo;
         
         if (!finalCustomerInfo) {
@@ -183,13 +182,11 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
           adresse: finalCustomerInfo.address
         });
       } else {
-        // Utilisateur connecté - récupérer depuis la BDD puis utiliser les nouvelles données
         const customer = await Customer.findByPk(userId);
         if (!customer) {
           throw new Error('Client non trouvé');
         }
         
-        // Utiliser les nouvelles données du formulaire si disponibles
         finalCustomerInfo = {
           firstName: customerInfo?.firstName || customer.first_name,
           lastName: customerInfo?.lastName || customer.last_name,
@@ -198,7 +195,7 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
           address: customerInfo?.address || customer.address
         };
         
-        console.log('✅ Utilisateur connecté - Nouvelles données du formulaire utilisées:', {
+        console.log('✅ Utilisateur connecté - Nouvelles données utilisées:', {
           nom: `${finalCustomerInfo.firstName} ${finalCustomerInfo.lastName}`,
           email: finalCustomerInfo.email,
           adresse: finalCustomerInfo.address,
@@ -320,7 +317,7 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
       const subtotalCalculated = validatedItems.reduce((sum, item) => sum + item.total_price, 0);
       console.log(`💰 Sous-total recalculé: ${subtotalCalculated.toFixed(2)}€`);
 
-      // Calculer les totaux avec codes promo
+      // Codes promo
       const appliedPromo = req.session.appliedPromo;
       let discount = 0;
       let discountedSubtotal = subtotalCalculated;
@@ -330,11 +327,10 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
         discountPercent = parseFloat(appliedPromo.discountPercent);
         discount = (subtotalCalculated * discountPercent) / 100;
         discountedSubtotal = subtotalCalculated - discount;
-        
         console.log(`🎫 Code promo appliqué: ${appliedPromo.code} (-${discount.toFixed(2)}€)`);
       }
 
-      // Calculer frais de livraison
+      // Frais de livraison
       const shippingThreshold = 50;
       const baseDeliveryFee = 5.90;
       const deliveryFee = discountedSubtotal >= shippingThreshold ? 0 : baseDeliveryFee;
@@ -352,7 +348,6 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
       // 📝 CRÉATION DE LA COMMANDE
       // ========================================
       const orderNumber = `CMD-${Date.now()}-${crypto.randomBytes(3).toString('hex').toUpperCase()}`;
-      
       console.log('📋 Création commande:', orderNumber, 'pour client', userId || 'invité');
 
       const order = await Order.create({
@@ -393,9 +388,9 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
       console.log(`✅ Commande créée avec ID: ${order.id}`);
 
       // ========================================
-      // 📦 CRÉATION DES ARTICLES + DÉCRÉMENT STOCK PAR TAILLE
+      // 📦 CRÉATION DES ARTICLES + GESTION STOCK SYNCHRONISÉE
       // ========================================
-      console.log('📦 === CRÉATION DES ARTICLES ET DÉCRÉMENT DU STOCK PAR TAILLE ===');
+      console.log('📦 === CRÉATION DES ARTICLES ET GESTION STOCK SYNCHRONISÉE ===');
 
       for (const item of validatedItems) {
         console.log(`📦 Traitement article: ${item.jewel_name}`);
@@ -418,20 +413,12 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
 
         console.log(`✅ Article créé: ${item.jewel_name} x${item.quantity} (taille: ${item.size})`);
 
-        // 2. ✅ DÉCRÉMENTER LE STOCK GLOBAL
-        console.log(`📦 === DÉCRÉMENT STOCK POUR ${item.jewel_name} ===`);
-        console.log(`   Stock global AVANT: ${item.global_stock}`);
-        console.log(`   Quantité à décrémenter: ${item.quantity}`);
+        // 2. ✅ GESTION STOCK INTELLIGENTE SELON LE TYPE DE PRODUIT
+        console.log(`📦 === GESTION STOCK POUR ${item.jewel_name} ===`);
 
-        await Jewel.decrement('stock', {
-          by: item.quantity,
-          where: { id: item.jewel_id },
-          transaction: transaction
-        });
-
-        // 3. ✅ METTRE À JOUR LE STOCK DE LA TAILLE SPÉCIFIQUE
         if (item.size !== 'Standard' && item.jewel_tailles && Array.isArray(item.jewel_tailles) && item.jewel_tailles.length > 0) {
-          console.log(`📏 === MISE À JOUR STOCK TAILLE ${item.size} ===`);
+          // ✅ PRODUIT AVEC TAILLES : Mettre à jour la taille ET recalculer le stock global
+          console.log(`📏 Produit avec tailles - Mise à jour taille ${item.size}`);
           console.log(`   Tailles actuelles:`, item.jewel_tailles);
           
           const updatedTailles = item.jewel_tailles.map(taille => {
@@ -449,38 +436,64 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
             return taille;
           });
           
-          // Mettre à jour la colonne tailles avec les nouveaux stocks
+          // ✅ CALCULER LE NOUVEAU STOCK GLOBAL À PARTIR DES TAILLES
+          const newGlobalStock = updatedTailles.reduce((total, taille) => {
+            return total + (parseInt(taille.stock) || 0);
+          }, 0);
+          
+          console.log(`   📊 Nouveau stock global calculé: ${newGlobalStock}`);
+          
+          // ✅ METTRE À JOUR TAILLES ET STOCK GLOBAL ENSEMBLE
           await Jewel.update(
-            { tailles: updatedTailles },
+            { 
+              tailles: updatedTailles,
+              stock: newGlobalStock
+            },
             { 
               where: { id: item.jewel_id },
               transaction: transaction
             }
           );
           
-          console.log(`   ✅ Stocks des tailles mis à jour:`, updatedTailles);
+          console.log(`   ✅ Stocks synchronisés - Global: ${newGlobalStock}, Tailles:`, updatedTailles);
+          
         } else {
-          console.log(`   ℹ️  Pas de mise à jour de tailles spécifiques (taille: ${item.size})`);
+          // ✅ PRODUIT SANS TAILLES : Juste décrémenter le stock global
+          console.log(`📦 Produit sans tailles - Décrément stock global`);
+          console.log(`   Stock avant: ${item.global_stock}`);
+          
+          await Jewel.decrement('stock', {
+            by: item.quantity,
+            where: { id: item.jewel_id },
+            transaction: transaction
+          });
+          
+          const updatedJewel = await Jewel.findByPk(item.jewel_id, { 
+            transaction,
+            attributes: ['stock']
+          });
+          
+          console.log(`   Stock après: ${updatedJewel.stock}`);
         }
 
-        // 4. ✅ VÉRIFICATION DU NOUVEAU STOCK
-        const jewelAfterUpdate = await Jewel.findByPk(item.jewel_id, { 
+        // 3. ✅ VÉRIFICATION FINALE ET ALERTES
+        const jewelFinalCheck = await Jewel.findByPk(item.jewel_id, { 
           transaction,
           attributes: ['stock', 'tailles']
         });
         
-        console.log(`   Stock global APRÈS: ${jewelAfterUpdate.stock}`);
+        console.log(`   📊 Vérification finale - Stock global: ${jewelFinalCheck.stock}`);
         
-        // Alertes stock
-        if (jewelAfterUpdate.stock === 0) {
+        // Alertes stock global
+        if (jewelFinalCheck.stock === 0) {
           console.log(`   🚨 RUPTURE DE STOCK GLOBALE: ${item.jewel_name}`);
-        } else if (jewelAfterUpdate.stock <= 5) {
-          console.log(`   ⚠️  STOCK GLOBAL FAIBLE: ${item.jewel_name} (${jewelAfterUpdate.stock} restants)`);
+        } else if (jewelFinalCheck.stock <= 5) {
+          console.log(`   ⚠️  STOCK GLOBAL FAIBLE: ${item.jewel_name} (${jewelFinalCheck.stock} restants)`);
         }
         
         // Alertes par taille
-        if (jewelAfterUpdate.tailles && Array.isArray(jewelAfterUpdate.tailles)) {
-          jewelAfterUpdate.tailles.forEach(taille => {
+        if (jewelFinalCheck.tailles && Array.isArray(jewelFinalCheck.tailles)) {
+          jewelFinalCheck.tailles.forEach(taille => {
             const tailleStock = parseInt(taille.stock) || 0;
             if (tailleStock === 0) {
               console.log(`   🚨 RUPTURE TAILLE ${taille.taille}: ${item.jewel_name}`);
@@ -490,7 +503,7 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
           });
         }
         
-        console.log(`   ✅ Stock mis à jour pour ${item.jewel_name}: ${item.global_stock} → ${jewelAfterUpdate.stock}`);
+        console.log(`   ✅ Traitement stock terminé pour ${item.jewel_name}`);
       }
 
       console.log(`📦 ${validatedItems.length} order_items créés avec succès`);
@@ -509,7 +522,6 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
         console.log('🧹 Panier BDD vidé');
       }
 
-      // Supprimer le code promo appliqué
       if (req.session.appliedPromo) {
         delete req.session.appliedPromo;
       }
@@ -521,7 +533,7 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
       console.log('✅ Transaction committée avec succès');
 
       // ========================================
-      // 🔍 VÉRIFICATION FINALE DU STOCK
+      // 🔍 VÉRIFICATION FINALE COMPLÈTE
       // ========================================
       console.log('🔍 === VÉRIFICATION FINALE DU STOCK ET TAILLES ===');
       for (const item of validatedItems) {
@@ -533,9 +545,18 @@ const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
         console.log(`   Stock global final: ${finalJewel.stock}`);
         
         if (finalJewel.tailles && Array.isArray(finalJewel.tailles)) {
-          finalJewel.tailles.forEach(taille => {
-            console.log(`   Taille ${taille.taille}: ${taille.stock} restants`);
-          });
+          const totalTaillesStock = finalJewel.tailles.reduce((total, taille) => {
+            const tailleStock = parseInt(taille.stock) || 0;
+            console.log(`   Taille ${taille.taille}: ${tailleStock} restants`);
+            return total + tailleStock;
+          }, 0);
+          
+          // ✅ VÉRIFICATION DE COHÉRENCE
+          if (finalJewel.stock === totalTaillesStock) {
+            console.log(`   ✅ Cohérence OK: Stock global (${finalJewel.stock}) = Total tailles (${totalTaillesStock})`);
+          } else {
+            console.log(`   ❌ INCOHÉRENCE: Stock global (${finalJewel.stock}) ≠ Total tailles (${totalTaillesStock})`);
+          }
         }
       }
 
