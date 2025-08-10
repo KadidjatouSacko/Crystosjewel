@@ -1895,12 +1895,16 @@ console.log('📄 req.files:', req.files ? Object.keys(req.files).length + ' fic
    * Affiche les détails d'un bijou - VERSION CORRIGÉE
    */
  
-async showJewelDetails(req, res) {
+/**
+   * Affiche les détails d'un bijou - VERSION COMPLÈTEMENT CORRIGÉE AVEC STOCK GLOBAL
+   */
+  async showJewelDetails(req, res) {
     try {
       const { slug } = req.params;
       
       console.log('🔍 Recherche du bijou avec slug:', slug);
       
+      // ✅ RÉCUPÉRER LE BIJOU AVEC STOCK FRAIS
       const jewel = await Jewel.findOne({
         where: { slug },
         include: [
@@ -1934,7 +1938,23 @@ async showJewelDetails(req, res) {
         });
       }
 
+      // ✅ RÉCUPÉRER LE STOCK ACTUEL DIRECTEMENT DEPUIS LA DB
+      const freshStock = await sequelize.query(
+        'SELECT stock FROM jewel WHERE id = ?',
+        { 
+          replacements: [jewel.id],
+          type: sequelize.QueryTypes.SELECT,
+          plain: true
+        }
+      );
+
       console.log('✅ Bijou trouvé:', jewel.name);
+      console.log(`📦 Stock en cache: ${jewel.stock}`);
+      console.log(`📦 Stock fresh DB: ${freshStock.stock}`);
+
+      // ✅ FORCER LA MISE À JOUR DU STOCK AVEC LA VALEUR FRESH
+      jewel.stock = freshStock.stock;
+      jewel.dataValues.stock = freshStock.stock;
 
       // Préparer les détails du bijou
       const details = [];
@@ -1944,21 +1964,48 @@ async showJewelDetails(req, res) {
       
       jewel.dataValues.details = details;
 
-      // Traiter les tailles depuis le JSON
+      // ✅ TRAITER LES TAILLES AVEC LE STOCK GLOBAL ACTUEL
       let sizesAvailable = [];
       if (jewel.tailles && Array.isArray(jewel.tailles)) {
-        sizesAvailable = jewel.tailles.map(taille => ({
-          taille: taille.taille,
-          stock: parseInt(taille.stock) || 0,
-          available: (parseInt(taille.stock) || 0) > 0
-        }));
+        // ✅ SOLUTION 1: Utiliser le stock global réparti équitablement
+        const stockParTaille = Math.floor(freshStock.stock / jewel.tailles.length);
+        const stockReste = freshStock.stock % jewel.tailles.length;
+        
+        sizesAvailable = jewel.tailles.map((taille, index) => {
+          // Répartir le stock restant sur les premières tailles
+          const tailleStock = stockParTaille + (index < stockReste ? 1 : 0);
+          
+          return {
+            taille: taille.taille,
+            stock: tailleStock,
+            available: tailleStock > 0
+          };
+        }).filter(t => t.available); // ✅ Ne garder que les tailles en stock
+        
+        console.log(`📏 Tailles avec stock global (${freshStock.stock}):`, 
+          sizesAvailable.map(t => `${t.taille}:${t.stock}`).join(', '));
+      }
+      
+      // ✅ ALTERNATIVE: Si pas de tailles spécifiques, traiter comme une taille unique
+      if (sizesAvailable.length === 0 && freshStock.stock > 0) {
+        sizesAvailable = [{
+          taille: 'Unique',
+          stock: freshStock.stock,
+          available: true
+        }];
       }
       
       jewel.dataValues.sizesAvailable = sizesAvailable;
       
-      const totalStock = sizesAvailable.reduce((total, size) => total + size.stock, 0);
-      jewel.dataValues.totalStock = totalStock;
-      jewel.dataValues.inStock = totalStock > 0;
+      // ✅ UTILISER LE STOCK FRESH POUR LES CALCULS
+      jewel.dataValues.totalStock = freshStock.stock;
+      jewel.dataValues.inStock = freshStock.stock > 0;
+
+      // ✅ AFFICHER LE STOCK DANS LES LOGS
+      console.log(`📦 Stock final affiché: ${jewel.stock}`);
+      console.log(`📦 Total stock calculé: ${freshStock.stock}`);
+      console.log(`📦 En stock: ${jewel.dataValues.inStock ? 'OUI' : 'NON'}`);
+      console.log(`📏 Tailles disponibles: ${sizesAvailable.length}`);
 
       // Formater le prix
       jewel.dataValues.formattedPrice = new Intl.NumberFormat('fr-FR', {
@@ -1969,7 +2016,7 @@ async showJewelDetails(req, res) {
       // Incrémenter le score de popularité
       await jewel.increment('popularity_score');
 
-      // Bijoux similaires
+      // Bijoux similaires avec stock fresh aussi
       const similarJewels = await Jewel.findAll({
         where: {
           category_id: jewel.category_id,
@@ -1984,14 +2031,29 @@ async showJewelDetails(req, res) {
         order: [['popularity_score', 'DESC']]
       });
 
-      const processedSimilarJewels = similarJewels.map(similarJewel => ({
-        ...similarJewel.toJSON(),
-        image: similarJewel.image || 'no-image.jpg',
-        formattedPrice: new Intl.NumberFormat('fr-FR', {
-          style: 'currency',
-          currency: 'EUR'
-        }).format(similarJewel.price_ttc)
-      }));
+      // ✅ FORCER LE REFRESH DU STOCK POUR LES BIJOUX SIMILAIRES AUSSI
+      const processedSimilarJewels = await Promise.all(
+        similarJewels.map(async (similarJewel) => {
+          const similarFreshStock = await sequelize.query(
+            'SELECT stock FROM jewel WHERE id = ?',
+            { 
+              replacements: [similarJewel.id],
+              type: sequelize.QueryTypes.SELECT,
+              plain: true
+            }
+          );
+          
+          const jewelData = similarJewel.toJSON();
+          jewelData.stock = similarFreshStock.stock; // ✅ Stock fresh
+          jewelData.image = jewelData.image || 'no-image.jpg';
+          jewelData.formattedPrice = new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+          }).format(jewelData.price_ttc);
+          
+          return jewelData;
+        })
+      );
 
       const cartItemCount = await getCartItemCount(req.user?.id);
 
