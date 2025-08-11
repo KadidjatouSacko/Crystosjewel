@@ -94,32 +94,32 @@ async showEmailEditor(req, res) {
 
     // ===== RÉCUPÉRER LES CLIENTS =====
     const [customersResult] = await sequelize.query(`
-      SELECT 
-        id,
-        COALESCE(first_name, prenom, '') as first_name,
-        COALESCE(last_name, nom, '') as last_name,
-        email,
-        phone,
-        created_at,
-        COALESCE(total_orders, 0) as total_orders,
-        COALESCE(total_spent, 0) as total_spent,
-        COALESCE(newsletter_subscribed, false) as newsletter_subscribed,
-        CASE 
-          WHEN COALESCE(total_orders, 0) >= 5 OR COALESCE(total_spent, 0) >= 500 THEN 'vip'
-          WHEN COALESCE(total_orders, 0) > 0 THEN 'with-orders'
-          ELSE 'newsletter'
-        END as customer_type
-      FROM customer 
-      WHERE email IS NOT NULL 
-      AND email != ''
-      AND email NOT IN (
-        SELECT email FROM email_unsubscribes WHERE email IS NOT NULL
-      )
-      ORDER BY 
-        CASE WHEN COALESCE(total_orders, 0) >= 5 OR COALESCE(total_spent, 0) >= 500 THEN 1 ELSE 2 END,
-        total_orders DESC,
-        created_at DESC
-      LIMIT 200
+    SELECT 
+    id,
+    COALESCE(first_name, '') as first_name,
+    COALESCE(last_name, '') as last_name,
+    email,
+    phone,
+    created_at,
+    COALESCE(total_orders, 0) as total_orders,
+    COALESCE(total_spent, 0) as total_spent,
+    COALESCE(newsletter_subscribed, false) as newsletter_subscribed,
+    CASE 
+      WHEN COALESCE(total_orders, 0) >= 5 OR COALESCE(total_spent, 0) >= 500 THEN 'vip'
+      WHEN COALESCE(total_orders, 0) > 0 THEN 'with-orders'
+      ELSE 'newsletter'
+    END as customer_type
+FROM customer 
+WHERE email IS NOT NULL 
+AND email != ''
+AND email NOT IN (
+    SELECT email FROM email_unsubscribes WHERE email IS NOT NULL
+)
+ORDER BY 
+    CASE WHEN COALESCE(total_orders, 0) >= 5 OR COALESCE(total_spent, 0) >= 500 THEN 1 ELSE 2 END,
+    total_orders DESC,
+    created_at DESC
+LIMIT 200
     `);
 
     // Formater les clients
