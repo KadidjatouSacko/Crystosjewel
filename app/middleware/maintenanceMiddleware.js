@@ -1,3 +1,4 @@
+
 export const maintenanceCheck = (req, res, next) => {
     try {
         console.log('🔍 Vérification maintenance:', {

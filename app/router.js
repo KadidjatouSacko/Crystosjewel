@@ -56,6 +56,7 @@ import {
   validateGuestOrderMiddleware 
 } from './middleware/guestOrderMiddleware.js';
 
+import { adminMarketingController, requireMarketingAdminAuth, validateMarketingCampaignData } from './controlleurs/adminMarketingController.js';
 
 const storageHome = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -5629,7 +5630,129 @@ router.get('/admin/commandes/export', adminOrdersController.exportOrders);
 // ✅ MÉTHODE EXPORT À AJOUTER DANS VOTRE CONTROLLER
 router.put('/admin/commandes/:orderId/status', isAdmin, adminOrdersController.updateOrderStatus);
 
+// ==========================================
+// ROUTES ADMIN MARKETING - PAGES
+// ==========================================
 
+/**
+ * GET /admin/marketing/emails - Éditeur d'emails marketing principal
+ */
+router.get('/admin/marketing/emails', requireMarketingAdminAuth, adminMarketingController.showEmailEditor);
+
+/**
+ * GET /admin/marketing/dashboard - Dashboard des campagnes marketing
+ */
+router.get('/admin/marketing/dashboard', requireMarketingAdminAuth, adminMarketingController.showCampaignDashboard);
+
+/**
+ * GET /admin/marketing/campaign/:id - Détails d'une campagne marketing
+ */
+router.get('/admin/marketing/campaign/:id', requireMarketingAdminAuth, adminMarketingController.showCampaignDetails);
+
+// ==========================================
+// ROUTES API MARKETING - GESTION DES CAMPAGNES
+// ==========================================
+
+/**
+ * GET /admin/api/marketing/customers - Liste des clients pour l'éditeur marketing
+ */
+router.get('/admin/api/marketing/customers', requireMarketingAdminAuth, adminMarketingController.getCustomersList);
+
+/**
+ * POST /admin/marketing/save-draft - Sauvegarder un brouillon marketing
+ */
+router.post('/admin/marketing/save-draft', requireMarketingAdminAuth, adminMarketingController.saveDraft);
+
+/**
+ * POST /admin/marketing/send-test - Envoyer un email de test marketing
+ */
+router.post('/admin/marketing/send-test', requireMarketingAdminAuth, adminMarketingController.sendTest);
+
+/**
+ * POST /admin/marketing/send-campaign - Envoyer une campagne marketing
+ */
+router.post('/admin/marketing/send-campaign', requireMarketingAdminAuth, validateMarketingCampaignData, adminMarketingController.sendCampaign);
+
+/**
+ * POST /admin/marketing/upload-image - Upload d'image marketing
+ */
+router.post('/admin/marketing/upload-image', requireMarketingAdminAuth, adminMarketingController.uploadImage);
+
+/**
+ * GET /admin/marketing/images - Liste des images uploadées
+ */
+router.get('/admin/marketing/images', requireMarketingAdminAuth, adminMarketingController.getUploadedImages);
+
+/**
+ * GET /admin/marketing/templates - Liste des templates marketing
+ */
+router.get('/admin/marketing/templates', requireMarketingAdminAuth, adminMarketingController.getTemplates);
+
+/**
+ * GET /admin/api/marketing/campaign/:id/stats - Statistiques d'une campagne marketing
+ */
+router.get('/admin/api/marketing/campaign/:id/stats', requireMarketingAdminAuth, adminMarketingController.getCampaignStats);
+
+/**
+ * GET /admin/api/marketing/campaigns - Historique des campagnes marketing
+ */
+router.get('/admin/api/marketing/campaigns', requireMarketingAdminAuth, adminMarketingController.getCampaignHistory);
+
+/**
+ * GET /admin/api/marketing/stats - Statistiques globales marketing
+ */
+router.get('/admin/api/marketing/stats', requireMarketingAdminAuth, adminMarketingController.getGlobalStats);
+
+/**
+ * DELETE /admin/api/marketing/campaign/:id - Supprimer une campagne marketing
+ */
+router.delete('/admin/api/marketing/campaign/:id', requireMarketingAdminAuth, adminMarketingController.deleteCampaign);
+
+/**
+ * POST /admin/api/marketing/campaign/:id/duplicate - Dupliquer une campagne marketing
+ */
+router.post('/admin/api/marketing/campaign/:id/duplicate', requireMarketingAdminAuth, adminMarketingController.duplicateCampaign);
+
+// ==========================================
+// ROUTES PUBLIQUES MARKETING - TRACKING
+// ==========================================
+
+/**
+ * GET /marketing/track-open/:campaignId/:recipientId - Tracking des ouvertures marketing
+ */
+router.get('/marketing/track-open/:campaignId/:recipientId', adminMarketingController.trackOpen);
+
+/**
+ * GET /marketing/track-click/:campaignId/:recipientId - Tracking des clics marketing
+ */
+router.get('/marketing/track-click/:campaignId/:recipientId', adminMarketingController.trackClick);
+
+/**
+ * GET /marketing/unsubscribe - Page de désabonnement marketing
+ */
+router.get('/marketing/unsubscribe', adminMarketingController.showUnsubscribePage);
+
+/**
+ * POST /marketing/unsubscribe - Traitement du désabonnement marketing
+ */
+router.post('/marketing/unsubscribe', adminMarketingController.processUnsubscribe);
+
+// Templates Marketing
+router.post('/admin/marketing/templates', requireMarketingAdminAuth, adminMarketingController.createTemplate);
+router.put('/admin/marketing/templates/:id', requireMarketingAdminAuth, adminMarketingController.updateTemplate);
+router.delete('/admin/marketing/templates/:id', requireMarketingAdminAuth, adminMarketingController.deleteTemplate);
+
+// Analytics Avancés  
+router.get('/admin/api/marketing/campaign/:id/report', requireMarketingAdminAuth, adminMarketingController.getCampaignReport);
+router.get('/admin/api/marketing/segments/performance', requireMarketingAdminAuth, adminMarketingController.getSegmentPerformance);
+router.get('/admin/api/marketing/trends', requireMarketingAdminAuth, adminMarketingController.getTrends);
+
+// Segmentation
+router.post('/admin/api/marketing/lists/create', requireMarketingAdminAuth, adminMarketingController.createCustomList);
+router.post('/admin/api/marketing/segments/preview', requireMarketingAdminAuth, adminMarketingController.previewSegmentation);
+
+// Export
+router.get('/admin/api/marketing/campaign/:id/export', requireMarketingAdminAuth, adminMarketingController.exportCampaignData);
 // Export par défaut
 export default router;
 

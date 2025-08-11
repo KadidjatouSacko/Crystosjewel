@@ -1,0 +1,402 @@
+<!-- views/email/unsubscribe.ejs -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Se désabonner - CrystosJewel</title>
+    <style>
+        :root {
+            --primary: #d89ab3;
+            --primary-dark: #b794a8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --bg-primary: #f8fafc;
+            --bg-secondary: #ffffff;
+            --border: #e2e8f0;
+            --shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            --radius: 8px;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            line-height: 1.6;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: var(--bg-secondary);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-primary);
+        }
+
+        .description {
+            color: var(--text-secondary);
+            margin-bottom: 30px;
+            font-size: 1rem;
+        }
+
+        .email-display {
+            background: var(--bg-primary);
+            padding: 15px;
+            border-radius: var(--radius);
+            margin-bottom: 30px;
+            font-weight: 600;
+            color: var(--primary);
+            border: 2px solid var(--border);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(216, 154, 179, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .actions {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-secondary {
+            background: var(--text-secondary);
+            color: white;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            padding: 20px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message {
+            background: linear-gradient(135deg, var(--danger), #dc2626);
+            color: white;
+            padding: 15px;
+            border-radius: var(--radius);
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--border);
+            border-top: 2px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 30px 20px;
+            }
+            
+            .actions {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <i class="fas fa-gem"></i>
+            CrystosJewel
+        </div>
+
+        <div id="unsubscribeForm">
+            <h1 class="title">Se désabonner de la newsletter</h1>
+            
+            <p class="description">
+                Nous sommes désolés de vous voir partir. Votre désabonnement sera pris en compte immédiatement.
+            </p>
+
+            <div class="email-display">
+                <i class="fas fa-envelope"></i>
+                <%= email %>
+            </div>
+
+            <form id="unsubscribeFormElement">
+                <div class="form-group">
+                    <label class="form-label">Raison du désabonnement (optionnel)</label>
+                    <select class="form-select" id="reason" name="reason">
+                        <option value="">Sélectionnez une raison...</option>
+                        <option value="too_frequent">Emails trop fréquents</option>
+                        <option value="not_relevant">Contenu non pertinent</option>
+                        <option value="not_interested">Plus intéressé(e)</option>
+                        <option value="spam">Considéré comme spam</option>
+                        <option value="technical">Problèmes techniques</option>
+                        <option value="other">Autre raison</option>
+                    </select>
+                </div>
+
+                <div class="form-group" id="otherReasonGroup" style="display: none;">
+                    <label class="form-label">Précisez votre raison</label>
+                    <textarea class="form-textarea" id="otherReason" name="otherReason" placeholder="Dites-nous pourquoi vous vous désabonnez..."></textarea>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-user-times"></i>
+                        Confirmer le désabonnement
+                    </button>
+                    <a href="/" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i>
+                        Retour à l'accueil
+                    </a>
+                </div>
+            </form>
+        </div>
+
+        <div id="successMessage" class="success-message">
+            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                <i class="fas fa-check-circle" style="font-size: 1.5rem;"></i>
+                <strong>Désabonnement confirmé !</strong>
+            </div>
+            <p>Vous ne recevrez plus d'emails de notre part. Nous espérons vous revoir bientôt !</p>
+            <div style="margin-top: 15px;">
+                <a href="/" class="btn btn-secondary">
+                    <i class="fas fa-home"></i>
+                    Retour à l'accueil
+                </a>
+            </div>
+        </div>
+
+        <div id="errorMessage" class="error-message">
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="errorText">Une erreur est survenue</span>
+            </div>
+        </div>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 10px; color: var(--text-secondary);">Traitement en cours...</p>
+        </div>
+
+        <div class="footer">
+            <p>
+                Vous changez d'avis ? 
+                <a href="/newsletter/subscribe?email=<%= encodeURIComponent(email) %>">Vous pouvez vous réabonner ici</a>
+            </p>
+            <p style="margin-top: 10px;">
+                Questions ? <a href="mailto:contact@crystosjewel.fr">Contactez-nous</a>
+            </p>
+            <p style="margin-top: 15px; font-size: 0.8rem;">
+                © 2025 CrystosJewel - Tous droits réservés
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const email = '<%= email %>';
+        const campaignId = '<%= campaignId || "" %>';
+
+        // Gestion du formulaire
+        document.getElementById('reason').addEventListener('change', function() {
+            const otherReasonGroup = document.getElementById('otherReasonGroup');
+            if (this.value === 'other') {
+                otherReasonGroup.style.display = 'block';
+            } else {
+                otherReasonGroup.style.display = 'none';
+            }
+        });
+
+        document.getElementById('unsubscribeFormElement').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const reason = formData.get('reason');
+            const otherReason = formData.get('otherReason');
+            
+            // Construire la raison finale
+            let finalReason = reason;
+            if (reason === 'other' && otherReason.trim()) {
+                finalReason = `Autre: ${otherReason.trim()}`;
+            }
+
+            // Afficher le loading
+            showLoading();
+
+            try {
+                const response = await fetch('/unsubscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: email,
+                        reason: finalReason,
+                        campaign: campaignId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showSuccess();
+                } else {
+                    showError(data.message || 'Erreur lors du désabonnement');
+                }
+            } catch (error) {
+                console.error('Erreur:', error);
+                showError('Erreur de connexion. Veuillez réessayer.');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('unsubscribeForm').style.opacity = '0.6';
+            document.querySelector('.btn[type="submit"]').disabled = true;
+        }
+
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('unsubscribeForm').style.opacity = '1';
+            document.querySelector('.btn[type="submit"]').disabled = false;
+        }
+
+        function showSuccess() {
+            document.getElementById('unsubscribeForm').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'block';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+            setTimeout(() => {
+                document.getElementById('errorMessage').style.display = 'none';
+            }, 5000);
+        }
+
+        // Analytics tracking (optionnel)
+        if (typeof gtag !== 'undefined') {
+            gtag('event', 'unsubscribe_page_view', {
+                'email_domain': email.split('@')[1] || 'unknown'
+            });
+        }
+    </script>
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</body>
+</html>

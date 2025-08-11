@@ -1,3 +1,4 @@
+<!-- views/admin/email-editor.ejs -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -350,6 +351,30 @@
             100% { transform: rotate(360deg); }
         }
 
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 15px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 600;
+            z-index: 99999;
+            max-width: 350px;
+            animation: slideIn 0.3s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+
         @media (max-width: 1200px) {
             .editor-container {
                 grid-template-columns: 250px 1fr 250px;
@@ -382,12 +407,12 @@
                 <form class="config-form" id="campaignForm">
                     <div class="form-group">
                         <label class="form-label">Nom de la campagne</label>
-                        <input type="text" class="form-input" id="campaignName" placeholder="Ma super campagne">
+                        <input type="text" class="form-input" id="campaignName" placeholder="Ma super campagne" required>
                     </div>
                     
                     <div class="form-group">
                         <label class="form-label">Sujet de l'email</label>
-                        <input type="text" class="form-input" id="emailSubject" placeholder="🎉 Découvrez nos nouveautés !">
+                        <input type="text" class="form-input" id="emailSubject" placeholder="🎉 Découvrez nos nouveautés !" required>
                     </div>
                     
                     <div class="form-group">
@@ -408,23 +433,32 @@
                     Templates
                 </h3>
                 
-                <div class="template-grid">
-                    <div class="template-card active" data-template="elegant">
-                        <i class="fas fa-gem" style="font-size: 20px; margin-bottom: 5px;"></i>
-                        <div>Élégant</div>
-                    </div>
-                    <div class="template-card" data-template="modern">
-                        <i class="fas fa-rocket" style="font-size: 20px; margin-bottom: 5px;"></i>
-                        <div>Moderne</div>
-                    </div>
-                    <div class="template-card" data-template="classic">
-                        <i class="fas fa-newspaper" style="font-size: 20px; margin-bottom: 5px;"></i>
-                        <div>Classique</div>
-                    </div>
-                    <div class="template-card" data-template="minimal">
-                        <i class="fas fa-minus" style="font-size: 20px; margin-bottom: 5px;"></i>
-                        <div>Minimal</div>
-                    </div>
+                <div class="template-grid" id="templateGrid">
+                    <% if (templates && templates.length > 0) { %>
+                        <% templates.forEach(template => { %>
+                            <div class="template-card <%= template.is_default ? 'active' : '' %>" data-template="<%= template.template_type %>">
+                                <i class="fas fa-<%= template.template_type === 'elegant' ? 'gem' : template.template_type === 'modern' ? 'rocket' : template.template_type === 'classic' ? 'newspaper' : 'minus' %>" style="font-size: 20px; margin-bottom: 5px;"></i>
+                                <div><%= template.name %></div>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div class="template-card active" data-template="elegant">
+                            <i class="fas fa-gem" style="font-size: 20px; margin-bottom: 5px;"></i>
+                            <div>Élégant</div>
+                        </div>
+                        <div class="template-card" data-template="modern">
+                            <i class="fas fa-rocket" style="font-size: 20px; margin-bottom: 5px;"></i>
+                            <div>Moderne</div>
+                        </div>
+                        <div class="template-card" data-template="classic">
+                            <i class="fas fa-newspaper" style="font-size: 20px; margin-bottom: 5px;"></i>
+                            <div>Classique</div>
+                        </div>
+                        <div class="template-card" data-template="minimal">
+                            <i class="fas fa-minus" style="font-size: 20px; margin-bottom: 5px;"></i>
+                            <div>Minimal</div>
+                        </div>
+                    <% } %>
                 </div>
             </div>
 
@@ -477,6 +511,25 @@
                     <span class="variable-tag" onclick="insertVariable('{{trackingNumber}}')">{{trackingNumber}}</span>
                 </div>
             </div>
+
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-upload"></i>
+                    Images
+                </h3>
+                
+                <div class="form-group">
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+                    <button class="btn btn-info" onclick="document.getElementById('imageUpload').click()">
+                        <i class="fas fa-upload"></i>
+                        Uploader une image
+                    </button>
+                </div>
+                
+                <div id="uploadedImages" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    <!-- Images uploadées apparaîtront ici -->
+                </div>
+            </div>
         </div>
 
         <!-- Zone centrale -->
@@ -499,6 +552,10 @@
                         <i class="fas fa-eye"></i>
                         Aperçu
                     </button>
+                    <button class="btn btn-primary" onclick="window.open('/admin/emails/dashboard', '_blank')">
+                        <i class="fas fa-chart-bar"></i>
+                        Dashboard
+                    </button>
                     <button class="btn btn-success" onclick="sendCampaign()">
                         <i class="fas fa-paper-plane"></i>
                         Envoyer
@@ -520,7 +577,7 @@
                         <p style="margin-bottom: 20px;">Découvrez des pièces uniques créées avec passion par nos artisans.</p>
                         
                         <div style="text-align: center; margin: 30px 0;">
-                            <a href="#" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">
+                            <a href="<%= baseUrl %>/bijoux" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">
                                 🛍️ Découvrir la collection
                             </a>
                         </div>
@@ -555,21 +612,21 @@
                 
                 <div class="recipients-counter" id="recipientsCounter">
                     <i class="fas fa-envelope"></i>
-                    0 destinataires sélectionnés
+                    <span id="recipientCount"><%= recipientCounts.newsletter || 0 %></span> destinataires sélectionnés
                 </div>
                 
                 <div class="filter-buttons">
                     <button class="filter-btn active" data-filter="newsletter" onclick="filterRecipients('newsletter')">
-                        📧 Newsletter
+                        📧 Newsletter (<%= recipientCounts.newsletter || 0 %>)
                     </button>
                     <button class="filter-btn" data-filter="all" onclick="filterRecipients('all')">
-                        👥 Tous
+                        👥 Tous (<%= recipientCounts.all || 0 %>)
                     </button>
                     <button class="filter-btn" data-filter="vip" onclick="filterRecipients('vip')">
-                        💎 VIP
+                        💎 VIP (<%= recipientCounts.vip || 0 %>)
                     </button>
                     <button class="filter-btn" data-filter="with-orders" onclick="filterRecipients('with-orders')">
-                        🛍️ Clients
+                        🛍️ Clients (<%= recipientCounts.customers || 0 %>)
                     </button>
                 </div>
                 
@@ -578,11 +635,40 @@
                     <input type="text" class="form-input" id="clientSearch" placeholder="Nom ou email" onkeyup="searchClients()">
                 </div>
                 
-                <div id="clientsList" style="max-height: 200px; overflow-y: auto; margin-top: 10px;">
+                <div id="clientsList" style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
                     <div class="loading">
                         <div class="spinner"></div>
                         Chargement des clients...
                     </div>
+                </div>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-chart-bar"></i>
+                    Statistiques
+                </h3>
+                
+                <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--radius); font-size: 13px;">
+                    <% if (globalStats && globalStats.total_campaigns) { %>
+                        <p style="margin-bottom: 8px;">
+                            <strong>📊 Total campagnes:</strong> <%= globalStats.total_campaigns || 0 %>
+                        </p>
+                        <p style="margin-bottom: 8px;">
+                            <strong>📧 Emails envoyés:</strong> <%= globalStats.total_emails_sent || 0 %>
+                        </p>
+                        <p style="margin-bottom: 8px;">
+                            <strong>📈 Taux d'ouverture:</strong> <%= globalStats.global_open_rate || 0 %>%
+                        </p>
+                        <p style="margin-bottom: 8px;">
+                            <strong>🖱️ Taux de clic:</strong> <%= globalStats.global_click_rate || 0 %>%
+                        </p>
+                        <p>
+                            <strong>👥 Abonnés:</strong> <%= globalStats.total_subscribers || 0 %>
+                        </p>
+                    <% } else { %>
+                        <p style="color: #64748b;">Aucune statistique disponible</p>
+                    <% } %>
                 </div>
             </div>
 
@@ -599,1313 +685,22 @@
                         <li>Personnalisez avec des variables</li>
                         <li>Testez avant d'envoyer</li>
                         <li>Optimisez pour mobile</li>
+                        <li>Analysez les statistiques</li>
                     </ul>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Scripts -->
+    <script src="<%= baseUrl %>/js/email-editor.js"></script>
     <script>
-        // Variables globales
-        let currentTemplate = 'elegant';
-        let selectedRecipients = [];
-        let currentFilter = 'newsletter';
-        let allClients = [
-            // Simulation de données clients - à remplacer par vos vraies données
-            { id: 1, name: 'Sophie Martin', email: 'sophie@email.com', newsletter: true, type: 'vip', hasOrders: true },
-            { id: 2, name: 'Thomas Dubois', email: 'thomas@email.com', newsletter: true, type: 'standard', hasOrders: true },
-            { id: 3, name: 'Marie Leroy', email: 'marie@email.com', newsletter: false, type: 'vip', hasOrders: false },
-            { id: 4, name: 'Pierre Durand', email: 'pierre@email.com', newsletter: true, type: 'standard', hasOrders: false }
-        ];
-
-        // Initialisation
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('✏️ Éditeur d\'emails CrystosJewel initialisé');
-            loadClients();
-            setupEventListeners();
-            updatePreview();
-        });
-
-        function setupEventListeners() {
-            document.getElementById('emailSubject').addEventListener('input', updatePreview);
-            document.getElementById('emailPreheader').addEventListener('input', updatePreview);
-            document.getElementById('emailContent').addEventListener('input', updatePreview);
-            
-            document.querySelectorAll('.template-card').forEach(card => {
-                card.addEventListener('click', function() {
-                    selectTemplate(this.dataset.template);
-                });
-            });
-        }
-
-        function updatePreview() {
-            const subject = document.getElementById('emailSubject').value || '🎉 Découvrez nos nouveautés !';
-            const preheader = document.getElementById('emailPreheader').value || 'Texte de prévisualisation';
-            
-            document.getElementById('previewSubject').textContent = subject;
-            document.getElementById('previewPreheader').textContent = preheader;
-        }
-
-        function selectTemplate(templateName) {
-            document.querySelectorAll('.template-card').forEach(card => {
-                card.classList.remove('active');
-            });
-            
-            document.querySelector(`[data-template="${templateName}"]`).classList.add('active');
-            currentTemplate = templateName;
-            
-            applyTemplate(templateName);
-        }
-
-        function applyTemplate(templateName) {
-            const content = document.getElementById('emailContent');
-            const templates = {
-                elegant: `
-                    <h2 style="color: #d89ab3; margin-bottom: 20px; font-family: Georgia, serif;">Bonjour {{firstName}} !</h2>
-                    <p style="margin-bottom: 15px; font-size: 16px; line-height: 1.6;">Nous sommes ravis de vous présenter notre nouvelle collection de bijoux exclusifs.</p>
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="#" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">
-                            🛍️ Découvrir la collection
-                        </a>
-                    </div>
-                `,
-                modern: `
-                    <div style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 30px; margin-bottom: 20px; border-radius: 12px;">
-                        <h2 style="margin: 0; font-size: 24px;">Hey {{firstName}} ! 🚀</h2>
-                        <p style="margin: 10px 0 0; opacity: 0.9;">L'avenir du style, c'est maintenant</p>
-                    </div>
-                    <p style="margin-bottom: 20px; font-size: 16px;">Découvrez des créations qui redéfinissent l'élégance moderne.</p>
-                `,
-                classic: `
-                    <div style="border-left: 4px solid #d89ab3; padding-left: 20px; margin-bottom: 20px;">
-                        <h2 style="color: #1e293b; margin-bottom: 10px;">Cher(e) {{firstName}},</h2>
-                        <p style="color: #64748b; margin: 0;">Nous avons le plaisir de vous informer...</p>
-                    </div>
-                `,
-                minimal: `
-                    <h1 style="font-size: 28px; font-weight: 300; color: #1e293b; margin-bottom: 30px;">{{firstName}}</h1>
-                    <p style="font-size: 18px; line-height: 1.8; color: #64748b;">Simple. Élégant. Authentique.</p>
-                `
-            };
-            
-            content.innerHTML = templates[templateName] || templates.elegant;
-        }
-
-        function loadClients() {
-            displayClients(allClients);
-            updateRecipientsCounter();
-        }
-
-        function filterRecipients(filter) {
-            currentFilter = filter;
-            
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
-            
-            let filteredClients = allClients;
-            
-            switch(filter) {
-                case 'newsletter':
-                    filteredClients = allClients.filter(c => c.newsletter);
-                    break;
-                case 'vip':
-                    filteredClients = allClients.filter(c => c.type === 'vip');
-                    break;
-                case 'with-orders':
-                    filteredClients = allClients.filter(c => c.hasOrders);
-                    break;
-                case 'all':
-                default:
-                    filteredClients = allClients;
-            }
-            
-            displayClients(filteredClients);
-            updateRecipientsCounter();
-        }
-
-        function displayClients(clients) {
-            const container = document.getElementById('clientsList');
-            
-            if (clients.length === 0) {
-                container.innerHTML = '<p style="color: #64748b; text-align: center; padding: 20px;">Aucun client trouvé</p>';
-                return;
-            }
-            
-            container.innerHTML = clients.map(client => `
-                <div style="padding: 8px; border: 1px solid var(--border); border-radius: 6px; margin-bottom: 5px; font-size: 13px; cursor: pointer;" onclick="toggleClient(${client.id})">
-                    <div style="font-weight: 600;">${client.name}</div>
-                    <div style="color: var(--text-secondary); font-size: 11px;">${client.email}</div>
-                    <div style="margin-top: 4px;">
-                        ${client.type === 'vip' ? '<span style="background: #fbbf24; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">VIP</span>' : ''}
-                        ${client.newsletter ? '<span style="background: #10b981; color: white; padding: 2px 6px; border-radius: 10px; font-size: 10px;">Newsletter</span>' : ''}
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function searchClients() {
-            const query = document.getElementById('clientSearch').value.toLowerCase();
-            const filtered = allClients.filter(client => 
-                client.name.toLowerCase().includes(query) || 
-                client.email.toLowerCase().includes(query)
-            );
-            displayClients(filtered);
-        }
-
-        function toggleClient(clientId) {
-            const index = selectedRecipients.indexOf(clientId);
-            if (index > -1) {
-                selectedRecipients.splice(index, 1);
-            } else {
-                selectedRecipients.push(clientId);
-            }
-            updateRecipientsCounter();
-        }
-
-        function updateRecipientsCounter() {
-            const counter = document.getElementById('recipientsCounter');
-            const count = currentFilter === 'all' || selectedRecipients.length === 0 ? 
-                allClients.filter(c => {
-                    switch(currentFilter) {
-                        case 'newsletter': return c.newsletter;
-                        case 'vip': return c.type === 'vip';
-                        case 'with-orders': return c.hasOrders;
-                        default: return true;
-                    }
-                }).length : selectedRecipients.length;
-            
-            counter.innerHTML = `<i class="fas fa-envelope"></i> ${count} destinataires sélectionnés`;
-        }
-
-        function insertVariable(variable) {
-            const content = document.getElementById('emailContent');
-            content.focus();
-            document.execCommand('insertText', false, variable);
-        }
-
-        // Utilise votre infrastructure existante
-        async function saveAsDraft() {
-            const campaignData = {
-                name: document.getElementById('campaignName').value || 'Brouillon sans nom',
-                subject: document.getElementById('emailSubject').value,
-                content: document.getElementById('emailContent').innerHTML,
-                preheader: document.getElementById('emailPreheader').value,
-                fromName: document.getElementById('senderName').value,
-                template: currentTemplate,
-                status: 'draft'
-            };
-            
-            try {
-                // Utilise vos routes existantes
-                const response = await fetch('/admin/emails/save-draft', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(campaignData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showNotification('✅ Brouillon sauvegardé', 'success');
-                } else {
-                    showNotification(`❌ ${data.message}`, 'error');
-                }
-            } catch (error) {
-                console.error('Erreur sauvegarde:', error);
-                showNotification('❌ Erreur lors de la sauvegarde', 'error');
-            }
-        }
-
-        async function sendTest() {
-            const email = prompt('Adresse email pour le test :');
-            if (!email) return;
-            
-            const campaignData = {
-                email: email,
-                subject: document.getElementById('emailSubject').value,
-                content: document.getElementById('emailContent').innerHTML,
-                template: currentTemplate
-            };
-            
-            try {
-                showNotification('📤 Envoi du test en cours...', 'info');
-                
-                // Utilise votre service mailService existant
-                const response = await fetch('/admin/emails/send-test', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(campaignData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showNotification(`✅ Test envoyé à ${email}`, 'success');
-                } else {
-                    showNotification(`❌ ${data.message}`, 'error');
-                }
-            } catch (error) {
-                console.error('Erreur test:', error);
-                showNotification('❌ Erreur lors de l\'envoi du test', 'error');
-            }
-        }
-
-        function previewEmail() {
-            const modal = document.createElement('div');
-            modal.id = 'previewModal';
-            modal.style.cssText = `
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background: rgba(0,0,0,0.8); z-index: 10000; padding: 20px;
-                display: flex; align-items: center; justify-content: center;
-            `;
-            
-            modal.innerHTML = `
-                <div style="background: white; border-radius: 12px; max-width: 800px; margin: 0 auto; max-height: 90vh; overflow-y: auto; width: 100%;">
-                    <div style="padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-                        <h3>🔍 Aperçu de l'email</h3>
-                        <button onclick="closePreview()" style="background: none; border: none; font-size: 24px; cursor: pointer;">×</button>
-                    </div>
-                    <div style="padding: 20px;">
-                        ${document.getElementById('emailPreview').outerHTML}
-                    </div>
-                </div>
-            `;
-            
-            document.body.appendChild(modal);
-        }
-
-        function closePreview() {
-            const modal = document.getElementById('previewModal');
-            if (modal) {
-                modal.remove();
-            }
-        }
-
-        async function sendCampaign() {
-            if (!confirm('🚀 Voulez-vous vraiment envoyer cette campagne ?')) {
-                return;
-            }
-            
-            const campaignData = {
-                name: document.getElementById('campaignName').value || 'Campagne sans nom',
-                subject: document.getElementById('emailSubject').value,
-                content: document.getElementById('emailContent').innerHTML,
-                preheader: document.getElementById('emailPreheader').value,
-                fromName: document.getElementById('senderName').value,
-                template: currentTemplate,
-                recipientType: currentFilter,
-                selectedCustomerIds: selectedRecipients
-            };
-            
-            if (!campaignData.subject) {
-                showNotification('❌ Le sujet est requis', 'error');
-                return;
-            }
-            
-            try {
-                showNotification('🚀 Envoi de la campagne en cours...', 'info');
-                
-                // Utilise votre service mailService existant
-                const response = await fetch('/admin/emails/send-campaign', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(campaignData)
-                });
-                
-                const data = await response.json();
-                
-                if (data.success) {
-                    showNotification(`✅ ${data.message}`, 'success');
-                    setTimeout(() => {
-                        // Retour à la page admin
-                        window.location.href = '/admin/stats';
-                    }, 3000);
-                } else {
-                    showNotification(`❌ ${data.message}`, 'error');
-                }
-            } catch (error) {
-                console.error('Erreur envoi:', error);
-                showNotification('❌ Erreur lors de l\'envoi', 'error');
-            }
-        }
-
-        function showNotification(message, type = 'info') {
-            const existing = document.querySelectorAll('.notification');
-            existing.forEach(notif => notif.remove());
-
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                padding: 15px 20px;
-                border-radius: 8px;
-                color: white;
-                font-weight: 600;
-                z-index: 99999;
-                max-width: 350px;
-                animation: slideIn 0.3s ease;
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            `;
-            
-            const bgColors = {
-                success: '#10b981',
-                error: '#ef4444',
-                warning: '#f59e0b',
-                info: '#3b82f6'
-            };
-            
-            notification.style.background = bgColors[type] || bgColors.info;
-            notification.innerHTML = `
-                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px;">
-                    <span>${message}</span>
-                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px; padding: 0;">×</button>
-                </div>
-            `;
-
-            document.body.appendChild(notification);
-
-            setTimeout(() => {
-                if (notification.parentNode) {
-                    notification.style.animation = 'slideOut 0.3s ease forwards';
-                    setTimeout(() => {
-                        if (notification.parentNode) {
-                            notification.remove();
-                        }
-                    }, 300);
-                }
-            }, 4000);
-        }
-
-        // Fonction pour charger les vrais clients depuis votre base de données
-        async function loadRealClients() {
-            try {
-                const response = await fetch('/admin/api/customers');
-                const data = await response.json();
-                
-                if (data.success) {
-                    allClients = data.customers.map(customer => ({
-                        id: customer.id,
-                        name: `${customer.first_name} ${customer.last_name}`,
-                        email: customer.email,
-                        newsletter: customer.newsletter_subscribed || false,
-                        type: customer.total_orders > 5 ? 'vip' : 'standard',
-                        hasOrders: customer.total_orders > 0
-                    }));
-                    
-                    loadClients();
-                }
-            } catch (error) {
-                console.error('Erreur chargement clients:', error);
-                // Utilise les données de démonstration en cas d'erreur
-                loadClients();
-            }
-        }
-
-        // Raccourcis clavier
-        document.addEventListener('keydown', function(e) {
-            if (e.ctrlKey || e.metaKey) {
-                switch(e.key) {
-                    case 's':
-                        e.preventDefault();
-                        saveAsDraft();
-                        break;
-                    case 'Enter':
-                        e.preventDefault();
-                        sendCampaign();
-                        break;
-                    case 't':
-                        e.preventDefault();
-                        sendTest();
-                        break;
-                    case 'p':
-                        e.preventDefault();
-                        previewEmail();
-                        break;
-                }
-            }
-            
-            if (e.key === 'Escape') {
-                closePreview();
-            }
-        });
-
-        // Fonctions pour les blocs de contenu (drag & drop)
-        document.querySelectorAll('.block-item').forEach(item => {
-            item.addEventListener('dragstart', function(e) {
-                e.dataTransfer.setData('text/plain', this.dataset.block);
-            });
-        });
-
-        document.getElementById('emailContent').addEventListener('dragover', function(e) {
-            e.preventDefault();
-        });
-
-        document.getElementById('emailContent').addEventListener('drop', function(e) {
-            e.preventDefault();
-            const blockType = e.dataTransfer.getData('text/plain');
-            insertBlock(blockType);
-        });
-
-        function insertBlock(blockType) {
-            const content = document.getElementById('emailContent');
-            const blocks = {
-                title: '<h2 style="color: #d89ab3; margin: 20px 0;">Votre titre ici</h2>',
-                text: '<p style="margin: 15px 0; line-height: 1.6;">Votre texte ici...</p>',
-                image: '<div style="text-align: center; margin: 20px 0;"><img src="https://via.placeholder.com/400x200" alt="Image" style="max-width: 100%; border-radius: 8px;"></div>',
-                button: '<div style="text-align: center; margin: 20px 0;"><a href="#" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600;">Votre bouton</a></div>',
-                divider: '<hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;">',
-                products: '<div style="border: 2px dashed #d89ab3; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; color: #d89ab3;"><i class="fas fa-gem"></i> Zone produits - À personnaliser</div>'
-            };
-            
-            content.focus();
-            document.execCommand('insertHTML', false, blocks[blockType] || blocks.text);
-        }
-
-        // CSS pour les animations
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-        `;
-        document.head.appendChild(style);
-
-        console.log('✏️ Éditeur d\'emails CrystosJewel initialisé');
-        console.log('🎯 Raccourcis disponibles:');
-        console.log('   Ctrl+S : Sauvegarder brouillon');
-        console.log('   Ctrl+Enter : Envoyer campagne');
-        console.log('   Ctrl+T : Envoyer test');
-        console.log('   Ctrl+P : Prévisualiser');
-        console.log('   Échap : Fermer prévisualisation');
-        
-        // Charger les vrais clients au démarrage
-        // loadRealClients(); // Décommentez cette ligne pour utiliser vos vraies données
-
-        // ==========================================
-        // SYSTÈME D'ÉDITION EN TEMPS RÉEL
-        // ==========================================
-
-        let selectedElement = null;
-        let editPanel = null;
-
-        // Rendre tous les éléments du contenu éditables
-        function makeContentEditable() {
-            const content = document.getElementById('emailContent');
-            
-            // Ajouter des gestionnaires d'événements pour tous les éléments
-            content.addEventListener('click', function(e) {
-                e.stopPropagation();
-                selectElement(e.target);
-            });
-            
-            // Observer les changements pour maintenir l'éditabilité
-            const observer = new MutationObserver(function(mutations) {
-                mutations.forEach(function(mutation) {
-                    if (mutation.type === 'childList') {
-                        addEditHandlers();
-                    }
-                });
-            });
-            
-            observer.observe(content, {
-                childList: true,
-                subtree: true
-            });
-            
-            addEditHandlers();
-        }
-
-        function addEditHandlers() {
-            const content = document.getElementById('emailContent');
-            const elements = content.querySelectorAll('h1, h2, h3, p, a, img, div');
-            
-            elements.forEach(element => {
-                if (!element.hasAttribute('data-editable')) {
-                    element.setAttribute('data-editable', 'true');
-                    element.style.cursor = 'pointer';
-                    element.style.border = '2px solid transparent';
-                    element.style.padding = element.style.padding || '5px';
-                    element.style.borderRadius = '4px';
-                    element.style.transition = 'all 0.2s ease';
-                    
-                    element.addEventListener('mouseenter', function() {
-                        if (this !== selectedElement) {
-                            this.style.border = '2px dashed #d89ab3';
-                            this.style.backgroundColor = 'rgba(216, 154, 179, 0.1)';
-                        }
-                    });
-                    
-                    element.addEventListener('mouseleave', function() {
-                        if (this !== selectedElement) {
-                            this.style.border = '2px solid transparent';
-                            this.style.backgroundColor = 'transparent';
-                        }
-                    });
-                }
-            });
-        }
-
-        function selectElement(element) {
-            // Déselectionner l'élément précédent
-            if (selectedElement) {
-                selectedElement.style.border = '2px solid transparent';
-                selectedElement.style.backgroundColor = 'transparent';
-            }
-            
-            selectedElement = element;
-            
-            // Mettre en surbrillance l'élément sélectionné
-            element.style.border = '2px solid #d89ab3';
-            element.style.backgroundColor = 'rgba(216, 154, 179, 0.2)';
-            
-            // Afficher le panneau d'édition
-            showEditPanel(element);
-        }
-
-        function showEditPanel(element) {
-            // Supprimer le panneau existant
-            if (editPanel) {
-                editPanel.remove();
-            }
-            
-            editPanel = document.createElement('div');
-            editPanel.style.cssText = `
-                position: fixed;
-                top: 50%;
-                right: 20px;
-                transform: translateY(-50%);
-                background: white;
-                border: 2px solid #d89ab3;
-                border-radius: 12px;
-                padding: 20px;
-                width: 300px;
-                max-height: 80vh;
-                overflow-y: auto;
-                z-index: 9999;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-            `;
-            
-            const elementType = element.tagName.toLowerCase();
-            let panelContent = `
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px;">
-                    <h3 style="margin: 0; color: #d89ab3; font-size: 16px;">
-                        <i class="fas fa-edit"></i> Éditer ${getElementTypeName(elementType)}
-                    </h3>
-                    <button onclick="closeEditPanel()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #64748b;">×</button>
-                </div>
-            `;
-            
-            // Contenu spécifique selon le type d'élément
-            switch(elementType) {
-                case 'h1':
-                case 'h2':
-                case 'h3':
-                    panelContent += createTitleEditor(element);
-                    break;
-                case 'p':
-                    panelContent += createTextEditor(element);
-                    break;
-                case 'a':
-                    panelContent += createLinkEditor(element);
-                    break;
-                case 'img':
-                    panelContent += createImageEditor(element);
-                    break;
-                case 'div':
-                    if (element.querySelector('a')) {
-                        panelContent += createButtonEditor(element);
-                    } else {
-                        panelContent += createDivEditor(element);
-                    }
-                    break;
-                default:
-                    panelContent += createGenericEditor(element);
-            }
-            
-            panelContent += `
-                <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #e2e8f0;">
-                    <button onclick="deleteElement()" style="background: #ef4444; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; width: 100%;">
-                        <i class="fas fa-trash"></i> Supprimer l'élément
-                    </button>
-                </div>
-            `;
-            
-            editPanel.innerHTML = panelContent;
-            document.body.appendChild(editPanel);
-        }
-
-        function getElementTypeName(tagName) {
-            const names = {
-                'h1': 'Titre H1',
-                'h2': 'Titre H2', 
-                'h3': 'Titre H3',
-                'p': 'Paragraphe',
-                'a': 'Lien',
-                'img': 'Image',
-                'div': 'Conteneur'
-            };
-            return names[tagName] || 'Élément';
-        }
-
-        function createTitleEditor(element) {
-            return `
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Texte du titre</label>
-                    <input type="text" id="titleText" value="${element.textContent}" 
-                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;"
-                           onchange="updateElementText('${element.id || 'current'}', this.value)">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Taille du titre</label>
-                    <select id="titleSize" onchange="changeTitleSize(this.value)" 
-                            style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                        <option value="h1" ${element.tagName === 'H1' ? 'selected' : ''}>Grand titre (H1)</option>
-                        <option value="h2" ${element.tagName === 'H2' ? 'selected' : ''}>Titre moyen (H2)</option>
-                        <option value="h3" ${element.tagName === 'H3' ? 'selected' : ''}>Petit titre (H3)</option>
-                    </select>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Couleur</label>
-                    <input type="color" id="titleColor" value="${rgbToHex(getComputedStyle(element).color)}" 
-                           onchange="updateElementStyle('color', this.value)"
-                           style="width: 100%; height: 40px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Alignement</label>
-                    <div style="display: flex; gap: 5px;">
-                        <button onclick="updateElementStyle('text-align', 'left')" style="flex: 1; padding: 8px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">
-                            <i class="fas fa-align-left"></i>
-                        </button>
-                        <button onclick="updateElementStyle('text-align', 'center')" style="flex: 1; padding: 8px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">
-                            <i class="fas fa-align-center"></i>
-                        </button>
-                        <button onclick="updateElementStyle('text-align', 'right')" style="flex: 1; padding: 8px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">
-                            <i class="fas fa-align-right"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function createTextEditor(element) {
-            return `
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Texte</label>
-                    <textarea id="textContent" onchange="updateElementHTML(this.value)" 
-                              style="width: 100%; height: 100px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; resize: vertical;">${element.innerHTML}</textarea>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Taille de police</label>
-                    <input type="range" id="fontSize" min="12" max="24" value="${parseInt(getComputedStyle(element).fontSize) || 16}" 
-                           onchange="updateElementStyle('font-size', this.value + 'px')"
-                           style="width: 100%;">
-                    <span id="fontSizeValue">${parseInt(getComputedStyle(element).fontSize) || 16}px</span>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Couleur</label>
-                    <input type="color" id="textColor" value="${rgbToHex(getComputedStyle(element).color)}" 
-                           onchange="updateElementStyle('color', this.value)"
-                           style="width: 100%; height: 40px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Style</label>
-                    <div style="display: flex; gap: 5px;">
-                        <button onclick="toggleTextStyle('font-weight', 'bold')" style="flex: 1; padding: 8px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">
-                            <i class="fas fa-bold"></i>
-                        </button>
-                        <button onclick="toggleTextStyle('font-style', 'italic')" style="flex: 1; padding: 8px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">
-                            <i class="fas fa-italic"></i>
-                        </button>
-                        <button onclick="toggleTextStyle('text-decoration', 'underline')" style="flex: 1; padding: 8px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">
-                            <i class="fas fa-underline"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function createLinkEditor(element) {
-            return `
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Texte du lien</label>
-                    <input type="text" id="linkText" value="${element.textContent}" 
-                           onchange="updateElementText('current', this.value)"
-                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">URL</label>
-                    <input type="url" id="linkUrl" value="${element.href}" 
-                           onchange="updateElementAttribute('href', this.value)"
-                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;"
-                           placeholder="https://example.com">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Couleur</label>
-                    <input type="color" id="linkColor" value="${rgbToHex(getComputedStyle(element).color)}" 
-                           onchange="updateElementStyle('color', this.value)"
-                           style="width: 100%; height: 40px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
-                        <input type="checkbox" ${element.target === '_blank' ? 'checked' : ''} 
-                               onchange="updateElementAttribute('target', this.checked ? '_blank' : '_self')">
-                        <span>Ouvrir dans un nouvel onglet</span>
-                    </label>
-                </div>
-            `;
-        }
-
-        function createImageEditor(element) {
-            return `
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">URL de l'image</label>
-                    <input type="url" id="imageUrl" value="${element.src}" 
-                           onchange="updateElementAttribute('src', this.value)"
-                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;"
-                           placeholder="https://example.com/image.jpg">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Texte alternatif</label>
-                    <input type="text" id="imageAlt" value="${element.alt}" 
-                           onchange="updateElementAttribute('alt', this.value)"
-                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;"
-                           placeholder="Description de l'image">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Largeur</label>
-                    <input type="range" id="imageWidth" min="100" max="600" value="${parseInt(element.style.width) || parseInt(element.width) || 400}" 
-                           onchange="updateImageSize('width', this.value + 'px')"
-                           style="width: 100%;">
-                    <span id="widthValue">${parseInt(element.style.width) || parseInt(element.width) || 400}px</span>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Hauteur</label>
-                    <input type="range" id="imageHeight" min="100" max="400" value="${parseInt(element.style.height) || parseInt(element.height) || 200}" 
-                           onchange="updateImageSize('height', this.value + 'px')"
-                           style="width: 100%;">
-                    <span id="heightValue">${parseInt(element.style.height) || parseInt(element.height) || 200}px</span>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Alignement</label>
-                    <select onchange="updateImageAlignment(this.value)" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                        <option value="left">À gauche</option>
-                        <option value="center" selected>Centré</option>
-                        <option value="right">À droite</option>
-                    </select>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Coins arrondis</label>
-                    <input type="range" id="borderRadius" min="0" max="50" value="${parseInt(element.style.borderRadius) || 0}" 
-                           onchange="updateElementStyle('border-radius', this.value + 'px')"
-                           style="width: 100%;">
-                    <span id="borderRadiusValue">${parseInt(element.style.borderRadius) || 0}px</span>
-                </div>
-            `;
-        }
-
-        function createButtonEditor(element) {
-            const button = element.querySelector('a');
-            return `
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Texte du bouton</label>
-                    <input type="text" id="buttonText" value="${button.textContent}" 
-                           onchange="updateButtonText(this.value)"
-                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">URL</label>
-                    <input type="url" id="buttonUrl" value="${button.href}" 
-                           onchange="updateButtonUrl(this.value)"
-                           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;"
-                           placeholder="https://example.com">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Couleur de fond</label>
-                    <input type="color" id="buttonBg" value="#d89ab3" 
-                           onchange="updateButtonStyle('background', this.value)"
-                           style="width: 100%; height: 40px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Couleur du texte</label>
-                    <input type="color" id="buttonTextColor" value="#ffffff" 
-                           onchange="updateButtonStyle('color', this.value)"
-                           style="width: 100%; height: 40px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Taille</label>
-                    <select onchange="updateButtonSize(this.value)" style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                        <option value="small">Petit</option>
-                        <option value="medium" selected>Moyen</option>
-                        <option value="large">Grand</option>
-                    </select>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Alignement</label>
-                    <div style="display: flex; gap: 5px;">
-                        <button onclick="updateButtonAlignment('left')" style="flex: 1; padding: 8px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">
-                            <i class="fas fa-align-left"></i>
-                        </button>
-                        <button onclick="updateButtonAlignment('center')" style="flex: 1; padding: 8px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">
-                            <i class="fas fa-align-center"></i>
-                        </button>
-                        <button onclick="updateButtonAlignment('right')" style="flex: 1; padding: 8px; border: 1px solid #e2e8f0; background: white; border-radius: 4px; cursor: pointer;">
-                            <i class="fas fa-align-right"></i>
-                        </button>
-                    </div>
-                </div>
-            `;
-        }
-
-        function createDivEditor(element) {
-            return `
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Contenu HTML</label>
-                    <textarea id="divContent" onchange="updateElementHTML(this.value)" 
-                              style="width: 100%; height: 120px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; resize: vertical; font-family: monospace;">${element.innerHTML}</textarea>
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Couleur de fond</label>
-                    <input type="color" id="divBg" value="${rgbToHex(getComputedStyle(element).backgroundColor)}" 
-                           onchange="updateElementStyle('background-color', this.value)"
-                           style="width: 100%; height: 40px; border: 1px solid #e2e8f0; border-radius: 6px;">
-                </div>
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Padding</label>
-                    <input type="range" id="divPadding" min="0" max="50" value="${parseInt(getComputedStyle(element).padding) || 10}" 
-                           onchange="updateElementStyle('padding', this.value + 'px')"
-                           style="width: 100%;">
-                    <span id="paddingValue">${parseInt(getComputedStyle(element).padding) || 10}px</span>
-                </div>
-            `;
-        }
-
-        function createGenericEditor(element) {
-            return `
-                <div style="margin-bottom: 15px;">
-                    <label style="display: block; font-weight: 600; margin-bottom: 5px; color: #1e293b;">Contenu</label>
-                    <textarea id="genericContent" onchange="updateElementHTML(this.value)" 
-                              style="width: 100%; height: 100px; padding: 10px; border: 1px solid #e2e8f0; border-radius: 6px; resize: vertical;">${element.innerHTML}</textarea>
-                </div>
-            `;
-        }
-
-        // ==========================================
-        // FONCTIONS DE MISE À JOUR
-        // ==========================================
-
-        function updateElementText(id, value) {
-            if (selectedElement) {
-                selectedElement.textContent = value;
-            }
-        }
-
-        function updateElementHTML(value) {
-            if (selectedElement) {
-                selectedElement.innerHTML = value;
-            }
-        }
-
-        function updateElementStyle(property, value) {
-            if (selectedElement) {
-                selectedElement.style[property] = value;
-                
-                // Mettre à jour les indicateurs visuels
-                if (property === 'font-size') {
-                    const indicator = document.getElementById('fontSizeValue');
-                    if (indicator) indicator.textContent = value;
-                }
-                if (property === 'border-radius') {
-                    const indicator = document.getElementById('borderRadiusValue');
-                    if (indicator) indicator.textContent = value;
-                }
-                if (property === 'padding') {
-                    const indicator = document.getElementById('paddingValue');
-                    if (indicator) indicator.textContent = value;
-                }
-            }
-        }
-
-        function updateElementAttribute(attribute, value) {
-            if (selectedElement) {
-                selectedElement.setAttribute(attribute, value);
-            }
-        }
-
-        function changeTitleSize(newTag) {
-            if (selectedElement && ['H1', 'H2', 'H3'].includes(selectedElement.tagName)) {
-                const newElement = document.createElement(newTag);
-                newElement.innerHTML = selectedElement.innerHTML;
-                newElement.style.cssText = selectedElement.style.cssText;
-                
-                selectedElement.parentNode.replaceChild(newElement, selectedElement);
-                selectElement(newElement);
-            }
-        }
-
-        function toggleTextStyle(property, value) {
-            if (selectedElement) {
-                const currentValue = getComputedStyle(selectedElement)[property];
-                if (currentValue === value || (property === 'font-weight' && currentValue === '700' && value === 'bold')) {
-                    selectedElement.style[property] = property === 'font-weight' ? 'normal' : 'none';
-                } else {
-                    selectedElement.style[property] = value;
-                }
-            }
-        }
-
-        function updateImageSize(dimension, value) {
-            if (selectedElement && selectedElement.tagName === 'IMG') {
-                selectedElement.style[dimension] = value;
-                
-                const indicator = document.getElementById(dimension === 'width' ? 'widthValue' : 'heightValue');
-                if (indicator) indicator.textContent = value;
-            }
-        }
-
-        function updateImageAlignment(alignment) {
-            if (selectedElement && selectedElement.tagName === 'IMG') {
-                const container = selectedElement.parentElement;
-                container.style.textAlign = alignment;
-            }
-        }
-
-        function updateButtonText(value) {
-            if (selectedElement) {
-                const button = selectedElement.querySelector('a');
-                if (button) button.textContent = value;
-            }
-        }
-
-        function updateButtonUrl(value) {
-            if (selectedElement) {
-                const button = selectedElement.querySelector('a');
-                if (button) button.href = value;
-            }
-        }
-
-        function updateButtonStyle(property, value) {
-            if (selectedElement) {
-                const button = selectedElement.querySelector('a');
-                if (button) button.style[property] = value;
-            }
-        }
-
-        function updateButtonSize(size) {
-            if (selectedElement) {
-                const button = selectedElement.querySelector('a');
-                if (button) {
-                    const sizes = {
-                        small: '8px 16px',
-                        medium: '12px 24px',
-                        large: '16px 32px'
-                    };
-                    button.style.padding = sizes[size];
-                }
-            }
-        }
-
-        function updateButtonAlignment(alignment) {
-            if (selectedElement) {
-                selectedElement.style.textAlign = alignment;
-            }
-        }
-
-        function deleteElement() {
-            if (selectedElement && confirm('Êtes-vous sûr de vouloir supprimer cet élément ?')) {
-                selectedElement.remove();
-                closeEditPanel();
-            }
-        }
-
-        function closeEditPanel() {
-            if (editPanel) {
-                editPanel.remove();
-                editPanel = null;
-            }
-            if (selectedElement) {
-                selectedElement.style.border = '2px solid transparent';
-                selectedElement.style.backgroundColor = 'transparent';
-                selectedElement = null;
-            }
-        }
-
-        // ==========================================
-        // FONCTIONS UTILITAIRES
-        // ==========================================
-
-        function rgbToHex(rgb) {
-            if (rgb.indexOf('#') === 0) return rgb;
-            
-            const result = rgb.match(/\d+/g);
-            if (!result || result.length < 3) return '#000000';
-            
-            return '#' + result.slice(0, 3).map(x => {
-                const hex = parseInt(x).toString(16);
-                return hex.length === 1 ? '0' + hex : hex;
-            }).join('');
-        }
-
-        // Initialiser l'édition au chargement
-        setTimeout(() => {
-            makeContentEditable();
-        }, 500);
-
-        // Fermer le panneau d'édition en cliquant à l'extérieur
-        document.addEventListener('click', function(e) {
-            if (editPanel && !editPanel.contains(e.target) && !e.target.hasAttribute('data-editable')) {
-                closeEditPanel();
-            }
-        });
-
-        // ==========================================
-        // AMÉLIORATION DES BLOCS DE CONTENU
-        // ==========================================
-
-        function insertBlock(blockType) {
-            const content = document.getElementById('emailContent');
-            const blocks = {
-                title: '<h2 style="color: #d89ab3; margin: 20px 0; font-family: Georgia, serif; text-align: center;" data-editable="true">Votre titre ici</h2>',
-                text: '<p style="margin: 15px 0; line-height: 1.6; color: #1e293b;" data-editable="true">Votre texte ici. Cliquez pour modifier ce paragraphe et personnaliser votre contenu.</p>',
-                image: '<div style="text-align: center; margin: 20px 0;" data-editable="true"><img src="https://via.placeholder.com/400x200/d89ab3/ffffff?text=Votre+Image" alt="Image" style="max-width: 100%; border-radius: 8px; width: 400px; height: 200px;" data-editable="true"></div>',
-                button: '<div style="text-align: center; margin: 20px 0;" data-editable="true"><a href="#" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600;" data-editable="true">🛍️ Votre bouton</a></div>',
-                divider: '<hr style="margin: 30px 0; border: none; border-top: 2px solid #e2e8f0; width: 80%; margin-left: auto; margin-right: auto;" data-editable="true">',
-                products: `
-                    <div style="border: 2px dashed #d89ab3; padding: 20px; text-align: center; margin: 20px 0; border-radius: 8px; background: rgba(216, 154, 179, 0.05);" data-editable="true">
-                        <h3 style="color: #d89ab3; margin-bottom: 15px;">💎 Nos Produits Vedettes</h3>
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-top: 20px;">
-                            <div style="text-align: center; padding: 10px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" data-editable="true">
-                                <img src="https://via.placeholder.com/120x120/d89ab3/ffffff?text=Produit+1" alt="Produit 1" style="width: 100%; max-width: 120px; border-radius: 6px;" data-editable="true">
-                                <h4 style="margin: 10px 0 5px; color: #1e293b; font-size: 14px;" data-editable="true">Bague Élégante</h4>
-                                <p style="color: #d89ab3; font-weight: 600; margin: 0;" data-editable="true">149,99€</p>
-                            </div>
-                            <div style="text-align: center; padding: 10px; background: white; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);" data-editable="true">
-                                <img src="https://via.placeholder.com/120x120/d89ab3/ffffff?text=Produit+2" alt="Produit 2" style="width: 100%; max-width: 120px; border-radius: 6px;" data-editable="true">
-                                <h4 style="margin: 10px 0 5px; color: #1e293b; font-size: 14px;" data-editable="true">Collier Raffiné</h4>
-                                <p style="color: #d89ab3; font-weight: 600; margin: 0;" data-editable="true">89,99€</p>
-                            </div>
-                        </div>
-                    </div>
-                `
-            };
-            
-            content.focus();
-            document.execCommand('insertHTML', false, blocks[blockType] || blocks.text);
-            
-            // Rafraîchir les gestionnaires d'événements
-            setTimeout(() => {
-                addEditHandlers();
-            }, 100);
-        }
-
-        // ==========================================
-        // SYSTÈME DE GLISSER-DÉPOSER AMÉLIORÉ
-        // ==========================================
-
-        document.querySelectorAll('.block-item').forEach(item => {
-            item.addEventListener('dragstart', function(e) {
-                e.dataTransfer.setData('text/plain', this.dataset.block);
-                this.style.opacity = '0.5';
-            });
-            
-            item.addEventListener('dragend', function(e) {
-                this.style.opacity = '1';
-            });
-        });
-
-        const emailContent = document.getElementById('emailContent');
-        let dragOverElement = null;
-
-        emailContent.addEventListener('dragover', function(e) {
-            e.preventDefault();
-            
-            // Créer un indicateur visuel de zone de dépôt
-            const rect = this.getBoundingClientRect();
-            const y = e.clientY - rect.top;
-            
-            // Trouver l'élément le plus proche
-            const elements = [...this.children];
-            const closest = elements.reduce((closest, child) => {
-                const box = child.getBoundingClientRect();
-                const offset = y - (box.top - rect.top + box.height / 2);
-                
-                if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
-                } else {
-                    return closest;
-                }
-            }, { offset: Number.NEGATIVE_INFINITY });
-            
-            // Supprimer les anciens indicateurs
-            this.querySelectorAll('.drop-indicator').forEach(indicator => {
-                indicator.remove();
-            });
-            
-            // Créer un nouvel indicateur
-            const indicator = document.createElement('div');
-            indicator.className = 'drop-indicator';
-            indicator.style.cssText = `
-                height: 3px;
-                background: #d89ab3;
-                margin: 5px 0;
-                border-radius: 2px;
-                opacity: 0.8;
-                animation: pulse 1s infinite;
-            `;
-            
-            if (closest.element) {
-                this.insertBefore(indicator, closest.element);
-            } else {
-                this.appendChild(indicator);
-            }
-        });
-
-        emailContent.addEventListener('dragleave', function(e) {
-            // Supprimer les indicateurs si on sort de la zone
-            if (!this.contains(e.relatedTarget)) {
-                this.querySelectorAll('.drop-indicator').forEach(indicator => {
-                    indicator.remove();
-                });
-            }
-        });
-
-        emailContent.addEventListener('drop', function(e) {
-            e.preventDefault();
-            const blockType = e.dataTransfer.getData('text/plain');
-            
-            // Supprimer les indicateurs
-            this.querySelectorAll('.drop-indicator').forEach(indicator => {
-                indicator.remove();
-            });
-            
-            // Insérer le bloc à la position de l'indicateur
-            insertBlock(blockType);
-        });
-
-        // ==========================================
-        // TEMPLATES PRÉDÉFINIS AMÉLIORÉS
-        // ==========================================
-
-        function applyTemplate(templateName) {
-            const content = document.getElementById('emailContent');
-            const templates = {
-                elegant: `
-                    <div style="text-align: center; margin-bottom: 30px;" data-editable="true">
-                        <img src="https://via.placeholder.com/400x150/d89ab3/ffffff?text=CrystosJewel" alt="Logo" style="max-width: 200px;" data-editable="true">
-                    </div>
-                    <h2 style="color: #d89ab3; margin-bottom: 20px; font-family: Georgia, serif; text-align: center;" data-editable="true">Bonjour {{firstName}} !</h2>
-                    <p style="margin-bottom: 15px; font-size: 16px; line-height: 1.6; color: #1e293b;" data-editable="true">Nous sommes ravis de vous présenter notre nouvelle collection de bijoux exclusifs, conçue avec passion par nos artisans les plus talentueux.</p>
-                    <div style="text-align: center; margin: 30px 0;" data-editable="true">
-                        <img src="https://via.placeholder.com/500x300/d89ab3/ffffff?text=Collection+Exclusive" alt="Collection" style="max-width: 100%; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1);" data-editable="true">
-                    </div>
-                    <p style="margin-bottom: 20px; font-size: 16px; line-height: 1.6; color: #1e293b;" data-editable="true">Chaque pièce raconte une histoire unique, alliant tradition et modernité pour créer des bijoux intemporels qui vous accompagneront dans tous vos moments précieux.</p>
-                    <div style="text-align: center; margin: 40px 0;" data-editable="true">
-                        <a href="#" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 18px 36px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; box-shadow: 0 6px 20px rgba(216, 154, 179, 0.3); transition: transform 0.3s ease;" data-editable="true">
-                            ✨ Découvrir la collection
-                        </a>
-                    </div>
-                `,
-                modern: `
-                    <div style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; padding: 40px 30px; margin-bottom: 30px; border-radius: 16px; text-align: center;" data-editable="true">
-                        <h1 style="margin: 0; font-size: 32px; font-weight: 800;" data-editable="true">Hey {{firstName}} ! 🚀</h1>
-                        <p style="margin: 15px 0 0; opacity: 0.9; font-size: 18px;" data-editable="true">L'avenir du style, c'est maintenant</p>
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 30px 0;" data-editable="true">
-                        <div style="background: linear-gradient(45deg, #f3f4f6, #e5e7eb); padding: 25px; border-radius: 12px; text-align: center;" data-editable="true">
-                            <h3 style="color: #1e293b; margin-bottom: 10px;" data-editable="true">Innovation</h3>
-                            <p style="color: #64748b; font-size: 14px;" data-editable="true">Des créations qui redéfinissent l'élégance</p>
-                        </div>
-                        <div style="background: linear-gradient(45deg, #fef3c7, #fde68a); padding: 25px; border-radius: 12px; text-align: center;" data-editable="true">
-                            <h3 style="color: #1e293b; margin-bottom: 10px;" data-editable="true">Qualité</h3>
-                            <p style="color: #64748b; font-size: 14px;" data-editable="true">Excellence dans chaque détail</p>
-                        </div>
-                    </div>
-                    <p style="margin-bottom: 20px; font-size: 16px; text-align: center;" data-editable="true">Découvrez des créations qui redéfinissent l'élégance moderne.</p>
-                `,
-                classic: `
-                    <div style="border-left: 4px solid #d89ab3; padding-left: 25px; margin-bottom: 30px; background: linear-gradient(90deg, rgba(216, 154, 179, 0.1), transparent);" data-editable="true">
-                        <h2 style="color: #1e293b; margin-bottom: 10px; font-family: Georgia, serif;" data-editable="true">Cher(e) {{firstName}},</h2>
-                        <p style="color: #64748b; margin: 0; font-style: italic;" data-editable="true">Nous avons le plaisir de vous informer de nos dernières créations...</p>
-                    </div>
-                    <div style="background: #f8fafc; padding: 25px; border-radius: 8px; border: 1px solid #e2e8f0; margin: 20px 0;" data-editable="true">
-                        <h3 style="color: #1e293b; margin-bottom: 15px;" data-editable="true">📢 Nouveautés de la semaine</h3>
-                        <ul style="color: #64748b; line-height: 1.8; margin: 0; padding-left: 20px;" data-editable="true">
-                            <li>Collection Automne/Hiver 2025</li>
-                            <li>Bagues de fiançailles personnalisées</li>
-                            <li>Colliers en édition limitée</li>
-                        </ul>
-                    </div>
-                    <p style="margin: 20px 0; line-height: 1.6;" data-editable="true">Nous restons à votre disposition pour tout renseignement complémentaire.</p>
-                    <p style="margin: 20px 0; color: #64748b; font-style: italic;" data-editable="true">Cordialement,<br>L'équipe CrystosJewel</p>
-                `,
-                minimal: `
-                    <div style="text-align: center; margin-bottom: 50px;" data-editable="true">
-                        <h1 style="font-size: 48px; font-weight: 100; color: #1e293b; margin-bottom: 10px; letter-spacing: 2px;" data-editable="true">{{firstName}}</h1>
-                        <div style="width: 60px; height: 2px; background: #d89ab3; margin: 0 auto;"></div>
-                    </div>
-                    <p style="font-size: 20px; line-height: 1.8; color: #64748b; text-align: center; margin: 40px 0;" data-editable="true">Simple. Élégant. Authentique.</p>
-                    <div style="text-align: center; margin: 50px 0;" data-editable="true">
-                        <img src="https://via.placeholder.com/300x300/f8fafc/d89ab3?text=Minimalisme" alt="Style minimal" style="border-radius: 50%; max-width: 200px;" data-editable="true">
-                    </div>
-                    <p style="font-size: 16px; line-height: 2; color: #64748b; text-align: center; max-width: 400px; margin: 0 auto;" data-editable="true">Découvrez notre approche épurée de la joaillerie, où chaque détail compte.</p>
-                `
-            };
-            
-            content.innerHTML = templates[templateName] || templates.elegant;
-            
-            // Rafraîchir les gestionnaires d'événements
-            setTimeout(() => {
-                addEditHandlers();
-            }, 100);
-        }
-
-        // ==========================================
-        // SAUVEGARDE AUTOMATIQUE
-        // ==========================================
-
-        let autoSaveTimeout;
-
-        function startAutoSave() {
-            clearTimeout(autoSaveTimeout);
-            autoSaveTimeout = setTimeout(() => {
-                saveAsDraft();
-            }, 30000); // Sauvegarde automatique toutes les 30 secondes
-        }
-
-        // Démarrer la sauvegarde automatique à chaque modification
-        document.getElementById('emailContent').addEventListener('input', startAutoSave);
-        document.getElementById('emailSubject').addEventListener('input', startAutoSave);
-        document.getElementById('campaignName').addEventListener('input', startAutoSave);
-
-        // ==========================================
-        // INITIALISATION FINALE
-        // ==========================================
-
-        console.log('✅ Éditeur d\'emails CrystosJewel entièrement initialisé');
-        console.log('🎯 Fonctionnalités disponibles:');
-        console.log('   ✏️ Édition en temps réel des éléments');
-        console.log('   🖼️ Redimensionnement des images');
-        console.log('   🎨 Personnalisation des couleurs');
-        console.log('   📝 Modification des textes et liens');
-        console.log('   🔘 Customisation des boutons');
-        console.log('   📱 Glisser-déposer des blocs');
-        console.log('   💾 Sauvegarde automatique');
-        console.log('   ⌨️ Raccourcis clavier');
-
+        // Configuration globale
+        window.EMAIL_EDITOR_CONFIG = {
+            baseUrl: '<%= baseUrl %>',
+            recipientCounts: <%- JSON.stringify(recipientCounts) %>,
+            templates: <%- JSON.stringify(templates || []) %>
+        };
     </script>
 </body>
 </html>
