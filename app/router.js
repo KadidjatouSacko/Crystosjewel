@@ -5753,6 +5753,45 @@ router.post('/admin/api/marketing/segments/preview', requireMarketingAdminAuth, 
 
 // Export
 router.get('/admin/api/marketing/campaign/:id/export', requireMarketingAdminAuth, adminMarketingController.exportCampaignData);
+
+// Dans votre fichier app/router.js
+// Ajouter ces routes pour l'éditeur d'emails marketing
+
+// ==========================================
+// ROUTES MARKETING EMAIL (NOUVELLES)
+// ==========================================
+
+// Import du contrôleur marketing (si pas déjà fait)
+
+// Route principale de l'éditeur d'emails (votre route existante)
+
+// Routes API pour l'éditeur d'emails
+router.get('/admin/marketing/api/customers', requireMarketingAdminAuth, adminMarketingController.getCustomersList);
+router.post('/admin/marketing/api/save-draft', requireMarketingAdminAuth, adminMarketingController.saveDraft);
+router.post('/admin/marketing/api/send-test', requireMarketingAdminAuth, adminMarketingController.sendTest);
+router.post('/admin/marketing/api/send-campaign', requireMarketingAdminAuth, adminMarketingController.sendCampaign);
+
+// Routes additionnelles pour les campagnes
+router.get('/admin/marketing/campaigns', requireMarketingAdminAuth, adminMarketingController.showCampaignDashboard);
+router.get('/admin/marketing/campaigns/:id', requireMarketingAdminAuth, adminMarketingController.showCampaignDetails);
+router.get('/admin/marketing/api/campaigns', requireMarketingAdminAuth, adminMarketingController.getCampaignHistory);
+router.get('/admin/marketing/api/stats', requireMarketingAdminAuth, adminMarketingController.getGlobalStats);
+
+// Routes pour les images d'emails
+router.post('/admin/marketing/api/upload-image', requireMarketingAdminAuth, adminMarketingController.uploadImage);
+router.get('/admin/marketing/api/images', requireMarketingAdminAuth, adminMarketingController.getUploadedImages);
+
+// Routes de tracking des emails
+router.get('/email/track/:campaignId/:recipientId', adminMarketingController.trackOpen);
+router.get('/email/click/:campaignId/:recipientId', adminMarketingController.trackClick);
+
+// Routes de désabonnement
+router.get('/email/unsubscribe', adminMarketingController.showUnsubscribePage);
+router.post('/email/unsubscribe', adminMarketingController.processUnsubscribe);
+
+console.log('✅ Routes marketing email configurées');
+
+
 // Export par défaut
 export default router;
 
