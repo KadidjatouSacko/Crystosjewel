@@ -1,4 +1,4 @@
-// app/controlleurs/adminMarketingController.js - CONTRÔLEUR MARKETING COMPLET
+// app/controlleurs/adminMarketingController.js - CONTRÔLEUR MARKETING COMPLET CORRIGÉ
 import { 
   sendMarketingTestEmail, 
   saveMarketingCampaignDraft, 
@@ -7,20 +7,32 @@ import {
   getMarketingCampaignHistory,
   getGlobalMarketingStats,
   getMarketingEmailTemplates,
-  getMarketingRecipients,
   trackMarketingEmailOpen,
   trackMarketingEmailClick,
   unsubscribeMarketingEmail
 } from '../services/emailMarketingService.js';
 import { sequelize } from '../models/sequelize-client.js';
 import multer from 'multer';
+import Sequelize from 'sequelize';
 import path from 'path';
 import fs from 'fs';
+import nodemailer from 'nodemailer';
 
-// ==========================================
-// CONFIGURATION UPLOAD D'IMAGES MARKETING
-// ==========================================
+// Configuration du transporteur email
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.MAIL_USER,
+    pass: process.env.MAIL_PASS
+  },
+  pool: true,
+  maxConnections: 5,
+  maxMessages: 100,
+  rateDelta: 20000,
+  rateLimit: 5
+});
 
+// Configuration upload d'images
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     const uploadDir = './public/uploads/email-assets';
@@ -37,7 +49,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
   storage: storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB max
+  limits: { fileSize: 5 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowedTypes = /jpeg|jpg|png|gif|webp/;
     const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
@@ -46,7 +58,7 @@ const upload = multer({
     if (mimetype && extname) {
       return cb(null, true);
     } else {
-      cb(new Error('Seules les images sont autorisées (jpeg, jpg, png, gif, webp)'));
+      cb(new Error('Seules les images sont autorisées'));
     }
   }
 });
@@ -60,195 +72,232 @@ export const adminMarketingController = {
   /**
    * Page principale de l'éditeur d'emails marketing
    */
-async showEmailEditor(req, res) {
-  try {
-    console.log('📧 Affichage éditeur d\'emails marketing');
-    
-    // ===== RÉCUPÉRER LES BIJOUX =====
-    const [jewelsResult] = await sequelize.query(`
-      SELECT 
-        j.id, 
-        j.name, 
-        j.description, 
-        j.price_ttc,
-        j.image,
-        j.stock,
-        j.category_id,
-        c.name as category_name
-      FROM jewel j
-      LEFT JOIN category c ON j.category_id = c.id
-      WHERE j.stock > 0
-      ORDER BY j.popularity_score DESC, j.created_at DESC
-      LIMIT 50
-    `);
-
-    // Formater les bijoux pour l'affichage
-    const formattedJewels = jewelsResult.map(jewel => ({
-      ...jewel,
-      formattedPrice: new Intl.NumberFormat('fr-FR', {
-        style: 'currency',
-        currency: 'EUR'
-      }).format(jewel.price_ttc),
-      imageUrl: jewel.image ? `/uploads/jewels/${jewel.image}` : '/images/no-image.jpg'
-    }));
-
-    // ===== RÉCUPÉRER LES CLIENTS =====
-    const [customersResult] = await sequelize.query(`
-    SELECT 
-    id,
-    COALESCE(first_name, '') as first_name,
-    COALESCE(last_name, '') as last_name,
-    email,
-    phone,
-    created_at,
-    COALESCE(total_orders, 0) as total_orders,
-    COALESCE(total_spent, 0) as total_spent,
-    COALESCE(newsletter_subscribed, false) as newsletter_subscribed,
-    CASE 
-      WHEN COALESCE(total_orders, 0) >= 5 OR COALESCE(total_spent, 0) >= 500 THEN 'vip'
-      WHEN COALESCE(total_orders, 0) > 0 THEN 'with-orders'
-      ELSE 'newsletter'
-    END as customer_type
-FROM customer 
-WHERE email IS NOT NULL 
-AND email != ''
-AND email NOT IN (
-    SELECT email FROM email_unsubscribes WHERE email IS NOT NULL
-)
-ORDER BY 
-    CASE WHEN COALESCE(total_orders, 0) >= 5 OR COALESCE(total_spent, 0) >= 500 THEN 1 ELSE 2 END,
-    total_orders DESC,
-    created_at DESC
-LIMIT 200
-    `);
-
-    // Formater les clients
-    const formattedCustomers = customersResult.map(customer => ({
-      ...customer,
-      name: `${customer.first_name} ${customer.last_name}`.trim() || 'Client sans nom',
-      hasOrders: customer.total_orders > 0,
-      formatted_date: new Date(customer.created_at).toLocaleDateString('fr-FR')
-    }));
-
-    // ===== CALCULER LES STATISTIQUES DES DESTINATAIRES =====
-    const [recipientStatsResult] = await sequelize.query(`
-      SELECT 
-        COUNT(*) as total_customers,
-        COUNT(CASE WHEN newsletter_subscribed = true THEN 1 END) as newsletter_count,
-        COUNT(CASE WHEN COALESCE(total_orders, 0) > 0 THEN 1 END) as customers_with_orders,
-        COUNT(CASE WHEN COALESCE(total_orders, 0) >= 5 OR COALESCE(total_spent, 0) >= 500 THEN 1 END) as vip_count
-      FROM customer
-      WHERE email IS NOT NULL 
-      AND email != ''
-      AND email NOT IN (
-        SELECT email FROM email_unsubscribes WHERE email IS NOT NULL
-      )
-    `);
-
-    const recipientStats = recipientStatsResult[0] || {};
-
-    // ===== RÉCUPÉRER LES TEMPLATES D'EMAILS =====
-    const emailTemplates = [
-      {
-        id: 1,
-        name: 'Élégant',
-        template_type: 'elegant',
-        is_default: true,
-        description: 'Template élégant pour bijoux haut de gamme'
-      },
-      {
-        id: 2,
-        name: 'Moderne',
-        template_type: 'modern',
-        is_default: false,
-        description: 'Design moderne et épuré'
-      },
-      {
-        id: 3,
-        name: 'Classique',
-        template_type: 'classic',
-        is_default: false,
-        description: 'Style classique et intemporel'
-      },
-      {
-        id: 4,
-        name: 'Minimal',
-        template_type: 'minimal',
-        is_default: false,
-        description: 'Design minimaliste et épuré'
-      }
-    ];
-
-    // ===== RÉCUPÉRER LES STATISTIQUES GLOBALES D'EMAILING =====
-    let globalEmailStats = {
-      total_campaigns: 0,
-      total_emails_sent: 0,
-      global_open_rate: 0,
-      global_click_rate: 0,
-      total_subscribers: parseInt(recipientStats.newsletter_count) || 0
-    };
-
-    // Essayer de récupérer les vraies statistiques si la table existe
+ async showEmailEditor(req, res) {
     try {
-      const [globalStatsResult] = await sequelize.query(`
-        SELECT 
-          COUNT(*) as total_campaigns,
-          COALESCE(SUM(emails_sent), 0) as total_emails_sent,
-          COALESCE(AVG(CASE WHEN emails_delivered > 0 THEN (emails_opened::decimal / emails_delivered) * 100 ELSE 0 END), 0) as global_open_rate,
-          COALESCE(AVG(CASE WHEN emails_opened > 0 THEN (emails_clicked::decimal / emails_opened) * 100 ELSE 0 END), 0) as global_click_rate
-        FROM email_campaigns
-        WHERE status = 'sent'
-        AND created_at >= NOW() - INTERVAL '1 year'
-      `);
-      
-      if (globalStatsResult && globalStatsResult[0]) {
-        globalEmailStats = {
-          ...globalEmailStats,
-          ...globalStatsResult[0],
-          total_subscribers: parseInt(recipientStats.newsletter_count) || 0
-        };
+      console.log('📧 Chargement éditeur email marketing');
+
+      // ===== 1. RÉCUPÉRER LES BIJOUX =====
+      let formattedJewels = [];
+      try {
+        const [jewelsResult] = await sequelize.query(`
+          SELECT 
+            j.id, 
+            j.name, 
+            j.description, 
+            j.price_ttc,
+            j.image,
+            j.stock,
+            j.category_id,
+            j.slug,
+            c.name as category_name
+          FROM jewel j
+          LEFT JOIN category c ON j.category_id = c.id
+          WHERE j.stock > 0
+          ORDER BY j.popularity_score DESC, j.created_at DESC
+          LIMIT 50
+        `);
+
+        formattedJewels = jewelsResult.map(jewel => ({
+          ...jewel,
+          formattedPrice: new Intl.NumberFormat('fr-FR', {
+            style: 'currency',
+            currency: 'EUR'
+          }).format(jewel.price_ttc),
+          imageUrl: jewel.image ? `/uploads/jewels/${jewel.image}` : '/images/no-image.jpg'
+        }));
+      } catch (jewelError) {
+        console.log('⚠️ Erreur récupération bijoux:', jewelError.message);
+        // Bijoux de démonstration
+        formattedJewels = [
+          {
+            id: 1,
+            name: 'Bracelet Or Élégance',
+            formattedPrice: '299,00 €',
+            imageUrl: '/images/no-image.jpg',
+            slug: 'bracelet-or-elegance'
+          },
+          {
+            id: 2,
+            name: 'Collier Diamant Prestige',
+            formattedPrice: '599,00 €',
+            imageUrl: '/images/no-image.jpg',
+            slug: 'collier-diamant-prestige'
+          }
+        ];
       }
-    } catch (error) {
-      console.log('⚠️ Table email_campaigns non trouvée, utilisation des données simulées');
-      // Utiliser les données simulées définies plus haut
-      globalEmailStats = {
-        total_campaigns: 12,
-        total_emails_sent: 2547,
-        global_open_rate: 24.8,
-        global_click_rate: 3.2,
+
+      // ===== 2. RÉCUPÉRER LES CLIENTS =====
+      let formattedCustomers = [];
+      try {
+        const [customersResult] = await sequelize.query(`
+          SELECT 
+            id,
+            COALESCE(first_name, '') as first_name,
+            COALESCE(last_name, '') as last_name,
+            email,
+            phone,
+            created_at,
+            COALESCE(total_orders, 0) as total_orders,
+            COALESCE(total_spent, 0) as total_spent,
+            COALESCE(newsletter_subscribed, false) as newsletter_subscribed,
+            CASE 
+              WHEN COALESCE(total_orders, 0) >= 5 OR COALESCE(total_spent, 0) >= 500 THEN 'vip'
+              WHEN COALESCE(total_orders, 0) > 0 THEN 'with-orders'
+              ELSE 'newsletter'
+            END as customer_type
+          FROM customer 
+          WHERE email IS NOT NULL 
+          AND email != ''
+          ORDER BY 
+              CASE WHEN COALESCE(total_orders, 0) >= 5 OR COALESCE(total_spent, 0) >= 500 THEN 1 ELSE 2 END,
+              total_orders DESC,
+              created_at DESC
+          LIMIT 200
+        `);
+
+        formattedCustomers = customersResult.map(customer => ({
+          ...customer,
+          name: `${customer.first_name} ${customer.last_name}`.trim() || 'Client sans nom',
+          hasOrders: customer.total_orders > 0,
+          formatted_date: new Date(customer.created_at).toLocaleDateString('fr-FR')
+        }));
+      } catch (customerError) {
+        console.log('⚠️ Erreur récupération clients:', customerError.message);
+        formattedCustomers = [];
+      }
+
+      // ===== 3. CALCULER LES STATISTIQUES DES DESTINATAIRES =====
+      let recipientStats = { total_customers: 0, newsletter_count: 0, customers_with_orders: 0, vip_count: 0 };
+      try {
+        const [recipientStatsResult] = await sequelize.query(`
+          SELECT 
+            COUNT(*) as total_customers,
+            COUNT(CASE WHEN newsletter_subscribed = true THEN 1 END) as newsletter_count,
+            COUNT(CASE WHEN COALESCE(total_orders, 0) > 0 THEN 1 END) as customers_with_orders,
+            COUNT(CASE WHEN COALESCE(total_orders, 0) >= 5 OR COALESCE(total_spent, 0) >= 500 THEN 1 END) as vip_count
+          FROM customer
+          WHERE email IS NOT NULL 
+          AND email != ''
+        `);
+        recipientStats = recipientStatsResult[0] || recipientStats;
+      } catch (statsError) {
+        console.log('⚠️ Erreur statistiques clients:', statsError.message);
+      }
+
+      // ===== 4. TEMPLATES D'EMAILS (TOUJOURS DÉFINIS) =====
+      const emailTemplates = [
+        {
+          id: 1,
+          name: 'Élégant',
+          template_type: 'elegant',
+          is_default: true,
+          description: 'Template élégant pour bijoux haut de gamme'
+        },
+        {
+          id: 2,
+          name: 'Moderne',
+          template_type: 'modern',
+          is_default: false,
+          description: 'Design moderne et épuré'
+        },
+        {
+          id: 3,
+          name: 'Classique',
+          template_type: 'classic',
+          is_default: false,
+          description: 'Style classique et intemporel'
+        },
+        {
+          id: 4,
+          name: 'Minimal',
+          template_type: 'minimal',
+          is_default: false,
+          description: 'Design minimaliste et épuré'
+        }
+      ];
+
+      // ===== 5. STATISTIQUES GLOBALES D'EMAILING =====
+      let globalEmailStats = {
+        total_campaigns: 0,
+        total_emails_sent: 0,
+        global_open_rate: 0,
+        global_click_rate: 0,
         total_subscribers: parseInt(recipientStats.newsletter_count) || 0
       };
+
+      try {
+        const [globalStatsResult] = await sequelize.query(`
+          SELECT 
+            COUNT(*) as total_campaigns,
+            COALESCE(SUM(emails_sent), 0) as total_emails_sent,
+            COALESCE(AVG(CASE WHEN emails_delivered > 0 THEN (emails_opened::decimal / emails_delivered) * 100 ELSE 0 END), 0) as global_open_rate,
+            COALESCE(AVG(CASE WHEN emails_opened > 0 THEN (emails_clicked::decimal / emails_opened) * 100 ELSE 0 END), 0) as global_click_rate
+          FROM email_campaigns
+          WHERE status = 'sent'
+          AND created_at >= NOW() - INTERVAL '1 year'
+        `);
+        
+        if (globalStatsResult && globalStatsResult[0]) {
+          globalEmailStats = {
+            ...globalEmailStats,
+            ...globalStatsResult[0],
+            total_subscribers: parseInt(recipientStats.newsletter_count) || 0
+          };
+        }
+      } catch (error) {
+        console.log('⚠️ Table email_campaigns non trouvée, utilisation des données par défaut');
+      }
+
+      console.log(`✅ Données chargées: ${formattedJewels.length} bijoux, ${formattedCustomers.length} clients`);
+
+      // ===== 6. RENDU DE LA VUE AVEC TOUTES LES VARIABLES =====
+      res.render('admin/email-editor', {
+        title: 'Éditeur d\'Emails Marketing - CrystosJewel',
+        user: req.session.user || null,
+        
+        // Bijoux et produits
+        jewels: formattedJewels,
+        products: formattedJewels, // Alias pour compatibilité
+        
+        // Clients
+        customers: formattedCustomers,
+        
+        // Templates (TOUJOURS DÉFINIS)
+        templates: emailTemplates,
+        
+        // Statistiques des destinataires
+        recipientCounts: {
+          all: parseInt(recipientStats.total_customers) || 0,
+          newsletter: parseInt(recipientStats.newsletter_count) || 0,
+          customers: parseInt(recipientStats.customers_with_orders) || 0,
+          vip: parseInt(recipientStats.vip_count) || 0
+        },
+        customerStats: {
+          all: parseInt(recipientStats.total_customers) || 0,
+          newsletter: parseInt(recipientStats.newsletter_count) || 0,
+          withOrders: parseInt(recipientStats.customers_with_orders) || 0,
+          vip: parseInt(recipientStats.vip_count) || 0
+        },
+        
+        // Statistiques globales
+        campaignStats: globalEmailStats,
+        globalStats: globalEmailStats,
+        
+        // Configuration
+        baseUrl: process.env.BASE_URL || 'http://localhost:3000'
+      });
+
+    } catch (error) {
+      console.error('❌ Erreur éditeur email:', error);
+      res.status(500).render('error', {
+        title: 'Erreur',
+        message: 'Impossible de charger l\'éditeur d\'emails marketing',
+        user: req.session.user || null,
+        error: process.env.NODE_ENV === 'development' ? error : {}
+      });
     }
+  },
 
-    console.log(`✅ Données chargées: ${formattedJewels.length} bijoux, ${formattedCustomers.length} clients`);
-
-    // ===== RENDU DE LA VUE =====
-    res.render('admin/email-editor', {
-      title: 'Éditeur d\'Emails Marketing - CrystosJewel',
-      user: req.session.user,
-      jewels: formattedJewels,
-      customers: formattedCustomers,
-      templates: emailTemplates,
-      recipientCounts: {
-        all: parseInt(recipientStats.total_customers) || 0,
-        newsletter: parseInt(recipientStats.newsletter_count) || 0,
-        customers: parseInt(recipientStats.customers_with_orders) || 0,
-        vip: parseInt(recipientStats.vip_count) || 0
-      },
-      globalStats: globalEmailStats,
-      baseUrl: process.env.BASE_URL || 'http://localhost:3000'
-    });
-
-  } catch (error) {
-    console.error('❌ Erreur affichage éditeur marketing:', error);
-    res.status(500).render('error', {
-      title: 'Erreur',
-      message: 'Impossible de charger l\'éditeur d\'emails marketing',
-      user: req.session.user,
-      error: process.env.NODE_ENV === 'development' ? error : {}
-    });
-  }
-},
 
   /**
    * Dashboard des campagnes marketing
@@ -410,9 +459,7 @@ LIMIT 200
   // API ENDPOINTS MARKETING
   // ==========================================
 
-  /**
-   * API: Récupérer la liste des clients pour l'éditeur marketing
-   */
+ // ===== API - RÉCUPÉRER LES CLIENTS =====
   async getCustomersList(req, res) {
     try {
       const { filter = 'newsletter', search = '' } = req.query;
@@ -421,11 +468,11 @@ LIMIT 200
         SELECT 
           id,
           email,
-          COALESCE(first_name, prenom) as first_name,
-          COALESCE(last_name, nom) as last_name,
-          total_orders,
-          total_spent,
-          newsletter_subscribed,
+          COALESCE(first_name, '') as first_name,
+          COALESCE(last_name, '') as last_name,
+          COALESCE(total_orders, 0) as total_orders,
+          COALESCE(total_spent, 0) as total_spent,
+          COALESCE(newsletter_subscribed, false) as newsletter_subscribed,
           CASE 
             WHEN total_orders >= 5 OR total_spent >= 500 THEN 'vip'
             WHEN total_orders > 0 THEN 'customer'
@@ -434,13 +481,12 @@ LIMIT 200
         FROM customer 
         WHERE email IS NOT NULL 
         AND email != ''
-        AND email NOT IN (SELECT email FROM email_unsubscribes)
       `;
 
       const params = [];
       let paramIndex = 1;
 
-      // Filtres marketing
+      // Filtres
       switch (filter) {
         case 'newsletter':
           query += ` AND newsletter_subscribed = true`;
@@ -451,14 +497,13 @@ LIMIT 200
         case 'with-orders':
           query += ` AND total_orders > 0`;
           break;
-        // 'all' = pas de filtre supplémentaire
       }
 
       // Recherche
       if (search.trim()) {
         query += ` AND (
-          LOWER(COALESCE(first_name, prenom, '')) LIKE LOWER($${paramIndex}) OR
-          LOWER(COALESCE(last_name, nom, '')) LIKE LOWER($${paramIndex}) OR
+          LOWER(COALESCE(first_name, '')) LIKE LOWER($${paramIndex}) OR
+          LOWER(COALESCE(last_name, '')) LIKE LOWER($${paramIndex}) OR
           LOWER(email) LIKE LOWER($${paramIndex})
         )`;
         params.push(`%${search.trim()}%`);
@@ -487,7 +532,7 @@ LIMIT 200
         }))
       });
     } catch (error) {
-      console.error('❌ Erreur récupération clients marketing:', error);
+      console.error('❌ Erreur récupération clients:', error);
       res.status(500).json({
         success: false,
         error: error.message
@@ -495,9 +540,7 @@ LIMIT 200
     }
   },
 
-  /**
-   * API: Sauvegarder un brouillon marketing
-   */
+  // ===== SAUVEGARDER BROUILLON =====
   async saveDraft(req, res) {
     try {
       console.log('💾 Sauvegarde brouillon marketing');
@@ -507,7 +550,7 @@ LIMIT 200
       if (result.success) {
         res.json({
           success: true,
-          message: 'Brouillon marketing sauvegardé avec succès',
+          message: 'Brouillon sauvegardé avec succès',
           campaign: result.campaign
         });
       } else {
@@ -517,7 +560,7 @@ LIMIT 200
         });
       }
     } catch (error) {
-      console.error('❌ Erreur sauvegarde brouillon marketing:', error);
+      console.error('❌ Erreur sauvegarde brouillon:', error);
       res.status(500).json({
         success: false,
         error: error.message
@@ -525,14 +568,12 @@ LIMIT 200
     }
   },
 
-  /**
-   * API: Envoyer un email de test marketing
-   */
+  // ===== ENVOYER EMAIL DE TEST =====
   async sendTest(req, res) {
     try {
       const { email, subject, content, template } = req.body;
       
-      console.log(`📧 Envoi test marketing à: ${email}`);
+      console.log(`📧 Envoi test à: ${email}`);
 
       if (!email || !subject || !content) {
         return res.status(400).json({
@@ -541,34 +582,73 @@ LIMIT 200
         });
       }
 
-      const result = await sendMarketingTestEmail(email, subject, content, template);
-      
-      if (result.success) {
-        res.json({
-          success: true,
-          message: `Email de test marketing envoyé avec succès à ${email}`
-        });
-      } else {
-        res.status(400).json({
+      // Vérifier la connexion SMTP
+      try {
+        await transporter.verify();
+        console.log('✅ Connexion SMTP vérifiée');
+      } catch (verifyError) {
+        console.error('❌ Erreur connexion SMTP:', verifyError);
+        return res.status(500).json({
           success: false,
-          message: result.error
+          message: 'Erreur de connexion email. Vérifiez votre configuration SMTP.'
         });
       }
+
+      // Traiter le contenu avec des variables de test
+      const testContent = processEmailTemplate(content, {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: email,
+        orderNumber: 'TEST-001',
+        total: '99,99€',
+        trackingNumber: 'FR123456789',
+        unsubscribeUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/marketing/unsubscribe?email=${email}`,
+        preferencesUrl: `${process.env.BASE_URL || 'http://localhost:3000'}/marketing/preferences?email=${email}`
+      });
+
+      const finalContent = wrapEmailTemplate(testContent, template);
+
+      // Envoyer l'email
+      const info = await Promise.race([
+        transporter.sendMail({
+          from: `"CrystosJewel 💎" <${process.env.MAIL_USER}>`,
+          to: email,
+          subject: `[TEST] ${subject}`,
+          html: finalContent
+        }),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout de 30 secondes atteint')), 30000)
+        )
+      ]);
+
+      console.log('✅ Email test envoyé:', info.messageId);
+
+      res.json({
+        success: true,
+        message: `Email de test envoyé à ${email}`
+      });
+
     } catch (error) {
-      console.error('❌ Erreur envoi test marketing:', error);
+      console.error('❌ Erreur envoi test:', error);
+      
+      let errorMessage = 'Erreur lors de l\'envoi du test';
+      if (error.code === 'ECONNECTION' || error.code === 'ETIMEDOUT') {
+        errorMessage = 'Problème de connexion Gmail. Vérifiez votre connection internet et vos identifiants.';
+      } else if (error.code === 'EAUTH') {
+        errorMessage = 'Erreur d\'authentification Gmail. Vérifiez vos identifiants MAIL_USER et MAIL_PASS.';
+      }
+      
       res.status(500).json({
         success: false,
-        error: error.message
+        message: errorMessage
       });
     }
   },
 
-  /**
-   * API: Envoyer une campagne marketing
-   */
+  // ===== ENVOYER CAMPAGNE COMPLÈTE =====
   async sendCampaign(req, res) {
     try {
-      console.log('🚀 Lancement campagne marketing');
+      console.log('🚀 Envoi campagne marketing');
 
       const campaignData = req.body;
       const userId = req.session.user?.id;
@@ -603,10 +683,10 @@ LIMIT 200
         });
       }
     } catch (error) {
-      console.error('❌ Erreur envoi campagne marketing:', error);
+      console.error('❌ Erreur envoi campagne:', error);
       res.status(500).json({
         success: false,
-        error: error.message
+        message: 'Erreur lors de l\'envoi de la campagne: ' + error.message
       });
     }
   },
@@ -1654,6 +1734,102 @@ export async function cleanupOldMarketingData() {
     console.error('❌ Erreur nettoyage données marketing:', error);
   }
 }
+
+// ===== FONCTIONS UTILITAIRES EXTERNALISÉES =====
+function processEmailTemplate(content, variables) {
+  let processedContent = content;
+  
+  Object.keys(variables).forEach(key => {
+    const regex = new RegExp(`{{${key}}}`, 'g');
+    processedContent = processedContent.replace(regex, variables[key] || '');
+  });
+
+  return processedContent;
+}
+
+function wrapEmailTemplate(content, template = 'elegant') {
+  const colors = {
+    elegant: { primary: '#d89ab3', secondary: '#b794a8' },
+    modern: { primary: '#3b82f6', secondary: '#1e40af' },
+    classic: { primary: '#1e293b', secondary: '#475569' },
+    minimal: { primary: '#64748b', secondary: '#94a3b8' }
+  };
+
+  const color = colors[template] || colors.elegant;
+
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>CrystosJewel</title>
+    </head>
+    <body style="margin: 0; padding: 0; font-family: Arial, sans-serif;">
+      <div style="max-width: 600px; margin: 0 auto; background: white;">
+        <div style="background: linear-gradient(135deg, ${color.primary}, ${color.secondary}); color: white; padding: 30px; text-align: center;">
+          <h1 style="margin: 0; font-size: 28px;">CrystosJewel</h1>
+        </div>
+        <div style="padding: 30px;">
+          ${content}
+        </div>
+        <div style="background: #f8fafc; padding: 20px; text-align: center; font-size: 12px; color: #64748b;">
+          <p>© 2025 CrystosJewel - Tous droits réservés</p>
+          <p style="margin-top: 5px;">
+            <a href="{{unsubscribeUrl}}" style="color: #64748b;">Se désabonner</a> | 
+            <a href="{{preferencesUrl}}" style="color: #64748b;">Gérer mes préférences</a>
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `;
+}
+
+  // ===== TRACKING =====
+  async function trackOpen(req, res) {
+    try {
+      const { campaignId, customerId } = req.params;
+      
+      await sequelize.query(`
+        UPDATE email_logs 
+        SET status = 'opened'
+        WHERE customer_id = $1 AND email_type = 'marketing'
+        AND DATE(created_at) = CURRENT_DATE
+      `, {
+        bind: [customerId]
+      });
+
+      // Retourner un pixel transparent
+      const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+      res.set('Content-Type', 'image/gif');
+      res.send(pixel);
+
+    } catch (error) {
+      console.error('❌ Erreur tracking ouverture:', error);
+      const pixel = Buffer.from('R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7', 'base64');
+      res.set('Content-Type', 'image/gif');
+      res.send(pixel);
+    }
+  }
+
+  async function trackClick(req, res) {
+    try {
+      const { campaignId, customerId } = req.params;
+      const { url } = req.query;
+      
+      console.log(`🖱️ Clic détecté: client ${customerId}, URL: ${url}`);
+
+      res.redirect(url || '/');
+
+    } catch (error) {
+      console.error('❌ Erreur tracking clic:', error);
+      res.redirect(req.query.url || '/');
+    }
+  }
+
+
+
 
 export default adminMarketingController;
 
