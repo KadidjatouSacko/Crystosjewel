@@ -1,5 +1,5 @@
 import { Jewel } from '../models/jewelModel.js';
-import { Material } from '../models/materialModel.js';
+import { Material } from '../models/MaterialModel.js';
 import { Type } from '../models/TypeModel.js';
 import { Category } from '../models/categoryModel.js';
 import { Op } from 'sequelize';
