@@ -41,7 +41,7 @@ import { promoAdminController } from "./controlleurs/promoAdminController.js";
 import { guestOrderController } from './controlleurs/guestOrderController.js';
 import { emailManagementControlleur } from './controlleurs/emailManagementController.js';
 import { adminClientController } from './controlleurs/adminClientController.js';
-import { maintenanceController } from "./controlleurs/maintenanceController.js";
+import { maintenanceController } from "./controlleurs/MaintenanceController.js";
 
 // CONTROLLERS EMAIL - CHOISISSEZ UN SEUL SYSTÈME
 
