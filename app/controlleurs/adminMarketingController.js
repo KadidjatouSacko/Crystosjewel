@@ -650,7 +650,18 @@ export const adminMarketingController = {
     try {
       console.log('🚀 Envoi campagne marketing');
 
-      const campaignData = req.body;
+      const campaignData = {
+    name: req.body.name || 'test',
+    subject: req.body.subject || 'test',
+    content: req.body.content,
+    preheader: req.body.preheader || '',
+    from_name: req.body.from_name || 'CrystosJewel',
+    sender_email: 'noreply@crystosjewel.com',    // ✅ AJOUT OBLIGATOIRE
+    sender_name: 'CrystosJewel',                 // ✅ AJOUT OBLIGATOIRE
+    template_type: req.body.template_type || 'elegant',
+    recipient_type: req.body.recipient_type || 'all',
+    created_by: req.session.user?.id || 1
+};
       const userId = req.session.user?.id;
 
       if (!userId) {

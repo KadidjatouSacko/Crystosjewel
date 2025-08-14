@@ -125,6 +125,23 @@ export async function saveMarketingCampaignDraft(campaignData, userId) {
   }
 }
 
+async function sendMarketingEmail(to, subject, htmlContent, fromName = 'CrystosJewel') {
+    try {
+        const info = await marketingTransporter.sendMail({
+            from: `"${fromName}" <${process.env.MAIL_USER}>`,
+            to: to,
+            subject: subject,
+            html: htmlContent,
+        });
+
+        console.log(`📧 Email marketing envoyé à ${to}:`, info.response);
+        return { success: true, messageId: info.messageId };
+        
+    } catch (error) {
+        console.error(`❌ Erreur envoi email marketing à ${to}:`, error);
+        throw error;
+    }
+}
 /**
  * Envoie une campagne email marketing complète
  */
@@ -133,7 +150,7 @@ export async function sendMarketingCampaign(campaignData) {
     try {
         console.log('🚀 Début envoi campagne marketing:', campaignData.name);
         
-        // 1. Vérifier les tables (vos requêtes CREATE TABLE actuelles)
+        // 1. Vérifier les tables 
         await sequelize.query(`
             CREATE TABLE IF NOT EXISTS email_campaigns (
                 id SERIAL PRIMARY KEY,
@@ -181,7 +198,22 @@ export async function sendMarketingCampaign(campaignData) {
             )
         `);
 
-        // 2. Récupérer les destinataires selon le type
+        console.log('✅ Tables email_campaigns et email_logs vérifiées');
+
+        // 2. Vérifier table email_unsubscribes
+        try {
+            await sequelize.query('SELECT 1 FROM email_unsubscribes LIMIT 1');
+        } catch (error) {
+            await sequelize.query(`
+                CREATE TABLE IF NOT EXISTS email_unsubscribes (
+                    id SERIAL PRIMARY KEY,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            `);
+        }
+
+        // 3. Récupérer les destinataires selon le type
         let recipients = [];
         if (campaignData.recipient_type === 'all') {
             const [results] = await sequelize.query(`
@@ -195,7 +227,7 @@ export async function sendMarketingCampaign(campaignData) {
         
         console.log(`📊 ${recipients.length} destinataires marketing trouvés pour: ${campaignData.recipient_type}`);
 
-        // 3. ✅ INSERTION CORRIGÉE SELON VOTRE STRUCTURE BDD
+        // 4. ✅ INSERTION EN BASE DE DONNÉES (corrigée)
         const [result] = await sequelize.query(`
             INSERT INTO email_campaigns (
                 name, 
@@ -215,15 +247,15 @@ export async function sendMarketingCampaign(campaignData) {
             RETURNING id
         `, {
             bind: [
-                campaignData.name,                           // $1
-                campaignData.subject,                        // $2 
-                campaignData.content,                        // $3
-                campaignData.preheader || '',                // $4
-                campaignData.from_name || 'CrystosJewel',   // $5
-                campaignData.sender_email || 'noreply@crystosjewel.com', // $6
-                campaignData.sender_name || 'CrystosJewel', // $7
-                recipients.length,                           // $8
-                JSON.stringify({                             // $9
+                campaignData.name,                                          // $1
+                campaignData.subject,                                       // $2 
+                campaignData.content,                                       // $3
+                campaignData.preheader || '',                               // $4
+                campaignData.from_name || 'CrystosJewel',                  // $5
+                campaignData.sender_email || process.env.MAIL_USER,        // $6 ✅ OBLIGATOIRE
+                campaignData.sender_name || 'CrystosJewel',                // $7 ✅ OBLIGATOIRE
+                recipients.length,                                          // $8
+                JSON.stringify({                                            // $9
                     recipient_type: campaignData.recipient_type,
                     template_type: campaignData.template_type,
                     created_by: campaignData.created_by
@@ -234,7 +266,7 @@ export async function sendMarketingCampaign(campaignData) {
         const campaignId = result[0].id;
         console.log(`✅ Campagne créée avec ID: ${campaignId}`);
 
-        // 4. Envoi des emails (votre logique existante)
+        // 5. ✅ ENVOI DES EMAILS (avec la bonne fonction)
         let sentCount = 0;
         let errorCount = 0;
 
@@ -246,13 +278,13 @@ export async function sendMarketingCampaign(campaignData) {
                     .replace(/\{\{lastName\}\}/g, recipient.last_name || '')
                     .replace(/\{\{email\}\}/g, recipient.email);
 
-                // Envoi de l'email (votre fonction d'envoi existante)
-                await sendEmail({
-                    to: recipient.email,
-                    subject: campaignData.subject,
-                    html: personalizedContent,
-                    from: `${campaignData.from_name || 'CrystosJewel'} <${campaignData.sender_email || 'noreply@crystosjewel.com'}>`
-                });
+                // ✅ UTILISER LA BONNE FONCTION D'ENVOI EMAIL
+                await sendMarketingEmail(
+                    recipient.email,
+                    campaignData.subject,
+                    personalizedContent,
+                    campaignData.from_name || 'CrystosJewel'
+                );
 
                 // Log de succès
                 await sequelize.query(`
@@ -280,7 +312,7 @@ export async function sendMarketingCampaign(campaignData) {
             }
         }
 
-        // 5. Mise à jour des statistiques de la campagne
+        // 6. Mise à jour des statistiques de la campagne
         await sequelize.query(`
             UPDATE email_campaigns 
             SET 
@@ -308,6 +340,7 @@ export async function sendMarketingCampaign(campaignData) {
         throw error;
     }
 }
+
 
 /**
  * Récupère les destinataires selon les critères
@@ -621,5 +654,6 @@ export async function unsubscribeMarketingEmail(email, campaignId, reason, ipAdd
     return { success: false, error: error.message };
   }
 }
+
 
 console.log('✅ Service Email Marketing CrystosJewel initialisé sans erreurs');

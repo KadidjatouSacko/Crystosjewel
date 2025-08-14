@@ -212,7 +212,7 @@
         }
 
         .email-preview.mobile {
-            max-width: 375px;
+            max-width: 390px; /* iPhone 14 width */
             border-left: 1px solid var(--border);
             border-right: 1px solid var(--border);
         }
@@ -232,6 +232,212 @@
         .content-editable:focus {
             outline: 2px solid var(--primary);
             outline-offset: -2px;
+        }
+
+        /* ===== IMAGES REDIMENSIONNABLES ===== */
+        .resizable-image {
+            position: relative;
+            display: inline-block;
+            max-width: 300px;
+            margin: 10px 5px;
+            width: auto;
+        }
+
+        .resizable-image img {
+            display: block;
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            max-width: 300px;
+        }
+
+        .resizable-image:hover .resize-handles {
+            opacity: 1;
+        }
+
+        .resize-handles {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .resize-handle {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--primary);
+            border: 2px solid white;
+            border-radius: 50%;
+            pointer-events: all;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+
+        .resize-handle.nw { top: -6px; left: -6px; cursor: nw-resize; }
+        .resize-handle.ne { top: -6px; right: -6px; cursor: ne-resize; }
+        .resize-handle.sw { bottom: -6px; left: -6px; cursor: sw-resize; }
+        .resize-handle.se { bottom: -6px; right: -6px; cursor: se-resize; }
+
+        /* ===== DRAG & DROP ===== */
+        .drop-zone {
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            padding: 40px 20px;
+            text-align: center;
+            background: #fafafa;
+            transition: all 0.3s;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+
+        .drop-zone:hover, .drop-zone.dragover {
+            border-color: var(--primary);
+            background: rgba(216, 154, 179, 0.1);
+            transform: translateY(-2px);
+        }
+
+        /* ===== COLONNES FORCÉES ===== */
+        .two-columns {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr !important;
+            gap: 20px !important;
+            margin: 20px 0 !important;
+            padding: 20px !important;
+            border: 2px dashed var(--border) !important;
+            border-radius: var(--radius) !important;
+        }
+
+        .column {
+            padding: 15px !important;
+            background: var(--bg-primary) !important;
+            border-radius: 6px !important;
+            min-height: 100px !important;
+        }
+
+        /* Force les colonnes même sur mobile */
+        @media (max-width: 480px) {
+            .two-columns {
+                grid-template-columns: 1fr 1fr !important;
+                gap: 10px !important;
+                padding: 10px !important;
+            }
+            
+            .column {
+                padding: 10px !important;
+                font-size: 12px !important;
+            }
+        }
+
+        /* ===== BOUTONS ÉDITABLES ===== */
+        .editable-button {
+            position: relative;
+            display: inline-block;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .editable-button:hover::after {
+            content: "🔗";
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background: var(--info);
+            color: white;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            z-index: 10;
+        }
+
+        /* ===== COULEURS PERSONNALISABLES ===== */
+        .editable-color {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .editable-color:hover {
+            transform: scale(1.02);
+        }
+
+        .editable-color:hover::after {
+            content: "🎨";
+            position: absolute;
+            top: -5px;
+            right: -20px;
+            background: var(--primary);
+            color: white;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-size: 10px;
+            z-index: 10;
+        }
+
+        .editable-background {
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .editable-background:hover::before {
+            content: "🎨 Background";
+            position: absolute;
+            top: -25px;
+            left: 0;
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        /* ===== TOOLBAR CONTEXTUELLE ===== */
+        .contextual-toolbar {
+            position: fixed;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: none;
+            gap: 5px;
+            backdrop-filter: blur(10px);
+        }
+
+        .contextual-toolbar.show {
+            display: flex;
+        }
+
+        .contextual-btn {
+            padding: 8px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .contextual-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
         }
 
         .btn {
@@ -415,23 +621,6 @@
             transform: scale(1.05);
         }
 
-        .drop-zone {
-            border: 2px dashed var(--border);
-            border-radius: 8px;
-            padding: 40px 20px;
-            text-align: center;
-            background: #fafafa;
-            transition: all 0.3s;
-            margin: 20px 0;
-            cursor: pointer;
-        }
-
-        .drop-zone:hover, .drop-zone.dragover {
-            border-color: var(--primary);
-            background: rgba(216, 154, 179, 0.1);
-            transform: translateY(-2px);
-        }
-
         .recipients-counter {
             background: var(--success);
             color: white;
@@ -508,6 +697,7 @@
             display: inline-block;
         }
 
+        /* ===== MODALS ===== */
         .modal {
             display: none;
             position: fixed;
@@ -680,42 +870,6 @@
             opacity: 1;
         }
 
-        .contextual-toolbar {
-            position: fixed;
-            background: white;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 8px;
-            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
-            z-index: 1000;
-            display: none;
-            gap: 5px;
-            backdrop-filter: blur(10px);
-        }
-
-        .contextual-toolbar.show {
-            display: flex;
-        }
-
-        .contextual-btn {
-            padding: 8px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: white;
-            cursor: pointer;
-            transition: all 0.2s;
-            font-size: 14px;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .contextual-btn:hover {
-            background: var(--primary);
-            color: white;
-            border-color: var(--primary);
-        }
-
         .email-header {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white;
@@ -741,6 +895,7 @@
             border-top: 1px solid var(--border);
         }
 
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 1200px) {
             .editor-container {
                 grid-template-columns: 250px 1fr 250px;
@@ -770,578 +925,614 @@
     </style>
 </head>
 <body>
-    <!-- Structure HTML - Partie 2: Sidebar Gauche + Zone Centrale -->
-<div class="editor-container">
-   <!-- ===== SIDEBAR GAUCHE ===== -->
-<div class="sidebar-left">
-    <!-- Configuration -->
-    <div class="sidebar-section">
-        <h3>
-            <i class="fas fa-cog"></i>
-            Configuration
-        </h3>
-        
-        <form class="config-form" id="campaignForm">
-            <div class="form-group">
-                <label class="form-label">Nom de la campagne</label>
-                <input type="text" class="form-input" id="campaignName" placeholder="Ma super campagne" required>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Sujet de l'email</label>
-                <input type="text" class="form-input" id="emailSubject" placeholder="🎉 Découvrez nos nouveautés !" required>
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Pré-header (optionnel)</label>
-                <input type="text" class="form-input" id="emailPreheader" placeholder="Texte de prévisualisation">
-            </div>
-            
-            <div class="form-group">
-                <label class="form-label">Nom de l'expéditeur</label>
-                <input type="text" class="form-input" id="senderName" value="CrystosJewel">
-            </div>
-        </form>
-    </div>
-
-    <!-- Templates -->
-    <div class="sidebar-section">
-        <h3>
-            <i class="fas fa-palette"></i>
-            Templates
-        </h3>
-        
-        <div class="template-grid" id="templateGrid">
-            <% if (templates && templates.length > 0) { %>
-                <% templates.forEach(function(template) { %>
-                    <div class="template-card <%= template.is_default ? 'active' : '' %>" data-template="<%= template.template_type %>">
-                        <i class="fas fa-<%= template.template_type === 'elegant' ? 'gem' : template.template_type === 'modern' ? 'rocket' : template.template_type === 'classic' ? 'newspaper' : 'minus' %>" style="font-size: 20px; margin-bottom: 5px;"></i>
-                        <div><%= template.name %></div>
+    <div class="editor-container">
+        <!-- ===== SIDEBAR GAUCHE ===== -->
+        <div class="sidebar-left">
+            <!-- Configuration -->
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-cog"></i>
+                    Configuration
+                </h3>
+                
+                <form class="config-form" id="campaignForm">
+                    <div class="form-group">
+                        <label class="form-label">Nom de la campagne</label>
+                        <input type="text" class="form-input" id="campaignName" placeholder="Ma super campagne" required>
                     </div>
-                <% }); %>
-            <% } else { %>
-                <div class="template-card active" data-template="elegant">
-                    <i class="fas fa-gem" style="font-size: 20px; margin-bottom: 5px;"></i>
-                    <div>Élégant</div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Sujet de l'email</label>
+                        <input type="text" class="form-input" id="emailSubject" placeholder="🎉 Découvrez nos nouveautés !" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Pré-header (optionnel)</label>
+                        <input type="text" class="form-input" id="emailPreheader" placeholder="Texte de prévisualisation">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Nom de l'expéditeur</label>
+                        <input type="text" class="form-input" id="senderName" value="CrystosJewel">
+                    </div>
+                </form>
+            </div>
+
+            <!-- Templates -->
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-palette"></i>
+                    Templates
+                </h3>
+                
+                <div class="template-grid" id="templateGrid">
+                    <div class="template-card active" data-template="elegant">
+                        <i class="fas fa-gem" style="font-size: 20px; margin-bottom: 5px;"></i>
+                        <div>Élégant</div>
+                    </div>
+                    <div class="template-card" data-template="modern">
+                        <i class="fas fa-rocket" style="font-size: 20px; margin-bottom: 5px;"></i>
+                        <div>Moderne</div>
+                    </div>
+                    <div class="template-card" data-template="classic">
+                        <i class="fas fa-newspaper" style="font-size: 20px; margin-bottom: 5px;"></i>
+                        <div>Classique</div>
+                    </div>
+                    <div class="template-card" data-template="minimal">
+                        <i class="fas fa-minus" style="font-size: 20px; margin-bottom: 5px;"></i>
+                        <div>Minimal</div>
+                    </div>
                 </div>
-                <div class="template-card" data-template="modern">
-                    <i class="fas fa-rocket" style="font-size: 20px; margin-bottom: 5px;"></i>
-                    <div>Moderne</div>
+            </div>
+
+            <!-- Blocs de contenu -->
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-cube"></i>
+                    Blocs de contenu
+                </h3>
+                
+                <div class="content-blocks">
+                    <div class="block-item" data-block="title">
+                        <i class="fas fa-heading"></i>
+                        <span>Titre (H1-H6)</span>
+                    </div>
+                    <div class="block-item" data-block="text">
+                        <i class="fas fa-paragraph"></i>
+                        <span>Texte / Paragraphe</span>
+                    </div>
+                    <div class="block-item" data-block="image">
+                        <i class="fas fa-image"></i>
+                        <span>Image</span>
+                    </div>
+                    <div class="block-item" data-block="button">
+                        <i class="fas fa-mouse-pointer"></i>
+                        <span>Bouton CTA</span>
+                    </div>
+                    <div class="block-item" data-block="divider">
+                        <i class="fas fa-grip-lines"></i>
+                        <span>Séparateur</span>
+                    </div>
+                    <div class="block-item" data-block="columns">
+                        <i class="fas fa-columns"></i>
+                        <span>2 Colonnes</span>
+                    </div>
+                    <div class="block-item" data-block="products">
+                        <i class="fas fa-gem"></i>
+                        <span>Produits</span>
+                    </div>
+                    <div class="block-item" data-block="promotion">
+                        <i class="fas fa-percent"></i>
+                        <span>Promotion</span>
+                    </div>
+                    <div class="block-item" data-block="unsubscribe">
+                        <i class="fas fa-times-circle"></i>
+                        <span>Désabonnement</span>
+                    </div>
                 </div>
-                <div class="template-card" data-template="classic">
-                    <i class="fas fa-newspaper" style="font-size: 20px; margin-bottom: 5px;"></i>
-                    <div>Classique</div>
+            </div>
+
+            <!-- Variables -->
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-code"></i>
+                    Variables
+                </h3>
+                
+                <div class="variables-list">
+                    <span class="variable-tag" data-variable="{{firstName}}">{{firstName}}</span>
+                    <span class="variable-tag" data-variable="{{lastName}}">{{lastName}}</span>
+                    <span class="variable-tag" data-variable="{{email}}">{{email}}</span>
+                    <span class="variable-tag" data-variable="{{orderNumber}}">{{orderNumber}}</span>
+                    <span class="variable-tag" data-variable="{{total}}">{{total}}</span>
+                    <span class="variable-tag" data-variable="{{trackingNumber}}">{{trackingNumber}}</span>
                 </div>
-                <div class="template-card" data-template="minimal">
-                    <i class="fas fa-minus" style="font-size: 20px; margin-bottom: 5px;"></i>
-                    <div>Minimal</div>
-                </div>
-            <% } %>
-        </div>
-    </div>
-
-    <!-- Blocs de contenu -->
-    <div class="sidebar-section">
-        <h3>
-            <i class="fas fa-cube"></i>
-            Blocs de contenu
-        </h3>
-        
-        <div class="content-blocks">
-            <div class="block-item" data-block="title">
-                <i class="fas fa-heading"></i>
-                <span>Titre (H1-H6)</span>
             </div>
-            <div class="block-item" data-block="text">
-                <i class="fas fa-paragraph"></i>
-                <span>Texte / Paragraphe</span>
-            </div>
-            <div class="block-item" data-block="image">
-                <i class="fas fa-image"></i>
-                <span>Image</span>
-            </div>
-            <div class="block-item" data-block="button">
-                <i class="fas fa-mouse-pointer"></i>
-                <span>Bouton CTA</span>
-            </div>
-            <div class="block-item" data-block="divider">
-                <i class="fas fa-grip-lines"></i>
-                <span>Séparateur</span>
-            </div>
-            <div class="block-item" data-block="columns">
-                <i class="fas fa-columns"></i>
-                <span>2 Colonnes</span>
-            </div>
-            <div class="block-item" data-block="products">
-                <i class="fas fa-gem"></i>
-                <span>Produits</span>
-            </div>
-            <div class="block-item" data-block="promotion">
-                <i class="fas fa-percent"></i>
-                <span>Promotion</span>
-            </div>
-            <div class="block-item" data-block="unsubscribe">
-                <i class="fas fa-times-circle"></i>
-                <span>Désabonnement</span>
-            </div>
-        </div>
-    </div>
 
-    <!-- Variables -->
-    <div class="sidebar-section">
-        <h3>
-            <i class="fas fa-code"></i>
-            Variables
-        </h3>
-        
-        <div class="variables-list">
-            <span class="variable-tag" data-variable="{{firstName}}">{{firstName}}</span>
-            <span class="variable-tag" data-variable="{{lastName}}">{{lastName}}</span>
-            <span class="variable-tag" data-variable="{{email}}">{{email}}</span>
-            <span class="variable-tag" data-variable="{{orderNumber}}">{{orderNumber}}</span>
-            <span class="variable-tag" data-variable="{{total}}">{{total}}</span>
-            <span class="variable-tag" data-variable="{{trackingNumber}}">{{trackingNumber}}</span>
-        </div>
-    </div>
-
-    <!-- Images -->
-    <div class="sidebar-section">
-        <h3>
-            <i class="fas fa-upload"></i>
-            Images
-        </h3>
-        
-        <div class="form-group">
-            <input type="file" id="imageUpload" accept="image/*" style="display: none;" multiple>
-            <button type="button" class="btn btn-info" id="uploadImageBtn">
-                <i class="fas fa-upload"></i>
-                Uploader une image
-            </button>
-        </div>
-        
-        <!-- Drop Zone -->
-        <div class="drop-zone" id="dropZone">
-            <i class="fas fa-cloud-upload-alt" style="font-size: 32px; color: #ccc; margin-bottom: 10px;"></i>
-            <p style="margin: 0; color: var(--text-secondary);">Glissez-déposez des images ici</p>
-        </div>
-        
-        <div id="uploadedImages" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
-            <!-- Images uploadées apparaîtront ici -->
-        </div>
-    </div>
-</div>
-
-<!-- ===== ZONE CENTRALE ===== -->
-<div class="editor-main">
-    <!-- Header -->
-    <div class="editor-header">
-        <div class="editor-title">
-            <i class="fas fa-edit"></i>
-            <%= title %>
-        </div>
-        <div class="editor-actions">
-            <button type="button" class="btn btn-secondary" id="saveAsDraftBtn">
-                <i class="fas fa-save"></i>
-                Brouillon
-            </button>
-            <button type="button" class="btn btn-warning" id="sendTestBtn">
-                <i class="fas fa-flask"></i>
-                Test
-            </button>
-            <button type="button" class="btn btn-info" id="previewEmailBtn">
-                <i class="fas fa-eye"></i>
-                Aperçu
-            </button>
-            <button type="button" class="btn btn-primary" id="dashboardBtn">
-                <i class="fas fa-chart-bar"></i>
-                Dashboard
-            </button>
-            <button type="button" class="btn btn-success" id="sendCampaignBtn">
-                <i class="fas fa-paper-plane"></i>
-                Envoyer
-            </button>
-        </div>
-    </div>
-
-    <!-- Barre d'outils de formatage -->
-    <div class="toolbar">
-        <!-- Police et taille -->
-        <div class="toolbar-group">
-            <select class="toolbar-select" id="fontFamily">
-                <option value="Arial, sans-serif">Arial</option>
-                <option value="Georgia, serif">Georgia</option>
-                <option value="'Times New Roman', serif">Times</option>
-                <option value="Verdana, sans-serif">Verdana</option>
-                <option value="Helvetica, sans-serif">Helvetica</option>
-                <option value="'Courier New', monospace">Courier</option>
-            </select>
-            <select class="toolbar-select" id="fontSize">
-                <option value="12px">12px</option>
-                <option value="14px">14px</option>
-                <option value="16px" selected>16px</option>
-                <option value="18px">18px</option>
-                <option value="20px">20px</option>
-                <option value="24px">24px</option>
-                <option value="28px">28px</option>
-                <option value="32px">32px</option>
-                <option value="36px">36px</option>
-                <option value="48px">48px</option>
-            </select>
-        </div>
-
-        <!-- Style de texte -->
-        <div class="toolbar-group">
-            <button class="toolbar-btn" data-command="bold" title="Gras">
-                <i class="fas fa-bold"></i>
-            </button>
-            <button class="toolbar-btn" data-command="italic" title="Italique">
-                <i class="fas fa-italic"></i>
-            </button>
-            <button class="toolbar-btn" data-command="underline" title="Souligné">
-                <i class="fas fa-underline"></i>
-            </button>
-            <input type="color" class="color-picker" id="textColor" title="Couleur du texte" value="#1e293b">
-        </div>
-
-        <!-- Alignement -->
-        <div class="toolbar-group">
-            <button class="toolbar-btn" data-command="justifyLeft" title="Aligner à gauche">
-                <i class="fas fa-align-left"></i>
-            </button>
-            <button class="toolbar-btn" data-command="justifyCenter" title="Centrer">
-                <i class="fas fa-align-center"></i>
-            </button>
-            <button class="toolbar-btn" data-command="justifyRight" title="Aligner à droite">
-                <i class="fas fa-align-right"></i>
-            </button>
-            <button class="toolbar-btn" data-command="justifyFull" title="Justifier">
-                <i class="fas fa-align-justify"></i>
-            </button>
-        </div>
-
-        <!-- Titres -->
-        <div class="toolbar-group">
-            <select class="toolbar-select" id="heading">
-                <option value="">Paragraphe</option>
-                <option value="h1">Titre H1</option>
-                <option value="h2">Titre H2</option>
-                <option value="h3">Titre H3</option>
-                <option value="h4">Titre H4</option>
-                <option value="h5">Titre H5</option>
-                <option value="h6">Titre H6</option>
-            </select>
-        </div>
-
-        <!-- Actions -->
-        <div class="toolbar-group">
-            <button class="toolbar-btn" id="insertLink" title="Insérer un lien">
-                <i class="fas fa-link"></i>
-            </button>
-            <button class="toolbar-btn" id="insertImage" title="Insérer une image">
-                <i class="fas fa-image"></i>
-            </button>
-            <button class="toolbar-btn" data-command="removeFormat" title="Supprimer le formatage">
-                <i class="fas fa-remove-format"></i>
-            </button>
-        </div>
-    </div>
-
-    <!-- Zone de prévisualisation -->
-    <div class="preview-area">
-        <div class="editor-wrapper">
-            <div class="preview-controls">
-                <div class="preview-mode">
-                    <button class="preview-btn active" data-mode="desktop">
-                        <i class="fas fa-desktop"></i> Desktop
-                    </button>
-                    <button class="preview-btn" data-mode="mobile">
-                        <i class="fas fa-mobile-alt"></i> Mobile
+            <!-- Images -->
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-upload"></i>
+                    Images
+                </h3>
+                
+                <div class="form-group">
+                    <input type="file" id="imageUpload" accept="image/*" style="display: none;" multiple>
+                    <button type="button" class="btn btn-info" id="uploadImageBtn">
+                        <i class="fas fa-upload"></i>
+                        Uploader une image
                     </button>
                 </div>
-                <div style="margin-left: auto; font-size: 12px; color: var(--text-secondary);">
-                    <span id="autosaveStatus">Sauvegarde automatique activée</span>
-                </div>
-            </div>
-            
-            <div class="email-preview" id="emailPreview">
-                <div class="email-header">
-                    <div class="email-subject" id="previewSubject">🎉 Découvrez nos nouveautés !</div>
-                    <div class="email-preheader" id="previewPreheader">Texte de prévisualisation</div>
+                
+                <!-- Drop Zone -->
+                <div class="drop-zone" id="dropZone">
+                    <i class="fas fa-cloud-upload-alt" style="font-size: 32px; color: #ccc; margin-bottom: 10px;"></i>
+                    <p style="margin: 0; color: var(--text-secondary);">Glissez-déposez des images ici</p>
                 </div>
                 
-                <div class="content-editable" id="emailContent" contenteditable="true" style="padding: 20px; min-height: 400px; outline: none;">
-                    <h2 style="color: #d89ab3; margin-bottom: 20px; text-align: center;">Bonjour {{firstName}} !</h2>
-                    
-                    <p style="margin-bottom: 15px;">Nous sommes ravis de vous présenter notre nouvelle collection de bijoux exclusifs.</p>
-                    
-                    <p style="margin-bottom: 20px;">Découvrez des pièces uniques créées avec passion par nos artisans.</p>
-                    
-                    <div style="text-align: center; margin: 30px 0;">
-                        <a href="/bijoux" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 15px rgba(216, 154, 179, 0.3); transition: transform 0.2s ease;">
-                            🛍️ Découvrir la collection
-                        </a>
-                    </div>
-                    
-                    <p style="margin-bottom: 15px;">Profitez d'une <strong>réduction de 15%</strong> avec le code <code style="background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-family: monospace;">NOUVEAU15</code></p>
-                    
-                    <hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;">
-                    
-                    <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;">
-                        À bientôt,<br>
-                        L'équipe CrystosJewel
-                    </p>
-                </div>
-                
-                <div class="email-footer">
-                    <p>© 2025 CrystosJewel - Tous droits réservés</p>
-                    <p style="margin-top: 5px;">
-                        <a href="#" style="color: #64748b;">Se désabonner</a> | 
-                        <a href="#" style="color: #64748b;">Mettre à jour mes préférences</a>
-                    </p>
+                <div id="uploadedImages" style="margin-top: 15px; max-height: 200px; overflow-y: auto;">
+                    <!-- Images uploadées apparaîtront ici -->
                 </div>
             </div>
         </div>
-    </div>
-</div>
-<!-- ===== SIDEBAR DROITE ===== -->
-<div class="sidebar-right">
-    <!-- Destinataires -->
-    <div class="sidebar-section">
-        <h3>
-            <i class="fas fa-users"></i>
-            Destinataires
-        </h3>
-        
-        <div class="recipients-counter" id="recipientsCounter">
-            <i class="fas fa-envelope"></i>
-            <span id="recipientCount">0</span> destinataires sélectionnés
-        </div>
-        
-        <div class="filter-buttons">
-            <button class="filter-btn active" data-filter="newsletter">
-                📧 Newsletter (<%= customerStats ? customerStats.newsletter : 0 %>)
-            </button>
-            <button class="filter-btn" data-filter="all">
-                👥 Tous (<%= customerStats ? customerStats.all : 0 %>)
-            </button>
-            <button class="filter-btn" data-filter="vip">
-                💎 VIP (<%= customerStats ? customerStats.vip : 0 %>)
-            </button>
-            <button class="filter-btn" data-filter="with-orders">
-                🛍️ Clients (<%= customerStats ? customerStats.withOrders : 0 %>)
-            </button>
-        </div>
-        
-        <div class="form-group">
-            <label class="form-label">Rechercher un client</label>
-            <input type="text" class="form-input" id="clientSearch" placeholder="Nom ou email">
-        </div>
-        
-        <div id="clientsList" style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
-            <% if (customers && customers.length > 0) { %>
-                <% customers.forEach(function(customer) { %>
-                    <div class="client-item" data-client-id="<%= customer.id %>" onclick="toggleClientSelection(<%= customer.id %>)">
-                        <div class="client-name"><%= customer.name || customer.email %></div>
-                        <div class="client-email"><%= customer.email %></div>
-                        <% if (customer.total_orders > 0) { %>
-                            <div class="client-type">💰 <%= customer.total_orders %> commandes</div>
-                        <% } %>
-                        <% if (customer.customer_type === 'vip') { %>
-                            <div class="client-type">💎 VIP</div>
-                        <% } %>
-                    </div>
-                <% }); %>
-            <% } else { %>
-                <div style="color: var(--text-secondary); text-align: center; padding: 20px;">
-                    Aucun client trouvé
+
+        <!-- ===== ZONE CENTRALE ===== -->
+        <div class="editor-main">
+            <!-- Header -->
+            <div class="editor-header">
+                <div class="editor-title">
+                    <i class="fas fa-edit"></i>
+                    <%= title %>
                 </div>
-            <% } %>
-        </div>
-    </div>
-
-    <!-- Statistiques -->
-    <div class="sidebar-section">
-        <h3>
-            <i class="fas fa-chart-bar"></i>
-            Statistiques
-        </h3>
-        
-        <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--radius); font-size: 13px;">
-            <p style="margin-bottom: 8px;">
-                <strong>📊 Total campagnes:</strong> <%= campaignStats ? campaignStats.total_campaigns : 0 %>
-            </p>
-            <p style="margin-bottom: 8px;">
-                <strong>📧 Emails envoyés:</strong> <%= campaignStats ? campaignStats.total_emails_sent : 0 %>
-            </p>
-            <p style="margin-bottom: 8px;">
-                <strong>📈 Taux d'ouverture:</strong> <%= campaignStats ? campaignStats.global_open_rate : 0 %>%
-            </p>
-            <p style="margin-bottom: 8px;">
-                <strong>🖱️ Taux de clic:</strong> <%= campaignStats ? campaignStats.global_click_rate : 0 %>%
-            </p>
-            <p>
-                <strong>👥 Abonnés:</strong> <%= campaignStats ? campaignStats.total_subscribers : 0 %>
-            </p>
-        </div>
-    </div>
-
-    <!-- Conseils -->
-    <div class="sidebar-section">
-        <h3>
-            <i class="fas fa-info-circle"></i>
-            Conseils
-        </h3>
-        
-        <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--radius); font-size: 13px; line-height: 1.5;">
-            <p style="margin-bottom: 10px;"><strong>📝 Bonnes pratiques :</strong></p>
-            <ul style="margin-left: 15px;">
-                <li>Sujet accrocheur (max 50 caractères)</li>
-                <li>Personnalisez avec des variables</li>
-                <li>Testez avant d'envoyer</li>
-                <li>Optimisez pour mobile</li>
-                <li>Analysez les statistiques</li>
-            </ul>
-        </div>
-    </div>
-</div>
-
-</div> <!-- Fin editor-container -->
-
-<!-- ===== INDICATEURS ===== -->
-<div class="auto-save" id="autoSaveIndicator">
-    <i class="fas fa-check"></i> Sauvegardé automatiquement
-</div>
-
-<!-- ===== TOOLBAR CONTEXTUELLE ===== -->
-<div class="contextual-toolbar" id="contextualToolbar">
-    <button class="contextual-btn" onclick="editElement()">
-        <i class="fas fa-edit"></i> Éditer
-    </button>
-    <button class="contextual-btn" onclick="duplicateElement()">
-        <i class="fas fa-copy"></i> Dupliquer
-    </button>
-    <button class="contextual-btn" onclick="deleteElement()">
-        <i class="fas fa-trash"></i> Supprimer
-    </button>
-</div>
-
-<!-- ===== MODALS ===== -->
-
-<!-- Modal pour sélectionner les produits -->
-<div class="modal" id="productsModal">
-    <div class="modal-content" style="max-width: 900px;">
-        <div class="modal-header">
-            <h3 class="modal-title">Sélectionner des produits</h3>
-            <button class="modal-close" onclick="closeModal('productsModal')">&times;</button>
-        </div>
-        <div class="form-group">
-            <input type="text" class="form-input" id="productSearch" placeholder="Rechercher un produit...">
-        </div>
-        <div class="products-grid" id="productsGrid">
-            <% if (jewels && jewels.length > 0) { %>
-                <% jewels.forEach(function(jewel) { %>
-                    <div class="product-card" data-product-id="<%= jewel.id %>" data-product-slug="<%= jewel.slug %>">
-                        <img src="<%= jewel.imageUrl %>" 
-                             alt="<%= jewel.name %>" 
-                             class="product-image"
-                             onerror="this.src='/images/no-image.jpg'">
-                        <div class="product-name"><%= jewel.name %></div>
-                        <div class="product-price"><%= jewel.formattedPrice %></div>
-                    </div>
-                <% }); %>
-            <% } else { %>
-                <div class="product-card" data-product-id="1" data-product-slug="bracelet-or-elegance">
-                    <img src="/images/no-image.jpg" alt="Bracelet Or Élégance" class="product-image">
-                    <div class="product-name">Bracelet Or Élégance</div>
-                    <div class="product-price">299€</div>
+                <div class="editor-actions">
+                    <button type="button" class="btn btn-secondary" id="saveAsDraftBtn">
+                        <i class="fas fa-save"></i>
+                        Brouillon
+                    </button>
+                    <button type="button" class="btn btn-warning" id="sendTestBtn">
+                        <i class="fas fa-flask"></i>
+                        Test
+                    </button>
+                    <button type="button" class="btn btn-info" id="previewEmailBtn">
+                        <i class="fas fa-eye"></i>
+                        Aperçu
+                    </button>
+                    <button type="button" class="btn btn-primary" id="dashboardBtn">
+                        <i class="fas fa-chart-bar"></i>
+                        Dashboard
+                    </button>
+                    <button type="button" class="btn btn-success" id="sendCampaignBtn">
+                        <i class="fas fa-paper-plane"></i>
+                        Envoyer
+                    </button>
                 </div>
-            <% } %>
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-            <button class="btn btn-secondary" onclick="closeModal('productsModal')">Annuler</button>
-            <button class="btn btn-primary" onclick="insertSelectedProducts()">Insérer les produits</button>
-        </div>
-    </div>
-</div>
+            </div>
 
-<!-- Modal pour insérer un lien -->
-<div class="modal" id="linkModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 class="modal-title">Insérer un lien</h3>
-            <button class="modal-close" onclick="closeModal('linkModal')">&times;</button>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Texte du lien</label>
-            <input type="text" class="form-input" id="linkText" placeholder="Cliquez ici">
-        </div>
-        <div class="form-group">
-            <label class="form-label">URL</label>
-            <input type="url" class="form-input" id="linkUrl" placeholder="https://example.com">
-        </div>
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="linkNewTab"> Ouvrir dans un nouvel onglet
-            </label>
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button class="btn btn-secondary" onclick="closeModal('linkModal')">Annuler</button>
-            <button class="btn btn-primary" onclick="insertLink()">Insérer</button>
-        </div>
-    </div>
-</div>
+            <!-- Barre d'outils de formatage -->
+            <div class="toolbar">
+                <!-- Police et taille -->
+                <div class="toolbar-group">
+                    <select class="toolbar-select" id="fontFamily">
+                        <option value="Arial, sans-serif">Arial</option>
+                        <option value="Georgia, serif">Georgia</option>
+                        <option value="'Times New Roman', serif">Times</option>
+                        <option value="Verdana, sans-serif">Verdana</option>
+                        <option value="Helvetica, sans-serif">Helvetica</option>
+                        <option value="'Courier New', monospace">Courier</option>
+                    </select>
+                    <select class="toolbar-select" id="fontSize">
+                        <option value="12px">12px</option>
+                        <option value="14px">14px</option>
+                        <option value="16px" selected>16px</option>
+                        <option value="18px">18px</option>
+                        <option value="20px">20px</option>
+                        <option value="24px">24px</option>
+                        <option value="28px">28px</option>
+                        <option value="32px">32px</option>
+                        <option value="36px">36px</option>
+                        <option value="48px">48px</option>
+                    </select>
+                </div>
 
-<!-- Modal pour envoyer un test -->
-<div class="modal" id="testModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 class="modal-title">Envoyer un email de test</h3>
-            <button class="modal-close" onclick="closeModal('testModal')">&times;</button>
-        </div>
-        <div class="form-group">
-            <label class="form-label">Email de test</label>
-            <input type="email" class="form-input" id="testEmail" placeholder="test@example.com" value="<%= user ? user.email : '' %>">
-        </div>
-        <div class="form-group">
-            <p style="font-size: 12px; color: var(--text-secondary);">
-                L'email sera envoyé avec les variables remplacées par des valeurs de test.
-            </p>
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button class="btn btn-secondary" onclick="closeModal('testModal')">Annuler</button>
-            <button class="btn btn-warning" onclick="sendTestEmail()">
-                <i class="fas fa-flask"></i> Envoyer le test
-            </button>
-        </div>
-    </div>
-</div>
+                <!-- Style de texte -->
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" data-command="bold" title="Gras">
+                        <i class="fas fa-bold"></i>
+                    </button>
+                    <button class="toolbar-btn" data-command="italic" title="Italique">
+                        <i class="fas fa-italic"></i>
+                    </button>
+                    <button class="toolbar-btn" data-command="underline" title="Souligné">
+                        <i class="fas fa-underline"></i>
+                    </button>
+                    <input type="color" class="color-picker" id="textColor" title="Couleur du texte" value="#1e293b">
+                </div>
 
-<!-- Modal de confirmation d'envoi -->
-<div class="modal" id="sendModal">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 class="modal-title">Confirmer l'envoi de la campagne</h3>
-            <button class="modal-close" onclick="closeModal('sendModal')">&times;</button>
+                <!-- Alignement -->
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" data-command="justifyLeft" title="Aligner à gauche">
+                        <i class="fas fa-align-left"></i>
+                    </button>
+                    <button class="toolbar-btn" data-command="justifyCenter" title="Centrer">
+                        <i class="fas fa-align-center"></i>
+                    </button>
+                    <button class="toolbar-btn" data-command="justifyRight" title="Aligner à droite">
+                        <i class="fas fa-align-right"></i>
+                    </button>
+                    <button class="toolbar-btn" data-command="justifyFull" title="Justifier">
+                        <i class="fas fa-align-justify"></i>
+                    </button>
+                </div>
+
+                <!-- Titres -->
+                <div class="toolbar-group">
+                    <select class="toolbar-select" id="heading">
+                        <option value="">Paragraphe</option>
+                        <option value="h1">Titre H1</option>
+                        <option value="h2">Titre H2</option>
+                        <option value="h3">Titre H3</option>
+                        <option value="h4">Titre H4</option>
+                        <option value="h5">Titre H5</option>
+                        <option value="h6">Titre H6</option>
+                    </select>
+                </div>
+
+                <!-- Actions -->
+                <div class="toolbar-group">
+                    <button class="toolbar-btn" id="insertLink" title="Insérer un lien">
+                        <i class="fas fa-link"></i>
+                    </button>
+                    <button class="toolbar-btn" id="insertImage" title="Insérer une image">
+                        <i class="fas fa-image"></i>
+                    </button>
+                    <button class="toolbar-btn" data-command="removeFormat" title="Supprimer le formatage">
+                        <i class="fas fa-remove-format"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Zone de prévisualisation -->
+            <div class="preview-area">
+                <div class="editor-wrapper">
+                    <div class="preview-controls">
+                        <div class="preview-mode">
+                            <button class="preview-btn active" data-mode="desktop">
+                                <i class="fas fa-desktop"></i> Desktop
+                            </button>
+                            <button class="preview-btn" data-mode="mobile">
+                                <i class="fas fa-mobile-alt"></i> Mobile
+                            </button>
+                        </div>
+                        <div style="margin-left: auto; font-size: 12px; color: var(--text-secondary);">
+                            <span id="autosaveStatus">Sauvegarde automatique activée</span>
+                        </div>
+                    </div>
+                    
+                    <div class="email-preview" id="emailPreview">
+                        <div class="email-header editable-background">
+                            <div class="email-subject editable-color" id="previewSubject">🎉 Découvrez nos nouveautés !</div>
+                            <div class="email-preheader editable-color" id="previewPreheader">Texte de prévisualisation</div>
+                        </div>
+                        
+                        <div class="content-editable" id="emailContent" contenteditable="true">
+                            <h2 style="color: #d89ab3; margin-bottom: 20px; text-align: center;" class="editable-color">Bonjour {{firstName}} !</h2>
+                            
+                            <p style="margin-bottom: 15px;">Nous sommes ravis de vous présenter notre nouvelle collection de bijoux exclusifs.</p>
+                            
+                            <p style="margin-bottom: 20px;">Découvrez des pièces uniques créées avec passion par nos artisans.</p>
+                            
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="/bijoux" class="editable-button editable-color editable-background" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 15px rgba(216, 154, 179, 0.3); transition: transform 0.2s ease;">
+                                    🛍️ Découvrir la collection
+                                </a>
+                            </div>
+                            
+                            <p style="margin-bottom: 15px;">Profitez d'une <strong>réduction de 15%</strong> avec le code <code style="background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-family: monospace;" class="editable-background">NOUVEAU15</code></p>
+                            
+                            <hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;">
+                            
+                            <p style="color: #64748b; font-size: 14px; margin-bottom: 15px;" class="editable-color">
+                                À bientôt,<br>
+                                L'équipe CrystosJewel
+                            </p>
+                        </div>
+                        
+                        <div class="email-footer editable-background">
+                            <p class="editable-color">© 2025 CrystosJewel - Tous droits réservés</p>
+                            <p style="margin-top: 5px;" class="editable-color">
+                                <a href="#" style="color: #64748b;" class="editable-color">Se désabonner</a> | 
+                                <a href="#" style="color: #64748b;" class="editable-color">Mettre à jour mes préférences</a>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div id="sendSummary">
-            <!-- Contenu généré dynamiquement -->
-        </div>
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="confirmSend" required> 
-                Je confirme vouloir envoyer cette campagne
-            </label>
-        </div>
-        <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button class="btn btn-secondary" onclick="closeModal('sendModal')">Annuler</button>
-            <button class="btn btn-success" onclick="confirmSendCampaign()" id="finalSendBtn" disabled>
-                <i class="fas fa-paper-plane"></i> Envoyer maintenant
-            </button>
+
+        <!-- ===== SIDEBAR DROITE ===== -->
+        <div class="sidebar-right">
+            <!-- Destinataires -->
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-users"></i>
+                    Destinataires
+                </h3>
+                
+                <div class="recipients-counter" id="recipientsCounter">
+                    <i class="fas fa-envelope"></i>
+                    <span id="recipientCount">0</span> destinataires sélectionnés
+                </div>
+                
+                <div class="filter-buttons">
+                    <button class="filter-btn active" data-filter="newsletter">
+                        📧 Newsletter (<%= customerStats ? customerStats.newsletter : 0 %>)
+                    </button>
+                    <button class="filter-btn" data-filter="all">
+                        👥 Tous (<%= customerStats ? customerStats.all : 0 %>)
+                    </button>
+                    <button class="filter-btn" data-filter="vip">
+                        💎 VIP (<%= customerStats ? customerStats.vip : 0 %>)
+                    </button>
+                    <button class="filter-btn" data-filter="with-orders">
+                        🛍️ Clients (<%= customerStats ? customerStats.withOrders : 0 %>)
+                    </button>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Rechercher un client</label>
+                    <input type="text" class="form-input" id="clientSearch" placeholder="Nom ou email">
+                </div>
+                
+                <div id="clientsList" style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
+                    <% if (customers && customers.length > 0) { %>
+                        <% customers.forEach(function(customer) { %>
+                            <div class="client-item" data-client-id="<%= customer.id %>" onclick="toggleClientSelection(<%= customer.id %>)">
+                                <div class="client-name"><%= customer.name || customer.email %></div>
+                                <div class="client-email"><%= customer.email %></div>
+                                <% if (customer.total_orders > 0) { %>
+                                    <div class="client-type">💰 <%= customer.total_orders %> commandes</div>
+                                <% } %>
+                                <% if (customer.customer_type === 'vip') { %>
+                                    <div class="client-type">💎 VIP</div>
+                                <% } %>
+                            </div>
+                        <% }); %>
+                    <% } else { %>
+                        <div style="color: var(--text-secondary); text-align: center; padding: 20px;">
+                            Aucun client trouvé
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+
+            <!-- Statistiques -->
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-chart-bar"></i>
+                    Statistiques
+                </h3>
+                
+                <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--radius); font-size: 13px;">
+                    <p style="margin-bottom: 8px;">
+                        <strong>📊 Total campagnes:</strong> <%= campaignStats ? campaignStats.total_campaigns : 0 %>
+                    </p>
+                    <p style="margin-bottom: 8px;">
+                        <strong>📧 Emails envoyés:</strong> <%= campaignStats ? campaignStats.total_emails_sent : 0 %>
+                    </p>
+                    <p style="margin-bottom: 8px;">
+                        <strong>📈 Taux d'ouverture:</strong> <%= campaignStats ? campaignStats.global_open_rate : 0 %>%
+                    </p>
+                    <p style="margin-bottom: 8px;">
+                        <strong>🖱️ Taux de clic:</strong> <%= campaignStats ? campaignStats.global_click_rate : 0 %>%
+                    </p>
+                    <p>
+                        <strong>👥 Abonnés:</strong> <%= campaignStats ? campaignStats.total_subscribers : 0 %>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Conseils -->
+            <div class="sidebar-section">
+                <h3>
+                    <i class="fas fa-info-circle"></i>
+                    Conseils
+                </h3>
+                
+                <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--radius); font-size: 13px; line-height: 1.5;">
+                    <p style="margin-bottom: 10px;"><strong>📝 Bonnes pratiques :</strong></p>
+                    <ul style="margin-left: 15px;">
+                        <li>Sujet accrocheur (max 50 caractères)</li>
+                        <li>Personnalisez avec des variables</li>
+                        <li>Testez avant d'envoyer</li>
+                        <li>Optimisez pour mobile</li>
+                        <li>Analysez les statistiques</li>
+                    </ul>
+                </div>
+            </div>
         </div>
     </div>
-</div>
-<!-- ===== JAVASCRIPT ===== -->
-<script>
+
+    <!-- ===== INDICATEURS ===== -->
+    <div class="auto-save" id="autoSaveIndicator">
+        <i class="fas fa-check"></i> Sauvegardé automatiquement
+    </div>
+
+    <!-- ===== TOOLBAR CONTEXTUELLE ===== -->
+    <div class="contextual-toolbar" id="contextualToolbar">
+        <button class="contextual-btn" onclick="editElement()">
+            <i class="fas fa-edit"></i> Éditer
+        </button>
+        <button class="contextual-btn" onclick="duplicateElement()">
+            <i class="fas fa-copy"></i> Dupliquer
+        </button>
+        <button class="contextual-btn" onclick="deleteElement()">
+            <i class="fas fa-trash"></i> Supprimer
+        </button>
+    </div>
+
+    <!-- ===== MODALS ===== -->
+
+    <!-- Modal pour sélectionner les produits -->
+    <div class="modal" id="productsModal">
+        <div class="modal-content" style="max-width: 900px;">
+            <div class="modal-header">
+                <h3 class="modal-title">Sélectionner des produits</h3>
+                <button class="modal-close" onclick="closeModal('productsModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <input type="text" class="form-input" id="productSearch" placeholder="Rechercher un produit...">
+            </div>
+            <div class="products-grid" id="productsGrid">
+                <% if (jewels && jewels.length > 0) { %>
+                    <% jewels.forEach(function(jewel) { %>
+                        <div class="product-card" data-product-id="<%= jewel.id %>" data-product-slug="<%= jewel.slug %>">
+                            <img src="<%= jewel.imageUrl %>" 
+                                 alt="<%= jewel.name %>" 
+                                 class="product-image"
+                                 onerror="this.src='/images/no-image.jpg'">
+                            <div class="product-name"><%= jewel.name %></div>
+                            <div class="product-price"><%= jewel.formattedPrice %></div>
+                        </div>
+                    <% }); %>
+                <% } else { %>
+                    <div class="product-card" data-product-id="1" data-product-slug="bracelet-or-elegance">
+                        <img src="/images/no-image.jpg" alt="Bracelet Or Élégance" class="product-image">
+                        <div class="product-name">Bracelet Or Élégance</div>
+                        <div class="product-price">299€</div>
+                    </div>
+                    <div class="product-card" data-product-id="2" data-product-slug="collier-diamant-prestige">
+                        <img src="/images/no-image.jpg" alt="Collier Diamant Prestige" class="product-image">
+                        <div class="product-name">Collier Diamant Prestige</div>
+                        <div class="product-price">599€</div>
+                    </div>
+                    <div class="product-card" data-product-id="3" data-product-slug="bague-solitaire-royal">
+                        <img src="/images/no-image.jpg" alt="Bague Solitaire Royal" class="product-image">
+                        <div class="product-name">Bague Solitaire Royal</div>
+                        <div class="product-price">899€</div>
+                    </div>
+                <% } %>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="closeModal('productsModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="insertSelectedProducts()">Insérer les produits</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour insérer un lien -->
+    <div class="modal" id="linkModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Insérer un lien</h3>
+                <button class="modal-close" onclick="closeModal('linkModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Texte du lien</label>
+                <input type="text" class="form-input" id="linkText" placeholder="Cliquez ici">
+            </div>
+            <div class="form-group">
+                <label class="form-label">URL</label>
+                <input type="url" class="form-input" id="linkUrl" placeholder="https://example.com">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="linkNewTab"> Ouvrir dans un nouvel onglet
+                </label>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal('linkModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="insertLink()">Insérer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour éditer les boutons -->
+    <div class="modal" id="buttonModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Éditer le bouton</h3>
+                <button class="modal-close" onclick="closeModal('buttonModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Texte du bouton</label>
+                <input type="text" class="form-input" id="buttonText" placeholder="Texte du bouton">
+            </div>
+            <div class="form-group">
+                <label class="form-label">URL de destination</label>
+                <input type="url" class="form-input" id="buttonUrl" placeholder="https://example.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Couleur de fond</label>
+                <input type="color" class="form-input" id="buttonBgColor" value="#d89ab3">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Couleur du texte</label>
+                <input type="color" class="form-input" id="buttonTextColor" value="#ffffff">
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="buttonNewTab"> Ouvrir dans un nouvel onglet
+                </label>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal('buttonModal')">Annuler</button>
+                <button class="btn btn-primary" onclick="saveButtonChanges()">Sauvegarder</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour envoyer un test -->
+    <div class="modal" id="testModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Envoyer un email de test</h3>
+                <button class="modal-close" onclick="closeModal('testModal')">&times;</button>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email de test</label>
+                <input type="email" class="form-input" id="testEmail" placeholder="test@example.com" value="<%= user ? user.email : '' %>">
+            </div>
+            <div class="form-group">
+                <p style="font-size: 12px; color: var(--text-secondary);">
+                    L'email sera envoyé avec les variables remplacées par des valeurs de test.
+                </p>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal('testModal')">Annuler</button>
+                <button class="btn btn-warning" onclick="sendTestEmail()">
+                    <i class="fas fa-flask"></i> Envoyer le test
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de confirmation d'envoi -->
+    <div class="modal" id="sendModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Confirmer l'envoi de la campagne</h3>
+                <button class="modal-close" onclick="closeModal('sendModal')">&times;</button>
+            </div>
+            <div id="sendSummary">
+                <!-- Contenu généré dynamiquement -->
+            </div>
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="confirmSend" required> 
+                    Je confirme vouloir envoyer cette campagne
+                </label>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="closeModal('sendModal')">Annuler</button>
+                <button class="btn btn-success" onclick="confirmSendCampaign()" id="finalSendBtn" disabled>
+                    <i class="fas fa-paper-plane"></i> Envoyer maintenant
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== JAVASCRIPT ===== -->
+    <script>
 // Variables globales depuis le serveur EJS
 let allCustomers = <%- JSON.stringify(customers || []) %>;
 let allJewels = <%- JSON.stringify(jewels || []) %>;
@@ -1358,8 +1549,9 @@ let lastSaveTime = Date.now();
 let isInitialized = false;
 let selectedElement = null;
 let resizeData = null;
+let currentButton = null;
 
-console.log('📧 Éditeur d\'emails CrystosJewel initialisé');
+console.log('📧 Éditeur d\'emails CrystosJewel fusionné initialisé');
 console.log('👥 Clients chargés:', allCustomers.length);
 console.log('💎 Bijoux chargés:', allJewels.length);
 
@@ -1389,7 +1581,7 @@ document.addEventListener('DOMContentLoaded', function() {
         startAutoSave();
         
         isInitialized = true;
-        console.log('✅ Éditeur initialisé avec succès !');
+        console.log('✅ Éditeur fusionné initialisé avec succès !');
         showNotification('✅ Éditeur d\'emails prêt !', 'success');
         
     } catch (error) {
@@ -1496,6 +1688,19 @@ function initializeEventListeners() {
     // Events globaux
     document.addEventListener('keydown', handleKeyboardShortcuts);
     document.addEventListener('click', handleGlobalClicks);
+
+    // Couleurs éditables
+    document.addEventListener('click', function(e) {
+        if (e.target.classList.contains('editable-color')) {
+            changeElementColor(e.target);
+        }
+        if (e.target.classList.contains('editable-background')) {
+            changeElementBackground(e.target);
+        }
+        if (e.target.classList.contains('editable-button')) {
+            editButton(e.target);
+        }
+    });
 
     console.log('✅ Event listeners configurés');
 }
@@ -1684,22 +1889,22 @@ function loadTemplateContent(templateType) {
 
     const templates = {
         elegant: `
-            <h2 style="color: #d89ab3; margin-bottom: 20px; text-align: center;">✨ Collection Élégante ✨</h2>
+            <h2 style="color: #d89ab3; margin-bottom: 20px; text-align: center;" class="editable-color">✨ Collection Élégante ✨</h2>
             <p style="margin-bottom: 15px;">Chère {{firstName}},</p>
             <p style="margin-bottom: 20px;">Découvrez notre nouvelle collection de bijoux d'exception, créée spécialement pour vous.</p>
         `,
         modern: `
-            <h2 style="color: #3b82f6; margin-bottom: 20px; text-align: center;">🚀 Tendance Moderne</h2>
+            <h2 style="color: #3b82f6; margin-bottom: 20px; text-align: center;" class="editable-color">🚀 Tendance Moderne</h2>
             <p style="margin-bottom: 15px;">Bonjour {{firstName}},</p>
             <p style="margin-bottom: 20px;">Explorez nos designs contemporains qui redéfinissent l'élégance moderne.</p>
         `,
         classic: `
-            <h2 style="color: #1e293b; margin-bottom: 20px; text-align: center;">📰 Style Classique</h2>
+            <h2 style="color: #1e293b; margin-bottom: 20px; text-align: center;" class="editable-color">📰 Style Classique</h2>
             <p style="margin-bottom: 15px;">Madame, Monsieur {{lastName}},</p>
             <p style="margin-bottom: 20px;">Redécouvrez l'intemporel avec notre collection classique de bijoux raffinés.</p>
         `,
         minimal: `
-            <h2 style="color: #64748b; margin-bottom: 20px; text-align: center;">— Minimalisme —</h2>
+            <h2 style="color: #64748b; margin-bottom: 20px; text-align: center;" class="editable-color">— Minimalisme —</h2>
             <p style="margin-bottom: 15px;">{{firstName}},</p>
             <p style="margin-bottom: 20px;">L'essentiel révélé dans notre collection minimaliste.</p>
         `
@@ -1708,12 +1913,12 @@ function loadTemplateContent(templateType) {
     if (templates[templateType]) {
         const content = templates[templateType] + `
             <div style="text-align: center; margin: 30px 0;">
-                <a href="/bijoux" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 15px rgba(216, 154, 179, 0.3); transition: transform 0.2s ease;">
+                <a href="/bijoux" class="editable-button editable-color editable-background" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 15px 30px; text-decoration: none; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 15px rgba(216, 154, 179, 0.3); transition: transform 0.2s ease;">
                     🛍️ Découvrir
                 </a>
             </div>
             <hr style="margin: 30px 0; border: none; border-top: 1px solid #e2e8f0;">
-            <p style="color: #64748b; font-size: 14px;">
+            <p style="color: #64748b; font-size: 14px;" class="editable-color">
                 Cordialement,<br>
                 L'équipe CrystosJewel
             </p>
@@ -1776,7 +1981,7 @@ function createContentElement(blockType) {
             element = document.createElement('h2');
             element.style.cssText = 'color: #d89ab3; margin: 20px 0; text-align: center;';
             element.textContent = 'Nouveau titre';
-            element.className = 'editable-element editable-text';
+            element.className = 'editable-element editable-text editable-color';
             element.contentEditable = false;
             element.addEventListener('dblclick', function() {
                 this.contentEditable = true;
@@ -1791,7 +1996,7 @@ function createContentElement(blockType) {
             element = document.createElement('p');
             element.style.cssText = 'margin: 15px 0; line-height: 1.6;';
             element.textContent = 'Votre texte ici...';
-            element.className = 'editable-element editable-text';
+            element.className = 'editable-element editable-text editable-color';
             element.contentEditable = false;
             element.addEventListener('dblclick', function() {
                 this.contentEditable = true;
@@ -1810,7 +2015,7 @@ function createContentElement(blockType) {
         case 'button':
             element = document.createElement('div');
             element.style.cssText = 'text-align: center; margin: 20px 0;';
-            element.innerHTML = '<a href="#" class="editable-button" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; transition: transform 0.2s ease;">Cliquez ici</a>';
+            element.innerHTML = '<a href="#" class="editable-button editable-color editable-background" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: 600; transition: transform 0.2s ease;">Cliquez ici</a>';
             element.className = 'editable-element';
             break;
             
@@ -1822,18 +2027,17 @@ function createContentElement(blockType) {
             
         case 'columns':
             element = document.createElement('div');
-            element.style.cssText = 'display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0;';
+            element.className = 'two-columns editable-element';
             element.innerHTML = `
-                <div style="padding: 15px; background: #f8fafc; border-radius: 6px; min-height: 100px;" class="editable-text" contenteditable="false" ondblclick="this.contentEditable=true; this.focus();" onblur="this.contentEditable=false;">
-                    <h3>Colonne 1</h3>
-                    <p>Contenu de la première colonne...</p>
+                <div class="column editable-text editable-background" contenteditable="false" ondblclick="this.contentEditable=true; this.focus();" onblur="this.contentEditable=false;">
+                    <h3 class="editable-color">Colonne 1</h3>
+                    <p class="editable-color">Contenu de la première colonne...</p>
                 </div>
-                <div style="padding: 15px; background: #f8fafc; border-radius: 6px; min-height: 100px;" class="editable-text" contenteditable="false" ondblclick="this.contentEditable=true; this.focus();" onblur="this.contentEditable=false;">
-                    <h3>Colonne 2</h3>
-                    <p>Contenu de la deuxième colonne...</p>
+                <div class="column editable-text editable-background" contenteditable="false" ondblclick="this.contentEditable=true; this.focus();" onblur="this.contentEditable=false;">
+                    <h3 class="editable-color">Colonne 2</h3>
+                    <p class="editable-color">Contenu de la deuxième colonne...</p>
                 </div>
             `;
-            element.className = 'editable-element';
             break;
             
         case 'products':
@@ -1843,27 +2047,27 @@ function createContentElement(blockType) {
         case 'promotion':
             element = document.createElement('div');
             element.style.cssText = 'background: linear-gradient(135deg, #f59e0b, #f97316); color: white; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;';
+            element.className = 'editable-element editable-background';
             element.innerHTML = `
-                <h3 style="margin: 0 0 10px 0; font-size: 24px; color: white;" class="editable-color" onclick="changeElementColor(this)">🎉 PROMOTION SPÉCIALE</h3>
-                <p style="margin: 0 0 15px 0; font-size: 18px; color: white;" class="editable-text" contenteditable="false" ondblclick="this.contentEditable=true; this.focus();" onblur="this.contentEditable=false;">-25% sur toute la collection</p>
-                <p style="margin: 0; font-size: 14px; color: white;" class="editable-text" contenteditable="false" ondblclick="this.contentEditable=true; this.focus();" onblur="this.contentEditable=false;">Code: PROMO25 • Valable jusqu'au 31/12/2025</p>
+                <h3 style="margin: 0 0 10px 0; font-size: 24px; color: white;" class="editable-color">🎉 PROMOTION SPÉCIALE</h3>
+                <p style="margin: 0 0 15px 0; font-size: 18px; color: white;" class="editable-text editable-color" contenteditable="false" ondblclick="this.contentEditable=true; this.focus();" onblur="this.contentEditable=false;">-25% sur toute la collection</p>
+                <p style="margin: 0; font-size: 14px; color: white;" class="editable-text editable-color" contenteditable="false" ondblclick="this.contentEditable=true; this.focus();" onblur="this.contentEditable=false;">Code: PROMO25 • Valable jusqu'au 31/12/2025</p>
             `;
-            element.className = 'editable-element';
             break;
             
         case 'unsubscribe':
             element = document.createElement('div');
             element.style.cssText = 'text-align: center; margin: 30px 0; padding: 15px; background: #f8fafc; border-radius: 8px;';
+            element.className = 'editable-element editable-background';
             element.innerHTML = `
-                <p style="font-size: 12px; color: #64748b; margin-bottom: 10px;">
+                <p style="font-size: 12px; color: #64748b; margin-bottom: 10px;" class="editable-color">
                     Vous recevez cet email car vous êtes abonné(e) à notre newsletter
                 </p>
-                <p style="font-size: 12px;">
-                    <a href="{{unsubscribeUrl}}" style="color: #64748b;">Se désabonner</a> | 
-                    <a href="{{preferencesUrl}}" style="color: #64748b;">Gérer mes préférences</a>
+                <p style="font-size: 12px;" class="editable-color">
+                    <a href="{{unsubscribeUrl}}" style="color: #64748b;" class="editable-color">Se désabonner</a> | 
+                    <a href="{{preferencesUrl}}" style="color: #64748b;" class="editable-color">Gérer mes préférences</a>
                 </p>
             `;
-            element.className = 'editable-element';
             break;
             
         default:
@@ -1872,6 +2076,255 @@ function createContentElement(blockType) {
     }
 
     return element;
+}
+
+// ===== ÉDITION COULEURS ET BOUTONS =====
+function changeElementColor(element) {
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    
+    // Détecter la couleur actuelle
+    const currentColor = getComputedStyle(element).color;
+    colorInput.value = rgbToHex(currentColor) || '#000000';
+    
+    colorInput.style.position = 'absolute';
+    colorInput.style.opacity = '0';
+    document.body.appendChild(colorInput);
+    
+    colorInput.addEventListener('change', function() {
+        element.style.color = this.value;
+        scheduleAutoSave();
+        document.body.removeChild(this);
+        showNotification('🎨 Couleur du texte modifiée', 'success');
+    });
+    
+    colorInput.click();
+}
+
+function changeElementBackground(element) {
+    const colorInput = document.createElement('input');
+    colorInput.type = 'color';
+    
+    // Détecter la couleur de fond actuelle
+    const currentBg = getComputedStyle(element).backgroundColor;
+    colorInput.value = rgbToHex(currentBg) || '#ffffff';
+    
+    colorInput.style.position = 'absolute';
+    colorInput.style.opacity = '0';
+    document.body.appendChild(colorInput);
+    
+    colorInput.addEventListener('change', function() {
+        if (element.classList.contains('editable-button')) {
+            // Pour les boutons, utiliser un gradient
+            element.style.background = `linear-gradient(135deg, ${this.value}, ${this.value}dd)`;
+        } else {
+            element.style.backgroundColor = this.value;
+        }
+        scheduleAutoSave();
+        document.body.removeChild(this);
+        showNotification('🎨 Couleur de fond modifiée', 'success');
+    });
+    
+    colorInput.click();
+}
+
+function editButton(button) {
+    currentButton = button;
+    
+    // Remplir les champs du modal
+    document.getElementById('buttonText').value = button.textContent.trim();
+    document.getElementById('buttonUrl').value = button.href || '#';
+    document.getElementById('buttonBgColor').value = '#d89ab3';
+    document.getElementById('buttonTextColor').value = '#ffffff';
+    document.getElementById('buttonNewTab').checked = button.target === '_blank';
+    
+    openModal('buttonModal');
+}
+
+function saveButtonChanges() {
+    if (!currentButton) return;
+    
+    const text = document.getElementById('buttonText').value;
+    const url = document.getElementById('buttonUrl').value;
+    const bgColor = document.getElementById('buttonBgColor').value;
+    const textColor = document.getElementById('buttonTextColor').value;
+    const newTab = document.getElementById('buttonNewTab').checked;
+    
+    currentButton.textContent = text;
+    currentButton.href = url;
+    currentButton.style.background = `linear-gradient(135deg, ${bgColor}, ${bgColor}dd)`;
+    currentButton.style.color = textColor;
+    currentButton.target = newTab ? '_blank' : '';
+    
+    closeModal('buttonModal');
+    updatePreview();
+    showNotification('✅ Bouton modifié', 'success');
+    scheduleAutoSave();
+    currentButton = null;
+}
+
+// ===== UTILITAIRES COULEUR =====
+function rgbToHex(rgb) {
+    if (!rgb || rgb === 'rgba(0, 0, 0, 0)') return null;
+    
+    const match = rgb.match(/\d+/g);
+    if (!match) return null;
+    
+    const r = parseInt(match[0]);
+    const g = parseInt(match[1]);
+    const b = parseInt(match[2]);
+    
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+// ===== DRAG & DROP =====
+function initializeDragDrop() {
+    const dropZone = document.getElementById('dropZone');
+    const emailContent = document.getElementById('emailContent');
+
+    if (dropZone && emailContent) {
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+            emailContent.addEventListener(eventName, preventDefaults, false);
+        });
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+            emailContent.addEventListener(eventName, () => emailContent.style.border = '2px dashed #d89ab3', false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+            emailContent.addEventListener(eventName, () => emailContent.style.border = '2px solid var(--primary)', false);
+        });
+
+        dropZone.addEventListener('drop', handleDrop);
+        emailContent.addEventListener('drop', handleDrop);
+        dropZone.addEventListener('click', () => document.getElementById('imageUpload').click());
+    }
+}
+
+function preventDefaults(e) {
+    e.preventDefault();
+    e.stopPropagation();
+}
+
+function handleDrop(e) {
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        Array.from(files).forEach(file => {
+            if (file.type.startsWith('image/')) {
+                processImageFile(file);
+            }
+        });
+    }
+}
+
+function processImageFile(file) {
+    if (file.size > 5 * 1024 * 1024) {
+        showNotification('⚠️ Image trop grande (max 5MB)', 'warning');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        insertResizableImage(e.target.result);
+    };
+    reader.readAsDataURL(file);
+}
+
+// ===== IMAGES REDIMENSIONNABLES =====
+function insertResizableImage(src) {
+    const emailContent = document.getElementById('emailContent');
+    const selection = window.getSelection();
+    
+    const container = document.createElement('div');
+    container.className = 'resizable-image editable-element';
+    container.style.cssText = 'display: inline-block; position: relative; margin: 10px 5px; max-width: 300px; width: auto;';
+    
+    const img = document.createElement('img');
+    img.src = src;
+    img.style.cssText = 'display: block; width: 100%; height: auto; border-radius: 8px; max-width: 300px;';
+    img.draggable = false;
+    
+    container.appendChild(img);
+    
+    const handles = document.createElement('div');
+    handles.className = 'resize-handles';
+    handles.innerHTML = `
+        <div class="resize-handle nw" data-direction="nw"></div>
+        <div class="resize-handle ne" data-direction="ne"></div>
+        <div class="resize-handle sw" data-direction="sw"></div>
+        <div class="resize-handle se" data-direction="se"></div>
+    `;
+    container.appendChild(handles);
+
+    handles.querySelectorAll('.resize-handle').forEach(handle => {
+        handle.addEventListener('mousedown', startResize);
+    });
+
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(container);
+    } else {
+        emailContent.appendChild(container);
+    }
+
+    updatePreview();
+    showNotification('📷 Image redimensionnable ajoutée', 'success');
+}
+
+function startResize(e) {
+    e.preventDefault();
+    const handle = e.target;
+    const container = handle.closest('.resizable-image');
+    const img = container.querySelector('img');
+    
+    resizeData = {
+        container: container,
+        img: img,
+        direction: handle.dataset.direction,
+        startX: e.clientX,
+        startY: e.clientY,
+        startWidth: img.offsetWidth,
+        startHeight: img.offsetHeight
+    };
+
+    document.addEventListener('mousemove', doResize);
+    document.addEventListener('mouseup', stopResize);
+    
+    container.style.cursor = getComputedStyle(handle).cursor;
+}
+
+function doResize(e) {
+    if (!resizeData) return;
+
+    const deltaX = e.clientX - resizeData.startX;
+    let newWidth = resizeData.startWidth;
+    
+    if (resizeData.direction.includes('e')) {
+        newWidth = resizeData.startWidth + deltaX;
+    }
+    if (resizeData.direction.includes('w')) {
+        newWidth = resizeData.startWidth - deltaX;
+    }
+    
+    // Garder des proportions cohérentes
+    newWidth = Math.max(100, Math.min(600, newWidth));
+    
+    resizeData.img.style.width = newWidth + 'px';
+    resizeData.container.style.width = newWidth + 'px';
+}
+
+function stopResize() {
+    if (resizeData) {
+        resizeData.container.style.cursor = '';
+        resizeData = null;
+        updatePreview();
+    }
+    document.removeEventListener('mousemove', doResize);
+    document.removeEventListener('mouseup', stopResize);
 }
 
 // ===== VARIABLES =====
@@ -2002,6 +2455,36 @@ function updateRecipientCounter() {
     const counter = document.getElementById('recipientCount');
     if (counter) {
         counter.textContent = selectedClients.length;
+    }
+}
+
+// ===== PREVIEW =====
+function updatePreview() {
+    const subject = document.getElementById('emailSubject')?.value || '🎉 Découvrez nos nouveautés !';
+    const preheader = document.getElementById('emailPreheader')?.value || 'Texte de prévisualisation';
+    
+    const previewSubject = document.getElementById('previewSubject');
+    const previewPreheader = document.getElementById('previewPreheader');
+    
+    if (previewSubject) previewSubject.textContent = subject;
+    if (previewPreheader) previewPreheader.textContent = preheader;
+    
+    scheduleAutoSave();
+}
+
+function switchPreviewMode(mode) {
+    const previewBtns = document.querySelectorAll('.preview-btn');
+    const emailPreview = document.getElementById('emailPreview');
+    
+    previewBtns.forEach(btn => btn.classList.remove('active'));
+    document.querySelector(`[data-mode="${mode}"]`)?.classList.add('active');
+    
+    if (mode === 'mobile') {
+        emailPreview.classList.add('mobile');
+        showNotification('📱 Vue iPhone 14 activée', 'info');
+    } else {
+        emailPreview.classList.remove('mobile');
+        showNotification('🖥️ Vue desktop activée', 'info');
     }
 }
 
@@ -2172,36 +2655,246 @@ async function confirmSendCampaign() {
     }
 }
 
-// ===== PREVIEW =====
-function updatePreview() {
-    const subject = document.getElementById('emailSubject')?.value || '🎉 Découvrez nos nouveautés !';
-    const preheader = document.getElementById('emailPreheader')?.value || 'Texte de prévisualisation';
+function previewEmail() {
+    console.log('👁️ Aperçu de l\'email...');
     
-    const previewSubject = document.getElementById('previewSubject');
-    const previewPreheader = document.getElementById('previewPreheader');
-    
-    if (previewSubject) previewSubject.textContent = subject;
-    if (previewPreheader) previewPreheader.textContent = preheader;
-    
-    scheduleAutoSave();
+    try {
+        const emailPreview = document.getElementById('emailPreview');
+        if (emailPreview) {
+            const subject = document.getElementById('emailSubject')?.value || 'Email Preview';
+            const newWindow = window.open('', '_blank', 'width=800,height=600');
+            newWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${subject}</title>
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <style>
+                        body { 
+                            font-family: Arial, sans-serif; 
+                            margin: 0; 
+                            padding: 20px; 
+                            background: #f8fafc;
+                        }
+                        .email-container {
+                            max-width: 600px;
+                            margin: 0 auto;
+                            background: white;
+                            border-radius: 8px;
+                            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+                            overflow: hidden;
+                        }
+                        .two-columns {
+                            display: grid !important;
+                            grid-template-columns: 1fr 1fr !important;
+                            gap: 20px !important;
+                        }
+                        @media (max-width: 600px) {
+                            .email-container { width: 100% !important; }
+                            .two-columns { 
+                                grid-template-columns: 1fr 1fr !important;
+                                gap: 10px !important;
+                            }
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="email-container">
+                        ${emailPreview.outerHTML}
+                    </div>
+                </body>
+                </html>
+            `);
+            newWindow.document.close();
+            showNotification('👁️ Aperçu ouvert dans un nouvel onglet', 'info');
+        }
+        
+    } catch (error) {
+        console.error('❌ Erreur aperçu:', error);
+        showNotification('❌ Erreur lors de l\'aperçu', 'error');
+    }
 }
 
-// ===== UTILITAIRES =====
-function showNotification(message, type = 'info') {
-    const notification = document.createElement('div');
-    notification.className = `notification ${type}`;
-    notification.textContent = message;
+// ===== GESTION DES PRODUITS =====
+function toggleProductSelection(productId) {
+    const productCard = document.querySelector(`[data-product-id="${productId}"]`);
+    if (!productCard) return;
     
-    document.body.appendChild(notification);
+    const isSelected = selectedProducts.includes(productId);
     
-    setTimeout(() => {
-        notification.style.animation = 'slideOut 0.3s ease forwards';
-        setTimeout(() => {
-            if (notification.parentNode) {
-                notification.remove();
-            }
-        }, 300);
+    if (isSelected) {
+        selectedProducts = selectedProducts.filter(id => id !== productId);
+        productCard.classList.remove('selected');
+    } else {
+        selectedProducts.push(productId);
+        productCard.classList.add('selected');
+    }
+}
+
+function insertSelectedProducts() {
+    if (selectedProducts.length === 0) {
+        showNotification('⚠️ Sélectionnez au moins un produit', 'warning');
+        return;
+    }
+    
+    const emailContent = document.getElementById('emailContent');
+    
+    let productsHtml = '<div class="products-container editable-element editable-background" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">';
+    
+    selectedProducts.forEach(productId => {
+        const product = allJewels.find(p => p.id == productId);
+        if (product) {
+            productsHtml += `
+                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" class="editable-background">
+                    <img src="${product.imageUrl}" alt="${product.name}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+                    <h4 style="color: #1e293b; margin: 0 0 8px 0; font-size: 16px;" class="editable-color">${product.name}</h4>
+                    <p style="color: #d89ab3; font-weight: 600; font-size: 18px; margin: 0 0 15px 0;" class="editable-color">${product.formattedPrice}</p>
+                    <a href="/bijoux/${product.slug}" class="editable-button editable-color editable-background" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; transition: transform 0.2s ease;">Voir le produit</a>
+                </div>
+            `;
+        }
+    });
+    
+    productsHtml += '</div>';
+    
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = productsHtml;
+        range.deleteContents();
+        range.insertNode(tempDiv.firstChild);
+    } else {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = productsHtml;
+        emailContent.appendChild(tempDiv.firstChild);
+    }
+    
+    closeModal('productsModal');
+    showNotification(`✅ ${selectedProducts.length} produit(s) inséré(s)`, 'success');
+    
+    // Réinitialiser la sélection
+    selectedProducts = [];
+    document.querySelectorAll('.product-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    scheduleAutoSave();
+    updatePreview();
+}
+
+// ===== SAUVEGARDE AUTOMATIQUE =====
+function startAutoSave() {
+    console.log('💾 Démarrage de la sauvegarde automatique...');
+    
+    setInterval(() => {
+        if (Date.now() - lastSaveTime > 30000) {
+            autoSave();
+        }
+    }, 30000);
+}
+
+function scheduleAutoSave() {
+    lastSaveTime = Date.now();
+    
+    if (autoSaveTimer) {
+        clearTimeout(autoSaveTimer);
+    }
+    
+    autoSaveTimer = setTimeout(() => {
+        autoSave();
     }, 3000);
+}
+
+function autoSave() {
+    try {
+        const campaignData = {
+            name: document.getElementById('campaignName')?.value || 'Campagne sans nom',
+            subject: document.getElementById('emailSubject')?.value || '',
+            preheader: document.getElementById('emailPreheader')?.value || '',
+            content: document.getElementById('emailContent')?.innerHTML || '',
+            template: currentTemplate,
+            recipients: selectedClients,
+            timestamp: new Date().toISOString()
+        };
+
+        // Simulation de sauvegarde locale pour le développement
+        if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('email_draft', JSON.stringify(campaignData));
+        }
+        showAutoSaveIndicator();
+        console.log('💾 Sauvegarde automatique effectuée');
+        
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde automatique:', error);
+    }
+}
+
+function showAutoSaveIndicator() {
+    const indicator = document.getElementById('autoSaveIndicator');
+    if (indicator) {
+        indicator.classList.add('visible');
+        setTimeout(() => {
+            indicator.classList.remove('visible');
+        }, 2000);
+    }
+}
+
+// ===== TOOLBAR CONTEXTUELLE =====
+function handleContentClick(e) {
+    const element = e.target.closest('.editable-element');
+    if (element && !e.target.classList.contains('editable-text')) {
+        selectedElement = element;
+        showContextualToolbar(e.clientX, e.clientY);
+    } else {
+        hideContextualToolbar();
+    }
+}
+
+function showContextualToolbar(x, y) {
+    const toolbar = document.getElementById('contextualToolbar');
+    if (toolbar) {
+        toolbar.style.left = x + 'px';
+        toolbar.style.top = (y - 50) + 'px';
+        toolbar.classList.add('show');
+    }
+}
+
+function hideContextualToolbar() {
+    const toolbar = document.getElementById('contextualToolbar');
+    if (toolbar) {
+        toolbar.classList.remove('show');
+    }
+    selectedElement = null;
+}
+
+function editElement() {
+    if (selectedElement) {
+        showNotification('✏️ Double-cliquez pour éditer le texte', 'info');
+        hideContextualToolbar();
+    }
+}
+
+function duplicateElement() {
+    if (selectedElement) {
+        const clone = selectedElement.cloneNode(true);
+        selectedElement.parentNode.insertBefore(clone, selectedElement.nextSibling);
+        updatePreview();
+        hideContextualToolbar();
+        showNotification('✅ Élément dupliqué', 'success');
+    }
+}
+
+function deleteElement() {
+    if (selectedElement) {
+        selectedElement.style.animation = 'fadeOut 0.3s ease';
+        setTimeout(() => {
+            selectedElement.remove();
+            updatePreview();
+            hideContextualToolbar();
+            showNotification('✅ Élément supprimé', 'success');
+        }, 300);
+    }
 }
 
 // ===== MODALS =====
@@ -2266,22 +2959,158 @@ function getFilterLabel(filter) {
     return labels[filter] || filter;
 }
 
-// Autres fonctions simplifiées
-function previewEmail() { showNotification('👁️ Aperçu ouvert', 'info'); }
-function switchPreviewMode(mode) { showNotification(`📱 Mode ${mode} activé`, 'info'); }
-function startAutoSave() { console.log('💾 Sauvegarde auto démarrée'); }
-function scheduleAutoSave() { lastSaveTime = Date.now(); }
-function initializeDragDrop() { console.log('🖱️ Drag & drop initialisé'); }
-function handleImageUpload() { showNotification('📷 Upload d\'images', 'info'); }
-function handleKeyboardShortcuts() { }
-function handleContentClick() { }
-function hideContextualToolbar() { }
-function editElement() { showNotification('✏️ Edition en développement', 'info'); }
-function duplicateElement() { showNotification('📋 Duplication', 'info'); }
-function deleteElement() { showNotification('🗑️ Suppression', 'info'); }
-function insertLink() { showNotification('🔗 Lien inséré', 'success'); closeModal('linkModal'); }
-function toggleProductSelection(id) { console.log('Produit sélectionné:', id); }
-function insertSelectedProducts() { showNotification('✅ Produits insérés', 'success'); closeModal('productsModal'); }
+function insertLink() {
+    const text = document.getElementById('linkText').value;
+    const url = document.getElementById('linkUrl').value;
+    const newTab = document.getElementById('linkNewTab').checked;
+    
+    if (!text || !url) {
+        showNotification('⚠️ Veuillez remplir tous les champs', 'warning');
+        return;
+    }
+    
+    const emailContent = document.getElementById('emailContent');
+    emailContent.focus();
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.textContent = text;
+    link.className = 'editable-color';
+    link.style.cssText = 'color: #d89ab3; text-decoration: underline;';
+    if (newTab) {
+        link.target = '_blank';
+    }
+    
+    const selection = window.getSelection();
+    if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        range.deleteContents();
+        range.insertNode(link);
+    } else {
+        emailContent.appendChild(link);
+    }
+    
+    closeModal('linkModal');
+    updatePreview();
+    showNotification('✅ Lien inséré', 'success');
+    scheduleAutoSave();
+    
+    // Reset form
+    document.getElementById('linkText').value = '';
+    document.getElementById('linkUrl').value = '';
+    document.getElementById('linkNewTab').checked = false;
+}
+
+function handleImageUpload(event) {
+    console.log('📷 Upload d\'image...');
+    
+    try {
+        const files = Array.from(event.target.files);
+        if (files.length === 0) return;
+
+        files.forEach(file => {
+            if (!file.type.startsWith('image/')) {
+                showNotification('⚠️ Veuillez sélectionner des images uniquement', 'warning');
+                return;
+            }
+
+            if (file.size > 5 * 1024 * 1024) {
+                showNotification('⚠️ Image trop grande (max 5MB)', 'warning');
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const imageUrl = e.target.result;
+                
+                // Ajouter à la galerie
+                const uploadedImages = document.getElementById('uploadedImages');
+                if (uploadedImages) {
+                    const imageContainer = document.createElement('div');
+                    imageContainer.style.cssText = 'margin-bottom: 10px; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border);';
+                    imageContainer.innerHTML = `
+                        <img src="${imageUrl}" alt="Image uploadée" style="width: 100%; max-height: 80px; object-fit: cover; cursor: pointer; transition: transform 0.2s;" onclick="insertResizableImage('${imageUrl}')">
+                        <button onclick="this.parentElement.remove()" style="position: absolute; top: 5px; right: 5px; background: var(--danger); color: white; border: none; border-radius: 50%; width: 24px; height: 24px; cursor: pointer; font-size: 12px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">×</button>
+                    `;
+                    uploadedImages.appendChild(imageContainer);
+                }
+                
+                // Insérer directement dans l'éditeur
+                insertResizableImage(imageUrl);
+                
+                showNotification('📷 Image redimensionnable ajoutée', 'success');
+            };
+            reader.readAsDataURL(file);
+        });
+        
+        event.target.value = '';
+        
+    } catch (error) {
+        console.error('❌ Erreur upload:', error);
+        showNotification('❌ Erreur lors de l\'upload', 'error');
+    }
+}
+
+// ===== RACCOURCIS CLAVIER =====
+function handleKeyboardShortcuts(e) {
+    if (e.ctrlKey || e.metaKey) {
+        switch(e.key) {
+            case 's':
+                e.preventDefault();
+                saveAsDraft();
+                break;
+            case 'Enter':
+                if (e.shiftKey) {
+                    e.preventDefault();
+                    openModal('testModal');
+                }
+                break;
+            case 'p':
+                e.preventDefault();
+                previewEmail();
+                break;
+            case 'b':
+                e.preventDefault();
+                executeFormatCommand('bold');
+                break;
+            case 'i':
+                e.preventDefault();
+                executeFormatCommand('italic');
+                break;
+            case 'u':
+                e.preventDefault();
+                executeFormatCommand('underline');
+                break;
+        }
+    }
+    
+    if (e.key === 'Delete' && selectedElement) {
+        deleteElement();
+    }
+    
+    // Mise à jour des boutons de formatage
+    if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+        setTimeout(updateButtonStates, 10);
+    }
+}
+
+// ===== UTILITAIRES =====
+function showNotification(message, type = 'info') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease forwards';
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.remove();
+            }
+        }, 300);
+    }, 3000);
+}
 
 // ===== FONCTIONS GLOBALES POUR L'HTML =====
 window.toggleClientSelection = toggleClientSelection;
@@ -2293,15 +3122,17 @@ window.confirmSendCampaign = confirmSendCampaign;
 window.editElement = editElement;
 window.duplicateElement = duplicateElement;
 window.deleteElement = deleteElement;
+window.saveButtonChanges = saveButtonChanges;
+window.insertResizableImage = insertResizableImage;
 
 // Initialisation finale
 setTimeout(() => {
-    showNotification('✨ Éditeur d\'emails CrystosJewel prêt !', 'success');
+    showNotification('✨ Éditeur d\'emails CrystosJewel fusionné prêt !', 'success');
     preventReload = false;
 }, 2000);
 
-console.log('🎉 Éditeur d\'emails CrystosJewel entièrement chargé !');
-</script>
+console.log('🎉 Éditeur d\'emails CrystosJewel fusionné entièrement chargé avec toutes les fonctionnalités !');
+    </script>
 
 </body>
 </html>
