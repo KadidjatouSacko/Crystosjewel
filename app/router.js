@@ -5791,6 +5791,215 @@ router.post('/email/unsubscribe', adminMarketingController.processUnsubscribe);
 
 console.log('✅ Routes marketing email configurées');
 
+// Route principale pour l'éditeur d'emails (existante à modifier)
+router.get('/admin/marketing/emails', isAdmin, async (req, res) => {
+    try {
+        // Récupérer tous les clients pour la sélection
+        const customers = await Customer.findAll({
+            attributes: ['id', 'first_name', 'last_name', 'email', 'total_orders', 'marketing_opt_in'],
+            where: {
+                email: { [Op.not]: null }
+            },
+            raw: true
+        });
+
+        // Transformer les données clients
+        const customersData = customers.map(customer => ({
+            id: customer.id,
+            name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim(),
+            email: customer.email,
+            total_orders: customer.total_orders || 0,
+            newsletter_subscribed: customer.marketing_opt_in || false,
+            customer_type: customer.total_orders > 5 ? 'vip' : 'regular'
+        }));
+
+        // Statistiques des clients
+        const customerStats = {
+            all: customersData.length,
+            newsletter: customersData.filter(c => c.newsletter_subscribed).length,
+            vip: customersData.filter(c => c.customer_type === 'vip').length,
+            withOrders: customersData.filter(c => c.total_orders > 0).length
+        };
+
+        // Récupérer les bijoux pour l'insertion de produits
+        const jewels = await Jewel.findAll({
+            where: { is_active: true },
+            attributes: ['id', 'name', 'price_ttc', 'slug', 'image'],
+            limit: 50,
+            raw: true
+        });
+
+        const jewelsData = jewels.map(jewel => ({
+            id: jewel.id,
+            name: jewel.name,
+            price: jewel.price_ttc,
+            formattedPrice: `${jewel.price_ttc}€`,
+            slug: jewel.slug,
+            imageUrl: jewel.image || '/images/no-image.jpg'
+        }));
+
+        res.render('admin/email-editor', {
+            title: 'Éditeur d\'emails marketing',
+            customers: customersData,
+            customerStats,
+            jewels: jewelsData,
+            campaignStats: {
+                total_campaigns: 0,
+                total_emails_sent: 0,
+                global_open_rate: 0,
+                global_click_rate: 0,
+                total_subscribers: customerStats.newsletter
+            },
+            user: req.session.user
+        });
+
+    } catch (error) {
+        console.error('❌ Erreur chargement éditeur email:', error);
+        res.status(500).render('error', { message: 'Erreur serveur' });
+    }
+});
+
+
+import { 
+    sendMarketingTestEmail, 
+    sendMarketingCampaign, 
+    saveMarketingCampaignDraft,
+    getMarketingRecipients 
+} from './services/emailMarketingService.js';
+
+// Route pour envoyer la campagne email
+router.post('/admin/marketing/emails/send-campaign', isAdmin, async (req, res) => {
+    try {
+        const { 
+            name, 
+            subject, 
+            content, 
+            selectedCustomerIds,
+            preheader,
+            fromName,
+            recipientType 
+        } = req.body;
+
+        console.log('📧 Envoi campagne via votre emailMarketingService:', {
+            name,
+            subject,
+            destinataires: selectedCustomerIds?.length || 0
+        });
+
+        // Validation
+        if (!name || !subject || !content) {
+            return res.status(400).json({
+                success: false,
+                message: 'Nom, sujet et contenu requis'
+            });
+        }
+
+        // Préparer les données pour VOTRE fonction existante
+        const campaignData = {
+            name: name,
+            subject: subject,
+            content: content,
+            preheader: preheader || '',
+            from_name: fromName || 'CrystosJewel',
+            sender_email: process.env.MAIL_USER,
+            sender_name: fromName || 'CrystosJewel',
+            template_type: 'elegant',
+            recipient_type: selectedCustomerIds && selectedCustomerIds.length > 0 ? 'selected' : recipientType || 'all',
+            selectedCustomerIds: selectedCustomerIds || [],
+            created_by: req.session?.user?.id || 1
+        };
+
+        // UTILISER VOTRE FONCTION EXISTANTE
+        const result = await sendMarketingCampaign(campaignData);
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: result.message,
+                stats: {
+                    total: result.sentCount + result.errorCount,
+                    success: result.sentCount,
+                    errors: result.errorCount
+                },
+                campaignId: result.campaignId
+            });
+        } else {
+            throw new Error(result.message || 'Erreur lors de l\'envoi');
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur envoi campagne:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'envoi: ' + error.message
+        });
+    }
+});
+
+router.post('/admin/marketing/emails/send-test', isAdmin, async (req, res) => {
+    try {
+        const { email, subject, content } = req.body;
+
+        console.log('🧪 Envoi test via votre emailMarketingService:', email);
+
+        if (!email || !subject || !content) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email, sujet et contenu requis'
+            });
+        }
+
+        // UTILISER VOTRE FONCTION EXISTANTE
+        const result = await sendMarketingTestEmail(email, subject, content, 'elegant');
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: `Email de test envoyé à ${email}`
+            });
+        } else {
+            throw new Error(result.error);
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur envoi test:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de l\'envoi du test: ' + error.message
+        });
+    }
+});
+
+// Route pour sauvegarder un brouillon (ADAPTÉE À VOTRE SERVICE)
+router.post('/admin/marketing/emails/save-draft', isAdmin, async (req, res) => {
+    try {
+        const campaignData = req.body;
+        const userId = req.session?.user?.id || 1;
+
+        console.log('💾 Sauvegarde brouillon via votre service');
+
+        // UTILISER VOTRE FONCTION EXISTANTE
+        const result = await saveMarketingCampaignDraft(campaignData, userId);
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: 'Brouillon sauvegardé avec succès',
+                campaign: result.campaign
+            });
+        } else {
+            throw new Error(result.error || result.message);
+        }
+
+    } catch (error) {
+        console.error('❌ Erreur sauvegarde draft:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erreur lors de la sauvegarde: ' + error.message
+        });
+    }
+});
+
 
 // Export par défaut
 export default router;

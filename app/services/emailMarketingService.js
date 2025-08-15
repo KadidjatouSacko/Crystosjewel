@@ -125,6 +125,136 @@ export async function saveMarketingCampaignDraft(campaignData, userId) {
   }
 }
 
+
+export async function sendMarketingCampaignToSelected(campaignData, selectedCustomerIds) {
+    try {
+        console.log('🎯 Envoi campagne aux clients sélectionnés:', selectedCustomerIds.length);
+
+        // Récupérer les clients sélectionnés depuis la base
+        const [recipients] = await sequelize.query(`
+            SELECT id, first_name, last_name, email, total_orders, total_spent
+            FROM customer 
+            WHERE id = ANY($1::int[])
+            AND email IS NOT NULL AND email != ''
+        `, { 
+            bind: [selectedCustomerIds] 
+        });
+
+        if (recipients.length === 0) {
+            return {
+                success: false,
+                message: 'Aucun destinataire valide trouvé'
+            };
+        }
+
+        console.log(`📬 ${recipients.length} destinataires sélectionnés trouvés`);
+
+        // Créer la campagne en base
+        const [result] = await sequelize.query(`
+            INSERT INTO email_campaigns (
+                name, subject, content, preheader, from_name,
+                sender_email, sender_name, status, total_recipients,
+                scheduled_at, metadata
+            ) VALUES (
+                $1, $2, $3, $4, $5, $6, $7, 'sending', $8, NOW(), $9
+            )
+            RETURNING id
+        `, {
+            bind: [
+                campaignData.name,
+                campaignData.subject,
+                campaignData.content,
+                campaignData.preheader || '',
+                campaignData.from_name || 'CrystosJewel',
+                process.env.MAIL_USER,
+                campaignData.from_name || 'CrystosJewel',
+                recipients.length,
+                JSON.stringify({
+                    recipient_type: 'selected',
+                    selectedCustomerIds: selectedCustomerIds
+                })
+            ]
+        });
+
+        const campaignId = result[0].id;
+
+        // Envoyer les emails
+        let sentCount = 0;
+        let errorCount = 0;
+
+        for (const recipient of recipients) {
+            try {
+                // Personnaliser le contenu
+                let personalizedContent = campaignData.content
+                    .replace(/\{\{firstName\}\}/g, recipient.first_name || 'Client')
+                    .replace(/\{\{lastName\}\}/g, recipient.last_name || '')
+                    .replace(/\{\{email\}\}/g, recipient.email);
+
+                // Utiliser votre fonction d'envoi existante
+                await sendMarketingEmail(
+                    recipient.email,
+                    campaignData.subject,
+                    personalizedContent,
+                    campaignData.from_name || 'CrystosJewel'
+                );
+
+                // Log de succès
+                await sequelize.query(`
+                    INSERT INTO email_logs (customer_id, email_type, recipient_email, subject, status, sent_at)
+                    VALUES ($1, 'marketing', $2, $3, 'sent', NOW())
+                `, {
+                    bind: [recipient.id, recipient.email, campaignData.subject]
+                });
+
+                sentCount++;
+                console.log(`✅ Email envoyé à: ${recipient.email}`);
+
+                // Délai entre emails
+                await new Promise(resolve => setTimeout(resolve, 100));
+
+            } catch (emailError) {
+                console.error(`❌ Erreur pour ${recipient.email}:`, emailError);
+                errorCount++;
+
+                // Log d'erreur
+                await sequelize.query(`
+                    INSERT INTO email_logs (customer_id, email_type, recipient_email, subject, status, error_message, created_at)
+                    VALUES ($1, 'marketing', $2, $3, 'failed', $4, NOW())
+                `, {
+                    bind: [recipient.id, recipient.email, campaignData.subject, emailError.message]
+                });
+            }
+        }
+
+        // Mettre à jour les stats de la campagne
+        await sequelize.query(`
+            UPDATE email_campaigns 
+            SET total_sent = $1, sent_at = NOW(), status = 'completed', updated_at = NOW()
+            WHERE id = $2
+        `, {
+            bind: [sentCount, campaignId]
+        });
+
+        console.log(`🎉 Campagne aux clients sélectionnés terminée: ${sentCount} envoyés, ${errorCount} erreurs`);
+
+        return {
+            success: true,
+            campaignId,
+            sentCount,
+            errorCount,
+            message: `Campagne envoyée à ${sentCount} clients sélectionnés`
+        };
+
+    } catch (error) {
+        console.error('❌ Erreur campagne clients sélectionnés:', error);
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+}
+
+
 async function sendMarketingEmail(to, subject, htmlContent, fromName = 'CrystosJewel') {
     try {
         const info = await marketingTransporter.sendMail({
@@ -148,6 +278,10 @@ async function sendMarketingEmail(to, subject, htmlContent, fromName = 'CrystosJ
 // ✅ FONCTION CORRIGÉE POUR VOTRE STRUCTURE BDD
 export async function sendMarketingCampaign(campaignData) {
     try {
+
+       if (campaignData.recipient_type === 'selected' && campaignData.selectedCustomerIds?.length > 0) {
+            return await sendMarketingCampaignToSelected(campaignData, campaignData.selectedCustomerIds);
+        }
         console.log('🚀 Début envoi campagne marketing:', campaignData.name);
         
         // 1. Vérifier les tables 
