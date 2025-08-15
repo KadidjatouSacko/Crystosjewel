@@ -71,6 +71,7 @@
             justify-content: space-between;
             align-items: center;
             gap: 15px;
+            position: relative;
         }
 
         .editor-title {
@@ -922,6 +923,59 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Surlignage rose pour les clients sélectionnés */
+.client-item.selected {
+    background: linear-gradient(135deg, #FFB6C1, #FF91A4) !important;
+    color: white !important;
+    border-color: #FF69B4 !important;
+    transform: translateX(5px);
+    box-shadow: 0 4px 15px rgba(255, 182, 193, 0.4);
+}
+
+.client-item.selected .client-name,
+.client-item.selected .client-email,
+.client-item.selected .client-type {
+    color: white !important;
+}
+
+.client-item {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.client-item:hover:not(.selected) {
+    background: var(--bg-primary);
+    border-color: var(--primary);
+    transform: translateX(2px);
+}
+
+/* Animation pour la sélection */
+.client-item.selecting {
+    animation: selectPulse 0.3s ease;
+}
+
+@keyframes selectPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+/* Style pour la case "tout sélectionner" */
+#selectAllToggle:checked + span {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+/* Style amélioré pour les filtres actifs */
+.filter-btn.active.auto-selected {
+    background: linear-gradient(135deg, #FF69B4, #FF1493) !important;
+    color: white !important;
+    border-color: #FF1493 !important;
+    box-shadow: 0 2px 8px rgba(255, 20, 147, 0.3);
+    transform: translateY(-1px);
+}
+
     </style>
 </head>
 <body>
@@ -1250,106 +1304,119 @@
         </div>
 
         <!-- ===== SIDEBAR DROITE ===== -->
-        <div class="sidebar-right">
-            <!-- Destinataires -->
-            <div class="sidebar-section">
-                <h3>
-                    <i class="fas fa-users"></i>
-                    Destinataires
-                </h3>
-                
-                <div class="recipients-counter" id="recipientsCounter">
-                    <i class="fas fa-envelope"></i>
-                    <span id="recipientCount">0</span> destinataires sélectionnés
-                </div>
-                
-                <div class="filter-buttons">
-                    <button class="filter-btn active" data-filter="newsletter">
-                        📧 Newsletter (<%= customerStats ? customerStats.newsletter : 0 %>)
-                    </button>
-                    <button class="filter-btn" data-filter="all">
-                        👥 Tous (<%= customerStats ? customerStats.all : 0 %>)
-                    </button>
-                    <button class="filter-btn" data-filter="vip">
-                        💎 VIP (<%= customerStats ? customerStats.vip : 0 %>)
-                    </button>
-                    <button class="filter-btn" data-filter="with-orders">
-                        🛍️ Clients (<%= customerStats ? customerStats.withOrders : 0 %>)
-                    </button>
-                </div>
-                
-                <div class="form-group">
-                    <label class="form-label">Rechercher un client</label>
-                    <input type="text" class="form-input" id="clientSearch" placeholder="Nom ou email">
-                </div>
-                
-                <div id="clientsList" style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
-                    <% if (customers && customers.length > 0) { %>
-                        <% customers.forEach(function(customer) { %>
-                            <div class="client-item" data-client-id="<%= customer.id %>" onclick="toggleClientSelection(<%= customer.id %>)">
-                                <div class="client-name"><%= customer.name || customer.email %></div>
-                                <div class="client-email"><%= customer.email %></div>
-                                <% if (customer.total_orders > 0) { %>
-                                    <div class="client-type">💰 <%= customer.total_orders %> commandes</div>
-                                <% } %>
-                                <% if (customer.customer_type === 'vip') { %>
-                                    <div class="client-type">💎 VIP</div>
-                                <% } %>
-                            </div>
-                        <% }); %>
-                    <% } else { %>
-                        <div style="color: var(--text-secondary); text-align: center; padding: 20px;">
-                            Aucun client trouvé
-                        </div>
-                    <% } %>
-                </div>
-            </div>
-
-            <!-- Statistiques -->
-            <div class="sidebar-section">
-                <h3>
-                    <i class="fas fa-chart-bar"></i>
-                    Statistiques
-                </h3>
-                
-                <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--radius); font-size: 13px;">
-                    <p style="margin-bottom: 8px;">
-                        <strong>📊 Total campagnes:</strong> <%= campaignStats ? campaignStats.total_campaigns : 0 %>
-                    </p>
-                    <p style="margin-bottom: 8px;">
-                        <strong>📧 Emails envoyés:</strong> <%= campaignStats ? campaignStats.total_emails_sent : 0 %>
-                    </p>
-                    <p style="margin-bottom: 8px;">
-                        <strong>📈 Taux d'ouverture:</strong> <%= campaignStats ? campaignStats.global_open_rate : 0 %>%
-                    </p>
-                    <p style="margin-bottom: 8px;">
-                        <strong>🖱️ Taux de clic:</strong> <%= campaignStats ? campaignStats.global_click_rate : 0 %>%
-                    </p>
-                    <p>
-                        <strong>👥 Abonnés:</strong> <%= campaignStats ? campaignStats.total_subscribers : 0 %>
-                    </p>
-                </div>
-            </div>
-
-            <!-- Conseils -->
-            <div class="sidebar-section">
-                <h3>
-                    <i class="fas fa-info-circle"></i>
-                    Conseils
-                </h3>
-                
-                <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--radius); font-size: 13px; line-height: 1.5;">
-                    <p style="margin-bottom: 10px;"><strong>📝 Bonnes pratiques :</strong></p>
-                    <ul style="margin-left: 15px;">
-                        <li>Sujet accrocheur (max 50 caractères)</li>
-                        <li>Personnalisez avec des variables</li>
-                        <li>Testez avant d'envoyer</li>
-                        <li>Optimisez pour mobile</li>
-                        <li>Analysez les statistiques</li>
-                    </ul>
-                </div>
-            </div>
+      <!-- ===== SIDEBAR DROITE ===== -->
+<div class="sidebar-right">
+    <!-- Destinataires -->
+    <div class="sidebar-section">
+        <h3>
+            <i class="fas fa-users"></i>
+            Destinataires
+        </h3>
+        
+        <!-- Case tout sélectionner/déselectionner -->
+        <div style="margin-bottom: 15px; padding: 10px; background: var(--bg-primary); border-radius: var(--radius); border: 1px solid var(--border);">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600;">
+                <input type="checkbox" id="selectAllToggle" onchange="toggleSelectAll()" style="transform: scale(1.2);">
+                <span id="selectAllLabel">Tout sélectionner</span>
+            </label>
+            <small style="color: var(--text-secondary); font-size: 12px; margin-top: 5px; display: block;">
+                Cochez pour sélectionner tous les clients visibles, décochez pour tout désélectionner
+            </small>
         </div>
+        
+        <div class="recipients-counter" id="recipientsCounter" style="background: linear-gradient(135deg, #FFB6C1, #FF69B4); color: white;">
+            <i class="fas fa-envelope"></i>
+            <span id="recipientCount">0</span> destinataires sélectionnés
+        </div>
+        
+        <div class="filter-buttons">
+            <button class="filter-btn active" data-filter="newsletter" onclick="selectCategoryAndClients('newsletter')">
+                📧 Newsletter (<%= customerStats ? customerStats.newsletter : 0 %>)
+            </button>
+            <button class="filter-btn" data-filter="all" onclick="selectCategoryAndClients('all')">
+                👥 Tous (<%= customerStats ? customerStats.all : 0 %>)
+            </button>
+            <button class="filter-btn" data-filter="vip" onclick="selectCategoryAndClients('vip')">
+                💎 VIP (<%= customerStats ? customerStats.vip : 0 %>)
+            </button>
+            <button class="filter-btn" data-filter="with-orders" onclick="selectCategoryAndClients('with-orders')">
+                🛍️ Clients (<%= customerStats ? customerStats.withOrders : 0 %>)
+            </button>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Rechercher un client</label>
+            <input type="text" class="form-input" id="clientSearch" placeholder="Nom ou email" oninput="searchClients(this.value)">
+        </div>
+        
+        <div id="clientsList" style="max-height: 300px; overflow-y: auto; margin-top: 10px;">
+            <% if (customers && customers.length > 0) { %>
+                <% customers.forEach(function(customer) { %>
+                    <div class="client-item" data-client-id="<%= customer.id %>" onclick="toggleClientSelection(<%= customer.id %>)">
+                        <div class="client-name"><%= customer.name || customer.email %></div>
+                        <div class="client-email"><%= customer.email %></div>
+                        <% if (customer.total_orders > 0) { %>
+                            <div class="client-type">💰 <%= customer.total_orders %> commandes</div>
+                        <% } %>
+                        <% if (customer.customer_type === 'vip') { %>
+                            <div class="client-type">💎 VIP</div>
+                        <% } %>
+                    </div>
+                <% }); %>
+            <% } else { %>
+                <div style="color: var(--text-secondary); text-align: center; padding: 20px;">
+                    Aucun client trouvé
+                </div>
+            <% } %>
+        </div>
+    </div>
+
+    <!-- Statistiques -->
+    <div class="sidebar-section">
+        <h3>
+            <i class="fas fa-chart-bar"></i>
+            Statistiques
+        </h3>
+        
+        <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--radius); font-size: 13px;">
+            <p style="margin-bottom: 8px;">
+                <strong>📊 Total campagnes:</strong> <%= campaignStats ? campaignStats.total_campaigns : 0 %>
+            </p>
+            <p style="margin-bottom: 8px;">
+                <strong>📧 Emails envoyés:</strong> <%= campaignStats ? campaignStats.total_emails_sent : 0 %>
+            </p>
+            <p style="margin-bottom: 8px;">
+                <strong>📈 Taux d'ouverture:</strong> <%= campaignStats ? campaignStats.global_open_rate : 0 %>%
+            </p>
+            <p style="margin-bottom: 8px;">
+                <strong>🖱️ Taux de clic:</strong> <%= campaignStats ? campaignStats.global_click_rate : 0 %>%
+            </p>
+            <p>
+                <strong>👥 Abonnés:</strong> <%= campaignStats ? campaignStats.total_subscribers : 0 %>
+            </p>
+        </div>
+    </div>
+
+    <!-- Conseils -->
+    <div class="sidebar-section">
+        <h3>
+            <i class="fas fa-info-circle"></i>
+            Conseils
+        </h3>
+        
+        <div style="background: var(--bg-primary); padding: 15px; border-radius: var(--radius); font-size: 13px; line-height: 1.5;">
+            <p style="margin-bottom: 10px;"><strong>📝 Bonnes pratiques :</strong></p>
+            <ul style="margin-left: 15px;">
+                <li>Sujet accrocheur (max 50 caractères)</li>
+                <li>Personnalisez avec des variables</li>
+                <li>Testez avant d'envoyer</li>
+                <li>Optimisez pour mobile</li>
+                <li>Analysez les statistiques</li>
+            </ul>
+        </div>
+    </div>
+</div>
+
     </div>
 
     <!-- ===== INDICATEURS ===== -->
@@ -1593,6 +1660,13 @@ document.addEventListener('DOMContentLoaded', function() {
         console.error('❌ Erreur lors de l\'initialisation:', error);
         showNotification('❌ Erreur lors de l\'initialisation', 'error');
     }
+    
+     // Ajouter la restauration
+    loadFromLocalStorage();
+    
+    // Sauvegarder à chaque modification
+    setInterval(saveToLocalStorage, 5000); // Toutes les 5 secondes
+
 });
 
 // ===== EVENT LISTENERS =====
@@ -2377,13 +2451,18 @@ function displayClients(clients) {
     const clientsList = document.getElementById('clientsList');
     if (!clientsList) return;
 
+    allVisibleClients = clients; // AJOUT
+
     if (clients.length === 0) {
         clientsList.innerHTML = '<div style="color: var(--text-secondary); text-align: center; padding: 20px;">Aucun client trouvé</div>';
+        updateSelectAllToggle(); // AJOUT
         return;
     }
 
     const clientsHtml = clients.map(client => `
-        <div class="client-item ${selectedClients.includes(client.id) ? 'selected' : ''}" data-client-id="${client.id}" onclick="toggleClientSelection(${client.id})">
+        <div class="client-item ${selectedClients.includes(client.id) ? 'selected' : ''}" 
+             data-client-id="${client.id}" 
+             onclick="toggleClientSelection(${client.id})">
             <div class="client-name">${client.name || client.email}</div>
             <div class="client-email">${client.email}</div>
             ${client.total_orders > 0 ? `<div class="client-type">💰 ${client.total_orders} commandes</div>` : ''}
@@ -2392,9 +2471,12 @@ function displayClients(clients) {
     `).join('');
 
     clientsList.innerHTML = clientsHtml;
+    updateSelectAllToggle(); // AJOUT
 }
 
 function toggleClientSelection(clientId) {
+    if (!clientId) return;
+    
     const clientItem = document.querySelector(`[data-client-id="${clientId}"]`);
     if (!clientItem) return;
 
@@ -2403,13 +2485,22 @@ function toggleClientSelection(clientId) {
     if (isSelected) {
         selectedClients = selectedClients.filter(id => id !== clientId);
         clientItem.classList.remove('selected');
+        console.log(`👤 Client ${clientId} désélectionné - Reste: ${selectedClients.length} clients`);
     } else {
         selectedClients.push(clientId);
         clientItem.classList.add('selected');
+        console.log(`👤 Client ${clientId} sélectionné - Total: ${selectedClients.length} clients`);
     }
 
+    // Animation de feedback
+    clientItem.classList.add('selecting');
+    setTimeout(() => clientItem.classList.remove('selecting'), 200);
+
     updateRecipientCounter();
-    console.log(`👤 Client ${clientId} ${isSelected ? 'désélectionné' : 'sélectionné'}`);
+    updateSelectAllToggle();
+    
+    // Debug pour vérifier la sélection
+    console.log('🔍 Clients actuellement sélectionnés:', selectedClients);
 }
 
 function filterRecipients(filter) {
@@ -2575,12 +2666,49 @@ async function sendTestEmail() {
 }
 
 async function confirmSendCampaign() {
-    console.log('📧 Envoi de la campagne...');
+    console.log('📧 Envoi de la campagne avec header stylé...');
     
     try {
         const campaignName = document.getElementById('campaignName')?.value;
         const subject = document.getElementById('emailSubject')?.value;
-        const content = document.getElementById('emailContent')?.innerHTML;
+        
+        // MODIFICATION IMPORTANTE: Inclure le header avec styles inline
+        const emailHeader = document.querySelector('.email-header');
+        const emailContent = document.getElementById('emailContent');
+        const emailFooter = document.querySelector('.email-footer');
+        
+        let fullEmailContent = '';
+        
+        // Inclure le header avec styles inline complets
+        if (emailHeader) {
+            const headerSubject = document.getElementById('previewSubject')?.textContent || subject;
+            const headerPreheader = document.getElementById('previewPreheader')?.textContent || '';
+            
+            fullEmailContent += `
+                <div style="background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">
+                    <div style="font-size: 1.4rem; font-weight: 700; margin-bottom: 5px; line-height: 1.2;">${headerSubject}</div>
+                    <div style="font-size: 14px; opacity: 0.9; line-height: 1.4;">${headerPreheader}</div>
+                </div>
+            `;
+        }
+        
+        // Inclure le contenu principal avec styles de base
+        if (emailContent) {
+            fullEmailContent += `
+                <div style="padding: 20px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; line-height: 1.6; color: #1e293b;">
+                    ${emailContent.innerHTML}
+                </div>
+            `;
+        }
+        
+        // Inclure le footer avec styles inline
+        if (emailFooter) {
+            fullEmailContent += `
+                <div style="background: #f8fafc; padding: 15px 20px; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;">
+                    ${emailFooter.innerHTML}
+                </div>
+            `;
+        }
 
         if (!campaignName?.trim()) {
             showNotification('⚠️ Nom de campagne requis', 'warning');
@@ -2592,26 +2720,29 @@ async function confirmSendCampaign() {
             return;
         }
 
-        if (!content?.trim()) {
+        if (!fullEmailContent?.trim()) {
             showNotification('⚠️ Contenu de l\'email requis', 'warning');
             return;
         }
 
-        const recipientCount = selectedClients.length || getFilteredCount(currentFilter);
-        if (recipientCount === 0) {
+        // CORRECTION IMPORTANTE: Vérifier que selectedClients n'est pas vide
+        if (selectedClients.length === 0) {
             showNotification('⚠️ Aucun destinataire sélectionné', 'warning');
             return;
         }
 
+        console.log(`📧 Envoi à ${selectedClients.length} clients sélectionnés:`, selectedClients);
+
         const campaignData = {
             name: campaignName,
             subject: subject,
-            content: content,
+            content: fullEmailContent, // Contenu complet avec styles inline
             preheader: document.getElementById('emailPreheader')?.value || '',
             fromName: document.getElementById('senderName')?.value || 'CrystosJewel',
             template: currentTemplate,
             recipientType: currentFilter,
-            selectedCustomerIds: selectedClients
+            selectedCustomerIds: selectedClients, // IMPORTANT: Seulement les clients sélectionnés
+            includeHeader: true
         };
 
         // Désactiver le bouton pendant l'envoi
@@ -2632,7 +2763,7 @@ async function confirmSendCampaign() {
         const result = await response.json();
 
         if (result.success) {
-            showNotification(`📧 Campagne "${campaignName}" envoyée avec succès !`, 'success');
+            showNotification(`📧 Campagne "${campaignName}" envoyée avec succès à ${selectedClients.length} destinataires ! 🎉`, 'success');
             closeModal('sendModal');
             
             // Nettoyer le formulaire
@@ -2642,6 +2773,7 @@ async function confirmSendCampaign() {
             document.getElementById('emailContent').innerHTML = '';
             selectedClients = [];
             updateRecipientCounter();
+            updateSelectAllToggle();
             updatePreview();
         } else {
             throw new Error(result.message || 'Erreur d\'envoi');
@@ -2721,16 +2853,23 @@ function previewEmail() {
 }
 
 // ===== GESTION DES PRODUITS =====
-function toggleProductSelection(card) {
-    const productId = card.dataset.productId;
+function toggleProductSelection(cardElement) {
+    const productId = cardElement.dataset.productId;
+    console.log('🛍️ Toggle produit:', productId);
+    
     if (selectedProducts.includes(productId)) {
         selectedProducts = selectedProducts.filter(id => id !== productId);
-        card.classList.remove('selected');
+        cardElement.classList.remove('selected');
+        console.log('❌ Produit désélectionné:', productId);
     } else {
         selectedProducts.push(productId);
-        card.classList.add('selected');
+        cardElement.classList.add('selected');
+        console.log('✅ Produit sélectionné:', productId);
     }
+    
+    console.log('📦 Produits actuellement sélectionnés:', selectedProducts);
 }
+
 
 function insertSelectedProducts() {
     if (selectedProducts.length === 0) {
@@ -2743,18 +2882,18 @@ function insertSelectedProducts() {
     let productsHtml = '<div class="products-container editable-element editable-background" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 20px 0;">';
     
     selectedProducts.forEach(productId => {
-        const product = allJewels.find(p => p.id == productId);
-        if (product) {
-            productsHtml += `
-                <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);" class="editable-background">
-                    <img src="${product.imageUrl}" alt="${product.name}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
-                    <h4 style="color: #1e293b; margin: 0 0 8px 0; font-size: 16px;" class="editable-color">${product.name}</h4>
-                    <p style="color: #d89ab3; font-weight: 600; font-size: 18px; margin: 0 0 15px 0;" class="editable-color">${product.formattedPrice}</p>
-                    <a href="/bijoux/${product.slug}" class="editable-button editable-color editable-background" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px; transition: transform 0.2s ease;">Voir le produit</a>
-                </div>
-            `;
-        }
-    });
+    const product = allJewels.find(p => p.id == productId);
+    if (product) {
+        productsHtml += `
+            <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; text-align: center; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                <img src="${product.imageUrl}" alt="${product.name}" style="width: 100%; height: 120px; object-fit: cover; border-radius: 4px; margin-bottom: 10px;">
+                <h4 style="color: #1e293b; margin: 0 0 8px 0; font-size: 16px;">${product.name}</h4>
+                <p style="color: #d89ab3; font-weight: 600; font-size: 18px; margin: 0 0 15px 0;">${product.formattedPrice}</p>
+                <a href="/bijoux/${product.slug}" style="display: inline-block; background: linear-gradient(135deg, #d89ab3, #b794a8); color: white; padding: 8px 16px; text-decoration: none; border-radius: 4px; font-size: 14px;">Voir le produit</a>
+            </div>
+        `;
+    }
+});
     
     productsHtml += '</div>';
     
@@ -2918,7 +3057,7 @@ function closeModal(modalId) {
 
 function prepareSendModal() {
     const recipientType = currentFilter;
-    const recipientCount = selectedClients.length || getFilteredCount(currentFilter);
+    const recipientCount = selectedClients.length; // IMPORTANT: Utiliser selectedClients.length
     const campaignName = document.getElementById('campaignName')?.value || 'Campagne sans nom';
     const subject = document.getElementById('emailSubject')?.value || 'Email sans sujet';
     
@@ -2926,15 +3065,21 @@ function prepareSendModal() {
     if (summary) {
         summary.innerHTML = `
             <div style="background: var(--bg-primary); padding: 20px; border-radius: var(--radius); margin-bottom: 20px;">
-                <h4 style="margin: 0 0 15px 0;">Résumé de la campagne</h4>
+                <h4 style="margin: 0 0 15px 0;">📧 Résumé de la campagne</h4>
                 <p><strong>Nom:</strong> ${campaignName}</p>
                 <p><strong>Sujet:</strong> ${subject}</p>
                 <p><strong>Type de destinataires:</strong> ${getFilterLabel(recipientType)}</p>
-                <p><strong>Nombre de destinataires:</strong> ${recipientCount}</p>
+                <p><strong>Destinataires sélectionnés:</strong> <span style="color: #FF1493; font-weight: bold; font-size: 18px;">${recipientCount}</span></p>
+                <p><strong>Header inclus:</strong> <span style="color: #10b981;">✅ Oui (avec styles)</span></p>
             </div>
             <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: var(--radius); padding: 15px; margin-bottom: 20px;">
-                <p style="margin: 0; color: #856404;"><strong>⚠️ Attention:</strong> Cette action enverra immédiatement l'email à tous les destinataires sélectionnés.</p>
+                <p style="margin: 0; color: #856404;"><strong>⚠️ Attention:</strong> Cette action enverra immédiatement l'email complet (header stylé + contenu + footer) aux <strong>${recipientCount} destinataires sélectionnés UNIQUEMENT</strong>.</p>
             </div>
+            ${recipientCount === 0 ? `
+                <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--radius); padding: 15px; margin-bottom: 20px;">
+                    <p style="margin: 0; color: #dc2626;"><strong>❌ Erreur:</strong> Aucun destinataire sélectionné ! Veuillez sélectionner au moins un client.</p>
+                </div>
+            ` : ''}
         `;
     }
 }
@@ -3052,6 +3197,46 @@ function handleImageUpload(event) {
     }
 }
 
+// Sauvegarder automatiquement dans localStorage
+function saveToLocalStorage() {
+    const draftData = {
+        campaignName: document.getElementById('campaignName')?.value || '',
+        emailSubject: document.getElementById('emailSubject')?.value || '',
+        emailPreheader: document.getElementById('emailPreheader')?.value || '',
+        emailContent: document.getElementById('emailContent')?.innerHTML || '',
+        selectedClients: selectedClients,
+        timestamp: new Date().toISOString()
+    };
+    
+    localStorage.setItem('email_editor_draft', JSON.stringify(draftData));
+    console.log('💾 Draft sauvegardé localement');
+}
+
+// Restaurer au chargement de la page
+function loadFromLocalStorage() {
+    try {
+        const saved = localStorage.getItem('email_editor_draft');
+        if (saved) {
+            const draftData = JSON.parse(saved);
+            
+            document.getElementById('campaignName').value = draftData.campaignName || '';
+            document.getElementById('emailSubject').value = draftData.emailSubject || '';
+            document.getElementById('emailPreheader').value = draftData.emailPreheader || '';
+            document.getElementById('emailContent').innerHTML = draftData.emailContent || '';
+            selectedClients = draftData.selectedClients || [];
+            
+            updatePreview();
+            updateRecipientCounter();
+            console.log('📂 Draft restauré depuis localStorage');
+            showNotification('📂 Brouillon restauré', 'info');
+        }
+    } catch (error) {
+        console.error('❌ Erreur restauration draft:', error);
+    }
+}
+
+
+
 // ===== RACCOURCIS CLAVIER =====
 function handleKeyboardShortcuts(e) {
     if (e.ctrlKey || e.metaKey) {
@@ -3112,6 +3297,133 @@ function showNotification(message, type = 'info') {
         }, 300);
     }, 3000);
 }
+
+// NOUVELLES VARIABLES (ajouter au début du script)
+let allVisibleClients = [];
+let autoSelectMode = false;
+
+// NOUVELLE FONCTION: Sélectionner une catégorie ET tous ses clients
+function selectCategoryAndClients(filter) {
+    console.log(`🎯 Sélection automatique de la catégorie: ${filter}`);
+    
+    autoSelectMode = true;
+    
+    try {
+        // 1. Activer le filtre
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.classList.remove('active', 'auto-selected');
+        });
+        
+        const filterBtn = document.querySelector(`[data-filter="${filter}"]`);
+        if (filterBtn) {
+            filterBtn.classList.add('active', 'auto-selected');
+        }
+
+        currentFilter = filter;
+        
+        // 2. Filtrer les clients selon la catégorie
+        let filteredClients = [];
+        if (filter === 'all') {
+            filteredClients = allCustomers;
+        } else if (filter === 'newsletter') {
+            filteredClients = allCustomers.filter(client => client.newsletter_subscribed);
+        } else if (filter === 'with-orders') {
+            filteredClients = allCustomers.filter(client => client.total_orders > 0);
+        } else if (filter === 'vip') {
+            filteredClients = allCustomers.filter(client => client.customer_type === 'vip');
+        }
+        
+        // 3. Afficher les clients
+        displayClients(filteredClients);
+        allVisibleClients = filteredClients;
+        
+        // 4. Sélectionner AUTOMATIQUEMENT tous les clients de cette catégorie
+        selectedClients = filteredClients.map(client => client.id);
+        
+        // 5. Mettre à jour l'affichage
+        updateClientSelectionDisplay();
+        updateRecipientCounter();
+        updateSelectAllToggle();
+        
+        showNotification(`✨ Catégorie "${getFilterLabel(filter)}" sélectionnée - ${selectedClients.length} clients automatiquement sélectionnés`, 'success');
+        
+    } catch (error) {
+        console.error('❌ Erreur sélection catégorie:', error);
+        showNotification('❌ Erreur lors de la sélection', 'error');
+    } finally {
+        autoSelectMode = false;
+    }
+}
+
+// NOUVELLE FONCTION: Toggle tout sélectionner/déselectionner
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAllToggle');
+    const isChecked = selectAllCheckbox.checked;
+    
+    if (isChecked) {
+        selectedClients = [...allVisibleClients.map(client => client.id)];
+        showNotification(`✅ ${selectedClients.length} clients sélectionnés`, 'success');
+    } else {
+        selectedClients = [];
+        showNotification('❌ Tous les clients désélectionnés', 'info');
+    }
+    
+    updateClientSelectionDisplay();
+    updateRecipientCounter();
+    updateSelectAllLabel();
+}
+
+// NOUVELLES FONCTIONS UTILITAIRES
+function updateClientSelectionDisplay() {
+    document.querySelectorAll('.client-item').forEach(item => {
+        const clientId = parseInt(item.dataset.clientId);
+        if (selectedClients.includes(clientId)) {
+            item.classList.add('selected');
+        } else {
+            item.classList.remove('selected');
+        }
+    });
+}
+
+function updateSelectAllToggle() {
+    const selectAllCheckbox = document.getElementById('selectAllToggle');
+    if (!selectAllCheckbox) return;
+    
+    const visibleClientIds = allVisibleClients.map(c => c.id);
+    const selectedVisibleClients = selectedClients.filter(id => visibleClientIds.includes(id));
+    
+    if (selectedVisibleClients.length === 0) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    } else if (selectedVisibleClients.length === visibleClientIds.length) {
+        selectAllCheckbox.checked = true;
+        selectAllCheckbox.indeterminate = false;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = true;
+    }
+    
+    updateSelectAllLabel();
+}
+
+function updateSelectAllLabel() {
+    const label = document.getElementById('selectAllLabel');
+    const selectAllCheckbox = document.getElementById('selectAllToggle');
+    
+    if (!label || !selectAllCheckbox) return;
+    
+    if (selectAllCheckbox.checked) {
+        label.textContent = 'Tout désélectionner';
+    } else if (selectAllCheckbox.indeterminate) {
+        label.textContent = 'Sélection partielle';
+    } else {
+        label.textContent = 'Tout sélectionner';
+    }
+}
+
+// Ajouter au scope global
+window.selectCategoryAndClients = selectCategoryAndClients;
+window.toggleSelectAll = toggleSelectAll;
 
 // ===== FONCTIONS GLOBALES POUR L'HTML =====
 window.toggleClientSelection = toggleClientSelection;
