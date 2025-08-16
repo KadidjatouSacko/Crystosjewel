@@ -1227,53 +1227,88 @@ async validateOrderAndSave(req, res) {
   },
 
   // ✅ FONCTION CORRIGÉE calculateOrderTotals
-  calculateOrderTotals(cartItems, appliedPromo = null) {
-    let subtotal = 0;
+ calculateOrderTotals(cartItems, appliedPromo = null) {
+  if (!Array.isArray(cartItems)) {
+    cartItems = [];
+  }
+  
+  // ✅ CALCULER LE SOUS-TOTAL AVEC LES PRIX RÉDUITS DES BIJOUX
+  let subtotal = 0;
+  
+  cartItems.forEach(item => {
+    if (!item.jewel) return;
     
-    cartItems.forEach(item => {
-      const price = parseFloat(item.jewel.price_ttc) || 0;
-      const quantity = parseInt(item.quantity) || 0;
-      const itemTotal = price * quantity;
+    const originalPrice = parseFloat(item.jewel.price_ttc) || 0;
+    const quantity = parseInt(item.quantity) || 0;
+    
+    // ✅ CALCULER LE PRIX EFFECTIF (avec réduction bijou si applicable)
+    let effectivePrice = originalPrice;
+    
+    if (item.jewel.discount_percentage && item.jewel.discount_percentage > 0) {
+      // Vérifier si la réduction est active
+      const now = new Date();
+      const isDiscountActive = 
+        (!item.jewel.discount_start_date || now >= new Date(item.jewel.discount_start_date)) &&
+        (!item.jewel.discount_end_date || now <= new Date(item.jewel.discount_end_date));
       
-      item.itemTotal = Math.round(itemTotal * 100) / 100;
-      subtotal += itemTotal;
-    });
-    
-    subtotal = Math.round(subtotal * 100) / 100;
-    console.log('📊 Sous-total calculé:', subtotal);
-    
-    let discount = 0;
-    let discountedSubtotal = subtotal;
-    
-    if (appliedPromo) {
-      // ✅ Utiliser la réduction pré-calculée ou la calculer
-      if (appliedPromo.calculatedDiscount) {
-        discount = appliedPromo.calculatedDiscount;
-      } else {
-        // Calculer selon le type
-        if (appliedPromo.type === 'percentage' && appliedPromo.discountPercent) {
-          discount = Math.round((subtotal * appliedPromo.discountPercent / 100) * 100) / 100;
-        } else if (appliedPromo.type === 'fixed' && appliedPromo.discountAmount) {
-          discount = Math.min(appliedPromo.discountAmount, subtotal);
-        }
+      if (isDiscountActive) {
+        effectivePrice = originalPrice * (1 - item.jewel.discount_percentage / 100);
       }
-      
-      discountedSubtotal = Math.max(0, subtotal - discount);
-      console.log(`💰 Code promo ${appliedPromo.code}: -${discount}€`);
     }
     
-    const deliveryFee = discountedSubtotal >= 50 ? 0 : 5.99;
-    const finalTotal = Math.round((discountedSubtotal + deliveryFee) * 100) / 100;
+    const itemTotal = effectivePrice * quantity;
     
-    return {
-      subtotal,
-      discount,
-      discountedSubtotal,
-      deliveryFee,
-      finalTotal,
-      appliedPromo
-    };
-  },
+    // ✅ METTRE À JOUR L'ITEM AVEC LE PRIX EFFECTIF
+    item.itemTotal = Math.round(itemTotal * 100) / 100;
+    item.effectivePrice = effectivePrice;
+    
+    subtotal += itemTotal;
+  });
+  
+  subtotal = Math.round(subtotal * 100) / 100;
+  console.log('📊 Sous-total avec réductions bijoux calculé:', subtotal);
+  
+  // ✅ APPLICATION DU CODE PROMO SUR LE SOUS-TOTAL DÉJÀ RÉDUIT
+  let discount = 0;
+  let discountedSubtotal = subtotal;
+  
+  if (appliedPromo) {
+    // Utiliser la réduction pré-calculée ou la calculer
+    if (appliedPromo.calculatedDiscount) {
+      discount = appliedPromo.calculatedDiscount;
+    } else {
+      // Calculer selon le type
+      if (appliedPromo.type === 'percentage' && appliedPromo.discountPercent) {
+        discount = Math.round((subtotal * appliedPromo.discountPercent / 100) * 100) / 100;
+      } else if (appliedPromo.type === 'fixed' && appliedPromo.discountAmount) {
+        discount = Math.min(appliedPromo.discountAmount, subtotal);
+      }
+    }
+    
+    discountedSubtotal = Math.max(0, subtotal - discount);
+    console.log(`💰 Code promo ${appliedPromo.code}: -${discount}€`);
+  }
+  
+  // ✅ FRAIS DE LIVRAISON sur le montant après toutes réductions
+  const deliveryFee = discountedSubtotal >= 50 ? 0 : 5.99;
+  const finalTotal = Math.round((discountedSubtotal + deliveryFee) * 100) / 100;
+  
+  console.log(`💰 Totaux finaux:
+    - Sous-total (avec réductions bijoux): ${subtotal}€
+    - Réduction code promo: -${discount}€
+    - Après code promo: ${discountedSubtotal}€
+    - Livraison: ${deliveryFee}€
+    - Total final: ${finalTotal}€`);
+  
+  return {
+    subtotal,
+    discount,
+    discountedSubtotal,
+    deliveryFee,
+    finalTotal,
+    appliedPromo
+  };
+},
 
   // ========================================
   // 🛒 GESTION DES COMMANDES

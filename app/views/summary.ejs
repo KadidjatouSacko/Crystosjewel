@@ -1145,157 +1145,189 @@
                             </h2>
                         </div>
                         <div class="card-body">
-                            <div class="order-summary">
-                                <% cartItems.forEach(item => { %>
-                                    <div class="order-item">
-                                        <img src="/uploads/jewels/<%= item.jewel.image || '/images/placeholder.jpg' %>" 
-                                             alt="<%= item.jewel.name %>" 
-                                             class="item-image"
-                                             onerror="this.src='/images/placeholder.jpg'">
-                                        <div class="item-details">
-                                            <div class="item-name"><%= item.jewel.name %></div>
-                                            <div class="item-meta">
-                                                <span>Qté: <%= item.quantity %></span>
-                                                <% if (item.jewel.description) { %>
-                                                    <span><%= item.jewel.description.substring(0, 30) %>...</span>
-                                                <% } %>
+                            <!-- 💎 LISTE DES BIJOUX avec prix avant/après (exactement comme dans cart.ejs) -->
+<div class="order-summary">
+    <% cartItems.forEach(item => { %>
+        <div class="order-item">
+            <img src="/uploads/jewels/<%= item.jewel.image || '/images/placeholder.jpg' %>" 
+                alt="<%= item.jewel.name %>" 
+                class="item-image"
+                onerror="this.src='/images/placeholder.jpg'">
+            
+            <div class="item-details">
+                <div class="item-name"><%= item.jewel.name %></div>
+                <div class="item-meta">
+                    <span>Qté: <%= item.quantity %></span>
+                    <% if (item.jewel.description) { %>
+                        <span><%= item.jewel.description.substring(0, 30) %>...</span>
+                    <% } %>
+                </div>
 
-                                                     <div class="item-specs">
-                                                <% if (item.jewel.matiere) { %>
-                                                    <div class="spec-item">
-                                                        <i class="fas fa-star"></i>
-                                                        <%= item.jewel.matiere %>
-                                                    </div>
-                                                <% } %>
-                                                
-                                                <% if (item.jewel.carat) { %>
-                                                    <div class="spec-item">
-                                                        <i class="fas fa-gem"></i>
-                                                        <%= item.jewel.carat %> carats
-                                                    </div>
-                                                <% } %>
-                                                
-                                                <!-- ✅ GESTION TAILLES IDENTIQUE -->
-                                                <% if (item.size) { %>
-                                                    <!-- TAILLE SPÉCIFIQUEMENT SÉLECTIONNÉE -->
-                                                    <div class="spec-item selected-size">
-                                                        <i class="fas fa-ruler"></i>
-                                                        <strong>Taille: <%= item.size %></strong>
-                                                    </div>
-                                                <% } else if (item.jewel.tailles && Array.isArray(item.jewel.tailles) && item.jewel.tailles.length > 0) { %>
-                                                    <!-- TAILLES DISPONIBLES (si aucune sélectionnée) -->
-                                                    <div class="spec-item available-sizes">
-                                                        <i class="fas fa-ruler"></i>
-                                                        Tailles: 
-                                                        <% 
-                                                        let taillesDisplay = item.jewel.tailles.map(t => {
-                                                            if (typeof t === 'object' && t !== null) {
-                                                                return t.taille || t.size || t.value || t.label || 'N/A';
-                                                            }
-                                                            return String(t);
-                                                        }).join(', ');
-                                                        %>
-                                                        <%= taillesDisplay %>
-                                                    </div>
-                                                <% } %>
-                                                
-                                                <% if (item.jewel.poids) { %>
-                                                    <div class="spec-item">
-                                                        <i class="fas fa-weight"></i>
-                                                        <%= item.jewel.poids %>g
-                                                    </div>
-                                                <% } %>
-                                            </div>
-                                            </div>
-                                        </div>
-                                        <div class="item-price"><%= item.itemTotal.toFixed(2) %> €</div>
-                                    </div>
-                                    
-                                <% }); %>
-                            </div>
+                <!-- Spécifications du bijou -->
+                <div class="item-specs">
+                    <% if (item.jewel.matiere) { %>
+                        <div class="spec-item">
+                            <i class="fas fa-star"></i>
+                            <%= item.jewel.matiere %>
+                        </div>
+                    <% } %>
+                    
+                    <% if (item.jewel.carat) { %>
+                        <div class="spec-item">
+                            <i class="fas fa-gem"></i>
+                            <%= item.jewel.carat %> carats
+                        </div>
+                    <% } %>
+                    
+                    <!-- Gestion des tailles -->
+                    <% if (item.size) { %>
+                        <div class="spec-item selected-size">
+                            <i class="fas fa-ruler"></i>
+                            <strong>Taille: <%= item.size %></strong>
+                        </div>
+                    <% } else if (item.jewel.tailles && Array.isArray(item.jewel.tailles) && item.jewel.tailles.length > 0) { %>
+                        <div class="spec-item available-sizes">
+                            <i class="fas fa-ruler"></i>
+                            Tailles: 
+                            <% 
+                            let taillesDisplay = item.jewel.tailles.map(t => {
+                                if (typeof t === 'object' && t !== null) {
+                                    return t.taille || t.size || t.value || t.label || 'N/A';
+                                }
+                                return String(t);
+                            }).join(', ');
+                            %>
+                            <%= taillesDisplay %>
+                        </div>
+                    <% } %>
+                    
+                    <% if (item.jewel.poids) { %>
+                        <div class="spec-item">
+                            <i class="fas fa-weight"></i>
+                            <%= item.jewel.poids %>g
+                        </div>
+                    <% } %>
+                </div>
+
+                <!-- ✅ AFFICHAGE PRIX AVEC OU SANS RÉDUCTION (exactement comme dans cart.ejs) -->
+                <div class="item-price-display" data-price="<%= item.jewel.price_ttc %>">
+                   <% if (item.jewel.has_discount) { %>
+    <!-- Prix avec réduction -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="text-decoration: line-through; color: #999;">
+            <%= parseFloat(item.jewel.original_price).toFixed(2) %>€
+        </span>
+        <span style="color: #28a745; font-weight: 600;">
+            <%= parseFloat(item.jewel.effective_price).toFixed(2) %>€
+        </span>
+        <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 4px;">
+            -<%= item.jewel.discount_percentage %>%
+        </span>
+    </div>
+<% } else { %>
+    <!-- Prix normal -->
+    <%= parseFloat(item.jewel.price_ttc).toFixed(2) %> €
+<% } %>
+                </div>
+            </div>
+            
+            <!-- 💰 PRIX TOTAL DE L'ARTICLE -->
+            <div class="item-price">
+                <div style="font-weight: 700; color: var(--rose-gold-dark); font-size: 1.1rem;">
+                    <%= item.itemTotal.toFixed(2) %> €
+                </div>
+                <% if (item.quantity > 1) { %>
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 4px;">
+                        <%= parseFloat(item.jewel.effective_price).toFixed(2) %> € × <%= item.quantity %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    <% }); %>
+</div>
 
                             
 
+                      <div class="price-summary">
+                            <div class="price-row">
+                                <span class="label">Sous-total :</span>
+                                <span class="value" id="subtotal-display"><%= subtotal.toFixed(2) %> €</span>
+                            </div>
+
+                            <!-- Section Code Promo -->
                             <div class="price-summary">
-    <div class="price-row">
-        <span class="label">Sous-total :</span>
-        <span class="value" id="subtotal-display"><%= subtotal.toFixed(2) %> €</span>
-    </div>
+                            <div class="price-row">
+                                <span class="label">Sous-total :</span>
+                                <span class="value" id="subtotal-display"><%= subtotal.toFixed(2) %> €</span>
+                            </div>
 
-    <!-- Section Code Promo -->
-    <div class="price-summary">
-    <div class="price-row">
-        <span class="label">Sous-total :</span>
-        <span class="value" id="subtotal-display"><%= subtotal.toFixed(2) %> €</span>
-    </div>
+                            <!-- ✅ Section Code Promo -->
+                            <% if (appliedPromo && discount > 0) { %>
+                                <div class="applied-promo">
+                                    <div class="promo-info">
+                                        <div class="promo-label">
+                                            <i class="fas fa-tag"></i>
+                                            Code promo: <strong><%= appliedPromo.code %></strong>
+                                        </div>
+                                        <button class="remove-promo-btn" id="remove-promo">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </div>
+                                    <div class="promo-discount">
+                                        -<%= appliedPromo.discountPercent %>% (-<%= discount.toFixed(2) %> €)
+                                    </div>
+                                </div>
+                                
+                                <div class="price-row discount-line">
+                                    <span class="label">Réduction (<%= appliedPromo.discountPercent %>%):</span>
+                                    <span class="discount-amount">-<%= discount.toFixed(2) %> €</span>
+                                </div>
+                                
+                                <div class="price-row">
+                                    <span class="label">Après réduction:</span>
+                                    <span class="value" id="discounted-subtotal-display"><%= discountedSubtotal.toFixed(2) %> €</span>
+                                </div>
+                            <% } else { %>
+                                <!-- 📝 Formulaire code promo -->
+                                <div class="promo-section">
+                                    <div class="promo-form">
+                                        <div class="promo-input-group">
+                                            <input type="text" 
+                                                id="promo-code" 
+                                                placeholder="Code promo" 
+                                                class="promo-input"
+                                                maxlength="20">
+                                            <button type="button" 
+                                                    id="apply-promo" 
+                                                    class="promo-btn">
+                                                <i class="fas fa-tag"></i>
+                                                Appliquer
+                                            </button>
+                                        </div>
+                                        <div id="promo-message" class="promo-message"></div>
+                                    </div>
+                                </div>
+                            <% } %>
 
-    <!-- ✅ Section Code Promo -->
-    <% if (appliedPromo && discount > 0) { %>
-        <div class="applied-promo">
-            <div class="promo-info">
-                <div class="promo-label">
-                    <i class="fas fa-tag"></i>
-                    Code promo: <strong><%= appliedPromo.code %></strong>
-                </div>
-                <button class="remove-promo-btn" id="remove-promo">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="promo-discount">
-                -<%= appliedPromo.discountPercent %>% (-<%= discount.toFixed(2) %> €)
-            </div>
-        </div>
-        
-        <div class="price-row discount-line">
-            <span class="label">Réduction (<%= appliedPromo.discountPercent %>%):</span>
-            <span class="discount-amount">-<%= discount.toFixed(2) %> €</span>
-        </div>
-        
-        <div class="price-row">
-            <span class="label">Après réduction:</span>
-            <span class="value" id="discounted-subtotal-display"><%= discountedSubtotal.toFixed(2) %> €</span>
-        </div>
-    <% } else { %>
-        <!-- 📝 Formulaire code promo -->
-        <div class="promo-section">
-            <div class="promo-form">
-                <div class="promo-input-group">
-                    <input type="text" 
-                           id="promo-code" 
-                           placeholder="Code promo" 
-                           class="promo-input"
-                           maxlength="20">
-                    <button type="button" 
-                            id="apply-promo" 
-                            class="promo-btn">
-                        <i class="fas fa-tag"></i>
-                        Appliquer
-                    </button>
-                </div>
-                <div id="promo-message" class="promo-message"></div>
-            </div>
-        </div>
-    <% } %>
-
-    <div class="price-row">
-        <span class="label">Livraison :</span>
-        <span class="value">
-            <% if (deliveryFee > 0) { %>
-                <%= deliveryFee.toFixed(2) %> €
-            <% } else { %>
-                <span class="status-indicator success">
-                    <i class="fas fa-check"></i>
-                    Gratuite
-                </span>
-            <% } %>
-        </span>
-    </div>
-    
-    <div class="price-row total">
-        <span class="label">Total TTC :</span>
-        <span class="value" id="total-display"><%= finalTotal.toFixed(2) %> €</span>
-    </div>
-</div>
+                            <div class="price-row">
+                                <span class="label">Livraison :</span>
+                                <span class="value">
+                                    <% if (deliveryFee > 0) { %>
+                                        <%= deliveryFee.toFixed(2) %> €
+                                    <% } else { %>
+                                        <span class="status-indicator success">
+                                            <i class="fas fa-check"></i>
+                                            Gratuite
+                                        </span>
+                                    <% } %>
+                                </span>
+                            </div>
+                            
+                            <div class="price-row total">
+                                <span class="label">Total TTC :</span>
+                                <span class="value" id="total-display"><%= finalTotal.toFixed(2) %> €</span>
+                            </div>
+                        </div>
 </div>
 
                             <% if (subtotal >= 50) { %>

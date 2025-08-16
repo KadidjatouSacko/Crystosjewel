@@ -16,75 +16,262 @@ export const guestOrderController = {
   /**
    * 📋 Afficher le récapitulatif de commande (connecté ou invité)
    */
-  async renderOrderSummary(req, res) {
-    try {
-      console.log('📋 Affichage récapitulatif commande');
+ /**
+ * 📋 Afficher le récapitulatif de commande avec prix avant/après réduction
+ */
+async renderOrderSummary(req, res) {
+  try {
+    console.log('📋 Affichage récapitulatif commande avec réductions');
 
-      // Récupérer le panier selon le type d'utilisateur
-      const cartDetails = await cartController.getCartDetails(req);
+    // ✅ UTILISER VOTRE getCartDetails MAIS MODIFIÉ POUR INCLURE LES CHAMPS DE RÉDUCTION
+    const userId = req.session?.user?.id || req.session?.customerId;
+    const isGuest = !userId;
+
+    let cartItems = [];
+    let totalPrice = 0;
+
+    if (isGuest) {
+      // Invité - récupérer depuis la session
+      console.log('🛒 Récupération panier session (invité)');
       
-      if (!cartDetails.items || cartDetails.items.length === 0) {
-        req.session.flashMessage = {
-          type: 'warning',
-          message: 'Votre panier est vide.'
-        };
-        return res.redirect('/panier');
+      const sessionCart = req.session.cart || { items: [] };
+      
+      for (const item of sessionCart.items) {
+        if (item.jewel && item.jewel.id) {
+          // ✅ RÉCUPÉRER AVEC LES CHAMPS DE RÉDUCTION
+          const currentJewel = await Jewel.findByPk(item.jewel.id, {
+            attributes: [
+              'id', 'name', 'description', 'price_ttc', 'image', 'slug', 'stock',
+              'matiere', 'carat', 'poids', 'tailles',
+              'discount_percentage', 'discount_start_date', 'discount_end_date'
+            ]
+          });
+          
+          if (currentJewel && currentJewel.stock > 0) {
+            const validQuantity = Math.min(item.quantity, currentJewel.stock);
+            
+            cartItems.push({
+              jewelId: currentJewel.id,
+              jewel: currentJewel.toJSON(),
+              quantity: validQuantity,
+              size: item.size || null
+            });
+            
+            totalPrice += parseFloat(currentJewel.price_ttc) * validQuantity;
+          }
+        }
       }
-
-      // Calculer les totaux avec codes promo
-      const appliedPromo = req.session.appliedPromo || null;
-      let discount = 0;
-      let discountedSubtotal = cartDetails.totalPrice;
-
-      if (appliedPromo && appliedPromo.discountPercent) {
-        const discountPercent = parseFloat(appliedPromo.discountPercent);
-        discount = (cartDetails.totalPrice * discountPercent) / 100;
-        discountedSubtotal = cartDetails.totalPrice - discount;
-      }
-
-      // Frais de livraison
-      const shippingThreshold = res.locals.freeShippingThreshold || 100;
-const baseDeliveryFee = res.locals.standardShippingCost || 7.50;
-      const deliveryFee = discountedSubtotal >= shippingThreshold ? 0 : baseDeliveryFee;
-      const finalTotal = discountedSubtotal + deliveryFee;
-
-      // Préparer les items avec totaux
-      const cartItems = cartDetails.items.map(item => ({
-        ...item,
-        itemTotal: item.jewel.price_ttc * item.quantity
-      }));
-
-      console.log(`💰 Totaux calculés:
-        - Sous-total: ${cartDetails.totalPrice.toFixed(2)}€
-        - Réduction: -${discount.toFixed(2)}€
-        - Après réduction: ${discountedSubtotal.toFixed(2)}€
-        - Livraison: ${deliveryFee.toFixed(2)}€
-        - Total final: ${finalTotal.toFixed(2)}€`);
-
-      res.render('summary', {
-        title: 'Récapitulatif de commande',
-        cartItems,
-        subtotal: cartDetails.totalPrice,
-        discount,
-        discountedSubtotal,
-        deliveryFee,
-        finalTotal,
-        appliedPromo: appliedPromo ? {
-          code: appliedPromo.code,
-          discountPercent: parseFloat(appliedPromo.discountPercent)
-        } : null,
-        user: req.session.user || null,
-        isGuest: !req.session.user && !req.session.customerId
+      
+    } else {
+      // Utilisateur connecté - récupérer depuis la BDD
+      console.log('🛒 Récupération panier BDD (connecté)');
+      
+      const dbCartItems = await Cart.findAll({
+        where: { customer_id: userId },
+        include: [{
+          model: Jewel,
+          as: 'jewel',
+          required: true,
+          attributes: [
+            'id', 'name', 'description', 'price_ttc', 'image', 'slug', 'stock',
+            'matiere', 'carat', 'poids', 'tailles',
+            'discount_percentage', 'discount_start_date', 'discount_end_date'
+          ]
+        }]
       });
 
-    } catch (error) {
-      console.error('❌ Erreur récapitulatif commande:', error);
-      res.status(500).render('error', {
-        title: 'Erreur',
-        message: 'Erreur lors de l\'affichage du récapitulatif'
+      cartItems = dbCartItems.map(item => {
+        const itemTotal = parseFloat(item.jewel.price_ttc) * item.quantity;
+        totalPrice += itemTotal;
+        
+        return {
+          jewelId: item.jewel.id,
+          jewel: item.jewel.toJSON(),
+          quantity: item.quantity,
+          size: item.size || null
+        };
       });
     }
-  },
+
+    // ✅ VÉRIFIER SI LE PANIER EST VIDE
+    if (cartItems.length === 0) {
+      req.session.flashMessage = {
+        type: 'warning',
+        message: 'Votre panier est vide.'
+      };
+      return res.redirect('/panier');
+    }
+
+    console.log(`🛒 ${cartItems.length} articles dans le panier`);
+
+    // ✅ TRAITEMENT DES ARTICLES AVEC CALCUL DES PRIX RÉDUITS
+    const processedItems = cartItems.map(item => {
+      const jewelData = item.jewel;
+      
+      // Parser les tailles si nécessaire
+      let parsedTailles = jewelData.tailles;
+      if (typeof parsedTailles === 'string') {
+        try {
+          parsedTailles = JSON.parse(parsedTailles);
+        } catch (error) {
+          parsedTailles = [];
+        }
+      }
+      if (!Array.isArray(parsedTailles)) {
+        parsedTailles = [];
+      }
+
+      // ✅ CALCULER LE PRIX EFFECTIF (avec réduction bijou si applicable)
+      let effectivePrice = parseFloat(jewelData.price_ttc) || 0;
+      let hasDiscount = false;
+      
+      if (jewelData.discount_percentage && jewelData.discount_percentage > 0) {
+        // Vérifier si la réduction est active
+        const now = new Date();
+        const isDiscountActive = 
+          (!jewelData.discount_start_date || now >= new Date(jewelData.discount_start_date)) &&
+          (!jewelData.discount_end_date || now <= new Date(jewelData.discount_end_date));
+        
+        if (isDiscountActive) {
+          effectivePrice = jewelData.price_ttc * (1 - jewelData.discount_percentage / 100);
+          hasDiscount = true;
+        }
+      }
+
+      const quantity = parseInt(item.quantity) || 1;
+      const itemTotal = effectivePrice * quantity;
+      
+      return {
+        id: item.jewelId,
+        jewel: {
+          ...jewelData,
+          tailles: parsedTailles,
+          // ✅ AJOUTER LES INFOS DE PRIX POUR LE TEMPLATE
+          original_price: jewelData.price_ttc,
+          effective_price: effectivePrice,
+          has_discount: hasDiscount,
+          discount_percentage: jewelData.discount_percentage || 0
+        },
+        quantity: quantity,
+        size: item.size,
+        itemTotal: itemTotal
+      };
+    });
+
+    // ✅ CALCULER LES TOTAUX AVEC LES PRIX RÉDUITS
+    const subtotalWithJewelDiscounts = processedItems.reduce((total, item) => 
+      total + item.itemTotal, 0);
+
+    console.log(`💎 Sous-total avec réductions bijoux: ${subtotalWithJewelDiscounts.toFixed(2)}€`);
+
+    // 🎫 APPLICATION DU CODE PROMO sur le sous-total déjà réduit
+    const appliedPromo = req.session.appliedPromo || null;
+    let discount = 0;
+    let discountedSubtotal = subtotalWithJewelDiscounts;
+
+    if (appliedPromo && appliedPromo.discountPercent) {
+      const discountPercent = parseFloat(appliedPromo.discountPercent);
+      discount = (subtotalWithJewelDiscounts * discountPercent) / 100;
+      discountedSubtotal = subtotalWithJewelDiscounts - discount;
+      console.log(`🎫 Code promo ${appliedPromo.code}: -${discount.toFixed(2)}€`);
+    }
+
+    // 🚚 CALCULER LES FRAIS DE LIVRAISON
+    const shippingThreshold = 50;
+    const baseDeliveryFee = 5.99;
+    const deliveryFee = discountedSubtotal >= shippingThreshold ? 0 : baseDeliveryFee;
+    const finalTotal = discountedSubtotal + deliveryFee;
+
+    console.log(`💰 Totaux calculés:
+      - Sous-total avec réductions bijoux: ${subtotalWithJewelDiscounts.toFixed(2)}€
+      - Réduction code promo: -${discount.toFixed(2)}€
+      - Après code promo: ${discountedSubtotal.toFixed(2)}€
+      - Livraison: ${deliveryFee.toFixed(2)}€
+      - Total final: ${finalTotal.toFixed(2)}€`);
+
+    // ✅ DEBUG: Vérifier les données avant rendu
+    console.log('🔍 DEBUG: Premier item processé:', {
+      name: processedItems[0]?.jewel?.name,
+      has_discount: processedItems[0]?.jewel?.has_discount,
+      original_price: processedItems[0]?.jewel?.original_price,
+      effective_price: processedItems[0]?.jewel?.effective_price,
+      discount_percentage: processedItems[0]?.jewel?.discount_percentage
+    });
+
+    // 📄 DONNÉES POUR LE TEMPLATE
+    const templateData = {
+      title: 'Récapitulatif de commande',
+      
+      // 🛒 Structure principale du panier avec prix réduits
+      cart: {
+        items: processedItems,
+        totalPrice: subtotalWithJewelDiscounts
+      },
+      
+      // 📦 Variables individuelles pour compatibilité
+      cartItems: processedItems,
+      totalPrice: subtotalWithJewelDiscounts.toFixed(2),
+      
+      // 💰 Totaux financiers
+      subtotal: subtotalWithJewelDiscounts,
+      discount: discount,
+      discountedSubtotal: discountedSubtotal,
+      deliveryFee: deliveryFee,
+      shippingFee: deliveryFee,
+      finalTotal: finalTotal,
+      
+      // 🎫 Code promo
+      appliedPromo: appliedPromo ? {
+        code: appliedPromo.code,
+        discountPercent: parseFloat(appliedPromo.discountPercent)
+      } : null,
+      
+      // 📊 Métadonnées
+      shippingThreshold,
+      freeShippingRemaining: Math.max(0, shippingThreshold - discountedSubtotal),
+      
+      // 👤 Utilisateur
+      user: req.session.user || null,
+      isAuthenticated: !!req.session.user,
+      isGuest: !req.session.user,
+      
+      // 🌐 Données système
+      siteSettings: {
+        shipping: {
+          free_shipping_threshold: shippingThreshold,
+          express_shipping_cost: 15
+        }
+      },
+      currentYear: new Date().getFullYear(),
+      
+      // 🎯 Messages flash
+      success: req.session.flashMessage?.type === 'success' ? req.session.flashMessage.message : null,
+      error: req.session.flashMessage?.type === 'error' ? req.session.flashMessage.message : null,
+      warning: req.session.flashMessage?.type === 'warning' ? req.session.flashMessage.message : null
+    };
+
+    // Nettoyer les messages flash
+    if (req.session.flashMessage) {
+      delete req.session.flashMessage;
+    }
+
+    console.log('📄 Rendu template summary avec formatage prix complet');
+    
+    // ✅ RENDU DE LA VUE
+    res.render('summary', templateData);
+    
+  } catch (error) {
+    console.error('❌ Erreur renderOrderSummary:', error);
+    
+    // En cas d'erreur, rediriger vers le panier avec message
+    req.session.flashMessage = {
+      type: 'error',
+      message: 'Erreur lors du chargement du récapitulatif. Veuillez réessayer.'
+    };
+    
+    res.redirect('/panier');
+  }
+},
 
   /**
    * 💾 Sauvegarder les informations client (connecté ou invité)

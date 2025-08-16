@@ -1634,8 +1634,50 @@
                                             </div>
 
                                             <div class="item-price-display" data-price="<%= item.jewel.price_ttc %>">
-                                                <%= Number(item.jewel.price_ttc).toFixed(2) %> € l'unité
-                                            </div>
+    <% 
+    // Calculer le prix effectif avec réduction
+    let effectivePrice = parseFloat(item.jewel.price_ttc) || 0;
+    let hasItemDiscount = false;
+    
+    if (item.jewel.discount_percentage && item.jewel.discount_percentage > 0) {
+        // Vérifier si la réduction est active
+        const now = new Date();
+        const startDate = item.jewel.discount_start_date ? new Date(item.jewel.discount_start_date) : null;
+        const endDate = item.jewel.discount_end_date ? new Date(item.jewel.discount_end_date) : null;
+        
+        const isDiscountActive = 
+            (!startDate || now >= startDate) &&
+            (!endDate || now <= endDate);
+        
+        if (isDiscountActive) {
+            effectivePrice = parseFloat(item.jewel.price_ttc) * (1 - item.jewel.discount_percentage / 100);
+            hasItemDiscount = true;
+        }
+    }
+    %>
+    
+    <!-- ✅ AFFICHAGE PRIX AVEC OU SANS RÉDUCTION -->
+    <% if (hasItemDiscount) { %>
+        <!-- Prix avec réduction -->
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="text-decoration: line-through; color: #999; font-size: 0.85rem;">
+                <%= parseFloat(item.jewel.price_ttc).toFixed(2) %>€
+            </span>
+            <span style="color: #28a745; font-weight: 600; font-size: 1rem;">
+                <%= effectivePrice.toFixed(2) %>€
+            </span>
+            <span style="background: #dc3545; color: white; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600;">
+                -<%= item.jewel.discount_percentage %>%
+            </span>
+        </div>
+        <div style="color: #28a745; font-size: 0.75rem; margin-top: 2px;">
+            Économie : <%= (parseFloat(item.jewel.price_ttc) - effectivePrice).toFixed(2) %>€
+        </div>
+    <% } else { %>
+        <!-- Prix normal -->
+        <%= parseFloat(item.jewel.price_ttc).toFixed(2) %> € l'unité
+    <% } %>
+</div>
                                             
                                             <% if (item.jewel.stock < 5 && item.jewel.stock > 0) { %>
                                                 <div class="stock-alert">
@@ -1670,7 +1712,9 @@
                                             </div>
                                             
                                             <div class="item-total">
-                                                <span class="item-total-price"><%= (item.jewel.price_ttc * item.quantity).toFixed(2) %></span> €
+                                                <span class="item-total-price">
+                                                    <%= (effectivePrice * item.quantity).toFixed(2) %>
+                                                </span> €
                                             </div>
                                             
                                             <button class="remove-btn btn-remove-cart" 
@@ -1687,165 +1731,229 @@
                 </div>
 
                 <!-- Résumé du panier -->
-                <div class="cart-summary">
-                    <h3 class="summary-title">
-                        <i class="fas fa-receipt"></i>
-                        Résumé
-                    </h3>
-                    
-                    <div class="summary-line">
-                        <span>Sous-total (<span id="items-count"><%= cart.items.length %></span> articles):</span>
-                        <span id="subtotal"><%= subtotal.toFixed(2) %> €</span>
+                <!-- Remplacez entièrement la section cart-summary dans cart.ejs (ligne ~1143) -->
+<div class="cart-summary">
+    <h3 class="summary-title">
+        <i class="fas fa-receipt"></i>
+        Résumé
+    </h3>
+    
+    <% 
+    // ✅ CALCULER LES TOTAUX AVEC RÉDUCTIONS BIJOUX DIRECTEMENT DANS LE TEMPLATE
+    let totalBeforeJewelDiscounts = 0;
+    let totalAfterJewelDiscounts = 0;
+    let hasJewelDiscounts = false;
+    
+    if (cart && cart.items) {
+        cart.items.forEach(item => {
+            const originalPrice = parseFloat(item.jewel.price_ttc) || 0;
+            const quantity = parseInt(item.quantity) || 1;
+            totalBeforeJewelDiscounts += originalPrice * quantity;
+            
+            // Calculer prix avec réduction bijou si applicable
+            let effectivePrice = originalPrice;
+            if (item.jewel.discount_percentage && item.jewel.discount_percentage > 0) {
+                // Vérifier si la réduction est active
+                const now = new Date();
+                const startDate = item.jewel.discount_start_date ? new Date(item.jewel.discount_start_date) : null;
+                const endDate = item.jewel.discount_end_date ? new Date(item.jewel.discount_end_date) : null;
+                
+                const isDiscountActive = 
+                    (!startDate || now >= startDate) &&
+                    (!endDate || now <= endDate);
+                
+                if (isDiscountActive) {
+                    effectivePrice = originalPrice * (1 - item.jewel.discount_percentage / 100);
+                    hasJewelDiscounts = true;
+                }
+            }
+            totalAfterJewelDiscounts += effectivePrice * quantity;
+        });
+    }
+    
+    // Utiliser le subtotal calculé ou celui du contrôleur
+    const finalSubtotal = hasJewelDiscounts ? totalAfterJewelDiscounts : (subtotal || totalAfterJewelDiscounts);
+    %>
+
+    <!-- ✅ AFFICHAGE PRIX AVANT RÉDUCTIONS BIJOUX -->
+    <% if (hasJewelDiscounts && totalBeforeJewelDiscounts > totalAfterJewelDiscounts) { %>
+        <div class="summary-line">
+            <span>Prix avant réductions :</span>
+            <span style="text-decoration: line-through; color: #999; font-size: 0.9rem;">
+                <%= totalBeforeJewelDiscounts.toFixed(2) %> €
+            </span>
+        </div>
+        <div class="summary-line" style="color: #28a745; font-weight: 600;">
+            <span>Économies sur les bijoux :</span>
+            <span>-<%= (totalBeforeJewelDiscounts - totalAfterJewelDiscounts).toFixed(2) %> €</span>
+        </div>
+    <% } %>
+
+    <!-- ✅ SOUS-TOTAL APRÈS RÉDUCTIONS BIJOUX -->
+    <div class="summary-line">
+        <span>Sous-total (<span id="items-count"><%= cart.items.length %></span> articles):</span>
+        <span id="subtotal"><%= finalSubtotal.toFixed(2) %> €</span>
+    </div>
+    
+    <!-- Section Code Promo -->
+    <div class="promo-section">
+        <% if (appliedPromo && discount > 0) { %>
+            <!-- ✅ Code promo appliqué -->
+            <div class="applied-promo">
+                <div class="promo-info">
+                    <div class="promo-label">
+                        <i class="fas fa-tag"></i>
+                        Code promo: <strong><%= appliedPromo.code %></strong>
                     </div>
-                    
-                    <!-- Section Code Promo -->
-                    <div class="promo-section">
-                        <% if (appliedPromo && discount > 0) { %>
-                            <!-- ✅ Code promo appliqué -->
-                            <div class="applied-promo">
-                                <div class="promo-info">
-                                    <div class="promo-label">
-                                        <i class="fas fa-tag"></i>
-                                        Code promo: <strong><%= appliedPromo.code %></strong>
-                                    </div>
-                                    <button class="remove-promo-btn" id="remove-promo">
-                                        <i class="fas fa-times"></i>
-                                    </button>
-                                </div>
-                                <div class="promo-discount">
-                                    -<%= appliedPromo.discountPercent %>% (-<%= discount.toFixed(2) %> €)
-                                </div>
-                            </div>
-                            
-                            <div class="summary-line">
-                                <span>Après réduction:</span>
-                                <span id="discounted-subtotal"><%= discountedSubtotal.toFixed(2) %> €</span>
-                            </div>
-                        <% } else { %>
-                            <!-- 📝 Formulaire code promo -->
-                            <div class="promo-form">
-                                <div class="promo-input-group">
-                                    <input type="text" 
-                                           id="promo-code" 
-                                           placeholder="Code promo" 
-                                           class="promo-input"
-                                           maxlength="20">
-                                    <button type="button" 
-                                            id="apply-promo" 
-                                            class="promo-btn">
-                                        <i class="fas fa-tag"></i>
-                                        Appliquer
-                                    </button>
-                                </div>
-                                <div id="promo-message" class="promo-message"></div>
-                            </div>
-                        <% } %>
-                    </div>
-
-                    <!-- Réduction dans le récapitulatif -->
-                    <% if (discount && discount > 0) { %>
-                        <div class="summary-line discount-line">
-                            <span>Réduction (<%= appliedPromo.discountPercent %>%):</span>
-                            <span class="discount-amount">-<%= discount.toFixed(2) %> €</span>
-                        </div>
-                    <% } %>
-
-                    <div class="summary-line">
-                        <span>Livraison:</span>
-                        <span id="shipping">
-                            <% if (shippingFee > 0) { %>
-                                <%= shippingFee.toFixed(2) %> €
-                            <% } else { %>
-                                <span style="color: var(--success); font-weight: 600;">Gratuit ✓</span>
-                            <% } %>
-                        </span>
-                    </div>
-
-                    <!-- Total final -->
-                    <div class="summary-line total">
-                        <span>Total:</span>
-                        <span id="total"><%= finalTotal.toFixed(2) %> €</span>
-                    </div>
-
-                    <!-- Section commande -->
-                    <% if (cart && cart.items && cart.items.length > 0) { %>
-                        <div class="guest-checkout-info">
-                            <% if (!user) { %>
-                                <!-- Message pour les visiteurs non connectés -->
-                                <div style="text-align: center; margin-bottom: 16px;">
-                                    <div style="background: linear-gradient(135deg, #e8f5e8 0%, #f0f9f0 100%); 
-                                               border: 1px solid #a7f3d0; 
-                                               border-radius: 8px; 
-                                               padding: 12px; 
-                                               margin-bottom: 12px;">
-                                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #065f46;">
-                                            <i class="fas fa-info-circle"></i>
-                                            <span style="font-weight: 600; font-size: 0.9rem;">
-                                                Aucune inscription requise pour commander !
-                                            </span>
-                                        </div>
-                                        <p style="margin: 8px 0 0 0; font-size: 0.85rem; color: #059669;">
-                                            Vous pouvez finaliser votre achat en tant qu'invité
-                                        </p>
-                                    </div>
-                                    
-                                    <div class="guest-benefits">
-                                        <div class="guest-benefit">
-                                            <i class="fas fa-shipping-fast"></i> Livraison rapide
-                                        </div>
-                                        <div class="guest-benefit">
-                                            <i class="fas fa-shield-alt"></i> Paiement sécurisé
-                                        </div>
-                                        <div class="guest-benefit">
-                                            <i class="fas fa-undo"></i> Retours faciles
-                                        </div>
-                                    </div>
-                                </div>
-                            <% } %>
-
-                            <!-- Bouton Commander principal -->
-                            <button onclick="proceedToCheckout()" class="btn btn-primary" style="width: 100%; margin-bottom: 8px;">
-                                <i class="fas fa-credit-card"></i>
-                                <% if (user) { %>
-                                    Finaliser ma commande
-                                <% } else { %>
-                                    Commander sans créer de compte
-                                <% } %>
-                            </button>
-
-                            <% if (!user) { %>
-                                <!-- Options pour les non-connectés -->
-                                <div style="text-align: center; margin-top: 12px;">
-                                    <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 8px;">
-                                        Vous avez déjà un compte ?
-                                    </p>
-                                    <a href="/connexion-inscription?return=/commande/recapitulatif" 
-                                       class="btn btn-secondary" 
-                                       style="width: 100%; margin-bottom: 8px;">
-                                        <i class="fas fa-sign-in-alt"></i>
-                                        Se connecter pour commander
-                                    </a>
-                                    <a href="/connexion-inscription?return=/commande/recapitulatif" 
-                                       style="font-size: 0.8rem; 
-                                              color: #b8868a; 
-                                              text-decoration: none;">
-                                        Créer un compte pour un suivi optimisé
-                                    </a>
-                                </div>
-                            <% } %>
-                        </div>
-                    <% } %>
-                    
-                    <button onclick="goBack()" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i>
-                        Continuer les achats
-                    </button>
-
-                    <button id="clear-cart" class="btn btn-danger">
-                        <i class="fas fa-trash"></i>
-                        Vider le panier
+                    <button class="remove-promo-btn" id="remove-promo">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
+                <div class="promo-discount">
+                    -<%= appliedPromo.discountPercent %>% (-<%= discount.toFixed(2) %> €)
+                </div>
+            </div>
+            
+            <div class="summary-line">
+                <span>Après code promo:</span>
+                <span id="discounted-subtotal"><%= discountedSubtotal.toFixed(2) %> €</span>
+            </div>
+        <% } else { %>
+            <!-- 📝 Formulaire code promo -->
+            <div class="promo-form">
+                <div class="promo-input-group">
+                    <input type="text" 
+                           id="promo-code" 
+                           placeholder="Code promo" 
+                           class="promo-input"
+                           maxlength="20">
+                    <button type="button" 
+                            id="apply-promo" 
+                            class="promo-btn">
+                        <i class="fas fa-tag"></i>
+                        Appliquer
+                    </button>
+                </div>
+                <div id="promo-message" class="promo-message"></div>
+            </div>
+        <% } %>
+    </div>
+
+    <div class="summary-line">
+        <span>Livraison:</span>
+        <span id="shipping">
+            <% 
+            // Recalculer les frais de livraison avec le bon sous-total
+            const baseForShipping = appliedPromo && discountedSubtotal ? discountedSubtotal : finalSubtotal;
+            const calculatedShippingFee = baseForShipping >= 50 ? 0 : (shippingFee || 5.99);
+            const calculatedFinalTotal = baseForShipping + calculatedShippingFee;
+            %>
+            <% if (calculatedShippingFee > 0) { %>
+                <%= calculatedShippingFee.toFixed(2) %> €
+            <% } else { %>
+                <span style="color: var(--success); font-weight: 600;">Gratuit ✓</span>
+            <% } %>
+        </span>
+    </div>
+
+    <!-- Total final -->
+    <div class="summary-line total">
+        <span>Total:</span>
+        <span id="total"><%= calculatedFinalTotal.toFixed(2) %> €</span>
+    </div>
+
+    <!-- Message livraison gratuite -->
+    <% if (baseForShipping >= 50) { %>
+        <div style="margin: 12px 0; padding: 10px; background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 8px; text-align: center; color: #065f46; font-size: 0.9rem;">
+            <i class="fas fa-truck"></i>
+            Félicitations ! Livraison gratuite offerte
+        </div>
+    <% } else { %>
+        <div style="margin: 12px 0; padding: 10px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 8px; text-align: center; color: #92400e; font-size: 0.9rem;">
+            <i class="fas fa-info-circle"></i>
+            Plus que <%= (50 - baseForShipping).toFixed(2) %>€ pour la livraison gratuite
+        </div>
+    <% } %>
+
+    <!-- Reste du template inchangé (boutons, etc.) -->
+    <% if (cart && cart.items && cart.items.length > 0) { %>
+        <div class="guest-checkout-info">
+            <% if (!user) { %>
+                <!-- Message pour les visiteurs non connectés -->
+                <div style="text-align: center; margin-bottom: 16px;">
+                    <div style="background: linear-gradient(135deg, #e8f5e8 0%, #f0f9f0 100%); 
+                               border: 1px solid #a7f3d0; 
+                               border-radius: 8px; 
+                               padding: 12px; 
+                               margin-bottom: 12px;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 8px; color: #065f46;">
+                            <i class="fas fa-info-circle"></i>
+                            <span style="font-weight: 600; font-size: 0.9rem;">
+                                Aucune inscription requise pour commander !
+                            </span>
+                        </div>
+                        <p style="margin: 8px 0 0 0; font-size: 0.85rem; color: #059669;">
+                            Vous pouvez finaliser votre achat en tant qu'invité
+                        </p>
+                    </div>
+                    
+                    <div class="guest-benefits">
+                        <div class="guest-benefit">
+                            <i class="fas fa-shipping-fast"></i> Livraison rapide
+                        </div>
+                        <div class="guest-benefit">
+                            <i class="fas fa-shield-alt"></i> Paiement sécurisé
+                        </div>
+                        <div class="guest-benefit">
+                            <i class="fas fa-undo"></i> Retours faciles
+                        </div>
+                    </div>
+                </div>
+            <% } %>
+
+            <!-- Bouton Commander principal -->
+            <button onclick="proceedToCheckout()" class="btn btn-primary" style="width: 100%; margin-bottom: 8px;">
+                <i class="fas fa-credit-card"></i>
+                <% if (user) { %>
+                    Finaliser ma commande
+                <% } else { %>
+                    Commander sans créer de compte
+                <% } %>
+            </button>
+
+            <% if (!user) { %>
+                <!-- Options pour les non-connectés -->
+                <div style="text-align: center; margin-top: 12px;">
+                    <p style="font-size: 0.85rem; color: #6b7280; margin-bottom: 8px;">
+                        Vous avez déjà un compte ?
+                    </p>
+                    <a href="/connexion-inscription?return=/commande/recapitulatif" 
+                       class="btn btn-secondary" 
+                       style="width: 100%; margin-bottom: 8px;">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Se connecter pour commander
+                    </a>
+                    <a href="/connexion-inscription?return=/commande/recapitulatif" 
+                       style="font-size: 0.8rem; 
+                              color: #b8868a; 
+                              text-decoration: none;">
+                        Créer un compte pour un suivi optimisé
+                    </a>
+                </div>
+            <% } %>
+        </div>
+    <% } %>
+    
+    <button onclick="goBack()" class="btn btn-secondary">
+        <i class="fas fa-arrow-left"></i>
+        Continuer les achats
+    </button>
+
+    <button id="clear-cart" class="btn btn-danger">
+        <i class="fas fa-trash"></i>
+        Vider le panier
+    </button>
+</div>
             </div>
         <% } else { %>
             <!-- Panier vide -->

@@ -4388,30 +4388,77 @@ console.log('✅ Script Admin Commandes chargé - Solution directe orderId');
 
 // ✅ 1. GESTION DES FILTRES SANS AUTO-SUBMIT
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Initialisation des filtres corrigés');
+    console.log('🚀 Initialisation des filtres');
     
     const form = document.getElementById('filtersForm');
     if (!form) {
-        console.warn('⚠️ Formulaire de filtres non trouvé');
+        console.error('❌ Formulaire de filtres non trouvé');
         return;
     }
-
-    // ✅ GESTION DU SUBMIT - UNE SEULE FOIS
+    
+    // ✅ SOUMISSION DU FORMULAIRE
     form.addEventListener('submit', function(e) {
-        console.log('📝 Soumission du formulaire - OK');
+        console.log('📝 Soumission des filtres');
         showLoading();
         // Laisser le formulaire se soumettre normalement
     });
-
-    // ✅ PAS D'AUTO-SUBMIT POUR LES SELECTS
-    const selects = form.querySelectorAll('select');
-    selects.forEach(select => {
-        select.addEventListener('change', function() {
-            console.log(`📊 Filtre "${this.name}" changé: ${this.value}`);
-            highlightFilterButton();
+    
+    // ✅ HIGHLIGHT BOUTON QUAND CHANGEMENT
+    const inputs = form.querySelectorAll('input, select');
+    inputs.forEach(input => {
+        input.addEventListener('change', function() {
+            highlightSubmitButton();
         });
     });
+    
+    // ✅ RESET FILTRES
+    window.resetFilters = function() {
+        showLoading();
+        window.location.href = window.location.pathname;
+    };
+    
+    // ✅ EXPORT DATA
+    window.exportData = function() {
+        const formData = new FormData(form);
+        const params = new URLSearchParams();
+        
+        for (const [key, value] of formData) {
+            if (value && value.trim() !== '') {
+                params.set(key, value.trim());
+            }
+        }
+        
+        const exportUrl = '/admin/commandes/export?' + params.toString();
+        window.open(exportUrl, '_blank');
+    };
+    
+    // ✅ REFRESH DATA
+    window.refreshData = function() {
+        showLoading();
+        window.location.reload();
+    };
 });
+
+function highlightSubmitButton() {
+    const submitBtn = document.querySelector('#filtersForm button[type="submit"]');
+    if (submitBtn) {
+        submitBtn.style.background = 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)';
+        submitBtn.style.transform = 'scale(1.02)';
+        submitBtn.innerHTML = '<i class="fas fa-filter"></i> Appliquer les changements';
+        
+        setTimeout(() => {
+            submitBtn.style.background = '';
+            submitBtn.style.transform = '';
+            submitBtn.innerHTML = '<i class="fas fa-search"></i> Filtrer';
+        }, 3000);
+    }
+}
+
+function showLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) overlay.style.display = 'flex';
+}
+
 
     // ✅ RECHERCHE AVEC DÉLAI (sans auto-submit systématique)
     const searchInput = form.querySelector('input[name="search"]');

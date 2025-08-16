@@ -6000,7 +6000,7 @@ router.post('/admin/marketing/emails/save-draft', isAdmin, async (req, res) => {
     }
 });
 
-
+router.get('/commandes',adminStatsController.getAllOrdersWithFilters);
 // Export par défaut
 export default router;
 

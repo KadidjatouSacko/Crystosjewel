@@ -858,6 +858,174 @@ export const adminStatsController = {
         }
     },
 
+    async  getAllOrdersWithFilters(req, res) {
+    try {
+        console.log('🔍 Filtres reçus:', req.query);
+        
+        // ✅ RÉCUPÉRATION DES PARAMÈTRES
+        const page = parseInt(req.query.page) || 1;
+        const limit = 20; // ✅ 20 commandes par page
+        const offset = (page - 1) * limit;
+        
+        // ✅ FILTRES
+        const filters = {
+            search: req.query.search || '',
+            status: req.query.status || '',
+            promo: req.query.promo || '',
+            payment: req.query.payment || '',
+            date: req.query.date || ''
+        };
+        
+        // ✅ CONSTRUCTION DE LA REQUÊTE SQL
+        let whereClause = 'WHERE 1=1';
+        let params = [];
+        let paramIndex = 1;
+        
+        // Filtre recherche
+        if (filters.search) {
+            whereClause += ` AND (
+                o.numero_commande ILIKE $${paramIndex} OR 
+                o.customer_name ILIKE $${paramIndex} OR 
+                o.customer_email ILIKE $${paramIndex} OR 
+                o.promo_code ILIKE $${paramIndex}
+            )`;
+            params.push(`%${filters.search}%`);
+            paramIndex++;
+        }
+        
+        // Filtre statut
+        if (filters.status) {
+            whereClause += ` AND o.status = $${paramIndex}`;
+            params.push(filters.status);
+            paramIndex++;
+        }
+        
+        // Filtre promo
+        if (filters.promo === 'with-promo') {
+            whereClause += ` AND o.promo_code IS NOT NULL AND o.promo_code != ''`;
+        } else if (filters.promo === 'without-promo') {
+            whereClause += ` AND (o.promo_code IS NULL OR o.promo_code = '')`;
+        }
+        
+        // Filtre paiement
+        if (filters.payment) {
+            whereClause += ` AND o.payment_method = $${paramIndex}`;
+            params.push(filters.payment);
+            paramIndex++;
+        }
+        
+        // Filtre date
+        if (filters.date) {
+            const today = new Date();
+            let dateStart;
+            
+            switch (filters.date) {
+                case 'today':
+                    dateStart = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+                    break;
+                case 'week':
+                    dateStart = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case 'month':
+                    dateStart = new Date(today.getFullYear(), today.getMonth(), 1);
+                    break;
+            }
+            
+            if (dateStart) {
+                whereClause += ` AND o.created_at >= $${paramIndex}`;
+                params.push(dateStart.toISOString());
+                paramIndex++;
+            }
+        }
+        
+        // ✅ REQUÊTE FINALE
+        const query = `
+            SELECT 
+                o.*,
+                COALESCE(o.customer_name, c.first_name || ' ' || c.last_name) as customer_name,
+                COALESCE(o.customer_email, c.email) as customer_email,
+                COUNT(*) OVER() as total_count
+            FROM orders o
+            LEFT JOIN customer c ON o.customer_id = c.id
+            ${whereClause}
+            ORDER BY o.created_at DESC
+            LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+        `;
+        
+        params.push(limit, offset);
+        
+        console.log('📊 Requête SQL:', query);
+        console.log('📊 Paramètres:', params);
+        
+        const [commandesResult] = await sequelize.query(query, { bind: params });
+        
+        const totalCount = commandesResult.length > 0 ? commandesResult[0].total_count : 0;
+        const totalPages = Math.ceil(totalCount / limit);
+        
+        // ✅ RENDU AVEC TOUTES LES DONNÉES
+        res.render('commandes', {
+            title: 'Gestion des Commandes',
+            commandes: commandesResult,
+            filters: filters,
+            pagination: {
+                currentPage: page,
+                totalPages: totalPages,
+                total: totalCount,
+                hasNext: page < totalPages,
+                hasPrev: page > 1,
+                startItem: offset + 1,
+                endItem: Math.min(offset + limit, totalCount)
+            },
+            stats: {
+                totalCommandes: { value: totalCount, trend: 0, direction: 'up', compared: 'vs mois dernier' },
+                chiffreAffaires: { value: 0, trend: 0, direction: 'up', compared: 'vs mois dernier' },
+                codesPromoUtilises: { value: 0, trend: 0, direction: 'up', compared: 'vs mois dernier' },
+                economiesClients: { value: 0, trend: 0, direction: 'down', compared: 'réductions totales' }
+            },
+            statusStats: {
+                waiting: commandesResult.filter(c => c.status === 'waiting').length,
+                preparing: commandesResult.filter(c => c.status === 'preparing').length,
+                shipped: commandesResult.filter(c => c.status === 'shipped').length,
+                delivered: commandesResult.filter(c => c.status === 'delivered').length,
+                cancelled: commandesResult.filter(c => c.status === 'cancelled').length
+            },
+            helpers: {
+                formatPrice: (price) => parseFloat(price || 0).toLocaleString('fr-FR', { 
+                    minimumFractionDigits: 2, 
+                    maximumFractionDigits: 2 
+                }),
+                translateStatus: (status) => {
+                    const statusMap = {
+                        'waiting': 'En attente',
+                        'preparing': 'En préparation', 
+                        'shipped': 'Expédiée',
+                        'delivered': 'Livrée',
+                        'cancelled': 'Annulée'
+                    };
+                    return statusMap[status] || 'En attente';
+                },
+                getStatusClass: (status) => {
+                    const statusMap = {
+                        'waiting': 'en-attente',
+                        'preparing': 'preparation',
+                        'shipped': 'expediee', 
+                        'delivered': 'livree',
+                        'cancelled': 'annulee'
+                    };
+                    return statusMap[status] || 'en-attente';
+                }
+            }
+        });
+        
+    } catch (error) {
+        console.error('❌ Erreur filtres:', error);
+        res.status(500).render('error', { 
+            message: 'Erreur lors de l\'application des filtres',
+            error: error 
+        });
+    }
+},
+
     // Gestion clients
     async getAllClientsStats(req, res) {
         try {
