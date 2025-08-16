@@ -401,7 +401,16 @@
                 <div class="date-item">
                     <div class="date-label">Fin prévue</div>
                     <div class="date-value" id="endDateDisplay">
-                        Bientôt
+                        <% if (maintenance && maintenance.endTime) { %>
+                            <%= new Date(maintenance.endTime).toLocaleDateString('fr-FR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            }) %>
+                        <% } else { %>
+                            Bientôt
+                        <% } %>
                     </div>
                 </div>
             </div>
@@ -466,10 +475,6 @@
             
             <div class="admin-info">
                 <strong>Connecté en tant que :</strong> <%= user ? user.email : 'Admin' %>
-                <br>
-                <% if (maintenance && maintenance.activatedBy) { %>
-                    <strong>Maintenance activée par :</strong> <%= maintenance.activatedBy %>
-                <% } %>
             </div>
             
             <div class="admin-buttons">
@@ -478,9 +483,9 @@
                     Désactiver la maintenance
                 </button>
                 
-                <a href="/admin/stats" class="admin-btn">
+                <a href="/admin/settings" class="admin-btn">
                     <i class="fas fa-tachometer-alt"></i>
-                    Dashboard
+                    Paramètres
                 </a>
                 
                 <button class="admin-btn" onclick="checkStatus()">
@@ -504,7 +509,7 @@
         // Configuration basée sur les données du serveur
         const config = {
             startDate: new Date('<%= maintenance && maintenance.activatedAt ? maintenance.activatedAt : new Date().toISOString() %>'),
-            endDate: new Date(Date.now() + 2 * 60 * 60 * 1000), // 2h par défaut
+            endDate: <% if (maintenance && maintenance.endTime) { %>new Date('<%= maintenance.endTime %>')<% } else { %>new Date(Date.now() + 2 * 60 * 60 * 1000)<% } %>,
             isActive: <%= maintenance ? maintenance.active : 'false' %>,
             isAdmin: <%= isAdmin ? 'true' : 'false' %>
         };
@@ -534,13 +539,10 @@
                     // Gérer les différents formats de réponse
                     let isActive = false;
                     if (data.success) {
-                        // Format avec maintenance object
                         if (data.maintenance && typeof data.maintenance.active !== 'undefined') {
                             isActive = data.maintenance.active;
-                        }
-                        // Format avec active au niveau racine
-                        else if (typeof data.active !== 'undefined') {
-                            isActive = data.active;
+                        } else if (data.status && typeof data.status.isActive !== 'undefined') {
+                            isActive = data.status.isActive;
                         }
                     }
                     
@@ -619,7 +621,7 @@
                 if (data.success) {
                     MaintenanceManager.showToast('Maintenance désactivée ! Redirection...', 'success');
                     setTimeout(() => {
-                        window.location.href = '/admin/stats';
+                        window.location.href = '/admin/settings';
                     }, 1500);
                 } else {
                     throw new Error(data.message || 'Échec de la désactivation');

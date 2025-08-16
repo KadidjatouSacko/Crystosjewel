@@ -29,7 +29,6 @@ import { ensurePromoCodesExist } from './migrations/migratePromoCodes.js';
 
 // IMPORTANT: Charger les associations EN PREMIER
 import './app/models/associations.js';
-import { maintenanceMiddleware } from './app/middleware/maintenanceMiddleware.js';
 import Setting from "./app/models/SettingModel.js";
 const app = express();
 
@@ -561,7 +560,7 @@ app.use((req, res, next) => {
 });
 
 // Middlewares externes
-app.use(maintenanceMiddleware);
+// app.use(maintenanceMiddleware);
 app.use(setUserForViews);
 app.use(injectSiteSettings);
 

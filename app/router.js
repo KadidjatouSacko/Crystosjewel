@@ -42,6 +42,8 @@ import { guestOrderController } from './controlleurs/guestOrderController.js';
 import { emailManagementControlleur } from './controlleurs/emailManagementController.js';
 import { adminClientController } from './controlleurs/adminClientController.js';
 import { maintenanceController } from "./controlleurs/MaintenanceController.js";
+import { maintenanceCheck } from './middleware/maintenanceMiddleware.js';
+
 
 // CONTROLLERS EMAIL - CHOISISSEZ UN SEUL SYSTÈME
 
@@ -389,6 +391,46 @@ const __dirname = dirname(__filename);
 
 const router = Router();
 
+
+
+
+router.use('/css', express.static('public/css'));
+router.use('/js', express.static('public/js'));
+router.use('/images', express.static('public/images'));
+router.use('/uploads', express.static('public/uploads'));
+
+// Favicon
+router.get('/favicon.ico', (req, res) => {
+    res.sendFile(path.join(process.cwd(), 'public/images/favicon.ico'));
+});
+
+// ==========================================
+// 2. ROUTES D'AUTHENTIFICATION (AVANT MIDDLEWARE)
+// ==========================================
+router.get('/connexion-inscription', authController.LoginPage);
+router.post('/api/auth/login', authController.login);
+
+router.get('/deconnexion', authController.logout);
+router.get('/logout', authController.logout);
+
+// ==========================================
+// 3. MIDDLEWARE DE MAINTENANCE GLOBAL
+// ==========================================
+// ⚠️ CRITIQUE : Appliquer APRÈS les routes statiques et auth
+router.use(maintenanceCheck);
+
+// ==========================================
+// 4. ROUTES DE MAINTENANCE
+// ==========================================
+router.get('/maintenance', maintenanceController.showMaintenancePage);
+router.get('/api/maintenance/status', maintenanceController.getMaintenanceStatus);
+
+// Routes admin maintenance (avec protection isAdmin)
+router.post('/api/maintenance/activate', isAdmin, maintenanceController.activateMaintenance);
+router.post('/api/maintenance/schedule', isAdmin, maintenanceController.scheduleMaintenance);
+router.post('/api/maintenance/cancel-scheduled', isAdmin, maintenanceController.cancelScheduledMaintenance);
+router.post('/api/maintenance/deactivate', isAdmin, maintenanceController.deactivateMaintenance);
+
 // AJOUTEZ ces lignes au début de votre app/router.js, juste après les imports
 
 // ==========================================
@@ -447,6 +489,8 @@ function checkMaintenanceStatus(req, res, next) {
 // ==========================================
 // ROUTES DE MAINTENANCE - RÉPARATION DES EXISTANTES
 // ==========================================
+
+
 
 // Route statut maintenance (celle qui existe déjà dans vos logs)
 router.get('/api/maintenance/status', (req, res) => {
@@ -5158,10 +5202,10 @@ router.get('/api/bijoux/filtered', isAdmin, async (req, res) => {
 });
 
 // Page d'administration de la maintenance
-router.get('/admin/maintenance', isAdmin, maintenanceController.renderAdminPage);
+// router.get('/admin/maintenance', isAdmin, maintenanceController.renderAdminPage);
 
-// Activer/désactiver la maintenance immédiatement
-router.post('/admin/maintenance/toggle', isAdmin, maintenanceController.toggleMaintenance);
+// // Activer/désactiver la maintenance immédiatement
+// router.post('/admin/maintenance/toggle', isAdmin, maintenanceController.toggleMaintenance);
 
 // Programmer la maintenance
 router.post('/admin/maintenance/schedule', isAdmin, maintenanceController.scheduleMaintenance);
@@ -5170,17 +5214,17 @@ router.post('/admin/maintenance/schedule', isAdmin, maintenanceController.schedu
 router.post('/admin/maintenance/cancel', isAdmin, maintenanceController.cancelScheduledMaintenance);
 
 // Mettre à jour le message de maintenance
-router.post('/admin/maintenance/message', isAdmin, maintenanceController.updateMessage);
+// router.post('/admin/maintenance/message', isAdmin, maintenanceController.updateMessage);
 
-// Gérer les IPs autorisées
-router.post('/admin/maintenance/allowed-ips', isAdmin, maintenanceController.updateAllowedIPs);
+// // Gérer les IPs autorisées
+// router.post('/admin/maintenance/allowed-ips', isAdmin, maintenanceController.updateAllowedIPs);
 
 // ==========================================
 // 🔧 API MAINTENANCE (accessible pendant maintenance)
 // ==========================================
 
 // Statut de la maintenance (pour vérification côté client)
-router.get('/api/maintenance/status', maintenanceController.getStatus);
+// router.get('/api/maintenance/status', maintenanceController.getStatus);
 
 // Santé du serveur (pour monitoring)
 router.get('/api/health', (req, res) => {
@@ -5544,10 +5588,10 @@ async function saveMaintenance(data) {
     }
 }
 
-router.get('/admin/maintenance', isAdmin, maintenanceController.renderMaintenancePage);
-router.post('/admin/maintenance/enable', isAdmin, maintenanceController.enableMaintenance);
-router.post('/admin/maintenance/disable', isAdmin, maintenanceController.disableMaintenance);
-router.get('/api/maintenance/status', isAdmin, maintenanceController.getStatus);
+// router.get('/admin/maintenance', isAdmin, maintenanceController.renderMaintenancePage);
+// router.post('/admin/maintenance/enable', isAdmin, maintenanceController.enableMaintenance);
+// router.post('/admin/maintenance/disable', isAdmin, maintenanceController.disableMaintenance);
+// router.get('/api/maintenance/status', isAdmin, maintenanceController.getStatus);
 router.get('/api/maintenance/status', async (req, res) => {
     try {
         console.log('📊 Statut maintenance demandé par:', {
@@ -6001,6 +6045,9 @@ router.post('/admin/marketing/emails/save-draft', isAdmin, async (req, res) => {
 });
 
 router.get('/commandes',adminStatsController.getAllOrdersWithFilters);
+
+
+
 // Export par défaut
 export default router;
 

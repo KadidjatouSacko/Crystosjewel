@@ -5,416 +5,544 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title || 'Paramètres Administration' %></title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- LE CSS SERA AJOUTÉ EN PARTIE 2 -->
     <style>
-        :root {
-            --primary: #b76e79;
-            --primary-light: #e8c2c8;
-            --primary-dark: #7d4b53;
-            --success: #2ecc71;
-            --warning: #f39c12;
-            --danger: #e74c3c;
-            --info: #3498db;
-            --light: #f8f9fa;
-            --dark: #343a40;
-        }
+        /* ===== VARIABLES CSS ===== */
+:root {
+    --primary: #b76e79;
+    --primary-light: #e8c2c8;
+    --primary-dark: #7d4b53;
+    --success: #2ecc71;
+    --warning: #f39c12;
+    --danger: #e74c3c;
+    --info: #3498db;
+    --light: #f8f9fa;
+    --dark: #343a40;
+}
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+/* ===== RESET ET BASE ===== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #fff8f0 0%, #f5f5f5 100%);
-            color: #333;
-            line-height: 1.6;
-        }
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #fff8f0 0%, #f5f5f5 100%);
+    color: #333;
+    line-height: 1.6;
+}
 
-        /* ===== HEADER ===== */
-        .header {
-            background: white;
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            border-left: 5px solid var(--primary);
-        }
+/* ===== HEADER ===== */
+.header {
+    background: white;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    border-left: 5px solid var(--primary);
+}
 
-        .header h1 {
-            color: var(--primary);
-            font-size: 2.5rem;
-            margin-bottom: 0.5rem;
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
+.header h1 {
+    color: var(--primary);
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
 
-        .header p {
-            color: #666;
-            font-size: 1.1rem;
-        }
+.header p {
+    color: #666;
+    font-size: 1.1rem;
+}
 
-        /* ===== CONTAINER ===== */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 1rem;
-        }
+/* ===== CONTAINER ===== */
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 1rem;
+}
 
-        /* ===== GRILLE DES SECTIONS ===== */
-        .sections-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
-            gap: 2rem;
-            margin-bottom: 2rem;
-        }
+/* ===== GRILLE DES SECTIONS ===== */
+.sections-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
 
-        /* ===== CARTES SECTION ===== */
-        .section-card {
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            padding: 2rem;
-            transition: transform 0.3s ease;
-        }
+/* ===== CARTES SECTION ===== */
+.section-card {
+    background: white;
+    border-radius: 15px;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    padding: 2rem;
+    transition: transform 0.3s ease;
+}
 
-        .section-card:hover {
-            transform: translateY(-5px);
-        }
+.section-card:hover {
+    transform: translateY(-5px);
+}
 
-        .section-header {
-            display: flex;
-            align-items: center;
-            margin-bottom: 2rem;
-            padding-bottom: 1rem;
-            border-bottom: 2px solid var(--light);
-        }
+.section-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid var(--light);
+}
 
-        .section-icon {
-            width: 60px;
-            height: 60px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            border-radius: 15px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-right: 1rem;
-        }
+.section-icon {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+}
 
-        .section-icon i {
-            font-size: 1.5rem;
-            color: white;
-        }
+.section-icon i {
+    font-size: 1.5rem;
+    color: white;
+}
 
-        .section-title {
-            font-size: 1.4rem;
-            font-weight: bold;
-            color: var(--dark);
-            margin-bottom: 0.3rem;
-        }
+.section-title {
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: var(--dark);
+    margin-bottom: 0.3rem;
+}
 
-        .section-description {
-            color: #666;
-            font-size: 0.9rem;
-        }
+.section-description {
+    color: #666;
+    font-size: 0.9rem;
+}
 
-        /* ===== FORMULAIRES ===== */
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
+/* ===== FORMULAIRES ===== */
+.form-group {
+    margin-bottom: 1.5rem;
+}
 
-        .form-label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 600;
-            color: var(--dark);
-            font-size: 0.95rem;
-        }
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: var(--dark);
+    font-size: 0.95rem;
+}
 
-        .form-input, .form-textarea, .form-select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 0.95rem;
-            transition: all 0.3s ease;
-            background: white;
-        }
+.form-input, .form-textarea, .form-select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    transition: all 0.3s ease;
+    background: white;
+}
 
-        .form-input:focus, .form-textarea:focus, .form-select:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.1);
-        }
+.form-input:focus, .form-textarea:focus, .form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(183, 110, 121, 0.1);
+}
 
-        .form-textarea {
-            resize: vertical;
-            min-height: 80px;
-        }
+.form-textarea {
+    resize: vertical;
+    min-height: 80px;
+}
 
-        /* ===== SWITCH TOGGLE ===== */
-        .switch {
-            position: relative;
-            display: inline-block;
-            width: 60px;
-            height: 34px;
-        }
+/* ===== SWITCH TOGGLE ===== */
+.switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+}
 
-        .switch input {
-            opacity: 0;
-            width: 0;
-            height: 0;
-        }
+.switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
 
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 34px;
-        }
+.slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px;
+}
 
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 26px;
-            width: 26px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
+.slider:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
 
-        input:checked + .slider {
-            background-color: var(--success);
-        }
+input:checked + .slider {
+    background-color: var(--success);
+}
 
-        input:checked + .slider:before {
-            transform: translateX(26px);
-        }
+input:checked + .slider:before {
+    transform: translateX(26px);
+}
 
-        /* ===== BOUTONS ===== */
-        .save-btn {
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.3s ease;
-            font-size: 0.95rem;
-        }
+/* ===== BOUTONS ===== */
+.save-btn, .btn {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+    text-decoration: none;
+}
 
-        .save-btn:hover {
-            background: linear-gradient(135deg, var(--primary-dark), var(--primary));
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(183, 110, 121, 0.3);
-        }
+.save-btn:hover, .btn:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(183, 110, 121, 0.3);
+}
 
-        .save-btn:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
+.save-btn:disabled, .btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+    transform: none;
+}
 
-        /* ===== MAINTENANCE SECTION ===== */
-        .maintenance-card {
-            grid-column: 1 / -1;
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-        }
+/* Variantes de boutons */
+.btn-warning {
+    background: var(--warning);
+}
 
-        .maintenance-card .section-icon {
-            background: rgba(255, 255, 255, 0.2);
-        }
+.btn-warning:hover {
+    background: #e67e22;
+    box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
+}
 
-        .maintenance-status {
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 14px;
-            font-weight: bold;
-            text-align: center;
-            min-width: 100px;
-            margin-left: auto;
-        }
+.btn-success {
+    background: var(--success);
+}
 
-        .maintenance-status.active {
-            background: #e74c3c;
-            color: white;
-        }
+.btn-success:hover {
+    background: #27ae60;
+    box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+}
 
-        .maintenance-status.inactive {
-            background: #2ecc71;
-            color: white;
-        }
+.btn-info {
+    background: var(--info);
+}
 
-        .maintenance-actions {
-            margin-top: 1.5rem;
-        }
+.btn-info:hover {
+    background: #2980b9;
+    box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+}
 
-        .action-group {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 1.5rem;
-            border-radius: 10px;
-            margin-bottom: 1.5rem;
-            border-left: 4px solid rgba(255, 255, 255, 0.3);
-        }
+.btn-danger {
+    background: var(--danger);
+}
 
-        .action-group h4 {
-            color: white;
-            margin-bottom: 0.5rem;
-            font-size: 1.1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+.btn-danger:hover {
+    background: #c0392b;
+    box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+}
 
-        .action-group p {
-            color: rgba(255, 255, 255, 0.8);
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
-        }
+.btn-outline {
+    background: transparent;
+    border: 2px solid var(--primary);
+    color: var(--primary);
+}
 
-        .button-group {
-            display: flex;
-            gap: 1rem;
-            flex-wrap: wrap;
-        }
+.btn-outline:hover {
+    background: var(--primary);
+    color: white;
+}
 
-        .scheduled-form {
-            display: flex;
-            gap: 1rem;
-            align-items: flex-end;
-            flex-wrap: wrap;
-        }
+/* ===== SECTION MAINTENANCE SPÉCIALE ===== */
+.maintenance-card {
+    grid-column: 1 / -1;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    color: white;
+}
 
-        .scheduled-form .form-group {
-            flex: 1;
-            min-width: 200px;
-            margin-bottom: 0;
-        }
+.maintenance-card .section-icon {
+    background: rgba(255, 255, 255, 0.2);
+}
 
-        .btn {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.9rem;
-            text-decoration: none;
-        }
+.maintenance-card .section-title,
+.maintenance-card .section-description {
+    color: white;
+}
 
-        .btn-warning {
-            background: #f39c12;
-            color: white;
-        }
+.maintenance-controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+    margin-top: 2rem;
+}
 
-        .btn-warning:hover {
-            background: #e67e22;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(243, 156, 18, 0.3);
-        }
+.control-group {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid rgba(255, 255, 255, 0.3);
+}
 
-        .btn-success {
-            background: #2ecc71;
-            color: white;
-        }
+.control-group h4 {
+    color: white;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
 
-        .btn-success:hover {
-            background: #27ae60;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
-        }
+/* ===== AFFICHAGE DU STATUT MAINTENANCE ===== */
+.status-display {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
 
-        .btn-info {
-            background: #3498db;
-            color: white;
-        }
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: white;
+}
 
-        .btn-info:hover {
-            background: #2980b9;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-        }
+.status-indicator.active {
+    color: #ff6b6b;
+}
 
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none !important;
-        }
+.status-indicator.inactive {
+    color: #51cf66;
+}
 
-        /* ===== NOTIFICATIONS ===== */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 1rem 1.5rem;
-            border-radius: 8px;
-            color: white;
-            font-weight: 500;
-            z-index: 1000;
-            transform: translateX(400px);
-            transition: transform 0.3s ease;
-            max-width: 300px;
-        }
+.status-indicator.scheduled {
+    color: #ffd43b;
+}
 
-        .notification.show {
-            transform: translateX(0);
-        }
+.status-details {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.8rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+}
 
-        .notification.success {
-            background: var(--success);
-        }
+.status-details p {
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+}
 
-        .notification.error {
-            background: var(--danger);
-        }
+.action-buttons {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+    flex-wrap: wrap;
+}
 
-        .notification.info {
-            background: var(--info);
-        }
+.form-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-            .sections-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .section-card {
-                padding: 1.5rem;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .scheduled-form {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            
-            .button-group {
-                flex-direction: column;
-            }
-            
-            .btn {
-                justify-content: center;
-            }
-        }
+/* ===== MAINTENANCE - FORMULAIRES SPÉCIAUX ===== */
+.maintenance-card .form-input,
+.maintenance-card .form-textarea {
+    background: rgba(255, 255, 255, 0.9);
+    color: #333;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.maintenance-card .form-input:focus,
+.maintenance-card .form-textarea:focus {
+    background: white;
+    border-color: var(--primary);
+}
+
+.maintenance-card .form-label {
+    color: white;
+    font-weight: 500;
+}
+
+.maintenance-card small {
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.8rem;
+}
+
+/* ===== NOTIFICATIONS ===== */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    transform: translateX(400px);
+    transition: transform 0.3s ease;
+    max-width: 300px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+.notification.show {
+    transform: translateX(0);
+}
+
+.notification.success {
+    background: var(--success);
+}
+
+.notification.error {
+    background: var(--danger);
+}
+
+.notification.info {
+    background: var(--info);
+}
+
+/* ===== STYLES D'ERREUR ===== */
+.form-input.error, .form-textarea.error {
+    border-color: var(--danger);
+    background-color: #fff5f5;
+}
+
+.form-input.error:focus, .form-textarea.error:focus {
+    border-color: var(--danger);
+    box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+/* ===== ANIMATIONS ===== */
+.section-card {
+    animation: fadeInUp 0.6s ease-out;
+    animation-fill-mode: both;
+}
+
+.section-card:nth-child(1) { animation-delay: 0.1s; }
+.section-card:nth-child(2) { animation-delay: 0.2s; }
+.section-card:nth-child(3) { animation-delay: 0.3s; }
+.section-card:nth-child(4) { animation-delay: 0.4s; }
+.section-card:nth-child(5) { animation-delay: 0.5s; }
+.section-card:nth-child(6) { animation-delay: 0.6s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ===== LOADING STATES ===== */
+.btn.loading {
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.btn.loading i {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 768px) {
+    .sections-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .section-card {
+        padding: 1.5rem;
+    }
+    
+    .header {
+        padding: 1.5rem;
+    }
+    
+    .header h1 {
+        font-size: 2rem;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .maintenance-controls {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-buttons,
+    .form-actions {
+        flex-direction: column;
+    }
+    
+    .btn {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding: 0 0.5rem;
+    }
+    
+    .header {
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .header h1 {
+        font-size: 1.8rem;
+    }
+    
+    .section-card {
+        padding: 1rem;
+    }
+    
+    .section-header {
+        flex-direction: column;
+        text-align: center;
+        gap: 1rem;
+    }
+    
+    .control-group {
+        padding: 1rem;
+    }
+}
     </style>
+    
 </head>
 <body>
     <%- include('partials/navbarre.ejs') %>
@@ -680,564 +808,547 @@
                 </form>
             </div>
 
-            <!-- Section Maintenance -->
+            <!-- ===== NOUVELLE SECTION MAINTENANCE ===== -->
             <div class="section-card maintenance-card">
                 <div class="section-header">
                     <div class="section-icon">
                         <i class="fas fa-tools"></i>
                     </div>
                     <div>
-                        <div class="section-title">Maintenance du Site</div>
-                        <div class="section-description">Gestion du mode maintenance</div>
-                    </div>
-                    <div id="maintenanceStatus" class="maintenance-status inactive">
-                        ✅ <strong>INACTIVE</strong>
+                        <div class="section-title">Gestion de la Maintenance</div>
+                        <div class="section-description">Contrôlez le mode maintenance de votre site</div>
                     </div>
                 </div>
-                
-                <form id="form-maintenance">
-                    <div class="form-group">
-                        <label class="form-label">Message de maintenance</label>
-                        <textarea id="maintenanceMessage" placeholder="Site temporairement indisponible pour maintenance..."></textarea>
 
-                    </div>
-                    
-                    <div class="form-group">
-                        <label class="form-label">Durée estimée (optionnel)</label>
-                        <input type="text" id="estimatedDuration" value="" placeholder="Ex: 30 minutes, 2 heures...">
-                    </div>
-                    
-                    <div class="maintenance-actions">
-                        <div class="action-group">
-                            <h4><i class="fas fa-power-off"></i> Maintenance Immédiate</h4>
-                            <p>Activer ou désactiver la maintenance instantanément</p>
-                            <div class="button-group">
-                                <button type="button" id="activateMaintenanceBtn" class="btn btn-warning"
-                                        onclick="MaintenanceManager.activate()">
-                                    <i class="fas fa-power-off"></i> Activer Maintenance
-                                </button>
-                                
-                                <button type="button" id="deactivateMaintenanceBtn" class="btn btn-success" 
-                                        onclick="MaintenanceManager.deactivate()" style="display: none;">
-                                    <i class="fas fa-check"></i> Désactiver Maintenance
-                                </button>
+                <div class="maintenance-controls">
+                    <!-- Statut actuel -->
+                    <div class="control-group">
+                        <h4><i class="fas fa-info-circle"></i> Statut Actuel</h4>
+                        <div id="maintenance-status" class="status-display">
+                            <div class="status-indicator" id="status-indicator">
+                                <i class="fas fa-circle"></i>
+                                <span id="status-text">Chargement...</span>
+                            </div>
+                            <div class="status-details" id="status-details" style="display: none;">
+                                <p><strong>Début :</strong> <span id="start-time"></span></p>
+                                <p><strong>Fin prévue :</strong> <span id="end-time"></span></p>
+                                <p><strong>Temps restant :</strong> <span id="time-remaining"></span></p>
                             </div>
                         </div>
                         
-                        <div class="action-group">
-                            <h4><i class="fas fa-calendar-alt"></i> Maintenance Programmée</h4>
-                            <p>Programmer une maintenance pour plus tard</p>
-                            <div class="scheduled-form">
-                                <div class="form-group">
-                                    <label class="form-label">Date et heure :</label>
-                                    <input type="datetime-local" class="form-input" id="scheduledTime" name="scheduledTime">
-                                </div>
-                                <button type="button" class="btn btn-info" onclick="MaintenanceManager.schedule()">
-                                    <i class="fas fa-calendar-plus"></i> Programmer
-                                </button>
-                            </div>
+                        <div class="action-buttons">
+                            <button type="button" id="refresh-status" class="btn btn-info">
+                                <i class="fas fa-sync-alt"></i> Actualiser
+                            </button>
+                            <button type="button" id="stop-maintenance" class="btn btn-danger" style="display: none;">
+                                <i class="fas fa-stop"></i> Arrêter
+                            </button>
                         </div>
                     </div>
-                </form>
+
+                    <!-- Activation immédiate -->
+                    <div class="control-group">
+                        <h4><i class="fas fa-play"></i> Activation Immédiate</h4>
+                        <form id="immediate-maintenance-form">
+                            <div class="form-group">
+                                <label class="form-label">Durée (en minutes)</label>
+                                <input type="number" id="duration" name="duration" class="form-input" 
+                                       min="1" max="1440" value="30" required>
+                                <small style="color: rgba(255,255,255,0.8);">Maximum 1440 minutes (24 heures)</small>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Message personnalisé (optionnel)</label>
+                                <textarea id="message" name="message" class="form-textarea" 
+                                          placeholder="Maintenance en cours pour améliorer votre expérience..."></textarea>
+                            </div>
+                            
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-tools"></i> Activer Maintenance
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Programmation -->
+                    <div class="control-group">
+                        <h4><i class="fas fa-calendar-alt"></i> Programmer la Maintenance</h4>
+                        <form id="scheduled-maintenance-form">
+                            <div class="form-group">
+                                <label class="form-label">Date et heure de début</label>
+                                <input type="datetime-local" id="start-time-input" name="startTime" class="form-input" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Date et heure de fin</label>
+                                <input type="datetime-local" id="end-time-input" name="endTime" class="form-input" required>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label">Message personnalisé (optionnel)</label>
+                                <textarea id="scheduled-message" name="message" class="form-textarea" 
+                                          placeholder="Maintenance programmée en cours..."></textarea>
+                            </div>
+                            
+                            <div class="form-actions">
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-clock"></i> Programmer
+                                </button>
+                                <button type="button" id="cancel-scheduled" class="btn btn-outline" style="display: none;">
+                                    <i class="fas fa-times"></i> Annuler
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <!-- LE JAVASCRIPT SERA AJOUTÉ EN PARTIE 3 -->
     <script>
-        // ===== FONCTION GÉNÉRALE DE SAUVEGARDE =====
-        function saveSection(sectionName) {
-            const form = document.getElementById(`form-${sectionName}`);
-            const btn = form.querySelector('.save-btn');
-            
-            // Désactiver le bouton
-            btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
-            
-            // Collecter les données du formulaire
-            const formData = new FormData(form);
-            const settings = {};
-            
-            for (let [key, value] of formData.entries()) {
-                const input = form.querySelector(`[name="${key}"]`);
-                if (input.type === 'checkbox') {
-                    settings[key] = input.checked;
-                } else if (input.type === 'number') {
-                    settings[key] = parseFloat(value) || 0;
-                } else {
-                    settings[key] = value;
-                }
-            }
-            
-            // Envoyer au serveur
-            fetch('/admin/parametres/save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    section: sectionName,
-                    settings: settings
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    showNotification('✅ Paramètres sauvegardés avec succès', 'success');
-                } else {
-                    showNotification(data.message || 'Erreur lors de la sauvegarde', 'error');
-                }
-            })
-            .catch(error => {
-                console.error('Erreur:', error);
-                showNotification('Erreur de connexion', 'error');
-            })
-            .finally(() => {
-                // Réactiver le bouton
-                btn.disabled = false;
-                btn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
-            });
-        }
+       // ===== SCRIPT POUR SETTINGS.EJS =====
+// Garder tout ce qui fonctionnait avant + ajouter la maintenance
 
-        // ===== GESTIONNAIRE DE MAINTENANCE =====
-     const MaintenanceManager = {
-    async getStatus() {
+// ===== FONCTION GÉNÉRALE DE SAUVEGARDE (EXISTANTE) =====
+function saveSection(sectionName) {
+    const form = document.getElementById(`form-${sectionName}`);
+    const btn = form.querySelector('.save-btn');
+    
+    // Désactiver le bouton
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sauvegarde...';
+    
+    // Collecter les données du formulaire
+    const formData = new FormData(form);
+    const settings = {};
+    
+    for (let [key, value] of formData.entries()) {
+        const input = form.querySelector(`[name="${key}"]`);
+        if (input.type === 'checkbox') {
+            settings[key] = input.checked;
+        } else if (input.type === 'number') {
+            settings[key] = parseFloat(value) || 0;
+        } else {
+            settings[key] = value;
+        }
+    }
+    
+    // Envoyer au serveur
+    fetch('/admin/parametres/save', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            section: sectionName,
+            settings: settings
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showNotification('✅ Paramètres sauvegardés avec succès', 'success');
+        } else {
+            showNotification(data.message || 'Erreur lors de la sauvegarde', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur:', error);
+        showNotification('Erreur de connexion', 'error');
+    })
+    .finally(() => {
+        // Réactiver le bouton
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
+    });
+}
+
+// ===== SYSTÈME DE NOTIFICATIONS (EXISTANT) =====
+function showNotification(message, type = 'info') {
+    // Supprimer les notifications existantes
+    const existingNotification = document.querySelector('.notification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+    
+    // Créer la nouvelle notification
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = message;
+    
+    // Ajouter au DOM
+    document.body.appendChild(notification);
+    
+    // Afficher avec animation
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 100);
+    
+    // Masquer après 4 secondes
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 4000);
+}
+
+// ===== NOUVEAU: GESTIONNAIRE DE MAINTENANCE =====
+const MaintenanceManager = {
+    async refreshStatus() {
         try {
+            console.log('📊 Actualisation du statut maintenance...');
+            
             const response = await fetch('/api/maintenance/status');
             const data = await response.json();
-            console.log('📊 Réponse API maintenance:', data);
-            
-            // Gérer différentes structures de réponse
-            let status = {
-                active: false,
-                message: '',
-                estimatedEnd: ''
-            };
             
             if (data.success) {
-                if (data.maintenance) {
-                    // Structure: { success: true, maintenance: { active: true, ... } }
-                    status = {
-                        active: data.maintenance.active || false,
-                        message: data.maintenance.message || '',
-                        estimatedEnd: data.maintenance.estimatedEnd || ''
-                    };
-                } else if (data.status) {
-                    // Structure: { success: true, status: { active: true, ... } }
-                    status = {
-                        active: data.status.active || false,
-                        message: data.status.message || '',
-                        estimatedEnd: data.status.estimatedEnd || ''
-                    };
-                } else if (typeof data.active !== 'undefined') {
-                    // Structure: { success: true, active: true, ... }
-                    status = {
-                        active: data.active || false,
-                        message: data.message || '',
-                        estimatedEnd: data.estimatedEnd || ''
-                    };
+                // Gérer différentes structures de réponse
+                let status = { isActive: false };
+                if (data.status) {
+                    status = data.status;
+                } else if (data.maintenance) {
+                    status = data.maintenance;
                 }
-            }
-            
-            this.updateUI(status);
-        } catch (error) {
-            console.error('❌ Erreur statut maintenance:', error);
-            // En cas d'erreur, afficher un statut par défaut
-            this.updateUI({ active: false, message: '', estimatedEnd: '' });
-        }
-    },
-    
-async activate() {
-    const message = document.getElementById('maintenanceMessage')?.value || 'Site en maintenance';
-    const estimatedDuration = document.getElementById('estimatedDuration')?.value || null; // ❌ NE PAS mettre de durée par défaut
-    
-    if (!confirm('⚠️ Activer la maintenance maintenant ? Le site sera inaccessible aux visiteurs.')) {
-        return;
-    }
-    
-    try {
-        // ✅ N'envoyer estimatedDuration que si une valeur est saisie
-        const payload = { message };
-        if (estimatedDuration && estimatedDuration.trim() !== '') {
-            payload.estimatedDuration = estimatedDuration;
-        }
-        
-        const response = await fetch('/api/maintenance/activate', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload) // ✅ Payload sans durée automatique
-        });
-        
-        const data = await response.json();
-        console.log('📊 Réponse activation:', data);
-        
-        if (data.success) {
-            showNotification('🔧 Maintenance activée avec succès', 'success');
-            this.getStatus();
-        } else {
-            showNotification(data.message || 'Erreur activation', 'error');
-        }
-    } catch (error) {
-        console.error('❌ Erreur activation:', error);
-        showNotification('Erreur de connexion', 'error');
-    }
-},
-
-// 2. MODIFIER LA PROGRAMMATION MAINTENANCE
-async schedule() {
-    const scheduledTime = document.getElementById('scheduledTime')?.value;
-    const message = document.getElementById('maintenanceMessage')?.value || 'Maintenance programmée';
-    const estimatedDuration = document.getElementById('estimatedDuration')?.value || null;
-    
-    if (!scheduledTime) {
-        showNotification('⏰ Veuillez sélectionner une date et heure', 'error');
-        return;
-    }
-    
-    const scheduledDate = new Date(scheduledTime);
-    if (scheduledDate <= new Date()) {
-        showNotification('⏰ La date doit être dans le futur', 'error');
-        return;
-    }
-    
-    try {
-        // ✅ Construire le payload sans durée automatique
-        const payload = { 
-            scheduledTime,
-            message 
-        };
-        
-        // ✅ N'ajouter estimatedDuration que si spécifié
-        if (estimatedDuration && estimatedDuration.trim() !== '') {
-            payload.estimatedDuration = estimatedDuration;
-        }
-        
-        const response = await fetch('/api/maintenance/schedule', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-        
-        const data = await response.json();
-        console.log('📊 Réponse programmation:', data);
-        
-        if (data.success) {
-            showNotification(`📅 ${data.message}`, 'success');
-            this.getStatus();
-            document.getElementById('scheduledTime').value = '';
-        } else {
-            showNotification(data.message || 'Erreur programmation', 'error');
-        }
-    } catch (error) {
-        console.error('❌ Erreur programmation:', error);
-        showNotification('Erreur de connexion', 'error');
-    }
-},
-
-    async deactivate() {
-        if (!confirm('✅ Désactiver la maintenance ? Le site redeviendra accessible à tous.')) {
-            return;
-        }
-        
-        try {
-            const response = await fetch('/api/maintenance/deactivate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' }
-            });
-            
-            const data = await response.json();
-            console.log('📊 Réponse désactivation:', data);
-            
-            if (data.success) {
-                showNotification('✅ Maintenance désactivée', 'success');
-                this.getStatus();
+                
+                this.updateStatusDisplay(status);
             } else {
-                showNotification(data.message || 'Erreur désactivation', 'error');
+                throw new Error(data.message || 'Erreur inconnue');
             }
+            
         } catch (error) {
-            console.error('❌ Erreur désactivation:', error);
-            showNotification('Erreur de connexion', 'error');
+            console.error('❌ Erreur récupération statut:', error);
+            showNotification('Erreur lors de la récupération du statut', 'error');
         }
     },
     
-    updateUI(status) {
-        console.log('🔄 Mise à jour UI avec:', status);
+    updateStatusDisplay(status) {
+        console.log('🔄 Mise à jour affichage statut:', status);
         
-        const statusIndicator = document.getElementById('maintenanceStatus');
-        const activateBtn = document.getElementById('activateMaintenanceBtn');
-        const deactivateBtn = document.getElementById('deactivateMaintenanceBtn');
+        const statusIndicator = document.getElementById('status-indicator');
+        const statusText = document.getElementById('status-text');
+        const statusDetails = document.getElementById('status-details');
+        const startTimeSpan = document.getElementById('start-time');
+        const endTimeSpan = document.getElementById('end-time');
+        const timeRemainingSpan = document.getElementById('time-remaining');
+        const stopBtn = document.getElementById('stop-maintenance');
+        const cancelScheduledBtn = document.getElementById('cancel-scheduled');
         
-        if (!statusIndicator || !activateBtn || !deactivateBtn) {
-            console.log('⚠️ Éléments UI introuvables');
+        if (!statusIndicator || !statusText) {
+            console.warn('⚠️ Éléments de statut non trouvés');
             return;
         }
         
-        // Vérifier si le statut est actif
-        const isActive = status && (status.active === true || status.active === 'true');
-        
-        if (isActive) {
-            statusIndicator.innerHTML = '🔧 <strong>ACTIVE</strong>';
-            statusIndicator.className = 'maintenance-status active';
-            activateBtn.style.display = 'none';
-            deactivateBtn.style.display = 'inline-flex';
+        if (status.isActive) {
+            // Maintenance active
+            statusIndicator.className = 'status-indicator active';
+            statusText.textContent = 'Maintenance Active';
+            
+            if (status.startTime && startTimeSpan) {
+                startTimeSpan.textContent = new Date(status.startTime).toLocaleString('fr-FR');
+            }
+            if (status.endTime && endTimeSpan) {
+                endTimeSpan.textContent = new Date(status.endTime).toLocaleString('fr-FR');
+            }
+            if (status.timeLeftMinutes !== null && timeRemainingSpan) {
+                timeRemainingSpan.textContent = `${status.timeLeftMinutes} minutes`;
+            }
+            
+            if (statusDetails) statusDetails.style.display = 'block';
+            if (stopBtn) stopBtn.style.display = 'inline-flex';
+            
+        } else if (status.scheduled) {
+            // Maintenance programmée
+            statusIndicator.className = 'status-indicator scheduled';
+            statusText.textContent = 'Maintenance Programmée';
+            
+            if (startTimeSpan) startTimeSpan.textContent = new Date(status.scheduled.startTime).toLocaleString('fr-FR');
+            if (endTimeSpan) endTimeSpan.textContent = new Date(status.scheduled.endTime).toLocaleString('fr-FR');
+            if (timeRemainingSpan) timeRemainingSpan.textContent = 'En attente';
+            
+            if (statusDetails) statusDetails.style.display = 'block';
+            if (stopBtn) stopBtn.style.display = 'none';
+            if (cancelScheduledBtn) cancelScheduledBtn.style.display = 'inline-flex';
+            
         } else {
-            statusIndicator.innerHTML = '✅ <strong>INACTIVE</strong>';
-            statusIndicator.className = 'maintenance-status inactive';
-            activateBtn.style.display = 'inline-flex';
-            deactivateBtn.style.display = 'none';
-        }
-        
-        // Remplir les champs avec les valeurs actuelles (si disponibles)
-        const messageField = document.getElementById('maintenanceMessage');
-        const durationField = document.getElementById('estimatedDuration');
-        
-        if (status && status.message && messageField) {
-            messageField.value = status.message;
-        }
-        if (status && status.estimatedEnd && durationField) {
-            durationField.value = status.estimatedEnd;
+            // Pas de maintenance
+            statusIndicator.className = 'status-indicator inactive';
+            statusText.textContent = 'Service Normal';
+            if (statusDetails) statusDetails.style.display = 'none';
+            if (stopBtn) stopBtn.style.display = 'none';
+            if (cancelScheduledBtn) cancelScheduledBtn.style.display = 'none';
         }
     }
 };
 
-        // ===== SYSTÈME DE NOTIFICATIONS =====
-        function showNotification(message, type = 'info') {
-            // Supprimer les notifications existantes
-            const existingNotification = document.querySelector('.notification');
-            if (existingNotification) {
-                existingNotification.remove();
-            }
-            
-            // Créer la nouvelle notification
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.innerHTML = message;
-            
-            // Ajouter au DOM
-            document.body.appendChild(notification);
-            
-            // Afficher avec animation
-            setTimeout(() => {
-                notification.classList.add('show');
-            }, 100);
-            
-            // Masquer après 4 secondes
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    notification.remove();
-                }, 300);
-            }, 4000);
-        }
-
-        // ===== INITIALISATION =====
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🔧 Page paramètres chargée');
-            
-            // Initialiser la maintenance si les éléments existent
-            if (document.getElementById('maintenanceStatus')) {
-                MaintenanceManager.getStatus();
-                // Vérifier le statut toutes les 30 secondes
-                setInterval(() => MaintenanceManager.getStatus(), 30000);
-            }
-            
-            // Ajouter des validations en temps réel
-            const inputs = document.querySelectorAll('.form-input, .form-textarea');
-            inputs.forEach(input => {
-                input.addEventListener('input', function() {
-                    // Retirer les classes d'erreur si l'utilisateur tape
-                    this.classList.remove('error');
-                });
-            });
-            
-            // Validation des URLs
-            const urlInputs = document.querySelectorAll('input[type="url"]');
-            urlInputs.forEach(input => {
-                input.addEventListener('blur', function() {
-                    if (this.value && !isValidUrl(this.value)) {
-                        this.classList.add('error');
-                        showNotification('URL invalide', 'error');
-                    }
-                });
-            });
-            
-            // Validation des emails
-            const emailInputs = document.querySelectorAll('input[type="email"]');
-            emailInputs.forEach(input => {
-                input.addEventListener('blur', function() {
-                    if (this.value && !isValidEmail(this.value)) {
-                        this.classList.add('error');
-                        showNotification('Email invalide', 'error');
-                    }
-                });
-            });
-        });
-
-        // ===== FONCTIONS DE VALIDATION =====
-        function isValidUrl(string) {
-            try {
-                new URL(string);
-                return true;
-            } catch (_) {
-                return false;
-            }
-        }
-
-        function isValidEmail(email) {
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            return emailRegex.test(email);
-        }
-
-        // ===== GESTION DES ERREURS GLOBALES =====
-        window.addEventListener('error', function(e) {
-            console.error('Erreur JavaScript:', e.error);
-            showNotification('Une erreur inattendue s\'est produite', 'error');
-        });
-
-        // ===== RACCOURCIS CLAVIER =====
-        document.addEventListener('keydown', function(e) {
-            // Ctrl+S pour sauvegarder la section active
-            if (e.ctrlKey && e.key === 's') {
-                e.preventDefault();
-                const activeSection = document.activeElement.closest('.section-card');
-                if (activeSection) {
-                    const form = activeSection.querySelector('form');
-                    if (form) {
-                        const sectionName = form.id.replace('form-', '');
-                        saveSection(sectionName);
-                    }
-                }
-            }
-        });
-    </script>
-
-
-<script>
-    // AJOUTEZ ce JavaScript dans votre page de paramètres (admin/parametres.ejs)
-unction activerMaintenance() {
-    MaintenanceManager.activate();
-}
-
-function desactiverMaintenance() {
-    MaintenanceManager.deactivate();
-}
-
-function verifierStatutMaintenance() {
-    MaintenanceManager.getStatus().then(() => {
-        // Le statut est déjà affiché dans updateUI
-        // Pas besoin d'alert supplémentaire
-    });
-}
-
-function updateMaintenanceUI(isActive) {
-    // Cette fonction est maintenant gérée par MaintenanceManager.updateUI
-    MaintenanceManager.updateUI({ active: isActive });
-}
-
-// Vérifier le statut au chargement de la page
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Initialisation gestion maintenance');
-    
-    // Vérifier si les éléments de maintenance existent
-    const maintenanceSection = document.getElementById('maintenanceStatus');
-    if (!maintenanceSection) {
-        console.log('ℹ️ Section maintenance non trouvée sur cette page');
-        return;
+// ===== FONCTIONS DE VALIDATION (EXISTANTES) =====
+function isValidUrl(string) {
+    try {
+        new URL(string);
+        return true;
+    } catch (_) {
+        return false;
     }
+}
+
+function isValidEmail(email) {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+}
+
+// ===== INITIALISATION PRINCIPALE =====
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🔧 Initialisation page paramètres');
     
-    // Initialiser le gestionnaire de maintenance
-    MaintenanceManager.getStatus();
+    // ===== INITIALISATION DES VALIDATIONS EXISTANTES =====
     
-    // Vérifier le statut toutes les 30 secondes (seulement si la section existe)
-    setInterval(() => {
-        MaintenanceManager.getStatus();
-    }, 30000);
+    // Ajouter des validations en temps réel
+    const inputs = document.querySelectorAll('.form-input, .form-textarea');
+    inputs.forEach(input => {
+        input.addEventListener('input', function() {
+            // Retirer les classes d'erreur si l'utilisateur tape
+            this.classList.remove('error');
+        });
+    });
     
-    console.log('✅ Gestionnaire de maintenance initialisé');
+    // Validation des URLs
+    const urlInputs = document.querySelectorAll('input[type="url"]');
+    urlInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            if (this.value && !isValidUrl(this.value)) {
+                this.classList.add('error');
+                showNotification('URL invalide', 'error');
+            }
+        });
+    });
+    
+    // Validation des emails
+    const emailInputs = document.querySelectorAll('input[type="email"]');
+    emailInputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            if (this.value && !isValidEmail(this.value)) {
+                this.classList.add('error');
+                showNotification('Email invalide', 'error');
+            }
+        });
+    });
+    
+    // ===== NOUVELLE INITIALISATION MAINTENANCE =====
+    
+    // Vérifier si la section maintenance existe
+    const maintenanceSection = document.getElementById('maintenance-status');
+    if (maintenanceSection) {
+        console.log('🔧 Initialisation gestionnaire maintenance');
+        
+        // Éléments du DOM pour la maintenance
+        const refreshBtn = document.getElementById('refresh-status');
+        const stopBtn = document.getElementById('stop-maintenance');
+        const cancelScheduledBtn = document.getElementById('cancel-scheduled');
+        const immediateForm = document.getElementById('immediate-maintenance-form');
+        const scheduledForm = document.getElementById('scheduled-maintenance-form');
+        
+        // Charger le statut initial
+        MaintenanceManager.refreshStatus();
+        
+        // Actualisation automatique toutes les 30 secondes
+        setInterval(() => MaintenanceManager.refreshStatus(), 30000);
+        
+        // ===== ÉVÉNEMENTS MAINTENANCE =====
+        
+        // Bouton actualiser
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => MaintenanceManager.refreshStatus());
+        }
+        
+        // Formulaire activation immédiate
+        if (immediateForm) {
+            immediateForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(immediateForm);
+                const duration = parseInt(formData.get('duration'));
+                const message = formData.get('message');
+                
+                if (!duration || duration < 1 || duration > 1440) {
+                    showNotification('Durée invalide (1-1440 minutes)', 'error');
+                    return;
+                }
+                
+                try {
+                    console.log(`🔧 Activation maintenance ${duration} minutes...`);
+                    
+                    const response = await fetch('/api/maintenance/activate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ duration, message })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showNotification('Maintenance activée avec succès', 'success');
+                        immediateForm.reset();
+                        MaintenanceManager.refreshStatus();
+                    } else {
+                        throw new Error(data.message);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Erreur activation:', error);
+                    showNotification('Erreur: ' + error.message, 'error');
+                }
+            });
+        }
+        
+        // Formulaire programmation
+        if (scheduledForm) {
+            scheduledForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const formData = new FormData(scheduledForm);
+                const startTime = formData.get('startTime');
+                const endTime = formData.get('endTime');
+                const message = formData.get('message');
+                
+                if (!startTime || !endTime) {
+                    showNotification('Dates de début et fin requises', 'error');
+                    return;
+                }
+                
+                try {
+                    console.log('⏰ Programmation maintenance...');
+                    
+                    const response = await fetch('/api/maintenance/schedule', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ startTime, endTime, message })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showNotification('Maintenance programmée avec succès', 'success');
+                        scheduledForm.reset();
+                        MaintenanceManager.refreshStatus();
+                    } else {
+                        throw new Error(data.message);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Erreur programmation:', error);
+                    showNotification('Erreur: ' + error.message, 'error');
+                }
+            });
+        }
+        
+        // Bouton arrêt maintenance
+        if (stopBtn) {
+            stopBtn.addEventListener('click', async function() {
+                if (!confirm('Êtes-vous sûr de vouloir arrêter la maintenance ?')) {
+                    return;
+                }
+                
+                try {
+                    console.log('🛑 Arrêt maintenance...');
+                    
+                    const response = await fetch('/api/maintenance/deactivate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showNotification('Maintenance arrêtée', 'success');
+                        MaintenanceManager.refreshStatus();
+                    } else {
+                        throw new Error(data.message);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Erreur arrêt:', error);
+                    showNotification('Erreur: ' + error.message, 'error');
+                }
+            });
+        }
+        
+        // Bouton annulation programmation
+        if (cancelScheduledBtn) {
+            cancelScheduledBtn.addEventListener('click', async function() {
+                if (!confirm('Êtes-vous sûr de vouloir annuler la maintenance programmée ?')) {
+                    return;
+                }
+                
+                try {
+                    console.log('❌ Annulation maintenance programmée...');
+                    
+                    const response = await fetch('/api/maintenance/cancel-scheduled', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        showNotification('Maintenance programmée annulée', 'success');
+                        MaintenanceManager.refreshStatus();
+                    } else {
+                        throw new Error(data.message);
+                    }
+                    
+                } catch (error) {
+                    console.error('❌ Erreur annulation:', error);
+                    showNotification('Erreur: ' + error.message, 'error');
+                }
+            });
+        }
+        
+        // Définir les dates minimales pour la programmation
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + 5); // Au minimum dans 5 minutes
+        
+        const startInput = document.getElementById('start-time-input');
+        const endInput = document.getElementById('end-time-input');
+        
+        if (startInput) {
+            startInput.min = now.toISOString().slice(0, 16);
+            
+            startInput.addEventListener('change', function() {
+                if (startInput.value && endInput) {
+                    const startDate = new Date(startInput.value);
+                    startDate.setMinutes(startDate.getMinutes() + 30); // Minimum 30 minutes de maintenance
+                    endInput.min = startDate.toISOString().slice(0, 16);
+                }
+            });
+        }
+        
+        console.log('✅ Gestionnaire maintenance initialisé');
+    } else {
+        console.log('ℹ️ Section maintenance non trouvée - fonctionnalités de base uniquement');
+    }
 });
 
-</script>
-    <style>
-        /* ===== STYLES POUR LES ERREURS =====  */
-        .form-input.error, .form-textarea.error {
-            border-color: var(--danger);
-            background-color: #fff5f5;
-        }
-        
-        .form-input.error:focus, .form-textarea.error:focus {
-            border-color: var(--danger);
-            box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
-        }
-        
-        /* ===== ANIMATIONS SUPPLÉMENTAIRES ===== */
-        .section-card {
-            animation: fadeInUp 0.6s ease-out;
-            animation-fill-mode: both;
-        }
-        
-        .section-card:nth-child(1) { animation-delay: 0.1s; }
-        .section-card:nth-child(2) { animation-delay: 0.2s; }
-        .section-card:nth-child(3) { animation-delay: 0.3s; }
-        .section-card:nth-child(4) { animation-delay: 0.4s; }
-        .section-card:nth-child(5) { animation-delay: 0.5s; }
-        .section-card:nth-child(6) { animation-delay: 0.6s; }
-        
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
+// ===== GESTION DES ERREURS GLOBALES (EXISTANTE) =====
+window.addEventListener('error', function(e) {
+    console.error('Erreur JavaScript:', e.error);
+    showNotification('Une erreur inattendue s\'est produite', 'error');
+});
+
+// ===== RACCOURCIS CLAVIER (EXISTANT) =====
+document.addEventListener('keydown', function(e) {
+    // Ctrl+S pour sauvegarder la section active
+    if (e.ctrlKey && e.key === 's') {
+        e.preventDefault();
+        const activeSection = document.activeElement.closest('.section-card');
+        if (activeSection) {
+            const form = activeSection.querySelector('form');
+            if (form && form.id.startsWith('form-')) {
+                const sectionName = form.id.replace('form-', '');
+                saveSection(sectionName);
             }
         }
-        
-        /* ===== LOADING STATES ===== */
-        .btn.loading {
-            pointer-events: none;
-            opacity: 0.7;
-        }
-        
-        .btn.loading i {
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-        
-        /* ===== AMÉLIORATION MOBILE ===== */
-        @media (max-width: 480px) {
-            .container {
-                padding: 0 0.5rem;
-            }
-            
-            .header {
-                padding: 1rem;
-                text-align: center;
-            }
-            
-            .header h1 {
-                font-size: 1.8rem;
-                flex-direction: column;
-                gap: 0.5rem;
-            }
-            
-            .section-card {
-                padding: 1rem;
-            }
-            
-            .section-header {
-                flex-direction: column;
-                text-align: center;
-                gap: 1rem;
-            }
-            
-            .maintenance-status {
-                margin-left: 0;
-            }
-        }
-    </style>
+    }
+}); 
+        </script>
 </body>
 </html>
