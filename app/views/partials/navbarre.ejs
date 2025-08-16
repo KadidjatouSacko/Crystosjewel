@@ -11,1300 +11,2165 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- EXEMPLE D'INTÉGRATION : Définir les données utilisateur -->
-    <!-- Dans votre vraie application, remplacez ceci par vos données EJS -->
+    <!-- DONNÉES UTILISATEUR EJS -->
     <script>
-        // EXEMPLE - Dans votre layout EJS, utilisez ceci :
-        // window.currentUser = <%- JSON.stringify(user || null) %>;
-        // window.isAdmin = <%= user && user.role_id === 2 ? 'true' : 'false' %>;
+        // Remplacez ces lignes par vos vraies données EJS :
+        window.currentUser = <%- JSON.stringify(user || null) %>;
+        window.isAdmin = <%= user && user.role_id === 2 ? 'true' : 'false' %>;
         
-        // Pour la démo, simulons différents états
-        // Décommentez l'état que vous voulez tester :
-        
-        // État 1: Non connecté
+        // Pour les tests seulement - supprimez ces lignes en production :
         // window.currentUser = null;
         // window.isAdmin = false;
-        
-        // État 2: Client connecté (role_id = 1)
-        // window.currentUser = { id: 1, first_name: 'Jean', last_name: 'Dupont', email: 'jean@example.com', role_id: 1 };
-        // window.isAdmin = false;
-        
-        // État 3: Admin connecté (role_id = 2)
-        window.currentUser = { id: 2, first_name: 'Admin', last_name: 'Système', email: 'admin@eclatdore.com', role_id: 2 };
-        window.isAdmin = true;
     </script>
     
+    <!-- CSS Navigation -->
+    <link rel="stylesheet" href="/css/navbar.css">
     <style>
-        /* Variables CSS UNIQUEMENT pour la navbar */
-        .admin-navbar,
-        .client-navbar,
-        .nav-container,
-        .nav-header,
-        .nav-menu,
-        .nav-links,
-        .nav-icons,
-        .user-dropdown,
-        .nav-overlay {
-            --rose-gold: #b76e79;
-            --rose-gold-light: #e8c2c8;
-            --rose-gold-dark: #7d4b53;
-            --cream: #fff8f0;
-            --dark-text: #3a3a3a;
-            --light-gray: #f5f5f5;
-            --transition: all 0.3s ease;
-            --shadow: 0 4px 20px rgba(0,0,0,0.1);
-        }
-
-        /* Reset seulement pour la navbar */
-        .admin-navbar *,
-        .client-navbar * {
-            box-sizing: border-box;
-        }
-        
-                html {
-                width: 100%;
-            overflow-x: hidden; /* Évite le scroll horizontal */
-                }
-
-        /* Navigation Admin */
-        .admin-navbar {
-            background: linear-gradient(135deg, var(--rose-gold-dark) 0%, var(--rose-gold) 100%);
-            border-bottom: 3px solid var(--rose-gold-light);
-            box-shadow: var(--shadow);
-            padding: 12px 0;
-            position: sticky;
-            top: 0;
-            z-index: 2000;
-            backdrop-filter: blur(10px);
-        }
-
-        .admin-navbar .navbar-brand {
-            font-weight: 700;
-            font-size: 1.4rem;
-            color: white !important;
-            transition: var(--transition);
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
-
-        .admin-navbar .navbar-brand:hover {
-            color: var(--cream) !important;
-            transform: translateY(-1px);
-        }
-
-        .admin-navbar .nav-link {
-            color: rgba(255, 255, 255, 0.9) !important;
-            font-weight: 500;
-            padding: 10px 16px !important;
-            border-radius: 25px;
-            transition: var(--transition);
-            margin: 0 5px;
-        }
-
-        .admin-navbar .nav-link:hover {
-            color: white !important;
-            background: rgba(255, 255, 255, 0.2);
-            transform: translateY(-2px);
-        }
-
-        .admin-navbar .dropdown-menu {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(15px);
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-            padding: 15px 0;
-            margin-top: 10px;
-            border: 2px solid var(--rose-gold-light);
-        }
-
-        .admin-navbar .dropdown-item {
-            color: var(--dark-text);
-            padding: 12px 25px;
-            transition: var(--transition);
-            font-weight: 500;
-        }
-
-        .admin-navbar .dropdown-item:hover {
-            background: linear-gradient(135deg, var(--rose-gold-light), var(--rose-gold));
-            color: white;
-            transform: translateX(5px);
-        }
-
-        .admin-navbar .btn-outline-light {
-            border-color: rgba(255, 255, 255, 0.8);
-            color: rgba(255, 255, 255, 0.9);
-            border-radius: 25px;
-            font-weight: 600;
-            transition: var(--transition);
-        }
-
-        .admin-navbar .btn-outline-light:hover {
-            background: white;
-            border-color: white;
-            color: var(--rose-gold);
-            transform: translateY(-2px);
-        }
-
-        .admin-navbar .btn-outline-success {
-            border-color: #27ae60;
-            color: #27ae60;
-            border-radius: 25px;
-            transition: var(--transition);
-            font-weight: 600;
-        }
-
-        .admin-navbar .btn-outline-success:hover {
-            background: #27ae60;
-            border-color: #27ae60;
-            transform: translateY(-2px);
-        }
-
-        /* Bouton déconnexion admin */
-        .admin-navbar .btn-logout {
-            border-color: #e74c3c;
-            color: #e74c3c;
-            border-radius: 25px;
-            transition: var(--transition);
-            font-weight: 600;
-            margin-left: 10px;
-        }
-
-        .admin-navbar .btn-logout:hover {
-            background: #e74c3c;
-            border-color: #e74c3c;
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        /* Navigation Client */
-        .client-navbar {
-            background: linear-gradient(135deg, var(--cream), var(--rose-gold-light));
-            box-shadow: 0 8px 32px rgba(183, 110, 121, 0.15);
-            padding: 20px 0;
-            position: sticky;
-            top: 0;
-            z-index: 1500;
-            backdrop-filter: blur(10px);
-            border-bottom: 3px solid var(--rose-gold);
-        }
-
-        .nav-container {
-            max-width: 1400px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-
-        .nav-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .logo {
-            text-decoration: none;
-            color: var(--dark-text);
-            transition: var(--transition);
-        }
-
-        .logo:hover {
-            color: var(--rose-gold-dark);
-            text-decoration: none;
-            transform: scale(1.05);
-        }
-
-        .logo h1 {
-            margin: 0;
-            font-size: 2.5rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--rose-gold-dark), var(--rose-gold));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
-
-        .logo span {
-            font-size: 0.9rem;
-            font-weight: 400;
-            opacity: 0.8;
-            font-style: italic;
-            color: var(--rose-gold-dark);
-        }
-
-        .menu-toggle {
-            display: none;
-            background: rgba(255, 255, 255, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            border-radius: 15px;
-            font-size: 22px;
-            cursor: pointer;
-            padding: 15px 18px;
-            color: var(--dark-text);
-            transition: var(--transition);
-            backdrop-filter: blur(10px);
-        }
-
-        .menu-toggle:hover {
-            background: rgba(255, 255, 255, 0.5);
-            transform: scale(1.05);
-        }
-
-        .nav-menu {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .nav-links {
-            display: flex;
-            list-style: none;
-            margin: 0;
-            padding: 0;
-            gap: 20px;
-            align-items: center;
-        }
-
-        .nav-link-item {
-            color: var(--dark-text);
-            text-decoration: none;
-            padding: 15px 25px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-weight: 600;
-            border-radius: 30px;
-            transition: var(--transition);
-            background: rgba(255, 255, 255, 0.2);
-            backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 255, 255, 0.3);
-        }
-
-        .nav-link-item:hover {
-            color: white;
-            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-            text-decoration: none;
-            transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(125, 75, 83, 0.3);
-        }
-
-        .nav-link-item.active {
-            background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
-            color: white;
-            box-shadow: 0 8px 25px rgba(125, 75, 83, 0.4);
-        }
-
-        /* Sous-menus */
-        .nav-dropdown {
-            position: relative;
-        }
-
-        .dropdown-trigger {
-            cursor: pointer;
-        }
-
-        .dropdown-arrow {
-            transition: transform 0.3s ease;
-            font-size: 14px;
-            margin-left: 8px;
-        }
-
-        .dropdown-arrow.rotated {
-            transform: rotate(180deg);
-        }
-
-        .nav-submenu {
-            position: absolute;
-            top: 100%;
-            left: 0;
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(20px);
-            border-radius: 20px;
-            box-shadow: 0 15px 50px rgba(0,0,0,0.2);
-            min-width: 280px;
-            padding: 20px 0;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(15px);
-            transition: all 0.4s ease;
-            z-index: 1000;
-            border: 2px solid var(--rose-gold-light);
-        }
-
-        .nav-submenu.active {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .nav-submenu a {
-            display: block;
-            padding: 15px 30px;
-            color: var(--dark-text);
-            text-decoration: none;
-            transition: var(--transition);
-            font-weight: 500;
-        }
-
-        .nav-submenu a:hover {
-            background: linear-gradient(135deg, var(--rose-gold-light), var(--rose-gold));
-            color: white;
-            transform: translateX(10px);
-        }
-
-        /* Icônes navigation */
-        .nav-icons {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .cart-icon, .favorites-icon {
-            color: var(--dark-text);
-            text-decoration: none;
-            padding: 15px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            backdrop-filter: blur(10px);
-            transition: var(--transition);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-        }
-
-        .cart-icon:hover, .favorites-icon:hover {
-            color: white;
-            background: var(--rose-gold);
-            transform: translateY(-3px);
-            text-decoration: none;
-        }
-
-        /* Dropdown utilisateur */
-        .user-dropdown {
-            position: relative;
-        }
-
-        .user-dropdown .dropdown-toggle {
-            background: rgba(255, 255, 255, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.5);
-            border-radius: 50%;
-            padding: 15px;
-            color: var(--dark-text);
-            cursor: pointer;
-            transition: var(--transition);
-            backdrop-filter: blur(10px);
-        }
-
-        .user-dropdown .dropdown-toggle:hover {
-            background: var(--rose-gold);
-            color: white;
-            transform: scale(1.1);
-        }
-
-        .user-dropdown .dropdown-menu {
-            position: absolute !important;
-            top: calc(100% + 20px) !important;
-            right: 0 !important;
-            background: rgba(255, 255, 255, 0.98) !important;
-            border-radius: 20px !important;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3) !important;
-            min-width: 350px !important;
-            padding: 25px 0 !important;
-            opacity: 0 !important;
-            visibility: hidden !important;
-            transform: translateY(-15px) !important;
-            transition: all 0.4s ease !important;
-            z-index: 99999 !important;
-            border: 2px solid var(--rose-gold-light) !important;
-            display: block !important;
-        }
-
-        .user-dropdown .dropdown-menu.active {
-            opacity: 1 !important;
-            visibility: visible !important;
-            transform: translateY(0) !important;
-        }
-
-        .dropdown-header {
-            padding: 20px 30px;
-            border-bottom: 2px solid var(--rose-gold-light);
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-
-        .dropdown-header i {
-            font-size: 28px;
-            color: var(--rose-gold);
-        }
-
-        .dropdown-header span {
-            font-weight: 700;
-            color: var(--dark-text);
-            font-size: 18px;
-        }
-
-        .admin-badge {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 11px;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-
-        .client-badge {
-            background: linear-gradient(135deg, #3498db, #2980b9);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 15px;
-            font-size: 11px;
-            font-weight: bold;
-            margin-left: 10px;
-        }
-
-        .dropdown-divider {
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--rose-gold-light), transparent);
-            margin: 15px 0;
-        }
-
-        .dropdown-section-title {
-            padding: 15px 30px 8px;
-            color: var(--rose-gold-dark);
-            font-weight: 800;
-            font-size: 13px;
-            text-transform: uppercase;
-            letter-spacing: 1.5px;
-        }
-
-        .user-dropdown .dropdown-menu a {
-            display: block;
-            padding: 15px 30px;
-            color: var(--dark-text);
-            text-decoration: none;
-            transition: var(--transition);
-            font-weight: 500;
-            cursor: pointer;
-        }
-
-        .user-dropdown .dropdown-menu a:hover {
-            background: linear-gradient(135deg, var(--rose-gold-light), var(--rose-gold));
-            color: white;
-            transform: translateX(10px);
-        }
-
-        .logout-link {
-            border-top: 2px solid var(--rose-gold-light);
-            margin-top: 15px;
-            padding-top: 20px !important;
-            background: linear-gradient(135deg, #ff6b6b, #ee5a52) !important;
-            color: white !important;
-        }
-
-        .logout-link:hover {
-            background: linear-gradient(135deg, #ee5a52, #dc4c41) !important;
-            color: white !important;
-        }
-
-        /* Overlay pour mobile */
-        .nav-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 1400;
-            opacity: 0;
-            visibility: hidden;
-            transition: var(--transition);
-        }
-
-        .nav-overlay.active {
-            opacity: 1;
-            visibility: visible;
-        }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .menu-toggle {
-                display: block;
-            }
-
-            .nav-menu {
-                position: fixed;
-                top: 0;
-                right: -100%;
-                width: 350px;
-                height: 100vh;
-                background: rgba(255, 255, 255, 0.98);
-                backdrop-filter: blur(25px);
-                flex-direction: column;
-                justify-content: flex-start;
-                padding: 100px 40px 40px;
-                transition: var(--transition);
-                z-index: 1450;
-                overflow-y: auto;
-            }
-
-            .nav-menu.active {
-                right: 0;
-            }
-
-            .nav-links {
-                flex-direction: column;
-                gap: 20px;
-                width: 100%;
-                margin-bottom: 40px;
-            }
-
-            .nav-link-item {
-                width: 100%;
-                justify-content: flex-start;
-            }
-
-            .nav-submenu {
-                position: static;
-                opacity: 1;
-                visibility: visible;
-                transform: none;
-                box-shadow: none;
-                background: rgba(183, 110, 121, 0.1);
-                border-radius: 15px;
-                margin-top: 15px;
-                max-height: 0;
-                overflow: hidden;
-                transition: max-height 0.4s ease;
-            }
-
-            .nav-submenu.active {
-                max-height: 400px;
-            }
-
-            .nav-icons {
-                flex-direction: column;
-                gap: 20px;
-                width: 100%;
-            }
-
-            .user-dropdown .dropdown-menu {
-                position: static !important;
-                opacity: 1 !important;
-                visibility: visible !important;
-                transform: none !important;
-                box-shadow: none !important;
-                background: rgba(183, 110, 121, 0.1) !important;
-                border-radius: 15px !important;
-                margin-top: 20px !important;
-            }
-        }
-
-        /* Notifications */
-        .notification {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 10000;
-            padding: 15px 25px;
-            border-radius: 10px;
-            color: white;
-            font-weight: 600;
-            transform: translateX(100%);
-            transition: transform 0.3s ease;
-        }
-
-        .notification.success {
-            background: linear-gradient(135deg, #4caf50, #45a049);
-        }
-
-        .notification.error {
-            background: linear-gradient(135deg, #f44336, #da190b);
-        }
-
-        .notification.info {
-            background: linear-gradient(135deg, #2196f3, #0b7dda);
-        }
-
-        .notification.show {
-            transform: translateX(0);
-        }
+        /* ===================================================================
+VARIABLES CSS POUR LA NAVBAR
+=================================================================== */
+:root {
+    --rose-gold: #b76e79;
+    --rose-gold-light: #e8c2c8;
+    --rose-gold-dark: #7d4b53;
+    --cream: #fff8f0;
+    --dark-text: #3a3a3a;
+    --light-gray: #f5f5f5;
+    --transition: all 0.3s ease;
+    --shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+/* Reset global */
+* {
+    box-sizing: border-box;
+}
+
+html {
+    width: 100%;
+    overflow-x: hidden;
+}
+
+/* ===================================================================
+NAVIGATION ADMIN - STYLE HORIZONTAL COMME L'IMAGE
+=================================================================== */
+.admin-navbar {
+    background: linear-gradient(135deg, var(--rose-gold-dark) 0%, var(--rose-gold) 100%);
+    border-bottom: 3px solid var(--rose-gold-light);
+    box-shadow: var(--shadow);
+    padding: 12px 0;
+    position: sticky;
+    top: 0;
+    z-index: 2000;
+    backdrop-filter: blur(10px);
+    
+    /* 🔒 MASQUÉE PAR DÉFAUT - AFFICHÉE SEULEMENT POUR ADMINS */
+    display: none !important;
+}
+
+.admin-navbar.show-admin {
+    display: block !important;
+}
+
+/* Container admin */
+.admin-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Logo admin */
+.admin-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 1.2rem;
+    transition: var(--transition);
+}
+
+.admin-logo:hover {
+    color: var(--cream);
+    text-decoration: none;
+    transform: translateY(-1px);
+}
+
+.admin-logo i {
+    font-size: 1.4rem;
+}
+
+/* Menu admin horizontal */
+.admin-menu {
+    display: flex;
+    align-items: center;
+    gap: 25px;
+    flex: 1;
+    justify-content: center;
+}
+
+.admin-nav-item {
+    position: relative;
+}
+
+.admin-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.9);
+    text-decoration: none;
+    padding: 12px 20px;
+    border-radius: 25px;
+    font-weight: 500;
+    transition: var(--transition);
+    cursor: pointer;
+}
+
+.admin-nav-link:hover {
+    color: white;
+    background: rgba(255, 255, 255, 0.2);
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+.admin-nav-link i {
+    font-size: 1.1rem;
+}
+
+.admin-dropdown-arrow {
+    margin-left: 5px;
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.admin-nav-item.active .admin-dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+/* Dropdown admin */
+.admin-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border-radius: 15px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.3);
+    min-width: 300px;
+    max-width: 400px;
+    padding: 20px 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(15px);
+    transition: all 0.4s ease;
+    z-index: 1000;
+    border: 2px solid var(--rose-gold-light);
+    margin-top: 10px;
+    max-height: 70vh;
+    overflow-y: auto;
+    
+    /* Scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--rose-gold) rgba(255, 255, 255, 0.3);
+}
+
+.admin-dropdown::-webkit-scrollbar {
+    width: 6px;
+}
+
+.admin-dropdown::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}
+
+.admin-dropdown::-webkit-scrollbar-thumb {
+    background: var(--rose-gold);
+    border-radius: 10px;
+}
+
+.admin-dropdown.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Headers dans dropdown */
+.admin-dropdown-header {
+    background: linear-gradient(135deg, var(--rose-gold-light), var(--rose-gold));
+    color: white;
+    padding: 12px 25px;
+    margin: 0 -20px 15px -20px;
+    font-weight: 700;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-dropdown-header:first-child {
+    margin-top: -20px;
+    border-radius: 15px 15px 0 0;
+}
+
+/* Items dropdown */
+.admin-dropdown-item {
+    display: block;
+    padding: 12px 25px;
+    color: var(--dark-text);
+    text-decoration: none;
+    transition: var(--transition);
+    font-weight: 500;
+    border-radius: 8px;
+    margin: 2px 15px;
+}
+
+.admin-dropdown-item:hover {
+    background: linear-gradient(135deg, var(--rose-gold-light), var(--rose-gold));
+    color: white;
+    text-decoration: none;
+    transform: translateX(5px);
+}
+
+.admin-dropdown-item i {
+    width: 20px;
+    text-align: center;
+    margin-right: 10px;
+}
+
+/* Divider */
+.admin-dropdown-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--rose-gold-light), transparent);
+    margin: 15px 15px;
+    border: none;
+}
+
+/* Actions admin droite */
+.admin-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.admin-btn {
+    padding: 8px 16px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.admin-btn-outline {
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.admin-btn-outline:hover {
+    background: white;
+    color: var(--rose-gold);
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+.admin-btn-success {
+    border: 2px solid #27ae60;
+    color: #27ae60;
+}
+
+.admin-btn-success:hover {
+    background: #27ae60;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+.admin-btn-danger {
+    border: 2px solid #e74c3c;
+    color: #e74c3c;
+}
+
+.admin-btn-danger:hover {
+    background: #e74c3c;
+    color: white;
+    text-decoration: none;
+    transform: translateY(-2px);
+}
+
+.admin-user-info {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.admin-divider {
+    width: 2px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.3);
+    margin: 0 10px;
+}
+
+/* ===================================================================
+NAVIGATION CLIENT - STYLE HORIZONTAL COMME L'IMAGE
+=================================================================== */
+.client-navbar {
+    background: linear-gradient(135deg, var(--cream), var(--rose-gold-light));
+    box-shadow: 0 8px 32px rgba(183, 110, 121, 0.15);
+    padding: 20px 0;
+    position: sticky;
+    top: 0;
+    z-index: 1500;
+    backdrop-filter: blur(10px);
+    border-bottom: 3px solid var(--rose-gold);
+}
+
+.client-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Header avec logo */
+.client-header {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.client-logo {
+    text-decoration: none;
+    color: var(--dark-text);
+    transition: var(--transition);
+}
+
+.client-logo:hover {
+    color: var(--rose-gold-dark);
+    text-decoration: none;
+    transform: scale(1.02);
+}
+
+.client-logo h1 {
+    margin: 0;
+    font-size: 2.5rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--rose-gold-dark), var(--rose-gold));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.client-logo span {
+    font-size: 1rem;
+    font-weight: 400;
+    opacity: 0.8;
+    font-style: italic;
+    color: var(--rose-gold-dark);
+}
+
+/* Menu client horizontal */
+.client-menu {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 30px;
+}
+
+.client-nav-item {
+    position: relative;
+}
+
+.client-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--dark-text);
+    text-decoration: none;
+    padding: 15px 25px;
+    font-weight: 600;
+    border-radius: 30px;
+    transition: var(--transition);
+    background: rgba(255, 255, 255, 0.3);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(255, 255, 255, 0.4);
+}
+
+.client-nav-link:hover {
+    color: white;
+    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+    text-decoration: none;
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(125, 75, 83, 0.3);
+}
+
+.client-nav-link.active {
+    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+    color: white;
+    box-shadow: 0 8px 25px rgba(125, 75, 83, 0.4);
+}
+
+.client-nav-link i {
+    font-size: 1.1rem;
+}
+
+.client-dropdown-arrow {
+    margin-left: 5px;
+    font-size: 0.8rem;
+    transition: transform 0.3s ease;
+}
+
+.client-nav-item.active .client-dropdown-arrow {
+    transform: rotate(180deg);
+}
+
+/* Dropdown client */
+.client-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(20px);
+    border-radius: 20px;
+    box-shadow: 0 15px 50px rgba(0,0,0,0.2);
+    min-width: 280px;
+    padding: 20px 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(-50%) translateY(15px);
+    transition: all 0.4s ease;
+    z-index: 1000;
+    border: 2px solid var(--rose-gold-light);
+    margin-top: 10px;
+}
+
+.client-dropdown.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(-50%) translateY(0);
+}
+
+.client-dropdown-item {
+    display: block;
+    padding: 15px 30px;
+    color: var(--dark-text);
+    text-decoration: none;
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.client-dropdown-item:hover {
+    background: linear-gradient(135deg, var(--rose-gold-light), var(--rose-gold));
+    color: white;
+    text-decoration: none;
+    transform: translateX(10px);
+}
+
+.client-dropdown-item i {
+    margin-right: 10px;
+    width: 20px;
+    text-align: center;
+}
+
+/* Icônes navigation droite */
+.client-icons {
+    position: absolute;
+    right: 20px;
+    top: 50%;
+    transform: translateY(-50%);
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
+.client-icon {
+    color: var(--dark-text);
+    text-decoration: none;
+    padding: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(10px);
+    transition: var(--transition);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    position: relative;
+}
+
+.client-icon:hover {
+    color: white;
+    background: var(--rose-gold);
+    transform: translateY(-3px);
+    text-decoration: none;
+}
+
+/* User dropdown */
+.user-dropdown {
+    position: relative;
+}
+
+.user-dropdown-toggle {
+    background: rgba(255, 255, 255, 0.4);
+    border: 2px solid rgba(255, 255, 255, 0.5);
+    border-radius: 50%;
+    padding: 12px;
+    color: var(--dark-text);
+    cursor: pointer;
+    transition: var(--transition);
+    backdrop-filter: blur(10px);
+}
+
+.user-dropdown-toggle:hover {
+    background: var(--rose-gold);
+    color: white;
+    transform: scale(1.1);
+}
+
+.user-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 15px);
+    right: 0;
+    background: rgba(255, 255, 255, 0.98);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    min-width: 350px;
+    max-height: 70vh;
+    padding: 25px 0;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-15px);
+    transition: all 0.4s ease;
+    z-index: 99999;
+    border: 2px solid var(--rose-gold-light);
+    overflow-y: auto;
+    
+    /* Scrollbar */
+    scrollbar-width: thin;
+    scrollbar-color: var(--rose-gold) rgba(255, 255, 255, 0.3);
+}
+
+.user-dropdown-menu::-webkit-scrollbar {
+    width: 6px;
+}
+
+.user-dropdown-menu::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}
+
+.user-dropdown-menu::-webkit-scrollbar-thumb {
+    background: var(--rose-gold);
+    border-radius: 10px;
+}
+
+.user-dropdown-menu.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-header {
+    padding: 20px 30px;
+    border-bottom: 2px solid var(--rose-gold-light);
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.dropdown-header i {
+    font-size: 28px;
+    color: var(--rose-gold);
+}
+
+.dropdown-header span {
+    font-weight: 700;
+    color: var(--dark-text);
+    font-size: 18px;
+}
+
+.admin-badge {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.client-badge {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 15px;
+    font-size: 11px;
+    font-weight: bold;
+    margin-left: 10px;
+}
+
+.dropdown-divider {
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--rose-gold-light), transparent);
+    margin: 15px 0;
+}
+
+.dropdown-section-title {
+    padding: 15px 30px 8px;
+    color: var(--rose-gold-dark);
+    font-weight: 800;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+}
+
+.user-dropdown-menu a {
+    display: block;
+    padding: 15px 30px;
+    color: var(--dark-text);
+    text-decoration: none;
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.user-dropdown-menu a:hover {
+    background: linear-gradient(135deg, var(--rose-gold-light), var(--rose-gold));
+    color: white;
+    transform: translateX(10px);
+    text-decoration: none;
+}
+
+.logout-link {
+    border-top: 2px solid var(--rose-gold-light);
+    margin-top: 15px;
+    padding-top: 20px !important;
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52) !important;
+    color: white !important;
+}
+
+.logout-link:hover {
+    background: linear-gradient(135deg, #ee5a52, #dc4c41) !important;
+    color: white !important;
+}
+
+/* ===================================================================
+MENU MOBILE - BURGER SEULEMENT SUR PETIT ÉCRAN + ESPACEMENT
+=================================================================== */
+.mobile-toggle {
+    display: none;
+    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+    border: none;
+    border-radius: 12px;
+    font-size: 18px;
+    cursor: pointer;
+    padding: 12px 15px;
+    color: white;
+    transition: var(--transition);
+    box-shadow: 0 4px 15px rgba(183, 110, 121, 0.3);
+    position: absolute;
+    top: 15px;
+}
+
+/* ESPACEMENT DES BOUTONS BURGER */
+#adminMobileToggle {
+    right: 80px; /* Espacé du bord droit */
+}
+
+#clientMobileToggle {
+    right: 20px; /* Plus près du bord */
+}
+
+.mobile-toggle:hover {
+    transform: scale(1.05);
+    box-shadow: 0 6px 20px rgba(183, 110, 121, 0.4);
+}
+
+.mobile-toggle.active {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+}
+
+/* Menu mobile overlay */
+.mobile-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(5px);
+    z-index: 1998;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s ease;
+}
+
+.mobile-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Container mobile */
+.mobile-container {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    width: 85%;
+    max-width: 400px;
+    height: 100vh;
+    background: linear-gradient(145deg, 
+        rgba(255, 248, 240, 0.98) 0%, 
+        rgba(232, 194, 200, 0.95) 100%);
+    backdrop-filter: blur(25px);
+    z-index: 1999;
+    transition: right 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    overflow-y: auto;
+    border-left: 3px solid var(--rose-gold);
+    box-shadow: -10px 0 50px rgba(0, 0, 0, 0.3);
+    
+    /* Scrollbar mobile */
+    scrollbar-width: thin;
+    scrollbar-color: var(--rose-gold) rgba(255, 255, 255, 0.3);
+}
+
+.mobile-container::-webkit-scrollbar {
+    width: 6px;
+}
+
+.mobile-container::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 10px;
+}
+
+.mobile-container::-webkit-scrollbar-thumb {
+    background: var(--rose-gold);
+    border-radius: 10px;
+}
+
+.mobile-container.active {
+    right: 0;
+}
+
+/* Header mobile */
+.mobile-header {
+    padding: 30px 25px 20px;
+    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+    color: white;
+    position: relative;
+    border-bottom: 3px solid var(--rose-gold-light);
+}
+
+.mobile-close {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-close:hover {
+    background: rgba(255, 255, 255, 0.3);
+    transform: rotate(90deg);
+}
+
+.mobile-logo {
+    font-size: 1.6rem;
+    font-weight: 800;
+    margin: 0;
+}
+
+.mobile-subtitle {
+    font-size: 0.85rem;
+    opacity: 0.9;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+/* Body mobile */
+.mobile-body {
+    padding: 25px;
+}
+
+.mobile-section {
+    margin-bottom: 25px;
+}
+
+.mobile-section-title {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: var(--rose-gold-dark);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    margin-bottom: 15px;
+    padding-left: 5px;
+}
+
+.mobile-nav-links {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.mobile-nav-item {
+    margin-bottom: 8px;
+}
+
+.mobile-nav-link {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px 20px;
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 15px;
+    text-decoration: none;
+    color: var(--dark-text);
+    font-weight: 600;
+    transition: var(--transition);
+    border: 2px solid rgba(183, 110, 121, 0.1);
+}
+
+.mobile-nav-link:hover {
+    background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+    color: white;
+    transform: translateX(5px);
+    box-shadow: 0 5px 15px rgba(183, 110, 121, 0.3);
+    border-color: var(--rose-gold);
+    text-decoration: none;
+}
+
+.mobile-nav-link i {
+    font-size: 18px;
+    width: 20px;
+    text-align: center;
+}
+
+/* Responsive - MOBILE BURGER SEULEMENT EN DESSOUS DE 768px */
+@media (max-width: 767px) {
+    .mobile-toggle {
+        display: block;
+    }
+    
+    .admin-menu,
+    .client-menu {
+        display: none;
+    }
+    
+    .client-icons {
+        display: none;
+    }
+    
+    .admin-actions {
+        display: none;
+    }
+    
+    .client-header {
+        margin-bottom: 15px;
+        position: relative;
+    }
+    
+    .client-logo h1 {
+        font-size: 2rem;
+    }
+    
+    .mobile-container {
+        width: 90%;
+    }
+    
+    /* NAVIGATION MOBILE RÉORGANISÉE */
+    .mobile-quick-nav {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        padding: 15px 0;
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 20px;
+        margin: 0 20px 20px 20px;
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.4);
+    }
+    
+    .mobile-quick-link {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 5px;
+        color: var(--dark-text);
+        text-decoration: none;
+        padding: 10px 15px;
+        border-radius: 15px;
+        transition: var(--transition);
+        background: rgba(255, 255, 255, 0.4);
+        backdrop-filter: blur(10px);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+        flex: 1;
+        max-width: 80px;
+    }
+    
+    .mobile-quick-link:hover {
+        color: white;
+        background: linear-gradient(135deg, var(--rose-gold), var(--rose-gold-dark));
+        text-decoration: none;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(183, 110, 121, 0.3);
+    }
+    
+    .mobile-quick-link i {
+        font-size: 20px;
+    }
+    
+    .mobile-quick-link span {
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-align: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .mobile-container {
+        width: 95%;
+    }
+    
+    .client-logo h1 {
+        font-size: 1.8rem;
+    }
+    
+    .admin-logo {
+        font-size: 1rem;
+    }
+    
+    .mobile-quick-nav {
+        margin: 0 15px 15px 15px;
+        gap: 15px;
+    }
+    
+    .mobile-quick-link {
+        max-width: 70px;
+        padding: 8px 10px;
+    }
+    
+    .mobile-quick-link i {
+        font-size: 18px;
+    }
+    
+    .mobile-quick-link span {
+        font-size: 0.7rem;
+    }
+}
+
+/* Notifications */
+.notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 10000;
+    padding: 15px 25px;
+    border-radius: 10px;
+    color: white;
+    font-weight: 600;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+}
+
+.notification.success {
+    background: linear-gradient(135deg, #4caf50, #45a049);
+}
+
+.notification.error {
+    background: linear-gradient(135deg, #f44336, #da190b);
+}
+
+.notification.info {
+    background: linear-gradient(135deg, #2196f3, #0b7dda);
+}
+
+.notification.show {
+    transform: translateX(0);
+}
     </style>
 </head>
 <body>
-    <!-- Navigation Admin (visible seulement pour les admins role_id = 2) -->
-<nav class="navbar navbar-expand-lg admin-navbar" id="adminNavbar" style="display: none;">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/admin/stats">
-                <i class="fas fa-shield-alt me-2"></i>Administration <%= siteSettings.company?.company_name || 'CrystosJewel' %> 
+    <!-- ===================================================================
+    NAVIGATION ADMIN - STYLE HORIZONTAL COMME L'IMAGE
+    =================================================================== -->
+    <nav class="admin-navbar" id="adminNavbar">
+        <div class="admin-container">
+            <!-- Logo Admin -->
+            <a href="/admin/stats" class="admin-logo">
+                <i class="fas fa-shield-alt"></i>
+                <span>Administration <%= siteSettings.company?.company_name || 'CrystosJewel' %></span>
             </a>
-            
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbarContent">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            
-            <div class="collapse navbar-collapse" id="adminNavbarContent">
-                <ul class="navbar-nav me-auto">
-                    <!-- Dashboard -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-chart-bar me-2"></i>Dashboard
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/admin/stats">
-                                <i class="fas fa-tachometer-alt me-2"></i>Statistiques principales
-                            </a></li>
-                            <li><a class="dropdown-item" href="/admin/mon-suivi">
-                                <i class="fas fa-user-chart me-2"></i>Mon suivi
-                            </a></li>
-                            <li><a class="dropdown-item" href="/admin/gestion-clients ">
-                                <i class="fas fa-users me-2"></i>Suivi clients
-                            </a></li>
-                            <!-- Dans votre navigation admin -->
-                            <li><a href="/admin/marketing/dashboard">📧 Emails</a></li>
-                        </ul>
-                    </li>
-                    
-                    
-                    <!-- Bijoux -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-gem me-2"></i>Bijoux
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/admin/gestionnaire-bijoux">
-                                <i class="fas fa-magic me-2"></i>Gestionnaire Dynamique
-                            </a></li>
-                            <li><a class="dropdown-item" href="/dashboard">
-                                <i class="fas fa-chart-pie me-2"></i>Dashboard Interactif
-                            </a></li>
-                            <li><hr class="dropdown-divider"></li>
-                            <li><a class="dropdown-item" href="/admin/bijoux">
-                                <i class="fas fa-table me-2"></i>Liste des bijoux
-                            </a></li>
-                            <li><a class="dropdown-item" href="/ajouter-bijou">
-                                <i class="fas fa-plus me-2"></i>Ajouter un bijou
-                            </a></li>
-                        </ul>
-                    </li>
-                    
-                    <!-- Commandes -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-shopping-cart me-2"></i>Commandes
-                        </a>
-                        <ul class="dropdown-menu">
-                            <li><a class="dropdown-item" href="/admin/suivi-commandes">
-                                <i class="fas fa-truck me-2"></i>Suivi des commandes
-                            </a></li>
-                            <li><a class="dropdown-item" href="/commandes/export">
-                                <i class="fas fa-download me-2"></i>Exporter commandes
-                            </a></li>
-                        </ul>
-                    </li>
-                    
-                    <!-- Marketing & Promotions -->
-                    <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-bullhorn me-2"></i>Marketing
-                        </a>
-                        <ul class="dropdown-menu">
-                            <!-- 🎫 NOUVELLE SECTION CODES PROMO -->
-                            <li class="dropdown-header">
-                                <i class="fas fa-tags me-2"></i>Codes Promo
-                            </li>
-                            <li><a class="dropdown-item" href="/admin/promos">
-                                <i class="fas fa-tags me-2"></i>Gestion des codes promo
-                            </a></li>
-                            <li><a class="dropdown-item" href="/admin/promos/create">
-                                <i class="fas fa-plus me-2"></i>Créer un code promo
-                            </a></li>
-                            <li><a class="dropdown-item" href="/admin/promos/export">
-                                <i class="fas fa-download me-2"></i>Export codes promo
-                            </a></li>
-                            
-                            <li><hr class="dropdown-divider"></li>
-                            
-                            <!-- Section Marketing existante -->
-                            <li class="dropdown-header">
-                                <i class="fas fa-heart me-2"></i>Marketing
-                            </li>
-                            <li><a class="dropdown-item" href="/admin/coups-de-coeur">
-                                <i class="fas fa-heart me-2"></i>Gestion coups de cœur
-                            </a></li>
-                            <li><a class="dropdown-item" href="/admin/category-images">
-                                <i class="fas fa-images me-2"></i>Images d'accueil
-                            </a></li>
-                        </ul>
-                    </li>
-                    
-                    <!-- Paramètres -->
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/parametres">
-                            <i class="fas fa-cog me-2"></i>Paramètres
-                        </a>
-                    </li>
-                </ul>
-                
-                <!-- Boutons d'action avec déconnexion -->
-                <div class="d-flex gap-2 align-items-center">
-                    <a href="/dashboard" class="btn btn-outline-light btn-sm">
-                        <i class="fas fa-gem me-1"></i>Dashboard
+
+            <!-- Menu Admin Horizontal -->
+            <div class="admin-menu" id="adminMenu">
+                <!-- Dashboard -->
+                <div class="admin-nav-item">
+                    <a href="#" class="admin-nav-link" data-dropdown="dashboardDropdown">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>Dashboard</span>
+                        <i class="fas fa-chevron-down admin-dropdown-arrow"></i>
                     </a>
-                    <a href="/" class="btn btn-outline-success btn-sm">
-                        <i class="fas fa-home me-1"></i>Site
+                    <div class="admin-dropdown" id="dashboardDropdown">
+                        <a href="/admin/stats" class="admin-dropdown-item">
+                            <i class="fas fa-tachometer-alt"></i>Statistiques principales
+                        </a>
+                        <a href="/admin/mon-suivi" class="admin-dropdown-item">
+                            <i class="fas fa-user-chart"></i>Mon suivi
+                        </a>
+                        <a href="/admin/gestion-clients" class="admin-dropdown-item">
+                            <i class="fas fa-users"></i>Suivi clients
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Bijoux -->
+                <div class="admin-nav-item">
+                    <a href="#" class="admin-nav-link" data-dropdown="bijouxDropdown">
+                        <i class="fas fa-gem"></i>
+                        <span>Bijoux</span>
+                        <i class="fas fa-chevron-down admin-dropdown-arrow"></i>
                     </a>
-                    <div class="vr mx-2"></div>
-                    <span class="text-light small">
-                        <i class="fas fa-user-shield me-1"></i>
-                        <span id="adminUserName">Admin</span>
-                    </span>
-                    <!-- BOUTON DÉCONNEXION ADMIN AJOUTÉ -->
-                    <a href="/deconnexion" class="btn btn-outline-danger btn-sm btn-logout" 
-                       onclick="return confirm('Êtes-vous sûr de vouloir vous déconnecter ?')">
-                        <i class="fas fa-sign-out-alt me-1"></i>Déconnexion
+                    <div class="admin-dropdown" id="bijouxDropdown">
+                        <a href="/admin/gestionnaire-bijoux" class="admin-dropdown-item">
+                            <i class="fas fa-magic"></i>Gestionnaire Dynamique
+                        </a>
+                        <a href="/dashboard" class="admin-dropdown-item">
+                            <i class="fas fa-chart-pie"></i>Dashboard Interactif
+                        </a>
+                        <div class="admin-dropdown-divider"></div>
+                        
+                        <a href="/ajouter-bijou" class="admin-dropdown-item">
+                            <i class="fas fa-plus"></i>Ajouter un bijou
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Commandes -->
+                <div class="admin-nav-item">
+                    <a href="#" class="admin-nav-link" data-dropdown="commandesDropdown">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span>Commandes</span>
+                        <i class="fas fa-chevron-down admin-dropdown-arrow"></i>
+                    </a>
+                    <div class="admin-dropdown" id="commandesDropdown">
+                        <a href="/admin/suivi-commandes" class="admin-dropdown-item">
+                            <i class="fas fa-truck"></i>Suivi des commandes
+                        </a>
+                        <a href="/commandes/export" class="admin-dropdown-item">
+                            <i class="fas fa-download"></i>Exporter commandes
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Marketing -->
+                <div class="admin-nav-item">
+                    <a href="#" class="admin-nav-link" data-dropdown="marketingDropdown">
+                        <i class="fas fa-bullhorn"></i>
+                        <span>Marketing</span>
+                        <i class="fas fa-chevron-down admin-dropdown-arrow"></i>
+                    </a>
+                    <div class="admin-dropdown" id="marketingDropdown">
+                        <!-- Section Emails -->
+                        <div class="admin-dropdown-header">
+                            <i class="fas fa-envelope"></i>Gestion des Emails
+                        </div>
+                        <a href="/admin/marketing/dashboard" class="admin-dropdown-item">
+                            <i class="fas fa-tachometer-alt"></i>Dashboard Email
+                        </a>
+                        <a href="/admin/marketing/emails" class="admin-dropdown-item">
+                            <i class="fas fa-paper-plane"></i> Envoi campagnes Email
+                        </a>
+                        
+                        
+                        <div class="admin-dropdown-divider"></div>
+                        
+                        <!-- Section Codes Promo -->
+                        <div class="admin-dropdown-header">
+                            <i class="fas fa-tags"></i>Codes Promo
+                        </div>
+                        <a href="/admin/promos" class="admin-dropdown-item">
+                            <i class="fas fa-tags"></i>Gestion des codes promo
+                        </a>
+                        <a href="/admin/promos/create" class="admin-dropdown-item">
+                            <i class="fas fa-plus"></i>Créer un code promo
+                        </a>
+                        <a href="/admin/promos/export" class="admin-dropdown-item">
+                            <i class="fas fa-download"></i>Export codes promo
+                        </a>
+                        
+                        <div class="admin-dropdown-divider"></div>
+                        
+                        <!-- Section Marketing Général -->
+                        <div class="admin-dropdown-header">
+                            <i class="fas fa-heart"></i>Marketing Général
+                        </div>
+                        <a href="/admin/coups-de-coeur" class="admin-dropdown-item">
+                            <i class="fas fa-heart"></i>Gestion coups de cœur
+                        </a>
+                        <a href="/admin/category-images" class="admin-dropdown-item">
+                            <i class="fas fa-images"></i>Images d'accueil
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Nouvelle Catégorie - Gestion Boutique SUPPRIMÉE -->
+
+                <!-- Paramètres -->
+                <div class="admin-nav-item">
+                    <a href="/admin/parametres" class="admin-nav-link">
+                        <i class="fas fa-cog"></i>
+                        <span>Paramètres</span>
                     </a>
                 </div>
             </div>
+
+            <!-- Actions Admin Droite -->
+            <div class="admin-actions" id="adminActions">
+                <a href="/dashboard" class="admin-btn admin-btn-outline">
+                    <i class="fas fa-gem"></i>Dashboard
+                </a>
+                <a href="/" class="admin-btn admin-btn-success">
+                    <i class="fas fa-home"></i>Site
+                </a>
+                <div class="admin-divider"></div>
+                <span class="admin-user-info">
+                    <i class="fas fa-user-shield"></i>
+                    <span id="adminUserName">
+                        <% if (typeof user !== 'undefined' && user) { %>
+                            <%= user.first_name || user.name || 'Admin' %>
+                        <% } else { %>
+                            Admin
+                        <% } %>
+                    </span>
+                </span>
+                <a href="/deconnexion" class="admin-btn admin-btn-danger" 
+                   onclick="return confirm('Êtes-vous sûr de vouloir vous déconnecter ?')">
+                    <i class="fas fa-sign-out-alt"></i>Déconnexion
+                </a>
+            </div>
+
+            <!-- Toggle Mobile pour Admin -->
+            <button class="mobile-toggle" id="adminMobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
     </nav>
 
-    <!-- Navigation Client -->
-    <nav id="clientNav" class="navbar client-navbar">
-        <div class="nav-container">
-            <div class="nav-header">
-                <a href="/" class="logo">
-                    <h1><%= siteSettings.company?.company_name || 'CrystosJewel' %> </h1> 
+    <!-- ===================================================================
+    NAVIGATION CLIENT - STYLE HORIZONTAL COMME L'IMAGE
+    =================================================================== -->
+    <nav class="client-navbar" id="clientNavbar">
+        <div class="client-container">
+            <!-- Header avec Logo -->
+            <div class="client-header">
+                <a href="/" class="client-logo">
+                    <h1><%= siteSettings.company?.company_name || 'CrystosJewel' %></h1>
                     <span>Bijoux précieux !</span>
                 </a>
-                <button class="menu-toggle" id="menuToggle">
-                    <i class="fas fa-bars"></i>
-                </button>
             </div>
-            
-            <div class="nav-menu" id="navMenu">
-                <ul class="nav-links">
-                    <li><a href="/" class="nav-link-item">
-                        <i class="fas fa-home"></i> Accueil
-                    </a></li>
-                    
-                    <li class="nav-dropdown">
-                        <a href="#" class="nav-link-item dropdown-trigger">
-                            <i class="fas fa-gem"></i> Bijoux
-                            <i class="fas fa-chevron-down dropdown-arrow"></i>
-                        </a>
-                        <ul class="nav-submenu">
-                            <li><a href="/bijoux/bagues"><i class="fas fa-ring"></i> Bagues</a></li>
-                            <li><a href="/bijoux/colliers"><i class="fas fa-necklace"></i> Colliers</a></li>
-                            <li><a href="/bijoux/bracelets"><i class="fas fa-hand-sparkles"></i> Bracelets</a></li>
-                        </ul>
-                    </li>
-                    
-                    <!-- LIEN CORRIGÉ : /on-sale au lieu de /bijoux/promotions -->
-                    <li><a href="/on-sale" class="nav-link-item">
-                        <i class="fas fa-tags"></i> Promotions
-                    </a></li>
-                    
-                    <li><a href="/contact" class="nav-link-item">
-                        <i class="fas fa-envelope"></i> Contact
-                    </a></li>
-                </ul>
-                
-                <div class="nav-icons">
-                    <!-- Panier (visible pour tous) -->
-                    <a href="/panier" class="cart-icon">
-                        <i class="fas fa-shopping-cart"></i>
-                    </a>
 
-                    <!-- Favoris (visible seulement si connecté) -->
-                    <a href="/favoris" class="favorites-icon" id="favoritesIcon" style="display: none;">
-                        <i class="fas fa-heart"></i>
+            <!-- Menu Client Horizontal -->
+            <div class="client-menu" id="clientMenu">
+                <div class="client-nav-item">
+                    <a href="/" class="client-nav-link">
+                        <i class="fas fa-home"></i>
+                        <span>Accueil</span>
                     </a>
-                
-                    <!-- Menu utilisateur -->
-                    <div class="user-dropdown">
-                        <button class="dropdown-toggle" id="userDropdownToggle">
-                            <i class="fas fa-user"></i>
-                        </button>
-                        <div class="dropdown-menu" id="userDropdownMenu">
-                            
-                            <!-- UTILISATEUR CONNECTÉ -->
-                            <div id="userConnected" style="display: none;">
-                                <div class="dropdown-header">
-                                    <i class="fas fa-user-circle"></i>
-                                    <span id="userName">Utilisateur</span>
-                                    <small class="admin-badge" id="adminBadge" style="display: none;">Admin</small>
-                                    <small class="client-badge" id="clientBadge" style="display: none;">Client</small>
-                                </div>
-                                
-                                <div class="dropdown-divider"></div>
-                                
-                                <!-- SECTION COMPTE (tous les utilisateurs connectés) -->
-                                <div class="dropdown-section-title">Mon Compte</div>
-                                <a href="/profil"><i class="fas fa-user-circle"></i> Mon Profil</a>
-                                <a href="/profil/modifier"><i class="fas fa-edit"></i> Modifier Profil</a>
-                                
-                                <!-- SECTION ACTIVITÉS (tous les utilisateurs connectés) -->
-                                <div class="dropdown-divider"></div>
-                                <div class="dropdown-section-title">Mes Activités</div>
-                                <a href="/mescommandes"><i class="fas fa-box"></i> Mes Commandes</a>
-                                <a href="/favoris"><i class="fas fa-heart"></i> Mes Favoris</a>
-                                <a href="/panier"><i class="fas fa-shopping-cart"></i> Mon Panier</a>
-                                
-                                <!-- SECTION CLIENT (role_id = 1) -->
-                                <div id="clientSection" style="display: none;">
-                                    <div class="dropdown-divider"></div>
-                                    <div class="dropdown-section-title">Espace Client</div>
-                                    <a href="/mon-compte/mes-statistiques"><i class="fas fa-chart-bar"></i> Mes Statistiques</a>
-                                    <a href="/profil/historique"><i class="fas fa-history"></i> Historique Achats</a>
-                                    <a href="/profil/adresses"><i class="fas fa-map-marker-alt"></i> Mes Adresses</a>
-                                </div>
-                                
-                                <!-- SECTION ADMIN (role_id = 2) -->
-                                <div id="adminSection" style="display: none;">
-                                    <div class="dropdown-divider"></div>
-                                    <div class="dropdown-section-title">Administration</div>
-                                    <a href="/admin/stats"><i class="fas fa-tachometer-alt"></i> Dashboard Principal</a>
-                                    <a href="/dashboard"><i class="fas fa-gem"></i> Dashboard Bijoux</a>
-                                    <a href="/admin/gestionnaire-bijoux"><i class="fas fa-magic"></i> Gestionnaire Dynamique</a>
-                                    <a href="/admin/suivi-commandes"><i class="fas fa-shopping-cart"></i> Suivi Commandes</a>
-                                    <a href="/admin/suivi-client"><i class="fas fa-users"></i> Gestion Clients</a>
-                                    <a href="/admin/coups-de-coeur"><i class="fas fa-heart"></i> Marketing</a>
-                                    
-                                    <!-- 🎫 NOUVEAU : Accès rapide codes promo pour admin -->
-                                    <a href="/admin/promos"><i class="fas fa-tags"></i> Codes Promo</a>
-                                    
-                                    <a href="/admin/parametres"><i class="fas fa-cog"></i> Paramètres</a>
-                                </div>
-                                
-                                <!-- DÉCONNEXION AJOUTÉE (tous les utilisateurs connectés) -->
-                                <a href="/deconnexion" class="logout-link" 
-                                   onclick="return confirm('Êtes-vous sûr de vouloir vous déconnecter ?')">
-                                    <i class="fas fa-sign-out-alt"></i> Déconnexion
-                                </a>
+                </div>
+
+                <div class="client-nav-item">
+                    <a href="#" class="client-nav-link" data-dropdown="clientBijouxDropdown">
+                        <i class="fas fa-gem"></i>
+                        <span>Bijoux</span>
+                        <i class="fas fa-chevron-down client-dropdown-arrow"></i>
+                    </a>
+                    <div class="client-dropdown" id="clientBijouxDropdown">
+                        <a href="/bijoux/bagues" class="client-dropdown-item">
+                            <i class="fas fa-ring"></i>Bagues
+                        </a>
+                        <a href="/bijoux/colliers" class="client-dropdown-item">
+                            <i class="fas fa-necklace"></i>Colliers
+                        </a>
+                        <a href="/bijoux/bracelets" class="client-dropdown-item">
+                            <i class="fas fa-hand-sparkles"></i>Bracelets
+                        </a>
+                    </div>
+                </div>
+
+                <div class="client-nav-item">
+                    <a href="/on-sale" class="client-nav-link">
+                        <i class="fas fa-tags"></i>
+                        <span>Promotions</span>
+                    </a>
+                </div>
+
+                <div class="client-nav-item">
+                    <a href="/contact" class="client-nav-link">
+                        <i class="fas fa-envelope"></i>
+                        <span>Contact</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Icônes Navigation Droite -->
+            <div class="client-icons" id="clientIcons">
+                <a href="/panier" class="client-icon">
+                    <i class="fas fa-shopping-cart"></i>
+                </a>
+
+                <a href="/favoris" class="client-icon" id="favoritesIcon" 
+                   style="<% if (typeof user === 'undefined' || !user) { %>display: none;<% } %>">
+                    <i class="fas fa-heart"></i>
+                </a>
+
+                <div class="user-dropdown">
+                    <button class="user-dropdown-toggle" id="userDropdownToggle">
+                        <i class="fas fa-user"></i>
+                    </button>
+                    <div class="user-dropdown-menu" id="userDropdownMenu">
+                        
+                        <!-- UTILISATEUR CONNECTÉ -->
+                        <div id="userConnected" style="<% if (typeof user === 'undefined' || !user) { %>display: none;<% } %>">
+                            <div class="dropdown-header">
+                                <i class="fas fa-user-circle"></i>
+                                <span id="userName">
+                                    <% if (typeof user !== 'undefined' && user) { %>
+                                        <%= user.first_name ? `${user.first_name} ${user.last_name || ''}`.trim() : user.name || user.email %>
+                                    <% } else { %>
+                                        Utilisateur
+                                    <% } %>
+                                </span>
+                                <% if (typeof user !== 'undefined' && user && user.role_id === 2) { %>
+                                    <small class="admin-badge" id="adminBadge">Admin</small>
+                                <% } else if (typeof user !== 'undefined' && user && user.role_id === 1) { %>
+                                    <small class="client-badge" id="clientBadge">Client</small>
+                                <% } %>
                             </div>
                             
+                            <div class="dropdown-divider"></div>
                             
-                            <!-- UTILISATEUR NON CONNECTÉ -->
-                            <div id="userNotConnected">
-                                <div class="dropdown-header">
-                                    <i class="fas fa-user"></i>
-                                    <span>Bienvenue chez <%= siteSettings.company?.company_name || 'CrystosJewel' %> </span>
-                                </div>
-                                
+                            <div class="dropdown-section-title">Mon Compte</div>
+                            <a href="/profil"><i class="fas fa-user-circle"></i> Mon Profil</a>
+                            <a href="/profil/modifier"><i class="fas fa-edit"></i> Modifier Profil</a>
+                            
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-section-title">Mes Activités</div>
+                            <a href="/mescommandes"><i class="fas fa-box"></i> Mes Commandes</a>
+                            <a href="/favoris"><i class="fas fa-heart"></i> Mes Favoris</a>
+                            <a href="/panier"><i class="fas fa-shopping-cart"></i> Mon Panier</a>
+                            
+                            <!-- SECTION CLIENT (role_id = 1) -->
+                            <% if (typeof user !== 'undefined' && user && user.role_id === 1) { %>
+                            <div id="clientSection">
                                 <div class="dropdown-divider"></div>
-                                
-                                <div class="dropdown-section-title">Connexion</div>
-                                <a href="/connexion-inscription"><i class="fas fa-sign-in-alt"></i> Se connecter</a>
-                                <a href="/connexion-inscription"><i class="fas fa-user-plus"></i> Créer un compte</a>
-                                <a href="/mot-de-passe-oublie"><i class="fas fa-key"></i> Mot de passe oublié</a>
-                                
-                                <div class="dropdown-divider"></div>
-                                <div class="dropdown-section-title">Navigation Rapide</div>
-                                <a href="/panier"><i class="fas fa-shopping-cart"></i> Voir le panier</a>
-                                <!-- LIEN CORRIGÉ : /on-sale au lieu de /bijoux/promotions -->
-                                <a href="/promotions"><i class="fas fa-tags"></i> Promotions actuelles</a>
-                                <a href="/contact"><i class="fas fa-envelope"></i> Nous contacter</a>
+                                <div class="dropdown-section-title">Espace Client</div>
+                                <a href="/mon-compte/mes-statistiques"><i class="fas fa-chart-bar"></i> Mes Statistiques</a>
+                                <a href="/profil/historique"><i class="fas fa-history"></i> Historique Achats</a>
+                                <a href="/profil/adresses"><i class="fas fa-map-marker-alt"></i> Mes Adresses</a>
                             </div>
+                            <% } %>
+                            
+                            <!-- SECTION ADMIN (role_id = 2) -->
+                            <% if (typeof user !== 'undefined' && user && user.role_id === 2) { %>
+                            <div id="adminSection">
+                                <div class="dropdown-divider"></div>
+                                <div class="dropdown-section-title">Administration</div>
+                                <a href="/admin/stats"><i class="fas fa-tachometer-alt"></i> Dashboard Principal</a>
+                                <a href="/dashboard"><i class="fas fa-gem"></i> Dashboard Bijoux</a>
+                                <a href="/admin/gestionnaire-bijoux"><i class="fas fa-magic"></i> Gestionnaire Dynamique</a>
+                                <a href="/admin/suivi-commandes"><i class="fas fa-shopping-cart"></i> Suivi Commandes</a>
+                                <a href="/admin/gestion-clients"><i class="fas fa-users"></i> Gestion Clients</a>
+                                <a href="/admin/coups-de-coeur"><i class="fas fa-heart"></i> Marketing</a>
+                                <a href="/admin/promos"><i class="fas fa-tags"></i> Codes Promo</a>
+                                <a href="/admin/marketing/dashboard"><i class="fas fa-envelope"></i> Emails</a>
+                                <a href="/admin/parametres"><i class="fas fa-cog"></i> Paramètres</a>
+                            </div>
+                            <% } %>
+                            
+                            <a href="/deconnexion" class="logout-link" 
+                               onclick="return confirm('Êtes-vous sûr de vouloir vous déconnecter ?')">
+                                <i class="fas fa-sign-out-alt"></i> Déconnexion
+                            </a>
+                        </div>
+                        
+                        <!-- UTILISATEUR NON CONNECTÉ -->
+                        <div id="userNotConnected" style="<% if (typeof user !== 'undefined' && user) { %>display: none;<% } %>">
+                            <div class="dropdown-header">
+                                <i class="fas fa-user"></i>
+                                <span>Bienvenue chez <%= siteSettings.company?.company_name || 'CrystosJewel' %></span>
+                            </div>
+                            
+                            <div class="dropdown-divider"></div>
+                            
+                            <div class="dropdown-section-title">Connexion</div>
+                            <a href="/connexion-inscription"><i class="fas fa-sign-in-alt"></i> Se connecter</a>
+                            <a href="/connexion-inscription"><i class="fas fa-user-plus"></i> Créer un compte</a>
+                            <a href="/mot-de-passe-oublie"><i class="fas fa-key"></i> Mot de passe oublié</a>
+                            
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-section-title">Navigation Rapide</div>
+                            <a href="/panier"><i class="fas fa-shopping-cart"></i> Voir le panier</a>
+                            <a href="/on-sale"><i class="fas fa-tags"></i> Promotions actuelles</a>
+                            <a href="/contact"><i class="fas fa-envelope"></i> Nous contacter</a>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Toggle Mobile pour Client -->
+            <button class="mobile-toggle" id="clientMobileToggle">
+                <i class="fas fa-bars"></i>
+            </button>
         </div>
     </nav>
 
-    <div class="nav-overlay" id="navOverlay"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- ===================================================================
+    MENU MOBILE - BURGER SEULEMENT SUR PETIT ÉCRAN
+    =================================================================== -->
+    <div class="mobile-overlay" id="mobileOverlay"></div>
     
-    <script>
+    <div class="mobile-container" id="mobileContainer">
+        <!-- Header Mobile -->
+        <div class="mobile-header">
+            <button class="mobile-close" id="mobileClose">
+                <i class="fas fa-times"></i>
+            </button>
+            <h2 class="mobile-logo"><%= siteSettings.company?.company_name || 'CrystosJewel' %></h2>
+            <p class="mobile-subtitle">Bijoux précieux !</p>
+        </div>
         
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 Navigation initialisée');
-            
-            // Initialisation
-            setupMobileMenu();
-            setupDropdowns();
-            setupSubmenus();
-            loadUserState();
-            markActivePage();
-            
-            console.log('✅ Navigation complètement chargée');
-        });
-
-        // MENU MOBILE
-        function setupMobileMenu() {
-            const menuToggle = document.getElementById('menuToggle');
-            const navMenu = document.getElementById('navMenu');
-            const navOverlay = document.getElementById('navOverlay');
-            
-            if (menuToggle && navMenu && navOverlay) {
-                menuToggle.addEventListener('click', toggleMobileMenu);
-                navOverlay.addEventListener('click', closeMobileMenu);
-            }
-        }
-
-        function toggleMobileMenu() {
-            const navMenu = document.getElementById('navMenu');
-            const navOverlay = document.getElementById('navOverlay');
-            const menuToggle = document.getElementById('menuToggle');
-            
-            const isActive = navMenu.classList.contains('active');
-            
-            if (isActive) {
-                closeMobileMenu();
-            } else {
-                navMenu.classList.add('active');
-                navOverlay.classList.add('active');
-                document.body.style.overflow = 'hidden';
-                menuToggle.innerHTML = '<i class="fas fa-times"></i>';
-            }
-        }
-
-        function closeMobileMenu() {
-            const navMenu = document.getElementById('navMenu');
-            const navOverlay = document.getElementById('navOverlay');
-            const menuToggle = document.getElementById('menuToggle');
-            
-            navMenu.classList.remove('active');
-            navOverlay.classList.remove('active');
-            document.body.style.overflow = '';
-            menuToggle.innerHTML = '<i class="fas fa-bars"></i>';
-            
-            // Fermer tous les sous-menus
-            document.querySelectorAll('.nav-submenu.active').forEach(submenu => {
-                submenu.classList.remove('active');
-            });
-            document.querySelectorAll('.dropdown-arrow.rotated').forEach(arrow => {
-                arrow.classList.remove('rotated');
-            });
-        }
-
-        // DROPDOWNS UTILISATEUR
-        function setupDropdowns() {
-            const userDropdownToggle = document.getElementById('userDropdownToggle');
-            const userDropdownMenu = document.getElementById('userDropdownMenu');
-            
-            if (userDropdownToggle && userDropdownMenu) {
-                let isDropdownOpen = false;
+        <!-- Body Mobile -->
+        <div class="mobile-body">
+            <!-- Section Utilisateur Mobile -->
+            <div class="mobile-section">
+                <!-- Utilisateur connecté -->
+                <div id="mobileUserConnected" style="<% if (typeof user === 'undefined' || !user) { %>display: none;<% } %>">
+                    <div class="mobile-section-title">Mon Compte</div>
+                    <ul class="mobile-nav-links">
+                        <li class="mobile-nav-item">
+                            <a href="/profil" class="mobile-nav-link">
+                                <i class="fas fa-user"></i>
+                                <span>Mon Profil</span>
+                            </a>
+                        </li>
+                        <li class="mobile-nav-item">
+                            <a href="/deconnexion" class="mobile-nav-link"
+                               onclick="return confirm('Êtes-vous sûr de vouloir vous déconnecter ?')">
+                                <i class="fas fa-sign-out-alt"></i>
+                                <span>Déconnexion</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
                 
-                userDropdownToggle.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    isDropdownOpen = !isDropdownOpen;
-                    
-                    if (isDropdownOpen) {
-                        userDropdownMenu.classList.add('active');
-                        console.log('👤 Menu utilisateur ouvert');
-                    } else {
-                        userDropdownMenu.classList.remove('active');
-                        console.log('👤 Menu utilisateur fermé');
-                    }
-                });
-                
-                // Fermer en cliquant à l'extérieur
-                document.addEventListener('click', function(e) {
-                    if (!userDropdownToggle.contains(e.target) && 
-                        !userDropdownMenu.contains(e.target) && 
-                        isDropdownOpen) {
-                        userDropdownMenu.classList.remove('active');
-                        isDropdownOpen = false;
-                    }
-                });
-            }
-        }
-
-        // SOUS-MENUS
-        function setupSubmenus() {
-            const dropdownTriggers = document.querySelectorAll('.dropdown-trigger');
+                <!-- Utilisateur non connecté -->
+                <div id="mobileUserNotConnected" style="<% if (typeof user !== 'undefined' && user) { %>display: none;<% } %>">
+                    <div class="mobile-section-title">Connexion</div>
+                    <ul class="mobile-nav-links">
+                        <li class="mobile-nav-item">
+                            <a href="/connexion-inscription" class="mobile-nav-link">
+                                <i class="fas fa-sign-in-alt"></i>
+                                <span>Se connecter</span>
+                            </a>
+                        </li>
+                        <li class="mobile-nav-item">
+                            <a href="/connexion-inscription" class="mobile-nav-link">
+                                <i class="fas fa-user-plus"></i>
+                                <span>S'inscrire</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
             
-            dropdownTriggers.forEach(trigger => {
-                trigger.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    const submenu = this.nextElementSibling;
-                    const arrow = this.querySelector('.dropdown-arrow');
-                    
-                    if (submenu) {
-                        submenu.classList.toggle('active');
-                        arrow?.classList.toggle('rotated');
-                    }
-                });
-            });
+            <!-- Navigation rapide mobile sur même ligne -->
+            <div class="mobile-quick-nav">
+                <a href="/" class="mobile-quick-link">
+                    <i class="fas fa-home"></i>
+                    <span>Accueil</span>
+                </a>
+                <a href="/bijoux/bagues" class="mobile-quick-link">
+                    <i class="fas fa-gem"></i>
+                    <span>Bijoux</span>
+                </a>
+                <a href="/on-sale" class="mobile-quick-link">
+                    <i class="fas fa-tags"></i>
+                    <span>Promos</span>
+                </a>
+                <a href="/panier" class="mobile-quick-link">
+                    <i class="fas fa-shopping-cart"></i>
+                    <span>Panier</span>
+                </a>
+                <a href="/profil" class="mobile-quick-link">
+                    <i class="fas fa-user"></i>
+                    <span>Compte</span>
+                </a>
+            </div>
             
-            // Fermer en cliquant à l'extérieur
-            document.addEventListener('click', function(e) {
-                if (!e.target.closest('.nav-dropdown')) {
-                    document.querySelectorAll('.nav-submenu.active').forEach(submenu => {
-                        submenu.classList.remove('active');
-                    });
-                    document.querySelectorAll('.dropdown-arrow.rotated').forEach(arrow => {
-                        arrow.classList.remove('rotated');
-                    });
-                }
-            });
-        }
-
-        // CHARGEMENT DE L'ÉTAT UTILISATEUR
-        function loadUserState() {
-            let user = null;
-            let isAdmin = false;
+            <!-- Navigation principale avec sous-catégories -->
+            <div class="mobile-section">
+                <div class="mobile-section-title">Nos Bijoux</div>
+                <ul class="mobile-nav-links">
+                    <li class="mobile-nav-item">
+                        <a href="/bijoux/bagues" class="mobile-nav-link">
+                            <i class="fas fa-ring"></i>
+                            <span>Bagues</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/bijoux/colliers" class="mobile-nav-link">
+                            <i class="fas fa-necklace"></i>
+                            <span>Colliers</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/bijoux/bracelets" class="mobile-nav-link">
+                            <i class="fas fa-hand-sparkles"></i>
+                            <span>Bracelets</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/bijoux/boucles-oreilles" class="mobile-nav-link">
+                            <i class="fas fa-gem"></i>
+                            <span>Boucles d'oreilles</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
             
-            // Récupérer depuis les variables globales définies dans le <head>
-            if (typeof window.currentUser !== 'undefined') {
-                user = window.currentUser;
-                isAdmin = window.isAdmin || false;
-                console.log('📊 Données utilisateur chargées:', { user: !!user, isAdmin, role_id: user?.role_id });
-            } else {
-                console.log('⚠️ Aucune donnée utilisateur trouvée');
-            }
+            <!-- Section Promotions & Spéciales -->
+            <div class="mobile-section">
+                <div class="mobile-section-title">Offres Spéciales</div>
+                <ul class="mobile-nav-links">
+                    <li class="mobile-nav-item">
+                        <a href="/on-sale" class="mobile-nav-link">
+                            <i class="fas fa-tags"></i>
+                            <span>Promotions</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/nouveautes" class="mobile-nav-link">
+                            <i class="fas fa-star"></i>
+                            <span>Nouveautés</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/coups-de-coeur" class="mobile-nav-link">
+                            <i class="fas fa-heart"></i>
+                            <span>Coups de Cœur</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
             
-            updateUserInterface(user, isAdmin);
-        }
-
-        // MISE À JOUR DE L'INTERFACE UTILISATEUR
-        function updateUserInterface(user, isAdmin) {
-            const userConnected = document.getElementById('userConnected');
-            const userNotConnected = document.getElementById('userNotConnected');
-            const adminNavbar = document.getElementById('adminNavbar');
-            const favoritesIcon = document.getElementById('favoritesIcon');
-            const adminSection = document.getElementById('adminSection');
-            const clientSection = document.getElementById('clientSection');
-            const adminBadge = document.getElementById('adminBadge');
-            const clientBadge = document.getElementById('clientBadge');
-            const userName = document.getElementById('userName');
-            const adminUserName = document.getElementById('adminUserName');
+            <!-- Section Services -->
+            <div class="mobile-section">
+                <div class="mobile-section-title">Services</div>
+                <ul class="mobile-nav-links">
+                    <li class="mobile-nav-item">
+                        <a href="/contact" class="mobile-nav-link">
+                            <i class="fas fa-envelope"></i>
+                            <span>Contact</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/aide" class="mobile-nav-link">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Aide & Support</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/guide-tailles" class="mobile-nav-link">
+                            <i class="fas fa-ruler"></i>
+                            <span>Guide des Tailles</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
             
-            if (user) {
-                console.log('✅ Utilisateur connecté détecté');
-                
-                // Afficher l'interface connectée
-                if (userConnected) userConnected.style.display = 'block';
-                if (userNotConnected) userNotConnected.style.display = 'none';
-                if (favoritesIcon) favoritesIcon.style.display = 'block';
-                
-                // Nom d'affichage
-                const displayName = user.first_name ? 
-                    `${user.first_name} ${user.last_name || ''}`.trim() : 
-                    user.name || user.email;
-                
-                if (userName) userName.textContent = displayName;
-                if (adminUserName) adminUserName.textContent = displayName;
-                
-                // Gestion des rôles selon role_id
-                if (user.role_id === 2 || isAdmin) {
-                    // ADMIN (role_id = 2)
-                    console.log('🛡️ Mode administrateur activé');
-                    if (adminNavbar) adminNavbar.style.display = 'block';
-                    if (adminSection) adminSection.style.display = 'block';
-                    if (clientSection) clientSection.style.display = 'none';
-                    if (adminBadge) adminBadge.style.display = 'inline-block';
-                    if (clientBadge) clientBadge.style.display = 'none';
-                    
-                    showNotification('Mode administrateur activé', 'success');
-                    
-                } else if (user.role_id === 1) {
-                    // CLIENT (role_id = 1)
-                    console.log('👤 Mode client activé');
-                    if (adminNavbar) adminNavbar.style.display = 'none';
-                    if (adminSection) adminSection.style.display = 'none';
-                    if (clientSection) clientSection.style.display = 'block';
-                    if (adminBadge) adminBadge.style.display = 'none';
-                    if (clientBadge) clientBadge.style.display = 'inline-block';
-                    
-                    showNotification(`Bienvenue ${user.first_name || 'Client'}`, 'info');
-                    
-                } else {
-                    // AUTRE RÔLE - traiter comme client par défaut
-                    console.log('👤 Mode utilisateur standard');
-                    if (adminNavbar) adminNavbar.style.display = 'none';
-                    if (adminSection) adminSection.style.display = 'none';
-                    if (clientSection) clientSection.style.display = 'block';
-                    if (adminBadge) adminBadge.style.display = 'none';
-                    if (clientBadge) clientBadge.style.display = 'none';
-                }
-                
-            } else {
-                console.log('🚫 Utilisateur non connecté');
-                
-                // Afficher l'interface déconnectée
-                if (userConnected) userConnected.style.display = 'none';
-                if (userNotConnected) userNotConnected.style.display = 'block';
-                if (favoritesIcon) favoritesIcon.style.display = 'none';
-                if (adminNavbar) adminNavbar.style.display = 'none';
-                if (adminSection) adminSection.style.display = 'none';
-                if (clientSection) clientSection.style.display = 'none';
-            }
-        }
-
-        // MARQUER LA PAGE ACTIVE
-        function markActivePage() {
-            const currentPath = window.location.pathname;
-            const navLinks = document.querySelectorAll('.nav-link-item');
+            <!-- Section activités utilisateur connecté -->
+            <% if (typeof user !== 'undefined' && user) { %>
+            <div class="mobile-section">
+                <div class="mobile-section-title">Mes Activités</div>
+                <ul class="mobile-nav-links">
+                    <li class="mobile-nav-item">
+                        <a href="/panier" class="mobile-nav-link">
+                            <i class="fas fa-shopping-cart"></i>
+                            <span>Mon Panier</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/favoris" class="mobile-nav-link">
+                            <i class="fas fa-heart"></i>
+                            <span>Mes Favoris</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/mescommandes" class="mobile-nav-link">
+                            <i class="fas fa-box"></i>
+                            <span>Mes Commandes</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <% } %>
             
-            navLinks.forEach(link => {
-                link.classList.remove('active');
-                
-                const href = link.getAttribute('href');
-                if (href === currentPath || 
-                    (href === '/' && currentPath === '/') ||
-                    (href !== '/' && currentPath.startsWith(href))) {
-                    link.classList.add('active');
-                }
-            });
+            <!-- Section administration (admin seulement) avec sous-catégories -->
+            <% if (typeof user !== 'undefined' && user && user.role_id === 2) { %>
+            <div class="mobile-section">
+                <div class="mobile-section-title">Dashboard Admin</div>
+                <ul class="mobile-nav-links">
+                    <li class="mobile-nav-item">
+                        <a href="/admin/stats" class="mobile-nav-link">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Statistiques principales</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/admin/mon-suivi" class="mobile-nav-link">
+                            <i class="fas fa-user-chart"></i>
+                            <span>Mon suivi</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/admin/gestion-clients" class="mobile-nav-link">
+                            <i class="fas fa-users"></i>
+                            <span>Gestion clients</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
             
-            console.log('🎯 Page active marquée:', currentPath);
-        }
-
-        // SYSTÈME DE NOTIFICATIONS
-        function showNotification(message, type = 'info', duration = 3000) {
-            // Supprimer les notifications existantes
-            document.querySelectorAll('.notification').forEach(notif => {
-                notif.remove();
-            });
+            <div class="mobile-section">
+                <div class="mobile-section-title">Gestion Bijoux</div>
+                <ul class="mobile-nav-links">
+                    <li class="mobile-nav-item">
+                        <a href="/admin/gestionnaire-bijoux" class="mobile-nav-link">
+                            <i class="fas fa-magic"></i>
+                            <span>Gestionnaire Dynamique</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/dashboard" class="mobile-nav-link">
+                            <i class="fas fa-chart-pie"></i>
+                            <span>Dashboard Interactif</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/admin/bijoux" class="mobile-nav-link">
+                            <i class="fas fa-table"></i>
+                            <span>Liste des bijoux</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/ajouter-bijou" class="mobile-nav-link">
+                            <i class="fas fa-plus"></i>
+                            <span>Ajouter un bijou</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
             
-            const notification = document.createElement('div');
-            notification.className = `notification ${type}`;
-            notification.innerHTML = `
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-triangle' : 'fa-info-circle'}"></i>
-                <span>${message}</span>
-            `;
+            <div class="mobile-section">
+                <div class="mobile-section-title">Commandes</div>
+                <ul class="mobile-nav-links">
+                    <li class="mobile-nav-item">
+                        <a href="/admin/suivi-commandes" class="mobile-nav-link">
+                            <i class="fas fa-truck"></i>
+                            <span>Suivi des commandes</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/commandes/export" class="mobile-nav-link">
+                            <i class="fas fa-download"></i>
+                            <span>Exporter commandes</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
             
-            document.body.appendChild(notification);
+            <div class="mobile-section">
+                <div class="mobile-section-title">Marketing & Emails</div>
+                <ul class="mobile-nav-links">
+                    <li class="mobile-nav-item">
+                        <a href="/admin/marketing/dashboard" class="mobile-nav-link">
+                            <i class="fas fa-tachometer-alt"></i>
+                            <span>Dashboard Email</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/admin/marketing/campaigns" class="mobile-nav-link">
+                            <i class="fas fa-paper-plane"></i>
+                            <span>Campagnes Email</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/admin/marketing/templates" class="mobile-nav-link">
+                            <i class="fas fa-file-alt"></i>
+                            <span>Templates Email</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/admin/marketing/subscribers" class="mobile-nav-link">
+                            <i class="fas fa-users"></i>
+                            <span>Liste Abonnés</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/admin/promos" class="mobile-nav-link">
+                            <i class="fas fa-tags"></i>
+                            <span>Codes Promo</span>
+                        </a>
+                    </li>
+                    <li class="mobile-nav-item">
+                        <a href="/admin/coups-de-coeur" class="mobile-nav-link">
+                            <i class="fas fa-heart"></i>
+                            <span>Coups de Cœur</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
             
-            // Animation d'entrée
-            setTimeout(() => notification.classList.add('show'), 100);
-            
-            // Auto-suppression
-            setTimeout(() => {
-                notification.classList.remove('show');
-                setTimeout(() => {
-                    if (notification.parentElement) {
-                        notification.remove();
-                    }
-                }, 300);
-            }, duration);
-        }
-
-        // RACCOURCIS CLAVIER
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
-                closeMobileMenu();
-                
-                // Fermer tous les dropdowns
-                document.querySelectorAll('.dropdown-menu.active').forEach(menu => {
-                    menu.classList.remove('active');
-                });
-                
-                document.querySelectorAll('.nav-submenu.active').forEach(submenu => {
-                    submenu.classList.remove('active');
-                });
-            }
-        });
-
-        // RESPONSIVE
-        window.addEventListener('resize', function() {
-            if (window.innerWidth > 768) {
-                closeMobileMenu();
-            }
-        });
-
-        // FONCTIONS GLOBALES POUR DEBUG ET TESTS
-        window.navigationDebug = {
-            // Simuler différents états utilisateur
-            setUser: function(user, isAdmin = false) {
-                window.currentUser = user;
-                window.isAdmin = isAdmin;
-                updateUserInterface(user, isAdmin);
-            },
-            
-            // États prédéfinis pour test
-            setGuest: function() {
-                this.setUser(null, false);
-                showNotification('Mode invité activé', 'info');
-            },
-            
-            setClient: function() {
-                this.setUser({
-                    id: 1,
-                    first_name: 'Jean',
-                    last_name: 'Dupont',
-                    email: 'jean@example.com',
-                    role_id: 1
-                }, false);
-                showNotification('Mode client activé', 'success');
-            },
-            
-            setAdmin: function() {
-                this.setUser({
-                    id: 2,
-                    first_name: 'Admin',
-                    last_name: 'Système',
-                    email: 'admin@eclatdore.com',
-                    role_id: 2
-                }, true);
-                showNotification('Mode admin activé', 'success');
-            },
-            
-            // Obtenir l'état actuel
-            getState: function() {
-                return {
-                    user: window.currentUser,
-                    isAdmin: window.isAdmin
-                };
-            }
-        };
-
-        console.log('🧪 Fonctions de debug disponibles via window.navigationDebug');
-        console.log('💡 Testez: navigationDebug.setGuest(), navigationDebug.setClient(), navigationDebug.setAdmin()');
-    </script>
-    
-    <!-- Panel de test pour la démonstration -->
-    <div style="position: fixed; bottom: 20px; left: 20px; background: rgba(255,255,255,0.95); padding: 15px; border-radius: 10px; box-shadow: 0 5px 20px rgba(0,0,0,0.2); backdrop-filter: blur(10px); z-index: 10000; font-family: monospace; font-size: 12px;">
-        <div style="margin-bottom: 10px; font-weight: bold; color: var(--rose-gold-dark);">🧪 Tests Navigation</div>
-        <button onclick="navigationDebug.setGuest()" style="margin: 2px; padding: 5px 10px; border: none; background: #6c757d; color: white; border-radius: 5px; cursor: pointer;">👥 Invité</button>
-        <button onclick="navigationDebug.setClient()" style="margin: 2px; padding: 5px 10px; border: none; background: #007bff; color: white; border-radius: 5px; cursor: pointer;">👤 Client</button>
-        <button onclick="navigationDebug.setAdmin()" style="margin: 2px; padding: 5px 10px; border: none; background: #dc3545; color: white; border-radius: 5px; cursor: pointer;">🛡️ Admin</button>
+            <div class="mobile-section">
+                <div class="mobile-section-title">Paramètres</div>
+                <ul class="mobile-nav-links">
+                    <li class="mobile-nav-item">
+                        <a href="/admin/parametres" class="mobile-nav-link">
+                            <i class="fas fa-cog"></i>
+                            <span>Configuration</span>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            <% } %>
+        </div>
     </div>
-    
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <!-- 
     =====================================================================
-    MODIFICATIONS APPORTÉES À VOTRE NAVBAR ORIGINALE :
+    DESIGN FINAL - EXACTEMENT COMME VOTRE IMAGE :
     =====================================================================
     
-    ✅ AJOUTS UNIQUEMENT - Format original conservé :
-    
-    1. BOUTON DÉCONNEXION ADMIN :
-       - Ajouté dans la navbar admin après le nom de l'utilisateur
-       - Style cohérent avec vos boutons existants
-       - Confirmation avant déconnexion
-    
-    2. BOUTON DÉCONNEXION CLIENT :
-       - Ajouté dans le menu déroulant utilisateur
-       - Style rouge distinctif pour la déconnexion
-       - Confirmation avant déconnexion
-    
-    3. LIENS CORRIGÉS :
-       - /bijoux/promotions → /on-sale (2 endroits)
-       - Tous les autres liens gardés tels quels
-    
-    4. CSS DÉCONNEXION :
-       - .btn-logout pour le bouton admin
-       - .logout-link pour le lien dans le dropdown client
-    
-    =====================================================================
-    AUCUN AUTRE CHANGEMENT :
-    =====================================================================
-    
-    ❌ RIEN de supprimé
-    ❌ RIEN de modifié dans la structure
-    ❌ RIEN de changé dans le design original
-    ❌ RIEN d'altéré dans le JavaScript existant
-    
-    ✅ Seulement 2 boutons déconnexion ajoutés + 1 lien corrigé
-    ✅ Format exact que vous aviez conservé
-    ✅ Prêt pour copier/coller direct
+    ✅ DESKTOP/TABLETTE (768px+) : Navigation horizontale complète
+    ✅ MOBILE (767px-) : Menu burger seulement
+    ✅ Navbar admin masquée par défaut
+    ✅ Dropdowns avec scrollbar élégante
+    ✅ Nouvelle catégorie "Gestion Boutique"
+    ✅ Section emails complète
+    ✅ Design moderne et responsive
     
     =====================================================================
     -->
+
+    <script>
+        // ===================================================================
+// NAVIGATION JAVASCRIPT - DESIGN HORIZONTAL + MOBILE BURGER
+// ===================================================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Navigation initialisée');
+    
+    // Initialisation
+    setupAdminDropdowns();
+    setupClientDropdowns();
+    setupMobileMenu();
+    setupUserDropdown();
+    loadUserState();
+    markActivePage();
+    
+    console.log('✅ Navigation complètement chargée');
+});
+
+// ===================================================================
+// DROPDOWNS ADMIN HORIZONTAUX
+// ===================================================================
+function setupAdminDropdowns() {
+    const adminNavItems = document.querySelectorAll('.admin-nav-item');
+    
+    adminNavItems.forEach(item => {
+        const link = item.querySelector('.admin-nav-link[data-dropdown]');
+        if (!link) return;
+        
+        const dropdownId = link.getAttribute('data-dropdown');
+        const dropdown = document.getElementById(dropdownId);
+        const arrow = link.querySelector('.admin-dropdown-arrow');
+        
+        if (!dropdown) return;
+        
+        // Toggle dropdown
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Fermer tous les autres dropdowns
+            adminNavItems.forEach(otherItem => {
+                if (otherItem !== item) {
+                    otherItem.classList.remove('active');
+                    const otherDropdown = otherItem.querySelector('.admin-dropdown');
+                    if (otherDropdown) {
+                        otherDropdown.classList.remove('active');
+                    }
+                }
+            });
+            
+            // Toggle ce dropdown
+            const isActive = item.classList.contains('active');
+            
+            if (isActive) {
+                item.classList.remove('active');
+                dropdown.classList.remove('active');
+            } else {
+                item.classList.add('active');
+                dropdown.classList.add('active');
+            }
+        });
+    });
+    
+    // Fermer en cliquant à l'extérieur
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.admin-nav-item')) {
+            adminNavItems.forEach(item => {
+                item.classList.remove('active');
+                const dropdown = item.querySelector('.admin-dropdown');
+                if (dropdown) {
+                    dropdown.classList.remove('active');
+                }
+            });
+        }
+    });
+}
+
+// ===================================================================
+// DROPDOWNS CLIENT HORIZONTAUX
+// ===================================================================
+function setupClientDropdowns() {
+    const clientNavItems = document.querySelectorAll('.client-nav-item');
+    
+    clientNavItems.forEach(item => {
+        const link = item.querySelector('.client-nav-link[data-dropdown]');
+        if (!link) return;
+        
+        const dropdownId = link.getAttribute('data-dropdown');
+        const dropdown = document.getElementById(dropdownId);
+        const arrow = link.querySelector('.client-dropdown-arrow');
+        
+        if (!dropdown) return;
+        
+        // Toggle dropdown
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            // Fermer tous les autres dropdowns
+            clientNavItems.forEach(otherItem => {
+                if (otherItem !== item) {
+                    otherItem.classList.remove('active');
+                    const otherDropdown = otherItem.querySelector('.client-dropdown');
+                    if (otherDropdown) {
+                        otherDropdown.classList.remove('active');
+                    }
+                }
+            });
+            
+            // Toggle ce dropdown
+            const isActive = item.classList.contains('active');
+            
+            if (isActive) {
+                item.classList.remove('active');
+                dropdown.classList.remove('active');
+            } else {
+                item.classList.add('active');
+                dropdown.classList.add('active');
+            }
+        });
+    });
+    
+    // Fermer en cliquant à l'extérieur
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.client-nav-item')) {
+            clientNavItems.forEach(item => {
+                item.classList.remove('active');
+                const dropdown = item.querySelector('.client-dropdown');
+                if (dropdown) {
+                    dropdown.classList.remove('active');
+                }
+            });
+        }
+    });
+}
+
+// ===================================================================
+// MENU MOBILE - BURGER SEULEMENT SUR PETIT ÉCRAN
+// ===================================================================
+function setupMobileMenu() {
+    const adminMobileToggle = document.getElementById('adminMobileToggle');
+    const clientMobileToggle = document.getElementById('clientMobileToggle');
+    const mobileOverlay = document.getElementById('mobileOverlay');
+    const mobileContainer = document.getElementById('mobileContainer');
+    const mobileClose = document.getElementById('mobileClose');
+    
+    // Ouvrir le menu mobile
+    function openMobileMenu() {
+        if (mobileOverlay && mobileContainer) {
+            mobileOverlay.classList.add('active');
+            mobileContainer.classList.add('active');
+            document.body.style.overflow = 'hidden';
+            
+            // Changer l'icône du toggle actif
+            const activeToggle = document.querySelector('.mobile-toggle.active');
+            if (activeToggle) {
+                activeToggle.innerHTML = '<i class="fas fa-times"></i>';
+            }
+            
+            console.log('📱 Menu mobile ouvert');
+        }
+    }
+    
+    // Fermer le menu mobile
+    function closeMobileMenu() {
+        if (mobileOverlay && mobileContainer) {
+            mobileOverlay.classList.remove('active');
+            mobileContainer.classList.remove('active');
+            document.body.style.overflow = '';
+            
+            // Remettre l'icône burger
+            document.querySelectorAll('.mobile-toggle').forEach(toggle => {
+                toggle.classList.remove('active');
+                toggle.innerHTML = '<i class="fas fa-bars"></i>';
+            });
+            
+            console.log('📱 Menu mobile fermé');
+        }
+    }
+    
+    // Event listeners
+    if (adminMobileToggle) {
+        adminMobileToggle.addEventListener('click', function() {
+            this.classList.add('active');
+            clientMobileToggle?.classList.remove('active');
+            openMobileMenu();
+        });
+    }
+    
+    if (clientMobileToggle) {
+        clientMobileToggle.addEventListener('click', function() {
+            this.classList.add('active');
+            adminMobileToggle?.classList.remove('active');
+            openMobileMenu();
+        });
+    }
+    
+    if (mobileClose) {
+        mobileClose.addEventListener('click', closeMobileMenu);
+    }
+    
+    if (mobileOverlay) {
+        mobileOverlay.addEventListener('click', closeMobileMenu);
+    }
+    
+    // Fermer avec Escape
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeMobileMenu();
+        }
+    });
+    
+    // Fermer en redimensionnant vers desktop
+    window.addEventListener('resize', function() {
+        if (window.innerWidth > 767) {
+            closeMobileMenu();
+        }
+    });
+}
+
+// ===================================================================
+// DROPDOWN UTILISATEUR
+// ===================================================================
+function setupUserDropdown() {
+    const userDropdownToggle = document.getElementById('userDropdownToggle');
+    const userDropdownMenu = document.getElementById('userDropdownMenu');
+    
+    if (userDropdownToggle && userDropdownMenu) {
+        let isDropdownOpen = false;
+        
+        userDropdownToggle.addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            isDropdownOpen = !isDropdownOpen;
+            
+            if (isDropdownOpen) {
+                userDropdownMenu.classList.add('active');
+                console.log('👤 Menu utilisateur ouvert');
+            } else {
+                userDropdownMenu.classList.remove('active');
+                console.log('👤 Menu utilisateur fermé');
+            }
+        });
+        
+        // Fermer en cliquant à l'extérieur
+        document.addEventListener('click', function(e) {
+            if (!userDropdownToggle.contains(e.target) && 
+                !userDropdownMenu.contains(e.target) && 
+                isDropdownOpen) {
+                userDropdownMenu.classList.remove('active');
+                isDropdownOpen = false;
+            }
+        });
+    }
+}
+
+// ===================================================================
+// CHARGEMENT DE L'ÉTAT UTILISATEUR
+// ===================================================================
+function loadUserState() {
+    let user = null;
+    let isAdmin = false;
+    
+    // Récupérer depuis les variables globales
+    if (typeof window.currentUser !== 'undefined') {
+        user = window.currentUser;
+        isAdmin = window.isAdmin || false;
+        console.log('📊 Données utilisateur chargées:', { 
+            user: !!user, 
+            isAdmin, 
+            role_id: user?.role_id,
+            name: user?.first_name || user?.name
+        });
+    } else {
+        console.log('⚠️ Aucune donnée utilisateur trouvée');
+    }
+    
+    updateUserInterface(user, isAdmin);
+}
+
+// ===================================================================
+// MISE À JOUR DE L'INTERFACE UTILISATEUR
+// ===================================================================
+function updateUserInterface(user, isAdmin) {
+    const adminNavbar = document.getElementById('adminNavbar');
+    const favoritesIcon = document.getElementById('favoritesIcon');
+    
+    // 🔒 GESTION DE LA NAVBAR ADMIN - CRITIQUE
+    if (user && (user.role_id === 2 || isAdmin)) {
+        // ADMIN CONNECTÉ - Afficher la navbar admin
+        console.log('🛡️ Mode administrateur activé');
+        if (adminNavbar) {
+            adminNavbar.classList.add('show-admin');
+            console.log('✅ Navbar admin affichée');
+        }
+        showNotification('Mode administrateur activé', 'success');
+        
+    } else {
+        // PAS ADMIN ou PAS CONNECTÉ - Masquer la navbar admin
+        console.log('🚫 Masquage de la navbar admin');
+        if (adminNavbar) {
+            adminNavbar.classList.remove('show-admin');
+            console.log('✅ Navbar admin masquée');
+        }
+    }
+    
+    // Afficher/masquer les favoris
+    if (user && favoritesIcon) {
+        favoritesIcon.style.display = 'block';
+    } else if (favoritesIcon) {
+        favoritesIcon.style.display = 'none';
+    }
+    
+    // Mise à jour des noms d'utilisateur
+    updateUserNames(user);
+    
+    // Mise à jour des badges
+    updateUserBadges(user);
+    
+    // Notification de bienvenue pour les clients
+    if (user && user.role_id === 1) {
+        showNotification(`Bienvenue ${user.first_name || 'Client'}`, 'info');
+    }
+}
+
+function updateUserNames(user) {
+    if (user) {
+        const displayName = user.first_name ? 
+            `${user.first_name} ${user.last_name || ''}`.trim() : 
+            user.name || user.email;
+        
+        // Mise à jour des noms dans tous les éléments
+        const userNameElements = ['userName', 'adminUserName'];
+        userNameElements.forEach(elementId => {
+            const element = document.getElementById(elementId);
+            if (element) {
+                element.textContent = displayName;
+            }
+        });
+    }
+}
+
+function updateUserBadges(user) {
+    const badges = {
+        admin: document.getElementById('adminBadge'),
+        client: document.getElementById('clientBadge')
+    };
+    
+    if (user) {
+        if (user.role_id === 2) {
+            // Admin
+            badges.admin?.style.setProperty('display', 'inline-block');
+            badges.client?.style.setProperty('display', 'none');
+        } else if (user.role_id === 1) {
+            // Client
+            badges.admin?.style.setProperty('display', 'none');
+            badges.client?.style.setProperty('display', 'inline-block');
+        }
+    }
+}
+
+// ===================================================================
+// MARQUER LA PAGE ACTIVE
+// ===================================================================
+function markActivePage() {
+    const currentPath = window.location.pathname;
+    const navLinks = document.querySelectorAll('.client-nav-link, .admin-nav-link');
+    
+    navLinks.forEach(link => {
+        link.classList.remove('active');
+        
+        const href = link.getAttribute('href');
+        if (href === currentPath || 
+            (href === '/' && currentPath === '/') ||
+            (href !== '/' && currentPath.startsWith(href))) {
+            link.classList.add('active');
+        }
+    });
+    
+    console.log('🎯 Page active marquée:', currentPath);
+}
+
+// ===================================================================
+// SYSTÈME DE NOTIFICATIONS
+// ===================================================================
+function showNotification(message, type = 'info', duration = 3000) {
+    // Supprimer les notifications existantes
+    document.querySelectorAll('.notification').forEach(notif => {
+        notif.remove();
+    });
+    
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.innerHTML = `
+        <i class="fas ${type === 'success' ? 'fa-check-circle' : 
+                       type === 'error' ? 'fa-exclamation-triangle' : 
+                       'fa-info-circle'}"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animation d'entrée
+    setTimeout(() => notification.classList.add('show'), 100);
+    
+    // Auto-suppression
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 300);
+    }, duration);
+}
+
+// ===================================================================
+// FONCTIONS GLOBALES POUR DEBUG ET TESTS
+// ===================================================================
+window.navigationDebug = {
+    // Simuler différents états utilisateur
+    setUser: function(user, isAdmin = false) {
+        window.currentUser = user;
+        window.isAdmin = isAdmin;
+        updateUserInterface(user, isAdmin);
+    },
+    
+    // États prédéfinis pour test
+    setGuest: function() {
+        this.setUser(null, false);
+        showNotification('Mode invité activé', 'info');
+    },
+    
+    setClient: function() {
+        this.setUser({
+            id: 1,
+            first_name: 'Jean',
+            last_name: 'Dupont',
+            email: 'jean@example.com',
+            role_id: 1
+        }, false);
+        showNotification('Mode client activé', 'success');
+    },
+    
+    setAdmin: function() {
+        this.setUser({
+            id: 2,
+            first_name: 'Admin',
+            last_name: 'Système',
+            email: 'admin@eclatdore.com',
+            role_id: 2
+        }, true);
+        showNotification('Mode admin activé', 'success');
+    },
+    
+    // Obtenir l'état actuel
+    getState: function() {
+        return {
+            user: window.currentUser,
+            isAdmin: window.isAdmin
+        };
+    },
+    
+    // Tester la visibilité de la navbar admin
+    testAdminNavbar: function() {
+        const adminNavbar = document.getElementById('adminNavbar');
+        console.log('Admin navbar visible:', adminNavbar?.classList.contains('show-admin'));
+        return adminNavbar?.classList.contains('show-admin');
+    }
+};
+
+console.log('🧪 Fonctions de debug disponibles via window.navigationDebug');
+console.log('💡 Testez: navigationDebug.setGuest(), navigationDebug.setClient(), navigationDebug.setAdmin()');
+console.log('🔍 Vérifiez: navigationDebug.testAdminNavbar()');
+
+console.log('✅ Navigation JavaScript complètement chargé et opérationnel');
+
+// ===================================================================
+// EXPORT POUR MODULES (si nécessaire)
+// ===================================================================
+if (typeof module !== 'undefined' && module.exports) {
+    module.exports = {
+        setupAdminDropdowns,
+        setupClientDropdowns,
+        setupMobileMenu,
+        setupUserDropdown,
+        loadUserState,
+        updateUserInterface,
+        showNotification,
+        markActivePage
+    };
+}
+    </script>
 </body>
 </html>
