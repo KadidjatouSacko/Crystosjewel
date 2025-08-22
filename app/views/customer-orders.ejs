@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %></title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* Styles spécifiques pour la page des commandes */
+        .orders-header {
+            background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+            border-radius: var(--border-radius);
+            padding: 2.5rem 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+
+        .orders-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23pattern)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .orders-title {
+            color: white;
+            font-size: 2.2rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .orders-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1rem;
+            font-weight: 300;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Stats Dashboard */
+        .orders-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            text-align: center;
+            transition: var(--transition);
+            border: 2px solid transparent;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--rose-gold-light);
+        }
+
+        .stat-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+            margin: 0 auto 1rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--rose-gold-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--dark-text);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Filters and Search */
+        .orders-controls {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px 12px 45px;
+            border: 2px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--rose-gold);
+            box-shadow: 0 0 0 3px rgba(212, 165, 116, 0.1);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--rose-gold);
+            font-size: 1.1rem;
+        }
+
+        .filter-select {
+            padding: 12px 16px;
+            border: 2px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            background: white;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--rose-gold);
+        }
+
+        .export-btn {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .export-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 165, 116, 0.4);
+        }
+
+        /* Orders List */
+        .orders-container {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .order-card {
+            border: 2px solid var(--light-gray);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .order-card:hover {
+            border-color: var(--rose-gold);
+            transform: translateX(5px);
+            box-shadow: var(--shadow);
+        }
+
+        .order-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .order-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .order-number {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: var(--rose-gold-dark);
+        }
+
+        .order-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .order-status {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-waiting { background: #fff3cd; color: #856404; }
+        .status-preparing { background: #d1ecf1; color: #0c5460; }
+        .status-shipped { background: #d4edda; color: #155724; }
+        .status-delivered { background: #d1e7dd; color: #0f5132; }
+        .status-cancelled { background: #f8d7da; color: #721c24; }
+
+        .order-total {
+            font-weight: 700;
+            color: var(--rose-gold-dark);
+            font-size: 1.2rem;
+        }
+
+        .order-details {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .order-image {
+            width: 60px;
+            height: 60px;
+            border-radius: 8px;
+            object-fit: cover;
+            border: 2px solid var(--light-gray);
+        }
+
+        .order-items {
+            flex: 1;
+        }
+
+        .order-primary-item {
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 0.3rem;
+        }
+
+        .order-items-count {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .order-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-action {
+            padding: 8px 16px;
+            border: 2px solid var(--rose-gold);
+            border-radius: var(--border-radius);
+            color: var(--rose-gold);
+            background: transparent;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .btn-action:hover {
+            background: var(--rose-gold);
+            color: white;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary-action {
+            background: var(--rose-gold);
+            color: white;
+        }
+
+        .btn-primary-action:hover {
+            background: var(--rose-gold-dark);
+        }
+
+        /* Empty State */
+        .empty-orders {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: #666;
+        }
+
+        .empty-orders i {
+            font-size: 4rem;
+            color: var(--rose-gold-light);
+            margin-bottom: 1.5rem;
+        }
+
+        .empty-orders h3 {
+            font-size: 1.8rem;
+            margin-bottom: 1rem;
+            color: var(--dark-text);
+        }
+
+        .empty-orders p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .btn-shop {
+            padding: 14px 28px;
+            background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .btn-shop:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 165, 116, 0.4);
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin-top: 2rem;
+        }
+
+        .pagination-btn {
+            padding: 10px 15px;
+            border: 2px solid var(--medium-gray);
+            background: white;
+            color: var(--dark-text);
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+        }
+
+        .pagination-btn:hover {
+            border-color: var(--rose-gold);
+            background: var(--rose-gold-light);
+        }
+
+        .pagination-btn.active {
+            background: var(--rose-gold);
+            color: white;
+            border-color: var(--rose-gold);
+        }
+
+        .pagination-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Modal for Order Details */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #999;
+        }
+
+        .modal-close:hover {
+            color: var(--rose-gold);
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .controls-grid {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+
+            .orders-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .order-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .order-details {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .order-actions {
+                justify-content: center;
+            }
+
+            .orders-title {
+                font-size: 1.8rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .orders-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .modal-content {
+                padding: 1.5rem;
+                width: 95%;
+            }
+
+            .orders-header {
+                padding: 2rem 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <%- include('partials/navbarre.ejs') %>
+
+    <div class="main-content">
+        <div class="container">
+            <!-- Header -->
+            <div class="orders-header">
+                <h1 class="orders-title">
+                    <i class="fas fa-box"></i>
+                    Mes Commandes
+                </h1>
+                <p class="orders-subtitle">
+                    Suivez l'état de vos commandes et consultez votre historique d'achats
+                </p>
+            </div>
+
+            <!-- Stats Dashboard -->
+            <div class="orders-stats">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-value"><%= stats.totalOrders %></div>
+                    <div class="stat-label">Total Commandes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-value"><%= stats.waitingOrders + stats.preparingOrders %></div>
+                    <div class="stat-label">En cours</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-value"><%= stats.deliveredOrders %></div>
+                    <div class="stat-label">Livrées</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-euro-sign"></i>
+                    </div>
+                    <div class="stat-value"><%= stats.totalSpent.toFixed(0) %>€</div>
+                    <div class="stat-label">Total dépensé</div>
+                </div>
+            </div>
+
+            <!-- Controls -->
+            <div class="orders-controls">
+                <form method="GET" action="/mescommandes" id="searchForm">
+                    <div class="controls-grid">
+                        <div class="search-box">
+                            <i class="fas fa-search search-icon"></i>
+                            <input type="text" 
+                                   name="search" 
+                                   class="search-input" 
+                                   placeholder="Rechercher par numéro commande ou nom de bijou..."
+                                   value="<%= currentSearch %>"
+                                   title="Vous pouvez rechercher par numéro de commande ou nom de bijou">
+                        </div>
+                        <select name="statut" class="filter-select" id="statusFilter">
+                            <option value="all" <%= currentStatut === 'all' ? 'selected' : '' %>>Tous les statuts</option>
+                            <option value="waiting" <%= currentStatut === 'waiting' ? 'selected' : '' %>>En attente</option>
+                            <option value="preparing" <%= currentStatut === 'preparing' ? 'selected' : '' %>>En préparation</option>
+                            <option value="shipped" <%= currentStatut === 'shipped' ? 'selected' : '' %>>Expédiées</option>
+                            <option value="delivered" <%= currentStatut === 'delivered' ? 'selected' : '' %>>Livrées</option>
+                        </select>
+                        <button type="submit" class="export-btn">
+                            <i class="fas fa-search"></i>
+                            Rechercher
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Orders List -->
+            <div class="orders-container">
+                <% if (orders && orders.length > 0) { %>
+                    <% orders.forEach(order => { %>
+                        <div class="order-card">
+                            <div class="order-header">
+                                <div class="order-info">
+                                    <span class="order-number">Commande <%= order.display_number %></span>
+                                    <span class="order-date">
+                                        <%= order.formatted_date %> à <%= order.formatted_time %>
+                                    </span>
+                                    <span class="order-status <%= order.status_class %>">
+                                        <%= order.status_display %>
+                                    </span>
+                                </div>
+                                <div class="order-total">
+                                    <%= order.total.toFixed(2) %>€
+                                </div>
+                            </div>
+                            
+                            <div class="order-details">
+                                <% if (order.first_item && order.first_item.jewel && order.first_item.jewel.image) { %>
+                                    <img src="/uploads/<%= order.first_item.jewel.image %>" 
+                                         alt="<%= order.first_item.jewel.name %>" 
+                                         class="order-image"
+                                         onerror="this.onerror=null; this.src='/images/no-image.jpg';">
+                                <% } else { %>
+                                    <div class="order-image" style="background: var(--light-gray); display: flex; align-items: center; justify-content: center;">
+                                        <i class="fas fa-gem" style="color: var(--rose-gold);"></i>
+                                    </div>
+                                <% } %>
+                                
+                                <div class="order-items">
+                                    <% if (order.first_item && order.first_item.jewel) { %>
+                                        <div class="order-primary-item">
+                                            <%= order.first_item.jewel.name %>
+                                        </div>
+                                    <% } %>
+                                    <div class="order-items-count">
+                                        <%= order.items_count %> article<%= order.items_count > 1 ? 's' : '' %>
+                                        <% if (order.items_count > 1) { %>
+                                            <% if (order.first_item && order.first_item.jewel) { %>
+                                                et <%= order.items_count - 1 %> autre<%= order.items_count - 1 > 1 ? 's' : '' %>
+                                            <% } %>
+                                        <% } %>
+                                    </div>
+                                </div>
+                                
+                                <div class="order-actions">
+                                    <button class="btn-action btn-primary-action" type="button" onclick="showOrderDetails(<%= order.id %>)">
+                                        <i class="fas fa-eye"></i>
+                                        Détails
+                                    </button>
+                                    <button class="btn-action" type="button" onclick="testConnection(<%= order.id %>)" style="background: #28a745; color: white;">
+                                        <i class="fas fa-flask"></i>
+                                        Test
+                                    </button>
+                                    <% if (order.tracking_number) { %>
+                                        <button class="btn-action" type="button" onclick="openTracking('<%= order.tracking_number %>')">
+                                            <i class="fas fa-truck"></i>
+                                            Suivre
+                                        </button>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    <% }); %>
+
+                    <!-- Pagination -->
+                    <% if (pagination.totalPages > 1) { %>
+                        <div class="pagination">
+                            <% if (pagination.hasPrev) { %>
+                                <a href="?page=<%= pagination.currentPage - 1 %>&statut=<%= currentStatut %>&search=<%= currentSearch %>" 
+                                   class="pagination-btn">
+                                    <i class="fas fa-chevron-left"></i>
+                                    Précédent
+                                </a>
+                            <% } else { %>
+                                <span class="pagination-btn disabled">
+                                    <i class="fas fa-chevron-left"></i>
+                                    Précédent
+                                </span>
+                            <% } %>
+
+                            <% for (let i = 1; i <= pagination.totalPages; i++) { %>
+                                <% if (i === pagination.currentPage) { %>
+                                    <span class="pagination-btn active"><%= i %></span>
+                                <% } else { %>
+                                    <a href="?page=<%= i %>&statut=<%= currentStatut %>&search=<%= currentSearch %>" 
+                                       class="pagination-btn"><%= i %></a>
+                                <% } %>
+                            <% } %>
+
+                            <% if (pagination.hasNext) { %>
+                                <a href="?page=<%= pagination.currentPage + 1 %>&statut=<%= currentStatut %>&search=<%= currentSearch %>" 
+                                   class="pagination-btn">
+                                    Suivant
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            <% } else { %>
+                                <span class="pagination-btn disabled">
+                                    Suivant
+                                    <i class="fas fa-chevron-right"></i>
+                                </span>
+                            <% } %>
+                        </div>
+                    <% } %>
+
+                <% } else { %>
+                    <!-- Empty State -->
+                    <div class="empty-orders">
+                        <i class="fas fa-shopping-bag"></i>
+                        <h3>Aucune commande trouvée</h3>
+                        <p>
+                            <% if (currentStatut !== 'all' || currentSearch) { %>
+                                Aucune commande ne correspond à vos critères de recherche.
+                                <br>
+                                <a href="/mescommandes" style="color: var(--rose-gold);">Voir toutes les commandes</a>
+                            <% } else { %>
+                                Vous n'avez pas encore passé de commande. Découvrez notre magnifique collection de bijoux !
+                            <% } %>
+                        </p>
+                        <% if (currentStatut === 'all' && !currentSearch) { %>
+                            <a href="/bijoux" class="btn-shop">
+                                <i class="fas fa-gem"></i>
+                                Découvrir nos bijoux
+                            </a>
+                        <% } %>
+                    </div>
+                <% } %>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal for Order Details -->
+    <div class="modal" id="orderModal">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeOrderModal()">
+                <i class="fas fa-times"></i>
+            </button>
+            <div id="orderModalContent">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Function to show order details in modal
+        async function showOrderDetails(orderId) {
+            const modal = document.getElementById('orderModal');
+            const content = document.getElementById('orderModalContent');
+            
+            // Show modal with loading
+            content.innerHTML = `
+                <div style="text-align: center; padding: 2rem;">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 2rem; color: var(--rose-gold);"></i>
+                    <p style="margin-top: 1rem;">Chargement des détails...</p>
+                </div>
+            `;
+            modal.classList.add('active');
+            
+            try {
+                const response = await fetch(`/mescommandes/${orderId}/details`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const order = data.order;
+                    content.innerHTML = `
+                        <h2 style="color: var(--rose-gold-dark); margin-bottom: 1.5rem;">
+                            <i class="fas fa-box"></i>
+                            Commande #${order.id}
+                        </h2>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2rem;">
+                            <div>
+                                <h3 style="color: var(--dark-text); margin-bottom: 1rem;">Informations générales</h3>
+                                <p><strong>Date :</strong> ${order.formatted_date}</p>
+                                <p><strong>Statut :</strong> 
+                                    <span class="order-status ${order.status_class}">${order.status_display}</span>
+                                </p>
+                                <p><strong>Total :</strong> ${order.total.toFixed(2)}€</p>
+                                ${order.tracking_number ? `<p><strong>Numéro de suivi :</strong> ${order.tracking_number}</p>` : ''}
+                            </div>
+                            
+                            <div>
+                                <h3 style="color: var(--dark-text); margin-bottom: 1rem;">Livraison</h3>
+                                <p><strong>Nom :</strong> ${order.customer.first_name} ${order.customer.last_name}</p>
+                                <p><strong>Email :</strong> ${order.customer.email}</p>
+                                ${order.customer.phone ? `<p><strong>Téléphone :</strong> ${order.customer.phone}</p>` : ''}
+                                ${order.customer.address ? `<p><strong>Adresse :</strong> ${order.customer.address}</p>` : ''}
+                            </div>
+                        </div>
+                        
+                        <div>
+                            <h3 style="color: var(--dark-text); margin-bottom: 1rem;">Articles commandés</h3>
+                            <div style="max-height: 300px; overflow-y: auto;">
+                                ${order.items.map(item => `
+                                    <div style="display: flex; align-items: center; gap: 1rem; padding: 1rem; border: 1px solid var(--light-gray); border-radius: 8px; margin-bottom: 1rem;">
+                                        <img src="${item.jewel.image || '/images/no-image.jpg'}" 
+                                             alt="${item.jewel.name}" 
+                                             style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px;">
+                                        <div style="flex: 1;">
+                                            <h4 style="margin: 0 0 0.5rem 0; color: var(--dark-text);">${item.jewel.name}</h4>
+                                            <p style="margin: 0; color: #666; font-size: 0.9rem;">
+                                                Quantité: ${item.quantity} | 
+                                                Prix unitaire: ${(item.price || item.jewel.price_ttc).toFixed(2)}€
+                                            </p>
+                                            ${item.size ? `<p style="margin: 0; color: #666; font-size: 0.9rem;">Taille: ${item.size}</p>` : ''}
+                                        </div>
+                                        <div style="text-align: right;">
+                                            <strong style="color: var(--rose-gold-dark);">
+                                                ${((item.price || item.jewel.price_ttc) * item.quantity).toFixed(2)}€
+                                            </strong>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 2rem; text-align: center;">
+                            <button onclick="closeOrderModal()" 
+                                    style="padding: 12px 24px; background: var(--rose-gold); color: white; border: none; border-radius: var(--border-radius); cursor: pointer; font-weight: 500;">
+                                Fermer
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    content.innerHTML = `
+                        <div style="text-align: center; padding: 2rem;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: var(--danger);"></i>
+                            <p style="margin-top: 1rem; color: var(--danger);">Erreur lors du chargement des détails</p>
+                            <button onclick="closeOrderModal()" 
+                                    style="margin-top: 1rem; padding: 12px 24px; background: var(--rose-gold); color: white; border: none; border-radius: var(--border-radius); cursor: pointer;">
+                                Fermer
+                            </button>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 2rem;">
+                        <i class="fas fa-exclamation-triangle" style="font-size: 2rem; color: var(--danger);"></i>
+                        <p style="margin-top: 1rem; color: var(--danger);">Erreur de connexion</p>
+                        <button onclick="closeOrderModal()" 
+                                style="margin-top: 1rem; padding: 12px 24px; background: var(--rose-gold); color: white; border: none; border-radius: var(--border-radius); cursor: pointer;">
+                            Fermer
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        // Function to close modal
+        function closeOrderModal() {
+            document.getElementById('orderModal').classList.remove('active');
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('orderModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeOrderModal();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeOrderModal();
+            }
+        });
+
+        // Auto-submit search after typing (with debounce)
+        let searchTimeout;
+        const searchForm = document.getElementById('searchForm');
+        const searchInput = document.querySelector('.search-input');
+        
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                searchForm.submit();
+            }, 1500); // Wait 1.5 seconds after user stops typing
+        });
+
+        // Prevent form submission on Enter key during typing delay
+        searchInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                clearTimeout(searchTimeout);
+                searchForm.submit();
+            }
+        });
+
+        // Animation on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const orderCards = document.querySelectorAll('.order-card');
+            orderCards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>

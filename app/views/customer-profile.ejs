@@ -1,88 +1,748 @@
-<!-- customer-profile.ejs -->
 <!DOCTYPE html>
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><%= title %></title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        /* Styles spécifiques pour la page de profil améliorée */
+        .profile-header {
+            background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+            border-radius: var(--border-radius);
+            padding: 3rem 2rem;
+            margin-bottom: 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
 
+        .profile-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="pattern" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse"><circle cx="10" cy="10" r="1" fill="rgba(255,255,255,0.1)"/></pattern></defs><rect width="100" height="100" fill="url(%23pattern)"/></svg>');
+            opacity: 0.3;
+        }
+
+        .avatar-container {
+            position: relative;
+            display: inline-block;
+            margin-bottom: 1.5rem;
+        }
+
+        .avatar {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--cream) 0%, var(--white) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 3rem;
+            color: var(--rose-gold);
+            border: 4px solid white;
+            box-shadow: var(--shadow);
+            position: relative;
+            z-index: 2;
+        }
+
+        .avatar-badge {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background: var(--success);
+            color: white;
+            border-radius: 50%;
+            width: 25px;
+            height: 25px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            border: 3px solid white;
+            z-index: 3;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            z-index: 3;
+            border: 2px solid white;
+        }
+
+        .status-vip { background: linear-gradient(135deg, #ffd700, #ffed4e); color: #8b6914; }
+        .status-gold { background: linear-gradient(135deg, #f7931e, #ffc107); color: #8b4513; }
+        .status-silver { background: linear-gradient(135deg, #c0c0c0, #e6e6e6); color: #666; }
+        .status-bronze { background: linear-gradient(135deg, #cd7f32, #d4a574); color: #5c3317; }
+
+        .profile-title {
+            color: white;
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            position: relative;
+            z-index: 2;
+        }
+
+        .profile-subtitle {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.1rem;
+            font-weight: 300;
+            position: relative;
+            z-index: 2;
+        }
+
+        .profile-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .profile-card {
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .profile-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--rose-gold-light);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--light-gray);
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark-text);
+        }
+
+        .info-group {
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .info-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 8px;
+            background: var(--rose-gold-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--rose-gold-dark);
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .info-content {
+            flex: 1;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: var(--rose-gold-dark);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.2rem;
+            display: block;
+        }
+
+        .info-value {
+            color: var(--dark-text);
+            font-size: 1.1rem;
+            font-weight: 400;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-enhanced {
+            padding: 12px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+            transition: var(--transition);
+            font-size: 0.95rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-enhanced::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: var(--transition);
+        }
+
+        .btn-enhanced:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary-enhanced {
+            background: linear-gradient(135deg, var(--rose-gold) 0%, var(--rose-gold-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary-enhanced:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(212, 165, 116, 0.4);
+        }
+
+        .btn-danger-enhanced {
+            background: linear-gradient(135deg, var(--danger) 0%, #c82333 100%);
+            color: white;
+        }
+
+        .btn-danger-enhanced:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+        }
+
+        .quick-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-item {
+            background: linear-gradient(135deg, var(--cream) 0%, var(--white) 100%);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            text-align: center;
+            border: 2px solid var(--rose-gold-light);
+            transition: var(--transition);
+        }
+
+        .stat-item:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--rose-gold-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--dark-text);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .order-history {
+            grid-column: 1 / -1;
+            background: white;
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow);
+        }
+
+        .orders-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .order-item {
+            border: 1px solid var(--medium-gray);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: var(--transition);
+        }
+
+        .order-item:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow);
+            border-color: var(--rose-gold);
+        }
+
+        .order-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+
+        .order-number {
+            font-weight: 600;
+            color: var(--rose-gold-dark);
+        }
+
+        .order-date {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .order-status {
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+
+        .status-waiting { background: #fff3cd; color: #856404; }
+        .status-preparing { background: #d1ecf1; color: #0c5460; }
+        .status-shipped { background: #d4edda; color: #155724; }
+        .status-delivered { background: #d1e7dd; color: #0f5132; }
+
+        .order-total {
+            font-weight: 700;
+            color: var(--rose-gold-dark);
+            font-size: 1.1rem;
+        }
+
+        .orders-placeholder {
+            text-align: center;
+            padding: 3rem 2rem;
+            color: #666;
+        }
+
+        .orders-placeholder i {
+            font-size: 4rem;
+            color: var(--rose-gold-light);
+            margin-bottom: 1rem;
+        }
+
+        .orders-placeholder h3 {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: var(--dark-text);
+        }
+
+        .orders-placeholder p {
+            font-size: 1.1rem;
+            margin-bottom: 2rem;
+        }
+
+        .success-message-enhanced {
+            background: linear-gradient(135deg, var(--cream) 0%, var(--white) 100%);
+            border: 2px solid var(--success);
+            color: var(--success);
+            padding: 1rem 1.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            animation: slideInDown 0.5s ease;
+        }
+
+        @keyframes slideInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .profile-card {
+            animation: fadeInUp 0.6s ease forwards;
+        }
+
+        .profile-card:nth-child(2) {
+            animation-delay: 0.1s;
+        }
+
+        .profile-card:nth-child(3) {
+            animation-delay: 0.2s;
+        }
+
+        @media (max-width: 768px) {
+            .profile-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+
+            .profile-header {
+                padding: 2rem 1rem;
+            }
+
+            .profile-title {
+                font-size: 2rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn-enhanced {
+                justify-content: center;
+            }
+
+            .quick-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .order-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .avatar {
+                width: 100px;
+                height: 100px;
+                font-size: 2.5rem;
+            }
+
+            .card-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+            }
+
+            .info-group {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.5rem;
+            }
+
+            .quick-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
 </head>
 <body>
-  
     <%- include('partials/navbarre.ejs') %>
 
     <div class="main-content">
         <div class="container">
-            <div class="profile-container">
-                <h1>Mon Profil</h1>
-                
-                <% if (success) { %>
-                    <div class="success-message">
-                        Votre profil a été mis à jour avec succès.
-                    </div>
-                <% } %>
-                
-                <div class="profile-section">
-                    <div class="profile-info">
-                        <h2>Informations personnelles</h2>
-                        <div class="info-group">
-                            <span class="info-label">Nom complet:</span>
-                            <span class="info-value"><%= customer.first_name %> <%= customer.last_name %></span>
+            <!-- Profile Header -->
+            <div class="profile-header">
+                <div class="avatar-container">
+                    <div class="avatar">
+                        <i class="fas fa-user"></i>
+                        <div class="avatar-badge">
+                            <i class="fas fa-check"></i>
                         </div>
-                        <div class="info-group">
-                            <span class="info-label">Email:</span>
-                            <span class="info-value"><%= customer.email %></span>
-                        </div>
-                        <% if (customer.address) { %>
-                        <div class="info-group">
-                            <span class="info-label">Adresse:</span>
-                            <span class="info-value"><%= customer.address %></span>
+                        <% if (customer.stats && customer.stats.customerStatus) { %>
+                        <div class="status-badge status-<%= customer.stats.customerStatus.toLowerCase() %>">
+                            <%= customer.stats.customerStatus %>
                         </div>
                         <% } %>
-                        <% if (customer.phone) { %>
-                        <div class="info-group">
-                            <span class="info-label">Téléphone:</span>
-                            <span class="info-value"><%= customer.phone %></span>
-                        </div>
-                        <% } %>
-                    </div>
-                    
-                    <div class="profile-actions">
-                        <a href="/profil/modifier" class="button btn-edit">Modifier mon profil</a>
-                        <a href="/profil/supprimer" class="button btn-delete">Supprimer mon compte</a>
                     </div>
                 </div>
-                
+                <h1 class="profile-title"><%= customer.first_name %> <%= customer.last_name %></h1>
+                <p class="profile-subtitle">
+                    Membre depuis 
+                    <%= new Date(customer.createdAt || customer.created_at || Date.now()).toLocaleDateString('fr-FR', { 
+                        year: 'numeric', 
+                        month: 'long' 
+                    }) %>
+                </p>
+            </div>
+
+            <!-- Success Message -->
+            <% if (success) { %>
+                <div class="success-message-enhanced">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Votre profil a été mis à jour avec succès.</span>
+                </div>
+            <% } %>
+
+            <!-- Quick Stats -->
+            <div class="quick-stats">
+                <div class="stat-item">
+                    <div class="stat-number"><%= customer.stats ? customer.stats.totalOrders : 0 %></div>
+                    <div class="stat-label">Commandes</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">
+                        <% if (customer.stats && customer.stats.totalSpent > 0) { %>
+                            <%= customer.stats.totalSpent.toFixed(0) %>€
+                        <% } else { %>
+                            0€
+                        <% } %>
+                    </div>
+                    <div class="stat-label">Total dernières commandes</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number"><%= customer.stats ? customer.stats.totalFavorites : 0 %></div>
+                    <div class="stat-label">Favoris</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">
+                        <% if (customer.stats && customer.stats.averageBasket > 0) { %>
+                            <%= customer.stats.averageBasket.toFixed(0) %>€
+                        <% } else { %>
+                            -
+                        <% } %>
+                    </div>
+                    <div class="stat-label">Panier moyen</div>
+                </div>
+            </div>
+
+            <!-- Profile Grid -->
+            <div class="profile-grid">
+                <!-- Personal Information Card -->
+                <div class="profile-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-user-circle"></i>
+                        </div>
+                        <h2 class="card-title">Informations personnelles</h2>
+                    </div>
+                    
+                    <div class="info-group">
+                        <div class="info-icon">
+                            <i class="fas fa-signature"></i>
+                        </div>
+                        <div class="info-content">
+                            <span class="info-label">Nom complet</span>
+                            <span class="info-value"><%= customer.first_name %> <%= customer.last_name %></span>
+                        </div>
+                    </div>
+                    
+                    <div class="info-group">
+                        <div class="info-icon">
+                            <i class="fas fa-envelope"></i>
+                        </div>
+                        <div class="info-content">
+                            <span class="info-label">Email</span>
+                            <span class="info-value"><%= customer.email %></span>
+                        </div>
+                    </div>
+                    
+                    <% if (customer.phone) { %>
+                    <div class="info-group">
+                        <div class="info-icon">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="info-content">
+                            <span class="info-label">Téléphone</span>
+                            <span class="info-value"><%= customer.phone %></span>
+                        </div>
+                    </div>
+                    <% } %>
+                    
+                    <div class="action-buttons">
+                        <a href="/profil/modifier" class="btn-enhanced btn-primary-enhanced">
+                            <i class="fas fa-edit"></i>
+                            Modifier mon profil
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Address Information Card -->
+                <div class="profile-card">
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <h2 class="card-title">Adresse & Contact</h2>
+                    </div>
+                    
+                    <% if (customer.address) { %>
+                    <div class="info-group">
+                        <div class="info-icon">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="info-content">
+                            <span class="info-label">Adresse</span>
+                            <span class="info-value"><%= customer.address %></span>
+                        </div>
+                    </div>
+                    <% } else { %>
+                    <div class="info-group">
+                        <div class="info-icon">
+                            <i class="fas fa-home"></i>
+                        </div>
+                        <div class="info-content">
+                            <span class="info-label">Adresse</span>
+                            <span class="info-value" style="color: #999; font-style: italic;">Non renseignée</span>
+                        </div>
+                    </div>
+                    <% } %>
+                    
+                    <div class="info-group">
+                        <div class="info-icon">
+                            <i class="fas fa-crown"></i>
+                        </div>
+                        <div class="info-content">
+                            <span class="info-label">Statut client</span>
+                            <span class="info-value">
+                                <span class="status-badge status-<%= customer.stats ? customer.stats.customerStatus.toLowerCase() : 'bronze' %>">
+                                    <%= customer.stats ? customer.stats.customerStatus : 'Bronze' %>
+                                </span>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <a href="/profil/supprimer" class="btn-enhanced btn-danger-enhanced">
+                            <i class="fas fa-trash-alt"></i>
+                            Supprimer le compte
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Order History -->
                 <div class="order-history">
-                    <h2>Historique des commandes</h2>
-                    <% if (locals.orders && orders.length > 0) { %>
+                    <div class="card-header">
+                        <div class="card-icon">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <h2 class="card-title">Mes dernières commandes</h2>
+                    </div>
+                    
+                    <% if (orders && orders.length > 0) { %>
                         <div class="orders-list">
                             <% orders.forEach(order => { %>
                                 <div class="order-item">
                                     <div class="order-header">
                                         <span class="order-number">Commande #<%= order.id %></span>
-                                        <span class="order-date"><%= new Date(order.createdAt).toLocaleDateString('fr-FR') %></span>
-                                        <span class="order-status <%= order.status.toLowerCase() %>"><%= order.status %></span>
+                                        <span class="order-date"><%= order.formatted_date %></span>
+                                        <span class="order-status status-<%= order.status || 'waiting' %>">
+                                            <%= order.status_display || 'En cours' %>
+                                        </span>
+                                        <span class="order-total">
+                                            <%= order.total ? parseFloat(order.total).toFixed(2) : '0.00' %>€
+                                        </span>
                                     </div>
-                                    <div class="order-details">
-                                        <span class="order-total">Total: <%= order.total.toFixed(2) %> €</span>
-                                        <a href="/commandes/<%= order.id %>" class="button btn-view">Voir détails</a>
+                                    <% if (order.items && order.items.length > 0) { %>
+                                    <div class="order-items">
+                                        <small style="color: #666;">
+                                            <%= order.items.length %> article<%= order.items.length > 1 ? 's' : '' %> :
+                                            <% order.items.slice(0, 2).forEach((item, index) => { %>
+                                                <%= item.jewel ? item.jewel.name : 'Article' %><%= index < Math.min(order.items.length, 2) - 1 ? ', ' : '' %>
+                                            <% }); %>
+                                            <% if (order.items.length > 2) { %>
+                                                et <%= order.items.length - 2 %> autre<%= order.items.length - 2 > 1 ? 's' : '' %>
+                                            <% } %>
+                                        </small>
                                     </div>
+                                    <% } %>
                                 </div>
                             <% }); %>
                         </div>
+                        <div style="text-align: center; margin-top: 1.5rem;">
+                            <a href="/mescommandes" class="btn-enhanced btn-primary-enhanced">
+                                <i class="fas fa-history"></i>
+                                Voir toutes mes commandes
+                            </a>
+                        </div>
                     <% } else { %>
-                        <p class="no-orders">Vous n'avez pas encore passé de commande.</p>
+                        <div class="orders-placeholder">
+                            <i class="fas fa-shopping-bag"></i>
+                            <h3>Aucune commande pour le moment</h3>
+                            <p>Découvrez notre collection de bijoux élégants pour passer votre première commande</p>
+                            <a href="/bijoux" class="btn-enhanced btn-primary-enhanced">
+                                <i class="fas fa-gem"></i>
+                                Découvrir nos bijoux
+                            </a>
+                        </div>
                     <% } %>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="profile-card" style="margin-top: 2rem;">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <h2 class="card-title">Actions rapides</h2>
+                </div>
+                
+                <div class="action-buttons">
+                    <a href="/mescommandes" class="btn-enhanced btn-primary-enhanced">
+                        <i class="fas fa-box"></i>
+                        Mes commandes
+                    </a>
+                    <a href="/favoris" class="btn-enhanced btn-primary-enhanced">
+                        <i class="fas fa-heart"></i>
+                        Mes favoris (<%= customer.stats ? customer.stats.totalFavorites : 0 %>)
+                    </a>
+                    <a href="/panier" class="btn-enhanced btn-primary-enhanced">
+                        <i class="fas fa-shopping-cart"></i>
+                        Mon panier
+                    </a>
+                    <a href="/bijoux" class="btn-enhanced btn-primary-enhanced">
+                        <i class="fas fa-gem"></i>
+                        Catalogue
+                    </a>
                 </div>
             </div>
         </div>
     </div>
-
-  
-    
-    <!-- <script src="/js/main.js"></script> -->
 </body>
 </html>

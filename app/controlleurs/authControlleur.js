@@ -1,4 +1,8 @@
 import { Customer } from "../models/customerModel.js";
+import { Order } from '../models/orderModel.js';
+import { OrderItem } from '../models/orderItem.js';
+import { Jewel } from "../models/jewelModel.js";
+import { Favorite } from "../models/favoritesModel.js";
 import rateLimit from 'express-rate-limit';
 import argon2 from "argon2";
 import  { sendWelcomeEmail} from "../services/mailService.js";
@@ -212,32 +216,483 @@ await sendWelcomeMail(newCustomer.email, newCustomer.first_name);
 },
 
 
-  // Affiche le profil de l'utilisateur
-  async renderCustomerProfile(req, res) {
-    try {
-      const customerId = req.session.customerId;
-      
-      if (!customerId) {
-        return res.redirect('/connexion');
-      }
-      
-      const customer = await Customer.findOne({ where: { id: customerId } });
-
-      if (!customer) {
-        return res.status(404).render("error", { message: "Utilisateur non trouvé" });
-      }
-      const success = req.query.success || null;
-
-      res.render('customer-profile', { 
-        success,
-        customer,
-        title: "Mon Profil | Bijoux Élégance"
-      });
-    } catch (err) {
-      console.error(err);
-      res.status(500).render("error", { message: "Erreur serveur" });
+// Affiche le profil de l'utilisateur avec commandes et statistiques
+async renderCustomerProfile(req, res) {
+  try {
+    const customerId = req.session.customerId;
+    
+    if (!customerId) {
+      return res.redirect('/connexion');
     }
-  },
+    
+    // Récupération du client avec ses commandes
+    const customer = await Customer.findOne({ 
+      where: { id: customerId },
+      include: [
+        {
+          model: Order,
+          as: 'orders',
+          include: [
+            {
+              model: OrderItem,
+              as: 'items',
+              include: [
+                {
+                  model: Jewel,
+                  as: 'jewel',
+                  attributes: ['id', 'name', 'price_ttc', 'image']
+                }
+              ]
+            }
+          ],
+          order: [['created_at', 'DESC']],
+          limit: 5 // Limiter aux 5 dernières commandes pour l'affichage
+        },
+        {
+          model: Favorite,
+          as: 'favorites',
+          include: [
+            {
+              model: Jewel,
+              as: 'jewel',
+              attributes: ['id', 'name', 'price_ttc', 'image']
+            }
+          ]
+        }
+      ]
+    });
+
+    if (!customer) {
+      return res.status(404).render("error", { message: "Utilisateur non trouvé" });
+    }
+
+    // Calcul des statistiques du client
+    const orders = customer.orders || [];
+    const favorites = customer.favorites || [];
+    
+    // Calcul du total dépensé
+    const totalSpent = orders.reduce((sum, order) => {
+      if (order.total) {
+        return sum + parseFloat(order.total);
+      } else if (order.items && order.items.length > 0) {
+        const orderTotal = order.items.reduce((itemSum, item) => {
+          return itemSum + (item.quantity * (item.price || item.jewel?.price_ttc || 0));
+        }, 0);
+        return sum + orderTotal;
+      }
+      return sum;
+    }, 0);
+
+    // Calcul du panier moyen
+    const averageBasket = orders.length > 0 ? (totalSpent / orders.length) : 0;
+
+    // Statut client basé sur le total dépensé
+    let customerStatus = 'Bronze';
+    if (totalSpent > 2000) {
+      customerStatus = 'VIP';
+    } else if (totalSpent > 1000) {
+      customerStatus = 'Gold';
+    } else if (totalSpent > 500) {
+      customerStatus = 'Silver';
+    }
+
+    // Formatage des commandes pour l'affichage
+    const formattedOrders = orders.map(order => {
+      let orderTotal = order.total;
+      if (!orderTotal && order.items && order.items.length > 0) {
+        orderTotal = order.items.reduce((sum, item) => {
+          return sum + (item.quantity * (item.price || item.jewel?.price_ttc || 0));
+        }, 0);
+      }
+
+      // S'assurer que orderTotal est un nombre
+      orderTotal = parseFloat(orderTotal) || 0;
+
+      return {
+        ...order.toJSON(),
+        total: orderTotal,
+        formatted_date: new Date(order.created_at).toLocaleDateString('fr-FR', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        status_display: order.status === 'waiting' ? 'En attente' : 
+                       order.status === 'preparing' ? 'En préparation' : 
+                       order.status === 'shipped' ? 'Expédiée' : 
+                       order.status === 'delivered' ? 'Livrée' : 
+                       'En cours'
+      };
+    });
+
+    const success = req.query.success || null;
+
+    res.render('customer-profile', { 
+      success,
+      customer: {
+        ...customer.toJSON(),
+        // Ajout des statistiques calculées
+        stats: {
+          totalOrders: orders.length,
+          totalSpent: totalSpent,
+          averageBasket: averageBasket,
+          totalFavorites: favorites.length,
+          customerStatus: customerStatus
+        }
+      },
+      orders: formattedOrders,
+      favorites: favorites,
+      title: "Mon Profil | Bijoux Élégance"
+    });
+  } catch (err) {
+    console.error('Erreur dans renderCustomerProfile:', err);
+    res.status(500).render("error", { message: "Erreur serveur" });
+  }
+},
+
+// Affiche la page des commandes du client
+// Affiche la page des commandes du client
+async renderCustomerOrders(req, res) {
+  try {
+    const customerId = req.session.customerId;
+    
+    if (!customerId) {
+      return res.redirect('/connexion');
+    }
+
+    // Paramètres de filtrage et pagination
+    const currentStatut = req.query.statut || 'all';
+    const currentSearch = req.query.search || '';
+    const page = parseInt(req.query.page) || 1;
+    const limit = 10; // Nombre de commandes par page
+    const offset = (page - 1) * limit;
+
+    // Construction des conditions de filtrage
+    let whereConditions = { customer_id: customerId };
+    let includeConditions = [
+      {
+        model: OrderItem,
+        as: 'items',
+        include: [
+          {
+            model: Jewel,
+            as: 'jewel',
+            attributes: ['id', 'name', 'price_ttc', 'image', 'slug'],
+            where: null, // Will be set below if searching
+            required: false
+          }
+        ],
+        required: false
+      }
+    ];
+
+    // Filtre par statut
+    if (currentStatut !== 'all') {
+      whereConditions.status = currentStatut;
+    }
+
+    // Filtre par recherche étendue - CORRIGÉ ET SIMPLIFIÉ
+    if (currentSearch) {
+      const searchTerm = currentSearch.trim();
+      const searchNumber = parseInt(searchTerm);
+      
+      try {
+        const { Op } = await import('sequelize');
+        
+        if (!isNaN(searchNumber) && searchNumber > 0) {
+          // Recherche numérique : ID ou numéro de commande
+          whereConditions[Op.or] = [
+            { id: searchNumber },
+            { numero_commande: { [Op.iLike]: `%${searchTerm}%` } }
+          ];
+        } else {
+          // Recherche textuelle : dans les bijoux
+          // On utilise une approche différente pour éviter les erreurs
+          includeConditions = [
+            {
+              model: OrderItem,
+              as: 'items',
+              include: [
+                {
+                  model: Jewel,
+                  as: 'jewel',
+                  attributes: ['id', 'name', 'price_ttc', 'image', 'slug'],
+                  where: {
+                    name: { [Op.iLike]: `%${searchTerm}%` }
+                  },
+                  required: true
+                }
+              ],
+              required: true
+            }
+          ];
+        }
+      } catch (error) {
+        console.error('Erreur lors de la recherche:', error);
+        // En cas d'erreur, on ignore la recherche
+      }
+    }
+
+    // D'abord, récupérer TOUTES les commandes pour les statistiques globales (sans pagination ni recherche)
+    const allOrders = await Order.findAll({
+      where: { customer_id: customerId },
+      include: [
+        {
+          model: OrderItem,
+          as: 'items',
+          include: [
+            {
+              model: Jewel,
+              as: 'jewel',
+              attributes: ['id', 'name', 'price_ttc', 'image', 'slug']
+            }
+          ],
+          required: false
+        }
+      ]
+    });
+
+    // Calcul des statistiques globales (sur TOUTES les commandes)
+    let totalSpentGlobal = 0;
+    const statsGlobal = {
+      totalOrders: allOrders.length,
+      waitingOrders: 0,
+      preparingOrders: 0,
+      shippedOrders: 0,
+      deliveredOrders: 0,
+      totalSpent: 0
+    };
+
+    allOrders.forEach(order => {
+      // Calcul du total pour cette commande
+      let orderTotal = order.total;
+      if (!orderTotal && order.items && order.items.length > 0) {
+        orderTotal = order.items.reduce((sum, item) => {
+          return sum + (item.quantity * (item.price || item.jewel?.price_ttc || 0));
+        }, 0);
+      }
+      orderTotal = parseFloat(orderTotal) || 0;
+      totalSpentGlobal += orderTotal;
+
+      // Comptage par statut
+      switch(order.status) {
+        case 'waiting': statsGlobal.waitingOrders++; break;
+        case 'preparing': statsGlobal.preparingOrders++; break;
+        case 'shipped': statsGlobal.shippedOrders++; break;
+        case 'delivered': statsGlobal.deliveredOrders++; break;
+      }
+    });
+
+    statsGlobal.totalSpent = totalSpentGlobal;
+
+    // Ensuite, récupérer les commandes avec pagination et filtres
+    const { count, rows: orders } = await Order.findAndCountAll({
+      where: whereConditions,
+      include: includeConditions,
+      order: [['created_at', 'DESC']],
+      limit: limit,
+      offset: offset,
+      distinct: true // Important pour éviter les doublons avec les JOINs
+    });
+
+    // Fonctions utilitaires pour le statut
+    const getStatusDisplay = (status) => {
+      const statusMap = {
+        'waiting': 'En attente',
+        'preparing': 'En préparation',
+        'shipped': 'Expédiée',
+        'delivered': 'Livrée',
+        'cancelled': 'Annulée'
+      };
+      return statusMap[status] || 'En cours';
+    };
+
+    const getStatusClass = (status) => {
+      const classMap = {
+        'waiting': 'status-waiting',
+        'preparing': 'status-preparing',
+        'shipped': 'status-shipped',
+        'delivered': 'status-delivered',
+        'cancelled': 'status-cancelled'
+      };
+      return classMap[status] || 'status-default';
+    };
+
+    // Formatage des commandes pour l'affichage
+    const formattedOrders = orders.map(order => {
+      let orderTotal = order.total;
+      if (!orderTotal && order.items && order.items.length > 0) {
+        orderTotal = order.items.reduce((sum, item) => {
+          return sum + (item.quantity * (item.price || item.jewel?.price_ttc || 0));
+        }, 0);
+      }
+
+      // S'assurer que orderTotal est un nombre
+      orderTotal = parseFloat(orderTotal) || 0;
+
+      return {
+        ...order.toJSON(),
+        total: orderTotal,
+        // Utiliser numero_commande s'il existe, sinon l'ID
+        display_number: order.numero_commande || `CMD-${order.id}`,
+        formatted_date: new Date(order.created_at).toLocaleDateString('fr-FR', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        formatted_time: new Date(order.created_at).toLocaleTimeString('fr-FR', {
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        status_display: getStatusDisplay(order.status),
+        status_class: getStatusClass(order.status),
+        items_count: order.items ? order.items.length : 0,
+        first_item: order.items && order.items.length > 0 ? order.items[0] : null
+      };
+    });
+
+    // Calcul de la pagination
+    const totalPages = Math.ceil(count / limit);
+
+    res.render('customer-orders', {
+      orders: formattedOrders,
+      stats: statsGlobal, // Utiliser les statistiques globales
+      currentStatut: currentStatut,
+      currentSearch: currentSearch,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      },
+      title: "Mes Commandes | Bijoux Élégance"
+    });
+
+  } catch (err) {
+    console.error('Erreur dans renderCustomerOrders:', err);
+    res.status(500).render("error", { message: "Erreur serveur" });
+  }
+},
+
+// Récupère les détails d'une commande spécifique
+async getCustomerOrderDetails(req, res) {
+  try {
+    console.log('🔍 Récupération détails commande pour customer:', req.session.customerId, 'order:', req.params.id);
+    
+    const customerId = req.session.customerId;
+    const orderId = req.params.id;
+    
+    if (!customerId) {
+      console.log('❌ Pas de customerId en session');
+      return res.status(401).json({ success: false, message: 'Non autorisé' });
+    }
+
+    // Vérifier que l'ID de commande est un nombre
+    const orderIdNumber = parseInt(orderId);
+    if (isNaN(orderIdNumber)) {
+      console.log('❌ ID de commande invalide:', orderId);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'ID de commande invalide' 
+      });
+    }
+
+    console.log('🔍 Recherche commande ID:', orderIdNumber, 'pour customer:', customerId);
+
+    const order = await Order.findOne({
+      where: { 
+        id: orderIdNumber, 
+        customer_id: customerId 
+      },
+      include: [
+        {
+          model: OrderItem,
+          as: 'items',
+          include: [
+            {
+              model: Jewel,
+              as: 'jewel',
+              attributes: ['id', 'name', 'price_ttc', 'image', 'slug', 'description']
+            }
+          ]
+        },
+        {
+          model: Customer,
+          as: 'customer',
+          attributes: ['first_name', 'last_name', 'email', 'phone', 'address']
+        }
+      ]
+    });
+
+    if (!order) {
+      console.log('❌ Commande non trouvée');
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Commande non trouvée' 
+      });
+    }
+
+    console.log('✅ Commande trouvée:', order.id, 'avec', order.items?.length || 0, 'articles');
+
+    // Fonctions utilitaires pour le statut
+    const getStatusDisplay = (status) => {
+      const statusMap = {
+        'waiting': 'En attente',
+        'preparing': 'En préparation',
+        'shipped': 'Expédiée',
+        'delivered': 'Livrée',
+        'cancelled': 'Annulée'
+      };
+      return statusMap[status] || 'En cours';
+    };
+
+    const getStatusClass = (status) => {
+      const classMap = {
+        'waiting': 'status-waiting',
+        'preparing': 'status-preparing',
+        'shipped': 'status-shipped',
+        'delivered': 'status-delivered',
+        'cancelled': 'status-cancelled'
+      };
+      return classMap[status] || 'status-default';
+    };
+
+    // Calcul du total si nécessaire
+    let orderTotal = order.total;
+    if (!orderTotal && order.items && order.items.length > 0) {
+      orderTotal = order.items.reduce((sum, item) => {
+        return sum + (item.quantity * (item.price || item.jewel?.price_ttc || 0));
+      }, 0);
+    }
+
+    const formattedOrder = {
+      ...order.toJSON(),
+      total: parseFloat(orderTotal) || 0,
+      formatted_date: new Date(order.created_at).toLocaleDateString('fr-FR', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      status_display: getStatusDisplay(order.status),
+      status_class: getStatusClass(order.status)
+    };
+
+    console.log('✅ Données formatées envoyées');
+
+    res.json({
+      success: true,
+      order: formattedOrder
+    });
+
+  } catch (err) {
+    console.error('❌ Erreur dans getCustomerOrderDetails:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Erreur serveur' 
+    });
+  }
+},
 
   // Affiche la page d'édition du profil de l'utilisateur
   async renderEditProfilePage(req, res) {

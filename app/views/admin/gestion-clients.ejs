@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= title %> - CrystosJewel Admin</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <link rel="stylesheet" href="/css/follow-customer.css">
+    <style>
+        /* ===== STYLES EMAILS ===== */
+        .email-actions {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        
+        .btn-email {
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .btn-welcome {
+            background: #3b82f6;
+            color: white;
+        }
+        
+        .btn-welcome:hover {
+            background: #2563eb;
+        }
+        
+        .btn-custom {
+            background: #10b981;
+            color: white;
+        }
+        
+        .btn-custom:hover {
+            background: #059669;
+        }
+        
+        .btn-reactivation {
+            background: #f59e0b;
+            color: white;
+        }
+        
+        .btn-reactivation:hover {
+            background: #d97706;
+        }
+        
+        .client-status {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            text-transform: uppercase;
+        }
+        
+        .status-vip {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        
+        .status-fidele {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status-actif {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status-nouveau {
+            background: #f3e8ff;
+            color: #6b21a8;
+        }
+        
+        .status-inactif {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .bulk-actions {
+            display: none;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border: 2px solid #d89ab3;
+            border-radius: 12px;
+            padding: 15px 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .bulk-actions.show {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .stats-enhanced {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        
+        .stat-card-email {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            border-left: 4px solid #d89ab3;
+        }
+        
+        .stat-card-email h3 {
+            margin: 0 0 10px 0;
+            color: #374151;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .stat-card-email .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+        
+        .stat-card-email .label {
+            font-size: 12px;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+    </style>
+</head>
+<body>
+
+    <%- include('../../partials/navbarre.ejs') %>
+    
+    <header>
+        <h1><i class="fas fa-gem"></i> CrystosJewel Admin</h1>
+        <div class="search-bar">
+            <input type="text" id="search-client" placeholder="Rechercher un client...">
+            <button><i class="fas fa-search"></i></button>
+        </div>
+    </header>
+
+    <div class="container">
+        <aside>
+            <div class="menu-item">
+                <a href="/admin/stats"><i class="fas fa-tachometer-alt"></i> Dashboard</a>
+            </div>
+            <div class="menu-item active">
+                <a href="/admin/suivi-client"><i class="fas fa-user-friends"></i> Clients</a>
+            </div>
+            <div class="menu-item">
+                <a href="/admin/bijoux"><i class="fas fa-gem"></i> Bijoux</a>
+            </div>
+            <div class="menu-item">
+                <a href="/admin/suivi-commandes"><i class="fas fa-shopping-cart"></i> Commandes</a>
+            </div>
+            <div class="menu-item">
+                <a href="/admin/promos"><i class="fas fa-tags"></i> Codes Promo</a>
+            </div>
+            <div class="menu-item">
+                <a href="/admin/parametres"><i class="fas fa-cog"></i> Paramètres</a>
+            </div>
+        </aside>
+
+        <main>
+            <div class="dashboard-header">
+                <h2>📧 Gestion des Clients avec Emails</h2>
+                <div class="actions">
+                    <button id="exportBtn"><i class="fas fa-file-export"></i> <span>Exporter</span></button>
+                    <button id="addClientBtn"><i class="fas fa-plus"></i> <span>Ajouter un client</span></button>
+                </div>
+            </div>
+
+            <!-- Statistiques enrichies -->
+            <div class="stats-enhanced">
+                <div class="stat-card-email">
+                    <h3>Total Clients</h3>
+                    <div class="value"><%= statsGlobales.totalClients %></div>
+                    <div class="label">Inscrits</div>
+                </div>
+                <div class="stat-card-email">
+                    <h3>Clients Actifs</h3>
+                    <div class="value"><%= statsGlobales.activeClients %></div>
+                    <div class="label">Avec commandes</div>
+                </div>
+                <div class="stat-card-email">
+                    <h3>Clients VIP</h3>
+                    <div class="value"><%= statsGlobales.vipClients %></div>
+                    <div class="label">5+ commandes</div>
+                </div>
+                <div class="stat-card-email">
+                    <h3>Panier Moyen</h3>
+                    <div class="value"><%= statsGlobales.averageBasket %>€</div>
+                    <div class="label">Par commande</div>
+                </div>
+                <div class="stat-card-email">
+                    <h3>Taux Conversion</h3>
+                    <div class="value"><%= statsGlobales.conversionRate %>%</div>
+                    <div class="label">Visiteurs → Clients</div>
+                </div>
+            </div>
+
+            <!-- Actions groupées -->
+            <div class="bulk-actions" id="bulkActions">
+                <div class="bulk-info">
+                    <i class="fas fa-users"></i>
+                    <span id="selectedCount">0</span> client(s) sélectionné(s)
+                </div>
+                <div class="bulk-buttons">
+                    <button class="btn btn-primary btn-sm" onclick="openBulkEmailModal()">
+                        <i class="fas fa-envelope"></i> Envoyer un email
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="clearSelection()">
+                        <i class="fas fa-times"></i> Annuler
+                    </button>
+                </div>
+            </div>
+
+            <!-- Liste des clients -->
+            <div class="stats-container">
+                <div class="table-container">
+                    <table class="clients-table">
+                        <thead>
+                            <tr>
+                                <th>
+                                    <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                                </th>
+                                <th>Client</th>
+                                <th>Statut</th>
+                                <th>Statistiques</th>
+                                <th>Actions Email</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% clientsStats.forEach(function(client) { %>
+                            <tr class="client-row">
+                                <td>
+                                    <input type="checkbox" class="client-checkbox" 
+                                           value="<%= client.id %>" 
+                                           data-name="<%= client.firstName %> <%= client.lastName %>"
+                                           data-email="<%= client.email %>"
+                                           onchange="updateSelection()">
+                                </td>
+                                <td>
+                                    <div class="client-info">
+                                        <div class="client-name">
+                                            <strong><%= client.firstName %> <%= client.lastName %></strong>
+                                        </div>
+                                        <div class="client-email">
+                                            <i class="fas fa-envelope"></i> <%= client.email %>
+                                        </div>
+                                        <% if (client.phone) { %>
+                                        <div class="client-phone">
+                                            <i class="fas fa-phone"></i> <%= client.phone %>
+                                        </div>
+                                        <% } %>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="client-status status-<%= client.status.toLowerCase().replace('è', 'e') %>">
+                                        <%= client.status %>
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="client-stats">
+                                        <div><strong><%= client.stats.totalOrders %></strong> commandes</div>
+                                        <div><strong><%= client.stats.totalSpent %>€</strong> dépensés</div>
+                                        <div>Panier moyen: <strong><%= client.stats.averageBasket %>€</strong></div>
+                                        <% if (client.stats.lastOrderDate) { %>
+                                        <div class="last-order">
+                                            Dernière commande: 
+                                            <span title="Il y a <%= client.stats.daysSinceLastOrder %> jours">
+                                                <%= new Date(client.stats.lastOrderDate).toLocaleDateString('fr-FR') %>
+                                            </span>
+                                        </div>
+                                        <% } else { %>
+                                        <div class="no-order">Aucune commande</div>
+                                        <% } %>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="email-actions">
+                                        <button class="btn-email btn-welcome" 
+                                                onclick="sendWelcomeEmail(<%= client.id %>, '<%= client.firstName %> <%= client.lastName %>')"
+                                                title="Email de bienvenue">
+                                            <i class="fas fa-user-plus"></i> Bienvenue
+                                        </button>
+                                        <button class="btn-email btn-custom" 
+                                                onclick="openCustomEmailModal(<%= client.id %>, '<%= client.firstName %> <%= client.lastName %>', '<%= client.email %>')"
+                                                title="Email personnalisé">
+                                            <i class="fas fa-edit"></i> Personnalisé
+                                        </button>
+                                        <% if (client.stats.totalOrders > 0 && client.stats.daysSinceLastOrder > 30) { %>
+                                        <button class="btn-email btn-reactivation" 
+                                                onclick="sendReactivationEmail(<%= client.id %>, '<%= client.firstName %> <%= client.lastName %>')"
+                                                title="Email de relance">
+                                            <i class="fas fa-redo"></i> Relance
+                                        </button>
+                                        <% } %>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="actions">
+                                        <button class="btn btn-sm btn-primary" 
+                                                onclick="editClient(<%= client.id %>)">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                onclick="deleteClient(<%= client.id %>)">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal Email de Bienvenue -->
+    <div class="modal" id="welcomeModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-user-plus"></i> Email de Bienvenue</h3>
+                <button class="modal-close" onclick="closeModal('welcomeModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Êtes-vous sûr de vouloir envoyer un email de bienvenue à <strong id="welcomeClientName"></strong> ?</p>
+                <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                    <h4 style="margin: 0 0 10px 0; color: #0369a1;">📧 Contenu de l'email :</h4>
+                    <ul style="margin: 0; padding-left: 20px; color: #0369a1; font-size: 14px;">
+                        <li>Message de bienvenue personnalisé</li>
+                        <li>Présentation de votre boutique</li>
+                        <li>Avantages du compte client</li>
+                        <li>Lien vers la collection</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('welcomeModal')">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+                <button class="btn btn-primary" onclick="confirmSendWelcome()">
+                    <i class="fas fa-paper-plane"></i> Envoyer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Email Personnalisé -->
+    <div class="modal" id="customEmailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-edit"></i> Email Personnalisé</h3>
+                <button class="modal-close" onclick="closeModal('customEmailModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Destinataire :</label>
+                    <input type="text" class="form-control" id="customEmailRecipient" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label for="customEmailSubject">Sujet de l'email *</label>
+                    <input type="text" class="form-control" id="customEmailSubject" 
+                           placeholder="Ex: Nouveautés exclusives pour vous" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="customEmailMessage">Message *</label>
+                    <textarea class="form-control" id="customEmailMessage" 
+                              style="min-height: 120px;"
+                              placeholder="Rédigez votre message personnalisé ici..." required></textarea>
+                </div>
+                
+                <div style="background: #fef3f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                    <h4 style="margin: 0 0 10px 0; color: #dc2626;">💡 Conseils :</h4>
+                    <ul style="margin: 0; padding-left: 20px; color: #7f1d1d; font-size: 14px;">
+                        <li>Personnalisez avec le prénom du client</li>
+                        <li>Mentionnez des offres spéciales si applicable</li>
+                        <li>Restez professionnel et chaleureux</li>
+                        <li>Ajoutez un appel à l'action clair</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('customEmailModal')">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+                <button class="btn btn-primary" onclick="confirmSendCustom()">
+                    <i class="fas fa-paper-plane"></i> Envoyer
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Email Groupé -->
+    <div class="modal" id="bulkEmailModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-envelope"></i> Email Groupé</h3>
+                <button class="modal-close" onclick="closeModal('bulkEmailModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Destinataires :</label>
+                    <div style="background: #f3f4f6; padding: 10px; border-radius: 6px; font-size: 14px; max-height: 100px; overflow-y: auto;" id="bulkRecipients">
+                        <!-- Les destinataires seront affichés ici -->
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="bulkEmailType">Type d'email</label>
+                    <select class="form-control" id="bulkEmailType" onchange="handleBulkEmailTypeChange()">
+                        <option value="">Choisir un type...</option>
+                        <option value="welcome">Email de bienvenue</option>
+                        <option value="custom">Message personnalisé</option>
+                        <option value="reactivation">Email de relance</option>
+                    </select>
+                </div>
+                
+                <div id="bulkCustomFields" style="display: none;">
+                    <div class="form-group">
+                        <label for="bulkEmailSubject">Sujet de l'email *</label>
+                        <input type="text" class="form-control" id="bulkEmailSubject" 
+                               placeholder="Sujet de votre email groupé">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="bulkEmailMessage">Message *</label>
+                        <textarea class="form-control" id="bulkEmailMessage" 
+                                  style="min-height: 120px;"
+                                  placeholder="Message qui sera envoyé à tous les clients sélectionnés"></textarea>
+                    </div>
+                </div>
+                
+                <div id="bulkEmailPreview"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal('bulkEmailModal')">
+                    <i class="fas fa-times"></i> Annuler
+                </button>
+                <button class="btn btn-primary" onclick="confirmSendBulk()" disabled id="bulkSendBtn">
+                    <i class="fas fa-paper-plane"></i> Envoyer à tous
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== VARIABLES GLOBALES =====
+        let selectedClients = [];
+        let currentClientId = null;
+        let currentClientName = null;
+        let currentClientEmail = null;
+
+        // ===== GESTION DES MODALES =====
+        function closeModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.classList.remove('show');
+            setTimeout(() => {
+                modal.style.display = 'none';
+            }, 300);
+        }
+
+        function openModal(modalId) {
+            const modal = document.getElementById(modalId);
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                modal.classList.add('show');
+            }, 10);
+        }
+
+        // ===== SÉLECTION MULTIPLE =====
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAll');
+            const checkboxes = document.querySelectorAll('.client-checkbox');
+            
+            checkboxes.forEach(cb => cb.checked = selectAll.checked);
+            updateSelection();
+        }
+
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('.client-checkbox:checked');
+            selectedClients = Array.from(checkboxes).map(cb => ({
+                id: cb.value,
+                name: cb.dataset.name,
+                email: cb.dataset.email
+            }));
+
+            const count = selectedClients.length;
+            document.getElementById('selectedCount').textContent = count;
+            
+            const bulkActions = document.getElementById('bulkActions');
+            if (count > 0) {
+                bulkActions.classList.add('show');
+            } else {
+                bulkActions.classList.remove('show');
+            }
+
+            // Mettre à jour le checkbox "Tout sélectionner"
+            const selectAll = document.getElementById('selectAll');
+            const totalCheckboxes = document.querySelectorAll('.client-checkbox').length;
+            selectAll.checked = count === totalCheckboxes;
+            selectAll.indeterminate = count > 0 && count < totalCheckboxes;
+        }
+
+        function clearSelection() {
+            document.querySelectorAll('.client-checkbox').forEach(cb => cb.checked = false);
+            document.getElementById('selectAll').checked = false;
+            updateSelection();
+        }
+
+        // ===== EMAIL DE BIENVENUE =====
+        function sendWelcomeEmail(clientId, clientName) {
+            currentClientId = clientId;
+            currentClientName = clientName;
+            
+            document.getElementById('welcomeClientName').textContent = clientName;
+            openModal('welcomeModal');
+        }
+
+        async function confirmSendWelcome() {
+            if (!currentClientId) return;
+            
+            try {
+                showLoading('Envoi en cours...');
+                
+                const response = await fetch(`/admin/clients/${currentClientId}/send-welcome`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Email de bienvenue envoyé avec succès !', 'success');
+                    closeModal('welcomeModal');
+                } else {
+                    showNotification('Erreur : ' + result.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Erreur envoi email bienvenue:', error);
+                showNotification('Erreur lors de l\'envoi de l\'email', 'error');
+            }
+        }
+
+        // ===== EMAIL PERSONNALISÉ =====
+        function openCustomEmailModal(clientId, clientName, clientEmail) {
+            currentClientId = clientId;
+            currentClientName = clientName;
+            currentClientEmail = clientEmail;
+            
+            document.getElementById('customEmailRecipient').value = `${clientName} (${clientEmail})`;
+            document.getElementById('customEmailSubject').value = '';
+            document.getElementById('customEmailMessage').value = '';
+            
+            openModal('customEmailModal');
+        }
+
+        async function confirmSendCustom() {
+            const subject = document.getElementById('customEmailSubject').value.trim();
+            const message = document.getElementById('customEmailMessage').value.trim();
+            
+            if (!subject || !message) {
+                showNotification('Veuillez remplir le sujet et le message', 'error');
+                return;
+            }
+            
+            try {
+                showLoading('Envoi en cours...');
+                
+                const response = await fetch(`/admin/clients/${currentClientId}/send-custom`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        subject: subject,
+                        message: message
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Email personnalisé envoyé avec succès !', 'success');
+                    closeModal('customEmailModal');
+                } else {
+                    showNotification('Erreur : ' + result.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Erreur envoi email personnalisé:', error);
+                showNotification('Erreur lors de l\'envoi de l\'email', 'error');
+            }
+        }
+
+        // ===== EMAIL DE RELANCE =====
+        async function sendReactivationEmail(clientId, clientName) {
+            if (!confirm(`Envoyer un email de relance à ${clientName} ?`)) return;
+            
+            try {
+                showLoading('Envoi en cours...');
+                
+                const response = await fetch(`/admin/clients/${clientId}/send-reactivation`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('Email de relance envoyé avec succès !', 'success');
+                } else {
+                    showNotification('Erreur : ' + result.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Erreur envoi email relance:', error);
+                showNotification('Erreur lors de l\'envoi de l\'email', 'error');
+            }
+        }
+
+        // ===== EMAIL GROUPÉ =====
+        function openBulkEmailModal() {
+            if (selectedClients.length === 0) {
+                showNotification('Aucun client sélectionné', 'error');
+                return;
+            }
+            
+            const recipientsList = selectedClients.map(client => 
+                `<span style="display: inline-block; background: #e0e7ff; color: #3730a3; padding: 4px 8px; border-radius: 4px; margin: 2px; font-size: 12px;">
+                    ${client.name}
+                </span>`
+            ).join('');
+            
+            document.getElementById('bulkRecipients').innerHTML = recipientsList;
+            openModal('bulkEmailModal');
+        }
+
+        function handleBulkEmailTypeChange() {
+            const emailType = document.getElementById('bulkEmailType').value;
+            const customFields = document.getElementById('bulkCustomFields');
+            const sendBtn = document.getElementById('bulkSendBtn');
+            const previewDiv = document.getElementById('bulkEmailPreview');
+            
+            if (emailType === 'custom') {
+                customFields.style.display = 'block';
+                sendBtn.disabled = true;
+            } else {
+                customFields.style.display = 'none';
+                sendBtn.disabled = emailType === '';
+            }
+            
+            // Afficher un aperçu selon le type
+            let previewContent = '';
+            switch (emailType) {
+                case 'welcome':
+                    previewContent = `
+                        <div style="background: #f0f9ff; border: 1px solid #0ea5e9; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                            <h4 style="margin: 0 0 10px 0; color: #0369a1;">📧 Email de bienvenue</h4>
+                            <p style="margin: 0; color: #0369a1; font-size: 14px;">
+                                Message de bienvenue personnalisé avec présentation de la boutique et avantages client.
+                            </p>
+                        </div>
+                    `;
+                    break;
+                case 'reactivation':
+                    previewContent = `
+                        <div style="background: #fef3f2; border: 1px solid #fca5a5; border-radius: 8px; padding: 15px; margin: 15px 0;">
+                            <h4 style="margin: 0 0 10px 0; color: #dc2626;">🔄 Email de relance</h4>
+                            <p style="margin: 0; color: #dc2626; font-size: 14px;">
+                                Message de réactivation avec offre spéciale et incitation au retour.
+                            </p>
+                        </div>
+                    `;
+                    break;
+            }
+            previewDiv.innerHTML = previewContent;
+        }
+
+        // Validation des champs personnalisés pour email groupé
+        document.addEventListener('DOMContentLoaded', function() {
+            const subjectField = document.getElementById('bulkEmailSubject');
+            const messageField = document.getElementById('bulkEmailMessage');
+            
+            if (subjectField) subjectField.addEventListener('input', validateBulkCustomFields);
+            if (messageField) messageField.addEventListener('input', validateBulkCustomFields);
+        });
+
+        function validateBulkCustomFields() {
+            const emailType = document.getElementById('bulkEmailType').value;
+            const sendBtn = document.getElementById('bulkSendBtn');
+            
+            if (emailType === 'custom') {
+                const subject = document.getElementById('bulkEmailSubject').value.trim();
+                const message = document.getElementById('bulkEmailMessage').value.trim();
+                sendBtn.disabled = !subject || !message;
+            }
+        }
+
+        async function confirmSendBulk() {
+            const emailType = document.getElementById('bulkEmailType').value;
+            
+            if (!emailType) {
+                showNotification('Veuillez choisir un type d\'email', 'error');
+                return;
+            }
+            
+            const clientIds = selectedClients.map(client => client.id);
+            let customData = {};
+            
+            if (emailType === 'custom') {
+                const subject = document.getElementById('bulkEmailSubject').value.trim();
+                const message = document.getElementById('bulkEmailMessage').value.trim();
+                
+                if (!subject || !message) {
+                    showNotification('Veuillez remplir le sujet et le message', 'error');
+                    return;
+                }
+                
+                customData = { subject, message };
+            }
+            
+            if (!confirm(`Envoyer un email ${emailType} à ${selectedClients.length} client(s) ?`)) return;
+            
+            try {
+                showLoading('Envoi en cours...');
+                
+                const response = await fetch('/admin/clients/send-bulk-email', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        clientIds: clientIds,
+                        emailType: emailType,
+                        customData: customData
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification(`Emails envoyés : ${result.totalSent} succès, ${result.totalFailed} échecs`, 'success');
+                    closeModal('bulkEmailModal');
+                    clearSelection();
+                } else {
+                    showNotification('Erreur : ' + result.message, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Erreur envoi email groupé:', error);
+                showNotification('Erreur lors de l\'envoi des emails', 'error');
+            }
+        }
+
+        // ===== UTILITAIRES =====
+        function showNotification(message, type = 'info') {
+            // Supprimer les notifications existantes
+            document.querySelectorAll('.notification').forEach(notif => notif.remove());
+            
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                padding: 16px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 2000;
+                max-width: 400px;
+                background: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+                animation: slideIn 0.3s ease-out;
+            `;
+            
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Auto-suppression après 5 secondes
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                notification.style.transform = 'translateX(100%)';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        function showLoading(message = 'Chargement...') {
+            showNotification(message, 'info');
+        }
+
+        // ===== GESTION DES ÉVÉNEMENTS =====
+        document.addEventListener('click', function(event) {
+            // Fermer les modales en cliquant à l'extérieur
+            const modals = document.querySelectorAll('.modal');
+            modals.forEach(modal => {
+                if (event.target === modal) {
+                    closeModal(modal.id);
+                }
+            });
+        });
+
+        document.addEventListener('keydown', function(event) {
+            // Fermer les modales avec Escape
+            if (event.key === 'Escape') {
+                const openModals = document.querySelectorAll('.modal[style*="display: flex"]');
+                openModals.forEach(modal => closeModal(modal.id));
+            }
+        });
+
+        // ===== CSS ANIMATIONS =====
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateX(100%);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateX(0);
+                }
+            }
+            
+            .modal {
+                display: none;
+                position: fixed;
+                z-index: 1000;
+                left: 0;
+                top: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0, 0, 0, 0.5);
+                backdrop-filter: blur(4px);
+                align-items: center;
+                justify-content: center;
+            }
+            
+            .modal-content {
+                background: white;
+                border-radius: 16px;
+                max-width: 600px;
+                width: 90%;
+                max-height: 90vh;
+                overflow-y: auto;
+                box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25);
+                animation: modalSlideIn 0.3s ease-out;
+            }
+            
+            @keyframes modalSlideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(-20px) scale(0.95);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        console.log('Interface email clients initialisée');
+    </script>
+</body>
+</html>

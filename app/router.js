@@ -2348,7 +2348,7 @@ router.get('/api/admin/notifications/stats', isAdmin, async (req, res) => {
   }
 });
 
-router.get("/mescommandes", isAuthenticated, adminStatsController.showOrderPage);
+// router.get("/mescommandes", isAuthenticated, adminStatsController.showOrderPage);
 
 router.get('/api/cart', orderController.getCartAPI);
 
@@ -6046,7 +6046,21 @@ router.post('/admin/marketing/emails/save-draft', isAdmin, async (req, res) => {
 
 router.get('/commandes',adminStatsController.getAllOrdersWithFilters);
 
+// Route pour afficher la page des commandes du client
+router.get('/mescommandes', isAdmin, authController.renderCustomerOrders);
 
+// Route pour récupérer les détails d'une commande via AJAX
+router.get('/mescommandes/:id/details', isAdmin, authController.getCustomerOrderDetails);
+
+router.get('/test-modal/:id', isAuthenticated, (req, res) => {
+  console.log('🧪 Route de test appelée pour l\'ID:', req.params.id);
+  res.json({
+    success: true,
+    message: 'Route de test fonctionne !',
+    orderId: req.params.id,
+    customerId: req.session.customerId
+  });
+});
 
 // Export par défaut
 export default router;
